@@ -1,0 +1,24 @@
+# Database dumps - NEVER commit these (contain sensitive user data)
+*.sql
+*.sql.gz
+
+# Configuration with credentials
+app/config.php
+
+# PHP error logs
+*.log
+error_log
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Uploads directory (user-submitted files)
+app/uploads/
+
+# Environment files
+.env
+.env.*
+*.env
+env.*
+.environment
