@@ -7,10 +7,10 @@
             <div class="col-lg-12">
                 <div class="card">
                     <div class="card-header">
-                        <h4 class="card-title">Transaction History</h4>
+                        <h4 class="card-title">Transaktionsverlauf</h4>
                         <div class="float-right">
                             <button class="btn btn-primary" id="refreshTransactions">
-                                <i class="anticon anticon-reload"></i> Refresh
+                                <i class="anticon anticon-reload"></i> Aktualisieren
                             </button>
                         </div>
                     </div>
@@ -18,16 +18,16 @@
                         <div class="alert alert-danger d-none" id="transactionError"></div>
                         <div class="table-responsive">
                             <table id="transactionsTable" class="table table-bordered nowrap" style="width:100%">
-                                <!-- Update the table headers to match what the DataTable expects -->
+                                <!-- Tabellenüberschriften entsprechen der DataTable-Konfiguration -->
                                 <thead>
                                     <tr>
-                                        <th>Type</th>
-                                        <th>Amount</th>
-                                        <th>Method</th>
+                                        <th>Typ</th>
+                                        <th>Betrag</th>
+                                        <th>Methode</th>
                                         <th>Status</th>
-                                        <th>Reference</th>
-                                        <th>Date</th>
-                                        <th>Actions</th>
+                                        <th>Referenz</th>
+                                        <th>Datum</th>
+                                        <th>Aktionen</th>
                                     </tr>
                                 </thead>
                             </table>
@@ -40,31 +40,31 @@
 </div>
 <!-- Content Wrapper END -->
 
-<!-- Transaction Details Modal -->
+<!-- Transaktionsdetails Modal -->
 <div class="modal fade" id="withdrawalDetailsModal" tabindex="-1" role="dialog" aria-labelledby="withdrawalDetailsModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header bg-light">
                 <h5 class="modal-title" id="withdrawalDetailsModalLabel">
-                    <i class="anticon anticon-info-circle"></i> <span id="modal-title-text">Transaction Details</span>
+                    <i class="anticon anticon-info-circle"></i> <span id="modal-title-text">Transaktionsdetails</span>
                 </h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Schließen">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
             <div class="modal-body">
-                <!-- Transaction Overview -->
+                <!-- Transaktionsübersicht -->
                 <div class="row mb-4">
                     <div class="col-md-12">
                         <div class="card border-0 bg-light">
                             <div class="card-body py-2">
                                 <div class="row">
                                     <div class="col-md-4 text-center">
-                                        <div class="detail-label">Type</div>
+                                        <div class="detail-label">Typ</div>
                                         <div class="detail-value" id="detail-type-badge"></div>
                                     </div>
                                     <div class="col-md-4 text-center">
-                                        <div class="detail-label">Amount</div>
+                                        <div class="detail-label">Betrag</div>
                                         <div class="detail-value" id="detail-amount"></div>
                                     </div>
                                     <div class="col-md-4 text-center">
@@ -77,78 +77,78 @@
                     </div>
                 </div>
 
-                <!-- Main Details -->
+                <!-- Hauptdetails -->
                 <div class="row">
                     <div class="col-md-6">
                         <div class="detail-group">
-                            <label class="detail-label"><i class="anticon anticon-file-text"></i> Reference Number:</label>
+                            <label class="detail-label"><i class="anticon anticon-file-text"></i> Referenznummer:</label>
                             <div class="detail-value" id="detail-reference"></div>
                         </div>
                         <div class="detail-group">
-                            <label class="detail-label"><i class="anticon anticon-credit-card"></i> Payment Method:</label>
+                            <label class="detail-label"><i class="anticon anticon-credit-card"></i> Zahlungsmethode:</label>
                             <div class="detail-value" id="detail-method"></div>
                         </div>
                         <div class="detail-group">
-                            <label class="detail-label"><i class="anticon anticon-calendar"></i> Request Date:</label>
+                            <label class="detail-label"><i class="anticon anticon-calendar"></i> Anfragedatum:</label>
                             <div class="detail-value" id="detail-created"></div>
                         </div>
                         <div class="detail-group" id="otp-group" style="display:none;">
-                            <label class="detail-label"><i class="anticon anticon-lock"></i> OTP Verification:</label>
+                            <label class="detail-label"><i class="anticon anticon-lock"></i> OTP-Verifizierung:</label>
                             <div class="detail-value" id="detail-otp"></div>
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="detail-group" id="transaction-id-group" style="display:none;">
-                            <label class="detail-label"><i class="anticon anticon-number"></i> Transaction ID:</label>
+                            <label class="detail-label"><i class="anticon anticon-number"></i> Transaktions-ID:</label>
                             <div class="detail-value" id="detail-transaction-id"></div>
                         </div>
                         <div class="detail-group" id="processed-date-group" style="display:none;">
-                            <label class="detail-label"><i class="anticon anticon-check-circle"></i> Processed Date:</label>
+                            <label class="detail-label"><i class="anticon anticon-check-circle"></i> Bearbeitungsdatum:</label>
                             <div class="detail-value" id="detail-processed"></div>
                         </div>
                         <div class="detail-group" id="updated-date-group" style="display:none;">
-                            <label class="detail-label"><i class="anticon anticon-clock-circle"></i> Last Updated:</label>
+                            <label class="detail-label"><i class="anticon anticon-clock-circle"></i> Zuletzt aktualisiert:</label>
                             <div class="detail-value" id="detail-updated"></div>
                         </div>
                         <div class="detail-group" id="confirmed-by-group" style="display:none;">
-                            <label class="detail-label"><i class="anticon anticon-user"></i> Processed By:</label>
+                            <label class="detail-label"><i class="anticon anticon-user"></i> Bearbeitet von:</label>
                             <div class="detail-value" id="detail-confirmed-by"></div>
                         </div>
                         <div class="detail-group" id="ip-address-group" style="display:none;">
-                            <label class="detail-label"><i class="anticon anticon-global"></i> IP Address:</label>
+                            <label class="detail-label"><i class="anticon anticon-global"></i> IP-Adresse:</label>
                             <div class="detail-value" id="detail-ip-address"></div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Payment Details Section -->
+                <!-- Zahlungsdetails -->
                 <div class="row mt-3" id="payment-details-group" style="display:none;">
                     <div class="col-md-12">
                         <div class="detail-group">
-                            <label class="detail-label"><i class="anticon anticon-info-circle"></i> Payment Details:</label>
+                            <label class="detail-label"><i class="anticon anticon-info-circle"></i> Zahlungsdetails:</label>
                             <div class="detail-value detail-box" id="detail-payment-details"></div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Admin Notes Section -->
+                <!-- Admin-Notizen -->
                 <div class="row mt-3" id="admin-notes-group" style="display:none;">
                     <div class="col-md-12">
                         <div class="detail-group">
-                            <label class="detail-label"><i class="anticon anticon-message"></i> Admin Notes:</label>
+                            <label class="detail-label"><i class="anticon anticon-message"></i> Admin-Notizen:</label>
                             <div class="detail-value detail-box alert alert-info mb-0" id="detail-admin-notes"></div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Deposit Proof Section (for deposits only) -->
+                <!-- Zahlungsnachweis (nur bei Einzahlungen) -->
                 <div class="row mt-3" id="proof-group" style="display:none;">
                     <div class="col-md-12">
                         <div class="detail-group">
-                            <label class="detail-label"><i class="anticon anticon-file-image"></i> Payment Proof:</label>
+                            <label class="detail-label"><i class="anticon anticon-file-image"></i> Zahlungsnachweis:</label>
                             <div class="detail-value">
                                 <a href="#" id="detail-proof-link" target="_blank" class="btn btn-sm btn-outline-primary">
-                                    <i class="anticon anticon-download"></i> View Proof Document
+                                    <i class="anticon anticon-download"></i> Nachweis anzeigen
                                 </a>
                             </div>
                         </div>
@@ -157,7 +157,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">
-                    <i class="anticon anticon-close"></i> Close
+                    <i class="anticon anticon-close"></i> Schließen
                 </button>
             </div>
         </div>
@@ -257,7 +257,7 @@ $(document).ready(function() {
             },
             error: function(xhr, error, thrown) {
                 console.error('AJAX Error:', xhr.responseText);
-                let errorMsg = 'Failed to load transactions';
+                let errorMsg = 'Transaktionen konnten nicht geladen werden';
                 try {
                     const response = JSON.parse(xhr.responseText);
                     if (response.error) errorMsg = response.error;
@@ -283,11 +283,11 @@ $(document).ready(function() {
                     }[data] || '<i class="anticon anticon-file"></i> ';
                     
                     const typeLabels = {
-                        'deposit': '<span class="badge badge-info">' + icon + 'Deposit</span>',
-                        'withdrawal': '<span class="badge badge-warning">' + icon + 'Withdrawal</span>',
-                        'refund': '<span class="badge badge-success">' + icon + 'Refund</span>',
-                        'fee': '<span class="badge badge-secondary">' + icon + 'Fee</span>',
-                        'transfer': '<span class="badge badge-primary">' + icon + 'Transfer</span>'
+                        'deposit':    '<span class="badge badge-info">'      + icon + 'Einzahlung</span>',
+                        'withdrawal': '<span class="badge badge-warning">'   + icon + 'Auszahlung</span>',
+                        'refund':     '<span class="badge badge-success">'   + icon + 'Rückerstattung</span>',
+                        'fee':        '<span class="badge badge-secondary">' + icon + 'Gebühr</span>',
+                        'transfer':   '<span class="badge badge-primary">'   + icon + 'Überweisung</span>'
                     };
                     return typeLabels[data] || (icon + (data ? data.charAt(0).toUpperCase() + data.slice(1) : 'N/A'));
                 }
@@ -311,14 +311,14 @@ $(document).ready(function() {
                 render: function(data, type, row) {
                     if (!data) return '';
                     const statusBadges = {
-                        'pending': '<span class="badge badge-warning">Pending</span>',
-                        'completed': '<span class="badge badge-success">Completed</span>',
-                        'approved': '<span class="badge badge-success">Approved</span>',
-                        'rejected': '<span class="badge badge-danger">Rejected</span>',
-                        'processing': '<span class="badge badge-info">Processing</span>',
-                        'failed': '<span class="badge badge-danger">Failed</span>',
-                        'cancelled': '<span class="badge badge-secondary">Cancelled</span>',
-                        'confirmed': '<span class="badge badge-success">Confirmed</span>'
+                        'pending':    '<span class="badge badge-warning">Ausstehend</span>',
+                        'completed':  '<span class="badge badge-success">Abgeschlossen</span>',
+                        'approved':   '<span class="badge badge-success">Genehmigt</span>',
+                        'rejected':   '<span class="badge badge-danger">Abgelehnt</span>',
+                        'processing': '<span class="badge badge-info">In Bearbeitung</span>',
+                        'failed':     '<span class="badge badge-danger">Fehlgeschlagen</span>',
+                        'cancelled':  '<span class="badge badge-secondary">Storniert</span>',
+                        'confirmed':  '<span class="badge badge-success">Bestätigt</span>'
                     };
                     return statusBadges[data.toLowerCase()] || '<span class="badge badge-secondary">' + data + '</span>';
                 }
@@ -353,7 +353,7 @@ $(document).ready(function() {
                     } else if (row.type === 'deposit' && row.deposit_id) {
                         return '<button class="btn btn-sm btn-info view-details" data-type="deposit" data-id="' + row.deposit_id + '" data-row=\'' + JSON.stringify(row) + '\'><i class="anticon anticon-eye"></i> Details</button>';
                     }
-                    return '<span class="text-muted">N/A</span>';
+                    return '<span class="text-muted">–</span>';
                 }
             }
         ],
@@ -362,15 +362,21 @@ $(document).ready(function() {
         lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
         responsive: true,
         language: {
-            processing: '<div class="spinner-border text-primary" role="status"><span class="sr-only">Loading...</span></div>',
-            emptyTable: "No transactions found",
-            info: "Showing _START_ to _END_ of _TOTAL_ transactions",
-            infoEmpty: "Showing 0 to 0 of 0 transactions",
-            infoFiltered: "(filtered from _MAX_ total transactions)",
-            lengthMenu: "Show _MENU_ transactions",
-            loadingRecords: "Loading...",
-            search: "Search:",
-            zeroRecords: "No matching transactions found"
+            processing: '<div class="spinner-border text-primary" role="status"><span class="sr-only">Wird geladen …</span></div>',
+            emptyTable:    "Keine Transaktionen gefunden",
+            info:          "Zeige _START_ bis _END_ von _TOTAL_ Transaktionen",
+            infoEmpty:     "Zeige 0 bis 0 von 0 Transaktionen",
+            infoFiltered:  "(gefiltert von _MAX_ Transaktionen gesamt)",
+            lengthMenu:    "_MENU_ Transaktionen anzeigen",
+            loadingRecords:"Wird geladen …",
+            search:        "Suchen:",
+            zeroRecords:   "Keine passenden Transaktionen gefunden",
+            paginate: {
+                first:    "Erste",
+                last:     "Letzte",
+                next:     "Weiter",
+                previous: "Zurück"
+            }
         },
         initComplete: function() {
             console.log('Table initialization complete');
@@ -388,7 +394,7 @@ $(document).ready(function() {
         // Use the callback parameter of ajax.reload()
         table.ajax.reload(function(json) {
             console.log('Refresh successful', json);
-            toastr.success('Transactions updated successfully');
+            toastr.success('Transaktionen erfolgreich aktualisiert');
         }, false);
     });
 
@@ -404,13 +410,13 @@ $(document).ready(function() {
         
         // Update modal title based on transaction type
         const modalIcon = transactionType === 'deposit' ? 'anticon-arrow-down' : 'anticon-arrow-up';
-        const modalTitle = transactionType === 'deposit' ? 'Deposit Details' : 'Withdrawal Details';
+        const modalTitle = transactionType === 'deposit' ? 'Einzahlungsdetails' : 'Auszahlungsdetails';
         $('#modal-title-text').html('<i class="anticon ' + modalIcon + '"></i> ' + modalTitle);
         
         // Transaction type badge
         const typeBadges = {
-            'deposit': '<span class="badge badge-info badge-lg"><i class="anticon anticon-arrow-down"></i> Deposit</span>',
-            'withdrawal': '<span class="badge badge-warning badge-lg"><i class="anticon anticon-arrow-up"></i> Withdrawal</span>'
+            'deposit':    '<span class="badge badge-info badge-lg"><i class="anticon anticon-arrow-down"></i> Einzahlung</span>',
+            'withdrawal': '<span class="badge badge-warning badge-lg"><i class="anticon anticon-arrow-up"></i> Auszahlung</span>'
         };
         $('#detail-type-badge').html(typeBadges[transactionType] || transactionType);
         
@@ -420,14 +426,14 @@ $(document).ready(function() {
         
         // Status with color
         const statusBadges = {
-            'pending': '<span class="badge badge-warning badge-lg">⏳ Pending</span>',
-            'approved': '<span class="badge badge-success badge-lg">✓ Approved</span>',
-            'rejected': '<span class="badge badge-danger badge-lg">✗ Rejected</span>',
-            'processing': '<span class="badge badge-info badge-lg">🔄 Processing</span>',
-            'completed': '<span class="badge badge-success badge-lg">✓ Completed</span>',
-            'confirmed': '<span class="badge badge-success badge-lg">✓ Confirmed</span>',
-            'failed': '<span class="badge badge-danger badge-lg">✗ Failed</span>',
-            'cancelled': '<span class="badge badge-secondary badge-lg">⊘ Cancelled</span>'
+            'pending':    '<span class="badge badge-warning badge-lg">⏳ Ausstehend</span>',
+            'approved':   '<span class="badge badge-success badge-lg">✓ Genehmigt</span>',
+            'rejected':   '<span class="badge badge-danger badge-lg">✗ Abgelehnt</span>',
+            'processing': '<span class="badge badge-info badge-lg">🔄 In Bearbeitung</span>',
+            'completed':  '<span class="badge badge-success badge-lg">✓ Abgeschlossen</span>',
+            'confirmed':  '<span class="badge badge-success badge-lg">✓ Bestätigt</span>',
+            'failed':     '<span class="badge badge-danger badge-lg">✗ Fehlgeschlagen</span>',
+            'cancelled':  '<span class="badge badge-secondary badge-lg">⊘ Storniert</span>'
         };
         $('#detail-status').html(statusBadges[rowData.status.toLowerCase()] || '<span class="badge badge-secondary">' + rowData.status + '</span>');
         
@@ -443,7 +449,7 @@ $(document).ready(function() {
         // OTP verification (only for withdrawals)
         if (transactionType === 'withdrawal') {
             $('#otp-group').show();
-            $('#detail-otp').html(rowData.otp_verified == 1 ? '<span class="badge badge-success"><i class="anticon anticon-check"></i> Verified</span>' : '<span class="badge badge-warning"><i class="anticon anticon-close"></i> Not Verified</span>');
+            $('#detail-otp').html(rowData.otp_verified == 1 ? '<span class="badge badge-success"><i class="anticon anticon-check"></i> Verifiziert</span>' : '<span class="badge badge-warning"><i class="anticon anticon-close"></i> Nicht verifiziert</span>');
         } else {
             $('#otp-group').hide();
         }
@@ -475,7 +481,7 @@ $(document).ready(function() {
         // Confirmed/Processed by
         if (rowData.confirmed_by) {
             $('#confirmed-by-group').show();
-            $('#detail-confirmed-by').text('Admin ID: ' + rowData.confirmed_by);
+            $('#detail-confirmed-by').text('Admin-ID: ' + rowData.confirmed_by);
         } else {
             $('#confirmed-by-group').hide();
         }
