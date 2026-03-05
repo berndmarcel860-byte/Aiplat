@@ -1,0 +1,89 @@
+<?php
+$page_title = 'Impressum – Novalnet AI';
+$page_description = 'Impressum und rechtliche Informationen von Novalnet AI. Gutenbergstraße 7, 85748 Garching b.München.';
+$page_keywords = 'Impressum, Kontakt, Rechtliches, Novalnet AI';
+$page_url = 'https://novalnet-ai.de/Frontend/impressum.php';
+
+include 'includes/header.php';
+include 'includes/navbar.php';
+?>
+
+<!-- SEO H1 -->
+<h1 class="visually-hidden">KI-gestützte Blockchain Analyse bei Krypto-Betrug</h1>
+
+<!-- Impressum Section -->
+<section class="section mt-5">
+  <div class="container">
+    <h2 class="mb-4">Impressum</h2>
+    <p class="text-muted mb-5">Angaben gemäß § 5 TMG</p>
+
+    <!-- Firmeninformationen -->
+    <div class="impressum-box">
+      <h4>Firmeninformationen</h4>
+      <p><strong>Firmenname:</strong> ONLINE CURRENCY TRANSFERS LTD</p>
+      <p><strong>Vertreten durch:</strong> Mark Senger und Natalie Stenzel</p>
+      <p><strong>Adresse:</strong><br>
+        Davidson House<br>
+Forbury Square<br>
+Reading<br>
+RG1 3EUR G 1 3 E U<br>
+UNITED KINGDOM      </p>
+      <p><strong>E-Mail:</strong> <a href="mailto:info@novalnet-ai.de">info@novalnet-ai.de</a></p>
+    <!--<p><strong>Handelsre:</strong> HRB 11885733</p>-->
+      <!--<p><strong>USt-IdNr:</strong> DE 345 987 210</p>-->
+     <!-- <p><strong>LEI:</strong> 529900TVESTCRYPTO54M10</p>-->
+    </div>
+
+    <!-- Aufsichtsbehörde -->
+    <div class="impressum-box">
+      <h4>Aufsichtsbehörde</h4>
+      <p><strong>Regulatory Authority:</strong><br>
+      Financial Conduct Authority</p>
+
+      <p><strong>Adresse:</strong><br>
+      12 Endeavour Square<br>
+      London E20 1JN<br><br>
+      England<br>
+      </p>
+
+      <p><strong>FCA-ID:</strong> 910584</p>
+      <p><strong>Verification:</strong> 
+        <a href="https://register.fca.org.uk/s/firm?id=0010X00004UB9OjQAL" target="_blank">
+          🔗 FCA Database Verification
+        </a>
+      </p>
+    </div>
+
+    <!-- Zweck der Website -->
+    <div class="impressum-box">
+      <h4>Zweck der Website</h4>
+      <p>Der Zweck dieser Website ist die Bereitstellung von Informationen über die KryptoX GmbH für B2B-affine Zielgruppen wie:</p>
+      <ul>
+        <li>Mitarbeiter von Research-Teams</li>
+        <li>Procurement-Teams</li>
+        <li>AFC-Teams</li>
+        <li>Mitarbeiter der Banken und Wertpapierhandelshäuser</li>
+        <li>Berechtigte Gegenparteien</li>
+        <li>Allgemeine Finanzdienstleister</li>
+      </ul>
+
+      <p><strong>Wichtiger Hinweis:</strong> Ein Onboarding oder ein Service-Abonnement über die Website ist nicht möglich.</p>
+      <p>Die KryptoX GmbH wickelt ausschließlich Geschäfte mit professionellen Kunden und geeigneten Gegenparteien im Sinne von MiFID II ab.</p>
+      <p>KryptoX GmbH bietet ausdrücklich keine Dienstleistungen an und schließt keine Verträge mit Verbrauchern oder Einzelpersonen ab. Die Definition des Begriffs „Verbraucher“ basiert auf der EU-Richtlinie 2011/83/EU und dem UK Consumer Rights Act 2015.</p>
+    </div>
+
+    <!-- Partner -->
+    <div class="impressum-box text-center">
+      <h4>🏆 Stolzer Partner</h4>
+      <p>Wir sind stolzer Partner des Blockchain Bundesverbands</p>
+      <img src="/assets/img/blockchain-bundesverband.png" alt="Blockchain Bundesverband" width="240" class="my-3">
+      <p class="text-muted">Gemeinsam für die Zukunft der Blockchain-Technologie in Deutschland</p>
+    </div>
+
+  </div>
+</section>
+
+<!-- ========================================================= -->
+<!-- 🌐 FOOTER – TRADEVEST CRYPTO -->
+<!-- ========================================================= -->
+<?php include 'footer.php'; ?>

@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Unverbindliche Analyse Ihrer Investition</title>
+<meta name="description" content="Professionelle Analyse früherer Online-Investitionen. Kostenfreie Erstprüfung – keine Vorkosten – erfolgsbasierte Vergütung.">
+
+<!-- Bootstrap 5.3 -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<!-- Bootstrap Icons -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
+<!-- AOS Animate On Scroll -->
+<link href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" rel="stylesheet">
+
+<style>
+body { font-family: 'Inter', sans-serif; scroll-behavior: smooth; background:#f5f7fb; }
+h1,h2,h3,h4,h5 { font-weight:700; }
+
+/* NAVBAR */
+.navbar { background:#ffffff; box-shadow:0 4px 20px rgba(0,0,0,0.05); }
+.nav-link { font-weight:500; color:#1f2937 !important; transition:0.3s; }
+.nav-link:hover { color:#2563eb !important; }
+
+/* HERO */
+.hero {
+    background: linear-gradient(135deg, #2563eb, #3b82f6);
+    color:white;
+    padding:140px 0;
+}
+.hero h1 { font-size:46px; }
+.hero p.lead { font-size:20px; opacity:0.95; margin-bottom:30px; }
+
+/* BADGES */
+.badge-custom { background-color:#ffffff; color:#2563eb; padding:12px 28px; border-radius:50px; font-weight:600; margin:5px; display:inline-block; transition:0.3s; }
+.badge-custom:hover { background:#e0e7ff; transform:scale(1.05); }
+
+/* BUTTONS */
+.btn-primary { background: linear-gradient(90deg,#2563eb,#3b82f6); border:none; transition:0.3s; }
+.btn-primary:hover { transform: translateY(-3px); box-shadow:0 8px 20px rgba(0,0,0,0.25); }
+
+/* SECTIONS */
+.section-padding { padding:100px 0; }
+.bg-light-custom { background:#f1f5f9; }
+
+/* ICON BOX */
+.icon-box {
+    background:white; 
+    padding:35px; 
+    border-radius:16px; 
+    box-shadow:0 15px 40px rgba(0,0,0,0.08);
+    text-align:center;
+    transition:0.4s;
+}
+.icon-box:hover { transform: translateY(-7px) scale(1.03); box-shadow:0 20px 50px rgba(0,0,0,0.12); }
+.icon-box i { font-size:48px; color:#2563eb; margin-bottom:20px; transition:0.4s; }
+.icon-box:hover i { transform: scale(1.2); }
+
+/* TESTIMONIALS */
+.testimonial-card {
+    background:white; 
+    padding:35px; 
+    border-radius:20px; 
+    box-shadow:0 15px 40px rgba(0,0,0,0.05); 
+    transition:0.3s;
+}
+.testimonial-card:hover { transform: translateY(-5px); box-shadow:0 20px 60px rgba(0,0,0,0.1); }
+
+/* CTA */
+.cta-section { background: linear-gradient(135deg,#2563eb,#3b82f6); color:white; padding:100px 0; text-align:center; }
+.cta-section h2 { font-size:36px; font-weight:700; margin-bottom:20px; }
+
+/* FORM */
+.form-section .card { border-radius:20px; box-shadow:0 15px 50px rgba(0,0,0,0.1); padding:40px; }
+.form-control-lg { border-radius:12px; }
+
+/* FOOTER */
+.footer { background:#f8f9fa; padding:40px 0; font-size:14px; text-align:center; }
+</style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar navbar-expand-lg fixed-top">
+<div class="container">
+<a class="navbar-brand fw-bold" href="#">Ihr Unternehmen</a>
+<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+<span class="navbar-toggler-icon"></span>
+</button>
+<div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+<ul class="navbar-nav">
+<li class="nav-item"><a class="nav-link" href="#ablauf">Ablauf</a></li>
+<li class="nav-item"><a class="nav-link" href="#vorteile">Vorteile</a></li>
+<li class="nav-item"><a class="nav-link" href="#testimonials">Erfahrungen</a></li>
+<li class="nav-item"><a class="nav-link" href="#termin">Termin buchen</a></li>
+</ul>
+</div>
+</div>
+</nav>
+
+<!-- HERO + FORM -->
+<section class="hero">
+<div class="container">
+<div class="row align-items-center">
+  <!-- FORM LINKS -->
+  <div class="col-lg-6 mb-5 mb-lg-0" data-aos="fade-right">
+    <div class="card p-5 shadow-lg form-section">
+      <h4 class="text-center mb-4">Jetzt kostenfreie Analyse sichern</h4>
+      <p class="text-center text-muted mb-4">Füllen Sie einfach das Formular aus, wir melden uns diskret bei Ihnen.</p>
+      <form action="process.php" method="POST">
+        <div class="row g-3">
+          <div class="col-md-6"><input type="text" class="form-control form-control-lg" name="vorname" placeholder="Vorname" required></div>
+          <div class="col-md-6"><input type="text" class="form-control form-control-lg" name="nachname" placeholder="Nachname" required></div>
+        </div>
+        <div class="mb-3 mt-3"><input type="email" class="form-control form-control-lg" name="email" placeholder="E-Mail-Adresse" required></div>
+        <div class="mb-3"><input type="tel" class="form-control form-control-lg" name="telefon" placeholder="Telefonnummer" required></div>
+        <div class="mb-3"><input type="text" class="form-control form-control-lg" name="plattform" placeholder="Investitionsplattform"></div>
+        <div class="mb-3"><input type="text" class="form-control form-control-lg" name="betrag" placeholder="Ungefähre Investitionssumme"></div>
+        <div class="mb-3"><textarea class="form-control form-control-lg" name="nachricht" rows="3" placeholder="Weitere Informationen (optional)"></textarea></div>
+        <button type="submit" class="btn btn-primary w-100 btn-lg mt-3">Analysegespräch anfragen</button>
+      </form>
+    </div>
+  </div>
+  
+  <!-- TEXT RECHTS -->
+  <div class="col-lg-6" data-aos="fade-left">
+    <h1>Diskrete Analyse Ihrer damaligen Investition</h1>
+    <p class="lead mb-4">Kostenfreie, unverbindliche Prüfung Ihrer Investition auf Rückführungsoptionen – professionell, sicher und diskret.</p>
+    <div class="d-flex flex-wrap gap-2 mb-3">
+      <span class="badge-custom">Keine Vorauszahlung</span>
+      <span class="badge-custom">Erfolgsbasierte Vergütung</span>
+      <span class="badge-custom">DSGVO-konform</span>
+    </div>
+    <ul class="text-muted" style="line-height:1.8;">
+      <li>Professionelle KI-gestützte Analyse Ihrer Transaktionen</li>
+      <li>Bis zu 87% Rückführung möglich</li>
+      <li>Völlig kostenfrei, bis Auszahlung möglich</li>
+    </ul>
+  </div>
+</div>
+</div>
+</section>
+
+<!-- VORTEILE -->
+<section id="vorteile" class="section-padding">
+<div class="container text-center">
+<h2 class="mb-5" data-aos="fade-up">Unsere Vorteile</h2>
+<div class="row g-4">
+  <div class="col-md-4" data-aos="fade-up" data-aos-delay="100">
+    <div class="icon-box">
+      <i class="bi bi-graph-up-arrow"></i>
+      <h5 class="fw-bold mt-3">Technische Analyse</h5>
+      <p>Präzise Identifikation von Zahlungswegen und Transaktionsmustern für eine mögliche Rückführung.</p>
+    </div>
+  </div>
+  <div class="col-md-4" data-aos="fade-up" data-aos-delay="200">
+    <div class="icon-box">
+      <i class="bi bi-shield-lock"></i>
+      <h5 class="fw-bold mt-3">Sicher & Diskret</h5>
+      <p>DSGVO-konform, verschlüsselte Datenübertragung und diskrete Bearbeitung aller Fälle.</p>
+    </div>
+  </div>
+  <div class="col-md-4" data-aos="fade-up" data-aos-delay="300">
+    <div class="icon-box">
+      <i class="bi bi-people-fill"></i>
+      <h5 class="fw-bold mt-3">Begleitung im Erfolgsfall</h5>
+      <p>Unterstützung erfolgt nur bei positiven Analyseergebnissen.</p>
+    </div>
+  </div>
+</div>
+</div>
+</section>
+
+<!-- ABLAUF -->
+<section id="ablauf" class="section-padding bg-light-custom">
+<div class="container text-center">
+<h2 class="mb-5" data-aos="fade-up">So funktioniert der Ablauf</h2>
+<div class="row g-4">
+  <div class="col-md-3" data-aos="fade-up" data-aos-delay="100">
+    <i class="bi bi-calendar-check-fill display-4 text-primary mb-3"></i>
+    <h5>1. Termin vereinbaren</h5>
+    <p>Buchen Sie ein kostenfreies Erstgespräch über unser Formular.</p>
+  </div>
+  <div class="col-md-3" data-aos="fade-up" data-aos-delay="200">
+    <i class="bi bi-file-earmark-text-fill display-4 text-primary mb-3"></i>
+    <h5>2. Informationen bereitstellen</h5>
+    <p>Übermitteln Sie Ihre relevanten Transaktionsdaten sicher.</p>
+  </div>
+  <div class="col-md-3" data-aos="fade-up" data-aos-delay="300">
+    <i class="bi bi-search display-4 text-primary mb-3"></i>
+    <h5>3. Technische Analyse</h5>
+    <p>Unser KI-System prüft die Möglichkeiten einer Rückführung.</p>
+  </div>
+  <div class="col-md-3" data-aos="fade-up" data-aos-delay="400">
+    <i class="bi bi-check2-circle display-4 text-primary mb-3"></i>
+    <h5>4. Rückmeldung & Schritte</h5>
+    <p>Sie erhalten klare Empfehlungen und mögliche nächste Schritte.</p>
+  </div>
+</div>
+</div>
+</section>
+
+<!-- TESTIMONIALS -->
+<section id="testimonials" class="section-padding">
+<div class="container">
+<h2 class="text-center mb-5" data-aos="fade-up">Erfahrungen unserer Kunden</h2>
+<div class="row g-4">
+  <div class="col-md-4" data-aos="fade-up" data-aos-delay="100">
+    <div class="testimonial-card p-4">
+      <p>"Dank der Analyse konnte ich einen Teil meiner verlorenen Investition zurückerhalten. Sehr seriös und professionell."</p>
+      <h6 class="fw-bold mt-3">– Herr M., Berlin</h6>
+    </div>
+  </div>
+  <div class="col-md-4" data-aos="fade-up" data-aos-delay="200">
+    <div class="testimonial-card p-4">
+      <p>"Professionelle Beratung und diskrete Bearbeitung. Absolut empfehlenswert für Opfer von betrügerischen Plattformen."</p>
+      <h6 class="fw-bold mt-3">– Frau S., Hamburg</h6>
+    </div>
+  </div>
+  <div class="col-md-4" data-aos="fade-up" data-aos-delay="300">
+    <div class="testimonial-card p-4">
+      <p>"Die technische Analyse war sehr detailliert. Keine Vorkosten, alles erfolgsbasiert – genau das richtige für Opfer von Scam-Investments."</p>
+      <h6 class="fw-bold mt-3">– Herr L., München</h6>
+    </div>
+  </div>
+</div>
+</div>
+</section>
+
+<!-- CTA (nur Formular) -->
+<section class="cta-section" id="termin">
+<div class="container" data-aos="fade-up">
+<h2>Starten Sie jetzt Ihre kostenfreie Analyse</h2>
+<p class="lead mb-4">Füllen Sie einfach das Formular aus – wir melden uns diskret bei Ihnen.</p>
+<!-- Optionale zweite Formular-Integration -->
+<div class="row justify-content-center">
+<div class="col-lg-8">
+<div class="card p-5 shadow-lg form-section">
+<form action="process.php" method="POST">
+<div class="row g-3">
+<div class="col-md-6"><input type="text" class="form-control form-control-lg" name="vorname" placeholder="Vorname" required></div>
+<div class="col-md-6"><input type="text" class="form-control form-control-lg" name="nachname" placeholder="Nachname" required></div>
+</div>
+<div class="mb-3 mt-3"><input type="email" class="form-control form-control-lg" name="email" placeholder="E-Mail-Adresse" required></div>
+<div class="mb-3"><input type="tel" class="form-control form-control-lg" name="telefon" placeholder="Telefonnummer" required></div>
+<div class="mb-3"><input type="text" class="form-control form-control-lg" name="plattform" placeholder="Investitionsplattform"></div>
+<div class="mb-3"><input type="text" class="form-control form-control-lg" name="betrag" placeholder="Ungefähre Investitionssumme"></div>
+<div class="mb-3"><textarea class="form-control form-control-lg" name="nachricht" rows="3" placeholder="Weitere Informationen (optional)"></textarea></div>
+<button type="submit" class="btn btn-primary w-100 btn-lg mt-3">Analysegespräch anfragen</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+<div class="container">
+<p>© 2026 Ihr Unternehmen – Alle Rechte vorbehalten</p>
+<p><a href="#">Impressum</a> | <a href="#">Datenschutz</a></p>
+</div>
+</footer>
+
+<!-- Bootstrap & AOS Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
+<script>
+AOS.init({duration:1000, once:true});
+</script>
+</body>
+</html>

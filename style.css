@@ -1,0 +1,109 @@
+/* Tradias Crypto – Static Landing */
+/* Typography & Base */
+:root{
+  --bg:#0e0e0e;
+  --bg-alt:#151515;
+  --card:#1a1a1a;
+  --text:#ffffff;
+  --muted:#cfd2d6;
+  --accent:#00c3ff;
+  --accent-600:#009ed0;
+  --radius:12px;
+  --radius-xl:18px;
+  --shadow:0 10px 30px rgba(0,0,0,.35);
+}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  font-family:'Plus Jakarta Sans',system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,'Helvetica Neue',Arial,sans-serif;
+  margin:0;background:var(--bg);color:var(--text);line-height:1.6;overflow-x:hidden
+}
+
+/* Header */
+header{
+  position:fixed;inset:0 0 auto 0;z-index:1000;
+  display:flex;justify-content:space-between;align-items:center;gap:24px;
+  background:rgba(0,0,0,.85);backdrop-filter:saturate(120%) blur(6px);
+  padding:14px 42px;border-bottom:1px solid rgba(255,255,255,.06)
+}
+header .brand{display:flex;align-items:center;text-decoration:none;color:#fff;gap:10px;font-weight:700}
+header .brand img{height:40px}
+nav a{color:#fff;margin-left:20px;text-decoration:none;font-weight:500;font-size:15px;opacity:.9;transition:color .2s,opacity .2s}
+nav a:hover{color:var(--accent);opacity:1}
+
+/* Hero */
+.hero{
+  min-height:100vh;display:grid;place-items:center;position:relative;
+  background:url('assets/hero-bg.jpg') center/cover no-repeat;
+  text-align:center
+}
+.hero .overlay{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.45),rgba(0,0,0,.65))}
+.hero-content{position:relative;z-index:1;padding:24px;max-width:980px}
+.hero h1{font-size:clamp(28px,4.2vw,48px);line-height:1.15;margin:0 0 12px}
+.hero p{color:var(--muted);font-size:clamp(15px,1.6vw,18px);margin:0 auto;max-width:80ch}
+.cta-group{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:22px}
+.btn{display:inline-block;background:var(--accent);color:#fff;padding:12px 22px;border-radius:999px;font-weight:700;text-decoration:none;box-shadow:var(--shadow);transition:background .2s,transform .15s}
+.btn:hover{background:var(--accent-600);transform:translateY(-1px)}
+.btn-outline{background:transparent;border:1px solid rgba(255,255,255,.25);box-shadow:none}
+.btn-outline:hover{border-color:rgba(255,255,255,.45)}
+
+/* Sections */
+.section{padding:96px 28px;text-align:center}
+.section.dark{background:var(--bg-alt)}
+.section h2{font-size:clamp(22px,3vw,32px);margin:0 0 10px}
+.section p{color:var(--muted);max-width:85ch;margin:0 auto}
+
+/* Cards & Grids */
+.grid-3{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:18px;margin-top:26px}
+.card{background:var(--card);border-radius:var(--radius);padding:22px;box-shadow:var(--shadow);text-align:left}
+.card h3{margin:0 0 8px;color:#fff;font-size:18px}
+.card p{margin:0;color:var(--muted)}
+
+.features{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:22px;margin-top:26px}
+.feature{background:var(--card);padding:24px;border-radius:var(--radius);box-shadow:var(--shadow);transition:transform .2s}
+.feature:hover{transform:translateY(-4px)}
+.feature img{height:56px;margin-bottom:10px}
+
+.pricing{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:22px;margin-top:26px}
+.plan{background:var(--card);padding:24px;border-radius:var(--radius-xl);box-shadow:var(--shadow)}
+.plan.popular{outline:1px solid rgba(0,195,255,.35)}
+.plan h3{margin:0 0 8px}
+.plan .price{font-size:26px;font-weight:800;margin:6px 0 12px}
+.plan ul{list-style:none;padding:0;margin:0 0 16px}
+.plan li{padding:6px 0;border-bottom:1px dashed rgba(255,255,255,.08)}
+.plan li:last-child{border-bottom:0}
+
+.team{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:22px;margin-top:26px}
+.member{background:var(--card);padding:18px;border-radius:var(--radius);box-shadow:var(--shadow)}
+.member img{width:100%;height:180px;object-fit:cover;border-radius:10px;margin-bottom:10px}
+.member h3{margin:0 0 6px}
+
+.partners{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:18px;align-items:center;justify-items:center;margin-top:26px}
+.partners img{max-width:160px;opacity:.85;filter:grayscale(20%)}
+
+/* FAQ */
+.faq{max-width:900px;margin:22px auto 0;text-align:left}
+details{background:var(--card);border-radius:var(--radius);padding:14px 18px;margin:10px 0;box-shadow:var(--shadow)}
+summary{cursor:pointer;font-weight:700}
+details p{margin:10px 0 0;color:var(--muted)}
+
+/* Contact */
+.contact-info{margin-top:18px}
+.contact-info a{color:var(--accent);text-decoration:none}
+
+/* Legal */
+.legal{display:flex;gap:16px;justify-content:center;margin-bottom:12px}
+.legal a{color:#fff;text-decoration:none;opacity:.9}
+.legal-box{background:var(--card);padding:18px;border-radius:var(--radius);box-shadow:var(--shadow);max-width:900px;margin:12px auto 0;text-align:left}
+.legal-box h3{margin:0 0 8px}
+
+/* Footer */
+footer{background:#000;border-top:1px solid rgba(255,255,255,.06);color:#b8bdc2;text-align:center;padding:24px}
+
+/* Responsive */
+@media (max-width: 860px){
+  header{padding:12px 16px;flex-wrap:wrap;gap:12px}
+  nav{width:100%;display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+  nav a{margin:0}
+}
