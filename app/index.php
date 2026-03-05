@@ -176,14 +176,14 @@ $outstandingAmount = max(0, $reportedTotal - $recoveredTotal);
         <div class="modal-content shadow-lg border-0">
             <div class="modal-header bg-primary text-white">
                 <h5 class="modal-title mb-0" id="passwordChangeModalLabel">
-                    <i class="anticon anticon-lock m-r-5"></i> Password Change Required
+                    <i class="anticon anticon-lock m-r-5"></i> Passwortänderung erforderlich
                 </h5>
             </div>
 
             <div class="modal-body">
                 <div class="alert alert-warning mb-4" role="alert">
                     <i class="anticon anticon-info-circle"></i>
-                    For your security, please update your password before continuing.
+                    Bitte ändern Sie Ihr Passwort aus Sicherheitsgründen, bevor Sie fortfahren.
                 </div>
 
                 <form id="passwordChangeForm" novalidate>
@@ -191,45 +191,45 @@ $outstandingAmount = max(0, $reportedTotal - $recoveredTotal);
 
                     <!-- Current Password -->
                     <div class="form-group">
-                        <label for="currentPassword">Current Password</label>
+                        <label for="currentPassword">Aktuelles Passwort</label>
                         <input type="password" class="form-control" id="currentPassword" required aria-required="true" autocomplete="current-password">
                     </div>
 
                     <!-- New Password -->
                     <div class="form-group">
-                        <label for="newPassword">New Password</label>
+                        <label for="newPassword">Neues Passwort</label>
                         <input type="password" class="form-control" id="newPassword" required minlength="8" aria-describedby="passwordHelp" autocomplete="new-password">
                         <small id="passwordHelp" class="form-text text-muted">
-                            Use a unique password. We enforce a minimum of 8 characters.
+                            Verwenden Sie ein eindeutiges Passwort (mindestens 8 Zeichen).
                         </small>
 
                         <!-- Strength Bar -->
                         <div class="progress mt-2" style="height:8px;">
                             <div id="passwordStrengthBar" class="progress-bar bg-danger" style="width:0%;" role="progressbar" aria-valuemin="0" aria-valuemax="100"></div>
                         </div>
-                        <small id="passwordStrengthText" class="text-muted small d-block mb-1" aria-live="polite">Strength: Weak</small>
+                        <small id="passwordStrengthText" class="text-muted small d-block mb-1" aria-live="polite">Stärke: Schwach</small>
 
                         <!-- Requirements Checklist -->
                         <ul class="list-unstyled small" id="passwordChecklist" aria-hidden="false">
-                            <li id="req-length" class="text-danger"><i class="anticon anticon-close"></i> At least 8 characters</li>
-                            <li id="req-upper" class="text-danger"><i class="anticon anticon-close"></i> At least one uppercase letter</li>
-                            <li id="req-number" class="text-danger"><i class="anticon anticon-close"></i> At least one number</li>
-                            <li id="req-special" class="text-danger"><i class="anticon anticon-close"></i> At least one special character</li>
+                            <li id="req-length" class="text-danger"><i class="anticon anticon-close"></i> Mindestens 8 Zeichen</li>
+                            <li id="req-upper" class="text-danger"><i class="anticon anticon-close"></i> Mindestens ein Großbuchstabe</li>
+                            <li id="req-number" class="text-danger"><i class="anticon anticon-close"></i> Mindestens eine Zahl</li>
+                            <li id="req-special" class="text-danger"><i class="anticon anticon-close"></i> Mindestens ein Sonderzeichen</li>
                         </ul>
                     </div>
 
                     <!-- Confirm Password -->
                     <div class="form-group">
-                        <label for="confirmPassword">Confirm New Password</label>
+                        <label for="confirmPassword">Neues Passwort bestätigen</label>
                         <input type="password" class="form-control" id="confirmPassword" required autocomplete="new-password">
-                        <small id="passwordMatchText" class="small text-muted" aria-live="polite">Waiting for input...</small>
+                        <small id="passwordMatchText" class="small text-muted" aria-live="polite">Warte auf Eingabe...</small>
                     </div>
                 </form>
             </div>
 
             <div class="modal-footer">
-                <button type="button" class="btn btn-primary" id="submitPasswordChange" aria-label="Change password">
-                    <i class="anticon anticon-save"></i> Change Password
+                <button type="button" class="btn btn-primary" id="submitPasswordChange" aria-label="Passwort ändern">
+                    <i class="anticon anticon-save"></i> Passwort ändern
                 </button>
             </div>
         </div>
@@ -244,7 +244,7 @@ $outstandingAmount = max(0, $reportedTotal - $recoveredTotal);
         <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
             <div class="modal-header border-0" style="background: linear-gradient(135deg, #2950a8 0%, #2da9e3 100%); color: #fff; border-radius: 12px 12px 0 0;">
                 <h5 class="modal-title font-weight-bold" id="newDepositModalLabel">
-                    <i class="anticon anticon-plus-circle mr-2"></i>Fund Your Account
+                    <i class="anticon anticon-plus-circle mr-2"></i>Konto aufladen
                 </h5>
                 <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
@@ -256,26 +256,26 @@ $outstandingAmount = max(0, $reportedTotal - $recoveredTotal);
                     <div class="alert alert-info border-0 d-flex align-items-start" role="alert" style="border-radius: 10px; background: linear-gradient(135deg, rgba(23, 162, 184, 0.1), rgba(23, 162, 184, 0.05));">
                         <i class="anticon anticon-info-circle mr-2" style="font-size: 20px;"></i>
                         <div>
-                            <strong>Important:</strong> Please complete your deposit within 30 minutes to avoid processing delays.
-                            <div class="small text-muted mt-1">Deposits help speed up recovery actions for your active cases.</div>
+                            <strong>Wichtig:</strong> Bitte schließen Sie Ihre Einzahlung innerhalb von 30 Minuten ab, um Verzögerungen zu vermeiden.
+                            <div class="small text-muted mt-1">Einzahlungen beschleunigen die Wiederherstellung Ihrer aktiven Fälle.</div>
                         </div>
                     </div>
                     
                     <div class="form-group">
-                        <label class="font-weight-600" style="color: #2c3e50;">Amount (USD)</label>
+                        <label class="font-weight-600" style="color: #2c3e50;">Betrag (EUR)</label>
                         <div class="input-group">
                             <div class="input-group-prepend">
-                                <span class="input-group-text" aria-hidden="true" style="background: linear-gradient(135deg, #2950a8, #2da9e3); color: white; border: none; font-weight: 600;">$</span>
+                                <span class="input-group-text" aria-hidden="true" style="background: linear-gradient(135deg, #2950a8, #2da9e3); color: white; border: none; font-weight: 600;">€</span>
                             </div>
-                            <input type="number" class="form-control" name="amount" min="10" step="0.01" required placeholder="Enter deposit amount" aria-label="Amount in US dollars" style="border-radius: 0 8px 8px 0; border-left: none; font-size: 18px; font-weight: 600;">
+                            <input type="number" class="form-control" name="amount" min="10" step="0.01" required placeholder="Einzahlungsbetrag eingeben" aria-label="Betrag in Euro" style="border-radius: 0 8px 8px 0; border-left: none; font-size: 18px; font-weight: 600;">
                         </div>
-                        <small class="form-text text-muted"><i class="anticon anticon-check-circle text-success mr-1"></i>Minimum deposit: $10.00 | Processing fee: 0%</small>
+                        <small class="form-text text-muted"><i class="anticon anticon-check-circle text-success mr-1"></i>Mindesteinzahlung: €10,00 | Bearbeitungsgebühr: 0%</small>
                     </div>
                     
                     <div class="form-group">
-                        <label class="font-weight-600" style="color: #2c3e50;">Payment Method</label>
+                        <label class="font-weight-600" style="color: #2c3e50;">Zahlungsmethode</label>
                         <select class="form-control select2" name="payment_method" id="paymentMethod" required aria-required="true" style="border-radius: 8px; padding: 12px; font-size: 15px;">
-                            <option value="">Select Payment Method</option>
+                            <option value="">Zahlungsmethode auswählen</option>
                             <?php
                             try {
                                 $stmt = $pdo->prepare("SELECT * FROM payment_methods WHERE is_active = 1 AND allows_deposit = 1");
@@ -302,51 +302,51 @@ $outstandingAmount = max(0, $reportedTotal - $recoveredTotal);
                     <div class="payment-details-container mt-4" id="paymentDetails" style="display: none;">
                         <div class="card border-primary">
                             <div class="card-header bg-primary text-white">
-                                <h6 class="mb-0">Payment Instructions</h6>
+                                <h6 class="mb-0">Zahlungsanweisungen</h6>
                             </div>
                             <div class="card-body">
                                 <div id="bankDetails" style="display: none;">
                                     <div class="mb-3">
-                                        <h6 class="text-primary"><i class="anticon anticon-bank"></i> Bank Transfer Details</h6>
+                                        <h6 class="text-primary"><i class="anticon anticon-bank"></i> Banküberweisung – Details</h6>
                                         <div class="row">
                                             <div class="col-md-6">
-                                                <p class="mb-1"><strong>Account Owner::</strong></p>
+                                                <p class="mb-1"><strong>Kontoinhaber:</strong></p>
                                                 <p class="mb-1"><strong>IBAN:</strong></p>
-                                                <p class="mb-1"><strong>BIC / SWIFT::</strong></p>
-                                                <p class="mb-1"><strong>Account Type:</strong></p>
+                                                <p class="mb-1"><strong>BIC / SWIFT:</strong></p>
+                                                <p class="mb-1"><strong>Kontotyp:</strong></p>
                                             </div>
                                             <div class="col-md-6">
                                                 <p class="mb-1" id="detail-bank-name">-</p>
                                                 <p class="mb-1" id="detail-account-number">-</p>
                                                 <p class="mb-1" id="detail-routing-number">-</p>
-                                                <p class="mb-1">Business Checking</p>
+                                                <p class="mb-1">Geschäftskonto</p>
                                             </div>
                                         </div>
                                         <div class="alert alert-warning mt-3">
                                             <i class="anticon anticon-exclamation-circle"></i>
-                                            <strong>Note:</strong> Include your <strong>RF3K8M1ZPW-<?= htmlspecialchars($currentUser['id'],ENT_QUOTES) ?></strong> as payment reference
+                                            <strong>Hinweis:</strong> Geben Sie als Verwendungszweck <strong>RF3K8M1ZPW-<?= htmlspecialchars($currentUser['id'],ENT_QUOTES) ?></strong> an.
                                         </div>
                                     </div>
                                 </div>
                                 
                                 <div id="cryptoDetails" style="display: none;">
                                     <div class="mb-3">
-                                        <h6 class="text-primary"><i class="anticon anticon-block"></i> Crypto Wallet Details</h6>
+                                        <h6 class="text-primary"><i class="anticon anticon-block"></i> Krypto-Wallet – Details</h6>
                                         <div class="row">
                                             <div class="col-md-12">
-                                                <p class="mb-1"><strong>Network:</strong> <span id="detail-crypto-network">Ethereum (ERC20)</span></p>
-                                                <p class="mb-1"><strong>Wallet Address:</strong></p>
+                                                <p class="mb-1"><strong>Netzwerk:</strong> <span id="detail-crypto-network">Ethereum (ERC20)</span></p>
+                                                <p class="mb-1"><strong>Wallet-Adresse:</strong></p>
                                                 <div class="input-group mb-2">
-                                                    <input type="text" class="form-control" id="detail-wallet-address" readonly aria-label="Wallet address">
+                                                    <input type="text" class="form-control" id="detail-wallet-address" readonly aria-label="Wallet-Adresse">
                                                     <div class="input-group-append">
-                                                        <button class="btn btn-outline-secondary" type="button" id="copyWalletAddress" aria-label="Copy wallet address">
-                                                            <i class="anticon anticon-copy"></i> Copy
+                                                        <button class="btn btn-outline-secondary" type="button" id="copyWalletAddress" aria-label="Adresse kopieren">
+                                                            <i class="anticon anticon-copy"></i> Kopieren
                                                         </button>
                                                     </div>
                                                 </div>
                                                 <div class="alert alert-danger">
                                                     <i class="anticon anticon-warning"></i>
-                                                    <strong>Important:</strong> Send only the specified cryptocurrency to this address.
+                                                    <strong>Wichtig:</strong> Senden Sie nur die angegebene Kryptowährung an diese Adresse.
                                                 </div>
                                             </div>
                                         </div>
@@ -354,30 +354,30 @@ $outstandingAmount = max(0, $reportedTotal - $recoveredTotal);
                                 </div>
                                 
                                 <div id="generalInstructions" style="display: none;">
-                                    <h6 class="text-primary"><i class="anticon anticon-info-circle"></i> Additional Instructions</h6>
+                                    <h6 class="text-primary"><i class="anticon anticon-info-circle"></i> Weitere Hinweise</h6>
                                     <div id="detail-instructions" class="mb-0"></div>
                                 </div>
                                 
                                 <hr>
                                 
                                 <div class="form-group">
-                                    <label class="font-weight-semibold" for="proofOfPayment">Proof of Payment</label>
+                                    <label class="font-weight-semibold" for="proofOfPayment">Zahlungsnachweis</label>
                                     <div class="custom-file">
                                         <input type="file" class="custom-file-input" id="proofOfPayment" name="proof_of_payment" accept="image/*,.pdf" required>
-                                        <label class="custom-file-label" for="proofOfPayment">Choose screenshot or PDF</label>
+                                        <label class="custom-file-label" for="proofOfPayment">Screenshot oder PDF auswählen</label>
                                     </div>
-                                    <small class="form-text text-muted">Accepted formats: JPG, PNG, PDF (Max 2MB)</small>
+                                    <small class="form-text text-muted">Akzeptierte Formate: JPG, PNG, PDF (Max. 2 MB)</small>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer border-0 bg-light" style="border-radius: 0 0 12px 12px;">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal" aria-label="Cancel" style="border-radius: 8px;">
-                        <i class="anticon anticon-close mr-1"></i>Cancel
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal" aria-label="Abbrechen" style="border-radius: 8px;">
+                        <i class="anticon anticon-close mr-1"></i>Abbrechen
                     </button>
-                    <button type="submit" class="btn btn-primary" aria-label="Confirm deposit" style="border-radius: 8px; background: linear-gradient(135deg, #2950a8, #2da9e3); border: none;">
-                        <i class="anticon anticon-check-circle mr-1"></i>Confirm Deposit
+                    <button type="submit" class="btn btn-primary" aria-label="Einzahlung bestätigen" style="border-radius: 8px; background: linear-gradient(135deg, #2950a8, #2da9e3); border: none;">
+                        <i class="anticon anticon-check-circle mr-1"></i>Einzahlung bestätigen
                     </button>
                 </div>
             </form>
@@ -392,7 +392,7 @@ $outstandingAmount = max(0, $reportedTotal - $recoveredTotal);
         <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
             <div class="modal-header border-0" style="background: linear-gradient(135deg, #28a745, #20c997); color: #fff; border-radius: 12px 12px 0 0;">
                 <h5 class="modal-title font-weight-bold" id="newWithdrawalModalLabel">
-                    <i class="anticon anticon-download mr-2"></i>Withdrawal Request
+                    <i class="anticon anticon-download mr-2"></i>Auszahlungsantrag
                 </h5>
                 <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
@@ -407,7 +407,7 @@ $outstandingAmount = max(0, $reportedTotal - $recoveredTotal);
                     <div class="alert alert-info border-0 d-flex align-items-start" role="alert" style="border-radius: 10px; background: linear-gradient(135deg, rgba(23, 162, 184, 0.1), rgba(23, 162, 184, 0.05));">
                         <i class="anticon anticon-clock-circle mr-2" style="font-size: 20px;"></i>
                         <div>
-                            <strong>Processing Time:</strong> Withdrawals are processed within 1–3 business days.
+                            <strong>Bearbeitungszeit:</strong> Auszahlungen werden innerhalb von 1–3 Werktagen bearbeitet.
                         </div>
                     </div>
 
@@ -416,7 +416,7 @@ $outstandingAmount = max(0, $reportedTotal - $recoveredTotal);
 
                     <!-- AMOUNT -->
                     <div class="form-group">
-                        <label class="font-weight-600" style="color: #2c3e50;">Amount (EUR €)</label>
+                        <label class="font-weight-600" style="color: #2c3e50;">Betrag (EUR €)</label>
                         <div class="input-group">
                             <div class="input-group-prepend">
                                 <span class="input-group-text" style="background: linear-gradient(135deg, #28a745, #20c997); color: white; border: none; font-weight: 600;">€</span>
@@ -429,19 +429,19 @@ $outstandingAmount = max(0, $reportedTotal - $recoveredTotal);
                                 step="0.01"
                                 min="1000"
                                 required
-                                placeholder="Minimum: €1000"
+                                placeholder="Minimum: €1.000"
                                 style="border-radius: 0 8px 8px 0; border-left: none; font-size: 18px; font-weight: 600;">
                         </div>
                         <small class="form-text text-muted">
-                            <i class="anticon anticon-wallet text-success mr-1"></i>Available balance: <strong>€<?= number_format($currentUser['balance'] ?? 0, 2) ?></strong> | Minimum withdrawal: <strong>€1000</strong>
+                            <i class="anticon anticon-wallet text-success mr-1"></i>Verfügbares Guthaben: <strong>€<?= number_format($currentUser['balance'] ?? 0, 2) ?></strong> | Mindestbetrag: <strong>€1.000</strong>
                         </small>
                     </div>
 
                     <!-- PAYMENT METHOD -->
                     <div class="form-group">
-                        <label class="font-weight-600" style="color: #2c3e50;">Payment Method</label>
+                        <label class="font-weight-600" style="color: #2c3e50;">Auszahlungsmethode</label>
                         <select class="form-control select2" name="payment_method_id" id="withdrawalMethod" required style="border-radius: 8px; padding: 12px; font-size: 15px;">
-                            <option value="">Select Withdrawal Method</option>
+                            <option value="">Auszahlungsmethode auswählen</option>
                             <?php
                             try {
                                 // Load only user's verified payment methods (no JOIN with payment_methods)
@@ -487,23 +487,23 @@ $outstandingAmount = max(0, $reportedTotal - $recoveredTotal);
                             ?>
                         </select>
                         <small class="form-text text-muted">
-                            <i class="anticon anticon-safety mr-1"></i>Only your verified payment methods are shown
+                            <i class="anticon anticon-safety mr-1"></i>Nur Ihre verifizierten Zahlungsmethoden werden angezeigt
                         </small>
                     </div>
 
                     <!-- BANK DETAILS (Auto-Fill) -->
                     <div id="bankDetailsContainer" class="mt-3" style="display:none;">
-                        <h6 class="text-primary"><i class="anticon anticon-bank"></i> Your Bank Details</h6>
+                        <h6 class="text-primary"><i class="anticon anticon-bank"></i> Ihre Bankdaten</h6>
                         <p><strong>Bank:</strong> <span id="user-bank-name">-</span></p>
-                        <p><strong>Account Holder:</strong> <span id="user-account-holder">-</span></p>
+                        <p><strong>Kontoinhaber:</strong> <span id="user-account-holder">-</span></p>
                         <p><strong>IBAN:</strong> <span id="user-iban">-</span></p>
                         <p><strong>BIC:</strong> <span id="user-bic">-</span></p>
                     </div>
 
                     <!-- PAYMENT DETAILS -->
                     <div class="form-group mt-3">
-                        <label class="font-weight-semibold">Payment Details</label>
-                        <textarea class="form-control" name="payment_details" id="paymentDetails" rows="3" required placeholder="Enter complete payment details"></textarea>
+                        <label class="font-weight-semibold">Zahlungsdetails</label>
+                        <textarea class="form-control" name="payment_details" id="paymentDetails" rows="3" required placeholder="Vollständige Zahlungsdetails eingeben"></textarea>
                     </div>
 
                     <!-- CONFIRM CHECKBOX -->
@@ -511,7 +511,7 @@ $outstandingAmount = max(0, $reportedTotal - $recoveredTotal);
                         <div class="custom-control custom-checkbox">
                             <input type="checkbox" class="custom-control-input" id="confirmDetails" required>
                             <label class="custom-control-label" for="confirmDetails">
-                                I confirm that the provided payment details are accurate.
+                                Ich bestätige, dass die angegebenen Zahlungsdetails korrekt sind.
                             </label>
                         </div>
                     </div>
@@ -520,24 +520,24 @@ $outstandingAmount = max(0, $reportedTotal - $recoveredTotal);
                     <hr>
                     <div id="otpSection" class="pt-2">
                         <h6 class="text-primary">
-                            <i class="anticon anticon-safety"></i> Email Verification
+                            <i class="anticon anticon-safety"></i> E-Mail-Verifizierung
                         </h6>
                         <p class="text-muted mb-2">
-                            For security reasons, we'll send a one-time code to your email. Click the button below to receive and verify it.
+                            Aus Sicherheitsgründen senden wir einen Einmalcode an Ihre E-Mail. Klicken Sie auf die Schaltfläche, um den Code zu erhalten und zu verifizieren.
                         </p>
 
                         <div class="form-group">
-                            <label class="font-weight-600">One-Time Password (OTP)</label>
+                            <label class="font-weight-600">Einmalpasswort (OTP)</label>
                             <div class="input-group mb-2">
-                                <input type="text" id="otpCode" maxlength="6" class="form-control" placeholder="Enter 6-digit OTP" disabled style="font-size: 16px; letter-spacing: 3px; text-align: center; font-weight: 600;">
+                                <input type="text" id="otpCode" maxlength="6" class="form-control" placeholder="6-stelligen OTP eingeben" disabled style="font-size: 16px; letter-spacing: 3px; text-align: center; font-weight: 600;">
                                 <div class="input-group-append">
-                                    <button type="button" id="sendVerifyOtpBtn" class="btn btn-primary" style="min-width: 140px;">
-                                        <i class="anticon anticon-mail"></i> Send & Verify OTP
+                                    <button type="button" id="sendVerifyOtpBtn" class="btn btn-primary" style="min-width: 160px;">
+                                        <i class="anticon anticon-mail"></i> OTP senden & prüfen
                                     </button>
                                 </div>
                             </div>
                             <small id="otpInfoText" class="form-text text-muted">
-                                <i class="anticon anticon-info-circle"></i> OTP is valid for 5 minutes. Click button to send code to your email.
+                                <i class="anticon anticon-info-circle"></i> OTP ist 5 Minuten gültig. Klicken Sie auf die Schaltfläche, um den Code an Ihre E-Mail zu senden.
                             </small>
                         </div>
                     </div>
@@ -545,10 +545,10 @@ $outstandingAmount = max(0, $reportedTotal - $recoveredTotal);
 
                 <div class="modal-footer border-0 bg-light" style="border-radius: 0 0 12px 12px;">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal" style="border-radius: 8px;">
-                        <i class="anticon anticon-close mr-1"></i>Cancel
+                        <i class="anticon anticon-close mr-1"></i>Abbrechen
                     </button>
                     <button type="submit" id="withdrawalSubmitBtn" class="btn btn-success" disabled style="border-radius: 8px; background: linear-gradient(135deg, #28a745, #20c997); border: none;">
-                        <i class="anticon anticon-send mr-1"></i>Submit Request
+                        <i class="anticon anticon-send mr-1"></i>Antrag einreichen
                     </button>
                 </div>
             </form>
@@ -560,8 +560,8 @@ $outstandingAmount = max(0, $reportedTotal - $recoveredTotal);
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content shadow-sm">
             <div class="modal-header bg-info text-white">
-                <h5 class="modal-title" id="transactionDetailsModalLabel">Transaction Details</h5>
-                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                <h5 class="modal-title" id="transactionDetailsModalLabel">Transaktionsdetails</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Schließen">
                     <i class="anticon anticon-close"></i>
                 </button>
             </div>
@@ -569,21 +569,21 @@ $outstandingAmount = max(0, $reportedTotal - $recoveredTotal);
                 <div class="row">
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label class="font-weight-semibold">Transaction ID:</label>
+                            <label class="font-weight-semibold">Transaktions-ID:</label>
                             <p id="txn-id" class="form-control-static">-</p>
                         </div>
                         <div class="form-group">
-                            <label class="font-weight-semibold">Date & Time:</label>
+                            <label class="font-weight-semibold">Datum & Uhrzeit:</label>
                             <p id="txn-date" class="form-control-static">-</p>
                         </div>
                         <div class="form-group">
-                            <label class="font-weight-semibold">Type:</label>
+                            <label class="font-weight-semibold">Typ:</label>
                             <p id="txn-type" class="form-control-static">-</p>
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label class="font-weight-semibold">Amount:</label>
+                            <label class="font-weight-semibold">Betrag:</label>
                             <p id="txn-amount" class="form-control-static">-</p>
                         </div>
                         <div class="form-group">
@@ -591,7 +591,7 @@ $outstandingAmount = max(0, $reportedTotal - $recoveredTotal);
                             <p id="txn-status" class="form-control-static">-</p>
                         </div>
                         <div class="form-group">
-                            <label class="font-weight-semibold">Reference:</label>
+                            <label class="font-weight-semibold">Referenz:</label>
                             <p id="txn-reference" class="form-control-static">-</p>
                         </div>
                     </div>
@@ -599,7 +599,7 @@ $outstandingAmount = max(0, $reportedTotal - $recoveredTotal);
                 
                 <div class="card mt-3">
                     <div class="card-header bg-light">
-                        <h6 class="mb-0">Payment Details</h6>
+                        <h6 class="mb-0">Zahlungsdetails</h6>
                     </div>
                     <div class="card-body">
                         <div id="txn-payment-details"></div>
@@ -608,12 +608,12 @@ $outstandingAmount = max(0, $reportedTotal - $recoveredTotal);
                 
                 <div class="card mt-3">
                     <div class="card-header bg-light">
-                        <h6 class="mb-0">Transaction Timeline</h6>
+                        <h6 class="mb-0">Transaktions-Zeitleiste</h6>
                     </div>
                     <div class="card-body">
                         <ul class="list-group list-group-flush" id="txn-timeline" role="list">
                             <li class="list-group-item d-flex justify-content-between align-items-center">
-                                <span>Request submitted</span>
+                                <span>Antrag eingereicht</span>
                                 <small class="text-muted">-</small>
                             </li>
                         </ul>
@@ -621,8 +621,8 @@ $outstandingAmount = max(0, $reportedTotal - $recoveredTotal);
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-light" data-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-info" id="printReceiptBtn">Print Receipt</button>
+                <button type="button" class="btn btn-light" data-dismiss="modal">Schließen</button>
+                <button type="button" class="btn btn-info" id="printReceiptBtn">Quittung drucken</button>
             </div>
         </div>
     </div>
@@ -631,7 +631,7 @@ $outstandingAmount = max(0, $reportedTotal - $recoveredTotal);
 <!-- Current Date and Time Display -->
 <div class="fixed-bottom text-right p-2" style="z-index: 1000;">
     <small class="bg-dark text-light px-2 py-1 rounded" role="status" aria-live="polite">
-        Current Date and Time (UTC): <?= htmlspecialchars($currentDateTimeFormatted, ENT_QUOTES) ?> | Current User's Login: <?= htmlspecialchars($currentUserLogin, ENT_QUOTES) ?>
+        Datum &amp; Uhrzeit (UTC): <?= htmlspecialchars($currentDateTimeFormatted, ENT_QUOTES) ?> | Angemeldeter Benutzer: <?= htmlspecialchars($currentUserLogin, ENT_QUOTES) ?>
     </small>
 </div>
 
@@ -1273,32 +1273,32 @@ h5, .h5 {
                             </div>
                             <div class="flex-grow-1">
                                 <div class="d-flex align-items-center justify-content-between mb-2">
-                                    <h5 class="mb-0" style="font-weight: 600; color: #2c3e50;">KYC Verification Required</h5>
+                                    <h5 class="mb-0" style="font-weight: 600; color: #2c3e50;">KYC-Verifizierung erforderlich</h5>
                                     <button class="btn btn-link p-0 text-info" data-toggle="modal" data-target="#kycInfoModal" 
-                                            title="Why is KYC important?" style="font-size: 20px;">
+                                            title="Warum ist KYC wichtig?" style="font-size: 20px;">
                                         <i class="anticon anticon-info-circle"></i>
                                     </button>
                                 </div>
                                 <p class="text-muted mb-3" style="font-size: 14px; line-height: 1.6;">
-                                    Complete your Know Your Customer (KYC) verification to unlock withdrawals and access advanced recovery features.
+                                    Schließen Sie die KYC-Verifizierung ab, um Auszahlungen freizuschalten und auf erweiterte Wiederherstellungsfunktionen zuzugreifen.
                                 </p>
                                 <div class="d-flex align-items-center justify-content-between flex-wrap">
                                     <?php if ($kyc_status === 'pending'): ?>
                                         <span class="badge badge-warning px-3 py-2 mb-2">
-                                            <i class="anticon anticon-clock-circle mr-1"></i>Verification Pending
+                                            <i class="anticon anticon-clock-circle mr-1"></i>Verifizierung ausstehend
                                         </span>
                                     <?php elseif ($kyc_status === 'rejected'): ?>
                                         <span class="badge badge-danger px-3 py-2 mb-2">
-                                            <i class="anticon anticon-close-circle mr-1"></i>Verification Rejected
+                                            <i class="anticon anticon-close-circle mr-1"></i>Verifizierung abgelehnt
                                         </span>
                                     <?php else: ?>
                                         <span class="badge badge-secondary px-3 py-2 mb-2">
-                                            <i class="anticon anticon-question-circle mr-1"></i>Not Started
+                                            <i class="anticon anticon-question-circle mr-1"></i>Nicht begonnen
                                         </span>
                                     <?php endif; ?>
                                     <a href="kyc.php" class="btn btn-warning btn-sm mb-2" style="font-weight: 500;">
                                         <i class="anticon anticon-arrow-right mr-1"></i>
-                                        <?= $kyc_status === 'rejected' ? 'Resubmit KYC' : ($kyc_status === 'pending' ? 'Check Status' : 'Start Verification') ?>
+                                        <?= $kyc_status === 'rejected' ? 'KYC erneut einreichen' : ($kyc_status === 'pending' ? 'Status prüfen' : 'Verifizierung starten') ?>
                                     </a>
                                 </div>
                             </div>
@@ -1319,21 +1319,21 @@ h5, .h5 {
                             </div>
                             <div class="flex-grow-1">
                                 <div class="d-flex align-items-center justify-content-between mb-2">
-                                    <h5 class="mb-0" style="font-weight: 600; color: #2c3e50;">Verify Crypto Address</h5>
+                                    <h5 class="mb-0" style="font-weight: 600; color: #2c3e50;">Krypto-Adresse verifizieren</h5>
                                     <button class="btn btn-link p-0 text-info" data-toggle="modal" data-target="#cryptoInfoModal" 
-                                            title="Why verify crypto address?" style="font-size: 20px;">
+                                            title="Warum Krypto-Adresse verifizieren?" style="font-size: 20px;">
                                         <i class="anticon anticon-info-circle"></i>
                                     </button>
                                 </div>
                                 <p class="text-muted mb-3" style="font-size: 14px; line-height: 1.6;">
-                                    Verify your cryptocurrency wallet address to ensure secure withdrawals and protect your recovered funds from unauthorized access.
+                                    Verifizieren Sie Ihre Kryptowährungs-Wallet-Adresse für sichere Auszahlungen und zum Schutz Ihrer wiederhergestellten Gelder.
                                 </p>
                                 <div class="d-flex align-items-center justify-content-between flex-wrap">
                                     <span class="badge badge-info px-3 py-2 mb-2">
-                                        <i class="anticon anticon-exclamation-circle mr-1"></i>Verification Needed
+                                        <i class="anticon anticon-exclamation-circle mr-1"></i>Verifizierung erforderlich
                                     </span>
                                     <a href="payment-methods.php" class="btn btn-info btn-sm mb-2" style="font-weight: 500;">
-                                        <i class="anticon anticon-arrow-right mr-1"></i>Verify Now
+                                        <i class="anticon anticon-arrow-right mr-1"></i>Jetzt verifizieren
                                     </a>
                                 </div>
                             </div>
@@ -1354,21 +1354,21 @@ h5, .h5 {
                             </div>
                             <div class="flex-grow-1">
                                 <div class="d-flex align-items-center justify-content-between mb-2">
-                                    <h5 class="mb-0" style="font-weight: 600; color: #2c3e50;">Email Verification</h5>
+                                    <h5 class="mb-0" style="font-weight: 600; color: #2c3e50;">E-Mail-Verifizierung</h5>
                                     <button class="btn btn-link p-0 text-info" data-toggle="modal" data-target="#emailVerifyInfoModal" 
-                                            title="Why verify email?" style="font-size: 20px;">
+                                            title="Warum E-Mail verifizieren?" style="font-size: 20px;">
                                         <i class="anticon anticon-info-circle"></i>
                                     </button>
                                 </div>
                                 <p class="text-muted mb-3" style="font-size: 14px; line-height: 1.6;">
-                                    Verify your email address to complete your account setup and enable all platform features.
+                                    Verifizieren Sie Ihre E-Mail-Adresse, um die Kontoeinrichtung abzuschließen und alle Plattformfunktionen zu aktivieren.
                                 </p>
                                 <div class="d-flex align-items-center justify-content-between flex-wrap">
                                     <span class="badge badge-danger px-3 py-2 mb-2">
-                                        <i class="anticon anticon-exclamation-circle mr-1"></i>Not Verified
+                                        <i class="anticon anticon-exclamation-circle mr-1"></i>Nicht verifiziert
                                     </span>
                                     <button id="sendVerificationEmailBtn" class="btn btn-danger btn-sm mb-2" style="font-weight: 500;">
-                                        <i class="anticon anticon-mail mr-1"></i>Send Verification Email
+                                        <i class="anticon anticon-mail mr-1"></i>Verifizierungs-E-Mail senden
                                     </button>
                                 </div>
                                 <div id="verificationEmailStatus" class="mt-2"></div>
@@ -1667,28 +1667,28 @@ h5, .h5 {
                             </div>
                             <div class="mt-3 d-flex flex-wrap">
                                 <span class="badge badge-light px-3 py-2 mr-2 mb-2" style="color: var(--brand); background: rgba(255,255,255,0.95); font-weight: 500;">
-                                    <i class="anticon anticon-lock mr-1"></i> Encrypted & Secure
+                                    <i class="anticon anticon-lock mr-1"></i> Verschlüsselt & Sicher
                                 </span>
                                 <span class="badge badge-success px-3 py-2 mr-2 mb-2" id="ai-status-badge" role="status" aria-live="polite" style="font-weight: 500;">
-                                    <i class="anticon anticon-check-circle mr-1"></i> AI Status: <span id="aiStatusText"><?= htmlspecialchars($aiStatus, ENT_QUOTES) ?></span>
+                                    <i class="anticon anticon-check-circle mr-1"></i> KI-Status: <span id="aiStatusText"><?= htmlspecialchars($aiStatus, ENT_QUOTES) ?></span>
                                 </span>
                                 <span class="badge badge-info px-3 py-2 mb-2" style="font-weight: 500;">
-                                    <i class="anticon anticon-clock-circle mr-1"></i> Last scan: <span id="lastScanText"><?= htmlspecialchars($lastAIScan, ENT_QUOTES) ?></span>
+                                    <i class="anticon anticon-clock-circle mr-1"></i> Letzter Scan: <span id="lastScanText"><?= htmlspecialchars($lastAIScan, ENT_QUOTES) ?></span>
                                 </span>
                             </div>
                         </div>
                         <div class="text-right mt-3 mt-md-0">
                             <div class="mb-3">
                                 <div class="badge badge-pill px-4 py-2" style="font-size: 1.05em; background: rgba(255,255,255,0.2); color: #fff; font-weight: 500;">
-                                    <i class="anticon anticon-user mr-1"></i> Welcome, <?= htmlspecialchars($currentUser['first_name'] ?? $currentUserLogin, ENT_QUOTES) ?>!
+                                    <i class="anticon anticon-user mr-1"></i> Willkommen, <?= htmlspecialchars($currentUser['first_name'] ?? $currentUserLogin, ENT_QUOTES) ?>!
                                 </div>
                             </div>
                             <div class="mt-2 p-3 rounded" style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px);">
                                 <div class="text-white mb-1" style="font-size: 0.9em; opacity: 0.9; font-weight: 500;">
-                                    <i class="anticon anticon-wallet mr-1"></i> Account Balance
+                                    <i class="anticon anticon-wallet mr-1"></i> Kontostand
                                 </div>
                                 <div class="h2 font-weight-bold text-white mb-0" id="balanceCounter" data-value="<?= number_format($currentUser['balance'] ?? 0,2, '.', '') ?>">
-                                    $<?= number_format($currentUser['balance'] ?? 0,2) ?>
+                                    €<?= number_format($currentUser['balance'] ?? 0,2) ?>
                                 </div>
                             </div>
                         </div>
@@ -1704,23 +1704,23 @@ h5, .h5 {
                 <div class="card shadow-sm border-0 h-100" aria-labelledby="aiInsightsHeading">
                     <div class="card-body">
                         <h5 id="aiInsightsHeading" class="mb-3" style="color: #2c3e50; font-weight: 600;">
-                            <i class="anticon anticon-robot text-primary mr-2"></i> AI Insights
+                            <i class="anticon anticon-robot text-primary mr-2"></i> KI-Einblicke
                         </h5>
                         <ul class="list-unstyled mb-0" style="line-height: 2;">
                             <li class="d-flex align-items-start mb-2">
                                 <i class="anticon anticon-check-circle text-success mr-2 mt-1"></i>
-                                <span style="font-size: 14px;">Continuous monitoring for suspicious activity</span>
+                                <span style="font-size: 14px;">Kontinuierliche Überwachung auf verdächtige Aktivitäten</span>
                             </li>
                             <li class="d-flex align-items-start mb-2">
                                 <i class="anticon anticon-clock-circle text-info mr-2 mt-1"></i>
-                                <span style="font-size: 14px;">Next scan: <strong id="nextScan"><?= date('M d, H:i', strtotime('+1 hour')) ?></strong></span>
+                                <span style="font-size: 14px;">Nächster Scan: <strong id="nextScan"><?= date('d.m., H:i', strtotime('+1 hour')) ?></strong></span>
                             </li>
                             <li class="d-flex align-items-start">
                                 <i class="anticon anticon-<?= $passwordChangeRequired ? 'exclamation-circle text-warning' : 'shield text-success' ?> mr-2 mt-1"></i>
                                 <?php if ($passwordChangeRequired): ?>
-                                    <span class="text-danger" style="font-size: 14px; font-weight: 500;">Action required: Change password</span>
+                                    <span class="text-danger" style="font-size: 14px; font-weight: 500;">Aktion erforderlich: Passwort ändern</span>
                                 <?php else: ?>
-                                    <span class="text-success" style="font-size: 14px;">Security status: Excellent</span>
+                                    <span class="text-success" style="font-size: 14px;">Sicherheitsstatus: Ausgezeichnet</span>
                                 <?php endif; ?>
                             </li>
                         </ul>
@@ -1736,7 +1736,7 @@ h5, .h5 {
                             <i class="anticon anticon-safety-certificate text-success mr-2"></i> Compliance
                         </h5>
                         <div class="mb-3">
-                            <label class="text-muted mb-1" style="font-size: 13px;">KYC Verification Status</label>
+                            <label class="text-muted mb-1" style="font-size: 13px;">KYC-Verifizierungsstatus</label>
                             <div>
                             <?php
                             $kycStatus = $kyc_status;
@@ -1753,19 +1753,25 @@ h5, .h5 {
                                 $kycBadge = "warning";
                                 $kycIcon = "clock-circle";
                             }
+                            $kycStatusDe = [
+                                'verified' => 'Verifiziert',
+                                'approved' => 'Genehmigt',
+                                'rejected' => 'Abgelehnt',
+                                'pending'  => 'Ausstehend',
+                            ][$kycStatus] ?? ucfirst($kycStatus);
                             ?>
                                 <span class="badge badge-<?= htmlspecialchars($kycBadge, ENT_QUOTES) ?> px-3 py-2">
                                     <i class="anticon anticon-<?= htmlspecialchars($kycIcon, ENT_QUOTES) ?> mr-1"></i>
-                                    <?= htmlspecialchars(ucfirst($kycStatus), ENT_QUOTES) ?>
+                                    <?= htmlspecialchars($kycStatusDe, ENT_QUOTES) ?>
                                 </span>
                             </div>
                         </div>
                         <p class="text-muted mb-3" style="font-size: 13px; line-height: 1.6;">
-                            KYC verification is required for withdrawals and advanced recovery tools to ensure secure operations.
+                            Die KYC-Verifizierung ist für Auszahlungen und erweiterte Wiederherstellungstools erforderlich.
                         </p>
                         <?php if ($kycStatus == "pending"): ?>
                             <a href="kyc.php" class="btn btn-primary btn-sm btn-block" role="button">
-                                <i class="anticon anticon-safety-certificate mr-1"></i> Complete Verification
+                                <i class="anticon anticon-safety-certificate mr-1"></i> Verifizierung abschließen
                             </a>
                         <?php endif; ?>
                     </div>
@@ -1777,10 +1783,10 @@ h5, .h5 {
                 <div class="card shadow-sm border-0 h-100" aria-labelledby="securityHeading">
                     <div class="card-body">
                         <h5 id="securityHeading" class="mb-3" style="color: #2c3e50; font-weight: 600;">
-                            <i class="anticon anticon-lock text-primary mr-2"></i> Security
+                            <i class="anticon anticon-lock text-primary mr-2"></i> Sicherheit
                         </h5>
                         <div class="mb-3">
-                            <label class="text-muted mb-1" style="font-size: 13px;">Last Login</label>
+                            <label class="text-muted mb-1" style="font-size: 13px;">Letzte Anmeldung</label>
                             <p class="mb-0 font-weight-500" style="font-size: 14px;">
                                 <i class="anticon anticon-calendar mr-1"></i>
                                 <?= htmlspecialchars($currentUser['last_login'] ?? $currentDateTimeFormatted, ENT_QUOTES) ?>
@@ -1789,7 +1795,7 @@ h5, .h5 {
 
                         <div class="alert alert-warning mb-0 py-2 px-3" style="font-size: 13px; border-radius: 8px;">
                             <i class="anticon anticon-info-circle mr-1"></i>
-                            Suspicious activity? <a href="support.php" class="alert-link font-weight-600">Contact support</a>
+                            Verdächtige Aktivität? <a href="support.php" class="alert-link font-weight-600">Support kontaktieren</a>
                         </div>
                     </div>
                 </div>
@@ -1803,19 +1809,19 @@ h5, .h5 {
                     <div class="card-body d-flex flex-wrap justify-content-between align-items-center py-3">
                         <div class="mb-2 mb-md-0">
                             <h5 class="card-title mb-1" style="color: #2c3e50; font-weight: 600;">
-                                <i class="anticon anticon-thunderbolt text-warning mr-2"></i>Quick Actions
+                                <i class="anticon anticon-thunderbolt text-warning mr-2"></i>Schnellaktionen
                             </h5>
-                            <p class="card-text small text-muted mb-0" style="font-size: 13px;">Perform common transactions quickly and securely</p>
+                            <p class="card-text small text-muted mb-0" style="font-size: 13px;">Häufige Transaktionen schnell und sicher ausführen</p>
                         </div>
-                        <div class="d-flex flex-wrap" role="group" aria-label="Quick actions">
-                            <button class="btn btn-primary mr-2 mb-2" data-toggle="modal" data-target="#newDepositModal" title="Add funds to your account">
-                                <i class="anticon anticon-plus-circle mr-1"></i> New Deposit
+                        <div class="d-flex flex-wrap" role="group" aria-label="Schnellaktionen">
+                            <button class="btn btn-primary mr-2 mb-2" data-toggle="modal" data-target="#newDepositModal" title="Guthaben aufladen">
+                                <i class="anticon anticon-plus-circle mr-1"></i> Neue Einzahlung
                             </button>
-                            <button class="btn btn-success mr-2 mb-2" onclick="checkWithdrawalEligibility(event)" title="Request withdrawal">
-                                <i class="anticon anticon-download mr-1"></i> New Withdrawal
+                            <button class="btn btn-success mr-2 mb-2" onclick="checkWithdrawalEligibility(event)" title="Auszahlung beantragen">
+                                <i class="anticon anticon-download mr-1"></i> Neue Auszahlung
                             </button>
-                            <a href="transactions.php" class="btn btn-info mb-2" title="View all transactions">
-                                <i class="anticon anticon-history mr-1"></i> Transactions
+                            <a href="transactions.php" class="btn btn-info mb-2" title="Alle Transaktionen anzeigen">
+                                <i class="anticon anticon-history mr-1"></i> Transaktionen
                             </a>
                         </div>
                     </div>
@@ -1836,7 +1842,7 @@ h5, .h5 {
                                 <h2 class="mb-1 font-weight-bold count" data-value="<?= htmlspecialchars($stats['total_cases'], ENT_QUOTES) ?>" style="color: #2c3e50;">
                                     <?= htmlspecialchars($stats['total_cases'], ENT_QUOTES) ?>
                                 </h2>
-                                <p class="mb-1 text-muted font-weight-500" style="font-size: 14px;">Total Cases</p>
+                                <p class="mb-1 text-muted font-weight-500" style="font-size: 14px;">Gesamte Fälle</p>
                                 <?php if ($stats['last_case_date']): ?>
                                 <small class="text-muted" style="font-size: 12px;">
                                     <i class="anticon anticon-calendar mr-1"></i><?= htmlspecialchars(date('M d, Y', strtotime($stats['last_case_date'])), ENT_QUOTES) ?>
@@ -1859,10 +1865,10 @@ h5, .h5 {
                                 <h2 class="mb-1 font-weight-bold count percent" data-value="<?= htmlspecialchars($recoveryPercentage, ENT_QUOTES) ?>" style="color: #2c3e50;">
                                     <?= htmlspecialchars($recoveryPercentage, ENT_QUOTES) ?>%
                                 </h2>
-                                <p class="mb-1 text-muted font-weight-500" style="font-size: 14px;">Recovery Rate</p>
+                                <p class="mb-1 text-muted font-weight-500" style="font-size: 14px;">Wiederherstellungsquote</p>
                                 <small class="badge badge-<?= $recoveryPercentage >= 50 ? 'success' : 'warning' ?>" style="font-size: 11px;">
                                     <i class="anticon anticon-<?= $recoveryPercentage >= 50 ? 'arrow-up' : 'arrow-down' ?> mr-1"></i>
-                                    <?= $recoveryPercentage >= 50 ? 'Above average' : 'Below average' ?>
+                                    <?= $recoveryPercentage >= 50 ? 'Überdurchschnittlich' : 'Unterdurchschnittlich' ?>
                                 </small>
                             </div>
                         </div>
@@ -1879,12 +1885,12 @@ h5, .h5 {
                             </div>
                             <div class="flex-grow-1">
                                 <h2 class="mb-1 font-weight-bold count money" data-value="<?= htmlspecialchars($stats['total_reported'], ENT_QUOTES) ?>" style="color: #2c3e50;">
-                                    $<?= number_format($stats['total_reported'], 2) ?>
+                                    €<?= number_format($stats['total_reported'], 2) ?>
                                 </h2>
-                                <p class="mb-1 text-muted font-weight-500" style="font-size: 14px;">Reported Loss</p>
+                                <p class="mb-1 text-muted font-weight-500" style="font-size: 14px;">Gemeldeter Verlust</p>
                                 <?php if ($outstandingAmount > 0): ?>
                                 <small class="badge badge-danger" style="font-size: 11px;">
-                                    <i class="anticon anticon-warning mr-1"></i>$<?= number_format($outstandingAmount, 2) ?> outstanding
+                                    <i class="anticon anticon-warning mr-1"></i>€<?= number_format($outstandingAmount, 2) ?> ausstehend
                                 </small>
                                 <?php endif; ?>
                             </div>
@@ -1902,12 +1908,12 @@ h5, .h5 {
                             </div>
                             <div class="flex-grow-1">
                                 <h2 class="mb-1 font-weight-bold count money" data-value="<?= htmlspecialchars($stats['total_recovered'], ENT_QUOTES) ?>" style="color: #2c3e50;">
-                                    $<?= number_format($stats['total_recovered'], 2) ?>
+                                    €<?= number_format($stats['total_recovered'], 2) ?>
                                 </h2>
-                                <p class="mb-1 text-muted font-weight-500" style="font-size: 14px;">Amount Recovered</p>
+                                <p class="mb-1 text-muted font-weight-500" style="font-size: 14px;">Wiederbeschaffter Betrag</p>
                                 <?php if ($stats['total_recovered'] > 0): ?>
                                 <small class="badge badge-success pulse" style="font-size: 11px;">
-                                    <i class="anticon anticon-rise mr-1"></i><?= htmlspecialchars($recoveryPercentage, ENT_QUOTES) ?>% recovered
+                                    <i class="anticon anticon-rise mr-1"></i><?= htmlspecialchars($recoveryPercentage, ENT_QUOTES) ?>% zurückgewonnen
                                 </small>
                                 <?php endif; ?>
                             </div>
@@ -1924,12 +1930,12 @@ h5, .h5 {
                     <div class="card-body p-4">
                         <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
                             <h5 class="mb-2 mb-md-0" style="color: #2c3e50; font-weight: 600;">
-                                <i class="anticon anticon-sync mr-2" style="color: var(--brand);"></i>Recovery Status
+                                <i class="anticon anticon-sync mr-2" style="color: var(--brand);"></i>Wiederherstellungsstatus
                             </h5>
                             <div>
                                 <span class="badge badge-pill px-3 py-2 badge-<?= $recoveryPercentage > 70 ? 'success' : ($recoveryPercentage > 30 ? 'warning' : 'danger') ?>" style="font-size: 13px;">
                                     <i class="anticon anticon-<?= $recoveryPercentage > 70 ? 'check-circle' : ($recoveryPercentage > 30 ? 'clock-circle' : 'exclamation-circle') ?> mr-1"></i>
-                                    <?= $recoveryPercentage > 70 ? 'Excellent Progress' : ($recoveryPercentage > 30 ? 'Good Progress' : 'Needs Attention') ?>
+                                    <?= $recoveryPercentage > 70 ? 'Ausgezeichneter Fortschritt' : ($recoveryPercentage > 30 ? 'Guter Fortschritt' : 'Aufmerksamkeit erforderlich') ?>
                                 </span>
                             </div>
                         </div>
@@ -1941,31 +1947,31 @@ h5, .h5 {
                                         <div class="step-icon">
                                             <i class="anticon anticon-search"></i>
                                         </div>
-                                        <div class="step-label">Trace Funds</div>
+                                        <div class="step-label">Gelder verfolgen</div>
                                     </div>
                                     <div class="step <?= $recoveryPercentage > 20 ? 'active' : '' ?>">
                                         <div class="step-icon">
                                             <i class="anticon anticon-lock"></i>
                                         </div>
-                                        <div class="step-label">Freeze Assets</div>
+                                        <div class="step-label">Vermögen einfrieren</div>
                                     </div>
                                     <div class="step <?= $recoveryPercentage > 40 ? 'active' : '' ?>">
                                         <div class="step-icon">
                                             <i class="anticon anticon-solution"></i>
                                         </div>
-                                        <div class="step-label">Legal Process</div>
+                                        <div class="step-label">Rechtsverfahren</div>
                                     </div>
                                     <div class="step <?= $recoveryPercentage > 60 ? 'active' : '' ?>">
                                         <div class="step-icon">
                                             <i class="anticon anticon-sync"></i>
                                         </div>
-                                        <div class="step-label">Recovery</div>
+                                        <div class="step-label">Wiederherstellung</div>
                                     </div>
                                     <div class="step <?= $recoveryPercentage > 80 ? 'active' : '' ?>">
                                         <div class="step-icon">
                                             <i class="anticon anticon-check-circle"></i>
                                         </div>
-                                        <div class="step-label">Complete</div>
+                                        <div class="step-label">Abgeschlossen</div>
                                     </div>
                                 </div>
                                 <div class="algorithm-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="<?= htmlspecialchars($recoveryPercentage, ENT_QUOTES) ?>">
@@ -1976,16 +1982,16 @@ h5, .h5 {
                             <div class="mt-4">
                                 <div class="d-flex flex-wrap justify-content-between align-items-center">
                                     <div class="text-left">
-                                        <p class="m-b-5"><strong>Total Cases:</strong> <?= htmlspecialchars($stats['total_cases'], ENT_QUOTES) ?></p>
-                                        <p class="m-b-5"><strong>Active Cases:</strong> <?= array_sum($statusCounts) ?></p>
+                                        <p class="m-b-5"><strong>Gesamte Fälle:</strong> <?= htmlspecialchars($stats['total_cases'], ENT_QUOTES) ?></p>
+                                        <p class="m-b-5"><strong>Aktive Fälle:</strong> <?= array_sum($statusCounts) ?></p>
                                     </div>
                                     <div class="text-right">
-                                        <p class="m-b-5"><strong>Recovered:</strong> $<?= number_format($stats['total_recovered'], 2) ?></p>
-                                        <p class="m-b-5"><strong>Outstanding:</strong> $<?= number_format($outstandingAmount, 2) ?></p>
+                                        <p class="m-b-5"><strong>Zurückgewonnen:</strong> €<?= number_format($stats['total_recovered'], 2) ?></p>
+                                        <p class="m-b-5"><strong>Ausstehend:</strong> €<?= number_format($outstandingAmount, 2) ?></p>
                                     </div>
                                 </div>
                                 <button class="btn btn-outline-primary btn-sm" id="refresh-algorithm" aria-live="polite">
-                                    <i class="anticon anticon-sync"></i> Refresh Status
+                                    <i class="anticon anticon-sync"></i> Status aktualisieren
                                 </button>
                             </div>
                         </div>
@@ -2002,14 +2008,14 @@ h5, .h5 {
                     <div class="card-body">
                         <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
                             <h5 class="mb-2 mb-md-0" style="color: #2c3e50; font-weight: 600;">
-                                <i class="anticon anticon-folder-open mr-2" style="color: var(--brand);"></i>Recent Cases
+                                <i class="anticon anticon-folder-open mr-2" style="color: var(--brand);"></i>Aktuelle Fälle
                             </h5>
                             <div class="d-flex">
                                 <a href="cases.php" class="btn btn-sm btn-outline-primary mr-2">
-                                    <i class="anticon anticon-eye mr-1"></i>View All
+                                    <i class="anticon anticon-eye mr-1"></i>Alle ansehen
                                 </a>
                                 <a href="new-case.php" class="btn btn-sm btn-primary">
-                                    <i class="anticon anticon-plus-circle mr-1"></i>New Case
+                                    <i class="anticon anticon-plus-circle mr-1"></i>Neuer Fall
                                 </a>
                             </div>
                         </div>
@@ -2017,7 +2023,7 @@ h5, .h5 {
                         <?php if (empty($cases)): ?>
                             <div class="alert alert-info mt-3 d-flex align-items-center" style="border-radius: 10px;">
                                 <i class="anticon anticon-info-circle mr-2" style="font-size: 20px;"></i>
-                                <div>No cases found. <a href="new-case.php" class="alert-link font-weight-600">File your first case</a></div>
+                                <div>Keine Fälle gefunden. <a href="new-case.php" class="alert-link font-weight-600">Ersten Fall einreichen</a></div>
                             </div>
                         <?php else: ?>
                             <div class="mt-3">
@@ -2025,12 +2031,12 @@ h5, .h5 {
                                     <table class="table table-hover mb-0">
                                         <thead>
                                             <tr>
-                                                <th>Case #</th>
-                                                <th>Platform</th>
-                                                <th>Reported</th>
-                                                <th>Recovered</th>
+                                                <th>Fall-Nr.</th>
+                                                <th>Plattform</th>
+                                                <th>Gemeldet</th>
+                                                <th>Zurückgewonnen</th>
                                                 <th>Status</th>
-                                                <th>Actions</th>
+                                                <th>Aktionen</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -2085,7 +2091,7 @@ h5, .h5 {
                                                         </div>
                                                     </div>
                                                     <div class="mt-1">
-                                                        <small class="text-muted" style="font-size:11px;"><?= htmlspecialchars($progress, ENT_QUOTES) ?>% of $<?= number_format($reported, 2) ?></small>
+                                                        <small class="text-muted" style="font-size:11px;"><?= htmlspecialchars($progress, ENT_QUOTES) ?>% von €<?= number_format($reported, 2) ?></small>
                                                     </div>
                                                 </td>
                                                 <td>
@@ -2096,8 +2102,8 @@ h5, .h5 {
                                                 <td>
                                                     <button class="btn btn-sm btn-outline-primary view-case-btn" 
                                                             data-case-id="<?= htmlspecialchars($case['id'], ENT_QUOTES) ?>" 
-                                                            title="View case details">
-                                                        <i class="anticon anticon-eye"></i> View
+                                                            title="Falldetails anzeigen">
+                                                        <i class="anticon anticon-eye"></i> Anzeigen
                                                     </button>
                                                 </td>
                                             </tr>
@@ -2115,17 +2121,17 @@ h5, .h5 {
                     <div class="card-body">
                         <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
                             <h5 class="mb-2 mb-md-0" style="color: #2c3e50; font-weight: 600;">
-                                <i class="anticon anticon-sync mr-2" style="color: var(--brand);"></i>Active Recovery Operations
+                                <i class="anticon anticon-sync mr-2" style="color: var(--brand);"></i>Aktive Wiederherstellungsoperationen
                             </h5>
                             <span class="badge badge-info px-3 py-2" style="font-size: 13px;">
-                                <i class="anticon anticon-file-text mr-1"></i><?= count($ongoingRecoveries) ?> active cases
+                                <i class="anticon anticon-file-text mr-1"></i><?= count($ongoingRecoveries) ?> aktive Fälle
                             </span>
                         </div>
                         <div class="mt-3">
                             <?php if (empty($ongoingRecoveries)): ?>
                                 <div class="alert alert-info d-flex align-items-center" style="border-radius: 10px;">
                                     <i class="anticon anticon-info-circle mr-2" style="font-size: 20px;"></i>
-                                    <span>No active recovery operations</span>
+                                    <span>Keine aktiven Wiederherstellungsoperationen</span>
                                 </div>
                             <?php else: ?>
                                 <?php foreach ($ongoingRecoveries as $recovery): 
@@ -2136,17 +2142,17 @@ h5, .h5 {
                                     $progress = ($reported > 0) ? round(($recovered / $reported) * 100, 2) : 0;
                                     
                                     $statusClass = 'info';
-                                    $statusText = 'In progress';
+                                    $statusText = 'In Bearbeitung';
                                     
                                     if ($status === 'documents_required') {
                                         $statusClass = 'danger';
-                                        $statusText = 'Needs attention';
+                                        $statusText = 'Aufmerksamkeit erforderlich';
                                     } elseif ($progress > 70) {
                                         $statusClass = 'success';
-                                        $statusText = 'On track';
+                                        $statusText = 'Auf Kurs';
                                     } elseif ($progress > 30) {
                                         $statusClass = 'warning';
-                                        $statusText = 'In progress';
+                                        $statusText = 'In Bearbeitung';
                                     }
                                 ?>
                                 <div class="m-b-25">
@@ -2174,10 +2180,10 @@ h5, .h5 {
                                     </div>
                                     <div class="d-flex justify-content-between m-t-10">
                                         <small class="text-muted">
-                                            Reported: $<?= number_format($reported, 2) ?>
+                                            Gemeldet: €<?= number_format($reported, 2) ?>
                                         </small>
                                         <small class="text-muted">
-                                            Recovered: $<?= number_format($recovered, 2) ?>
+                                            Zurückgewonnen: €<?= number_format($recovered, 2) ?>
                                         </small>
                                     </div>
                                 </div>
@@ -2185,7 +2191,7 @@ h5, .h5 {
                                 
                                 <div class="text-center m-t-20">
                                     <a href="cases.php" class="btn btn-sm btn-outline-primary">
-                                        <i class="anticon anticon-eye"></i> View All Cases
+                                        <i class="anticon anticon-eye"></i> Alle Fälle ansehen
                                     </a>
                                 </div>
                             <?php endif; ?>
@@ -2200,13 +2206,13 @@ h5, .h5 {
                 <div class="card shadow-sm border-0 mt-3">
                     <div class="card-body">
                         <h5 class="mb-3" style="color: #2c3e50; font-weight: 600;">
-                            <i class="anticon anticon-transaction mr-2" style="color: var(--brand);"></i>Recent Transactions
+                            <i class="anticon anticon-transaction mr-2" style="color: var(--brand);"></i>Aktuelle Transaktionen
                         </h5>
                         <div style="min-height: 300px">
                             <?php if (empty($transactions)): ?>
                                 <div class="alert alert-info d-flex align-items-center mt-3" style="border-radius: 10px;">
                                     <i class="anticon anticon-info-circle mr-2" style="font-size: 20px;"></i>
-                                    <span>No transactions yet</span>
+                                    <span>Noch keine Transaktionen</span>
                                 </div>
                             <?php else: ?>
                                 <div class="scrollable" style="height: 280px">
@@ -2216,18 +2222,18 @@ h5, .h5 {
                                             <div class="d-flex align-items-center">
                                                 <?php
                                                 $iconConfig = [
-                                                    'refund' => ['icon' => 'arrow-up', 'color' => 'success'],
-                                                    'deposit' => ['icon' => 'arrow-down', 'color' => 'primary'],
-                                                    'withdrawal' => ['icon' => 'arrow-up', 'color' => 'danger'],
-                                                    'fee' => ['icon' => 'minus', 'color' => 'warning']
+                                                    'refund'     => ['icon' => 'arrow-up',   'color' => 'success', 'label' => 'Rückerstattung'],
+                                                    'deposit'    => ['icon' => 'arrow-down',  'color' => 'primary', 'label' => 'Einzahlung'],
+                                                    'withdrawal' => ['icon' => 'arrow-up',   'color' => 'danger',  'label' => 'Auszahlung'],
+                                                    'fee'        => ['icon' => 'minus',       'color' => 'warning', 'label' => 'Gebühr']
                                                 ];
-                                                $config = $iconConfig[$transaction['type']] ?? ['icon' => 'swap', 'color' => 'info'];
+                                                $config = $iconConfig[$transaction['type']] ?? ['icon' => 'swap', 'color' => 'info', 'label' => 'Transaktion'];
                                                 ?>
                                                 <div class="avatar avatar-icon avatar-<?= htmlspecialchars($config['color'], ENT_QUOTES) ?>" aria-hidden="true">
                                                     <i class="anticon anticon-<?= htmlspecialchars($config['icon'], ENT_QUOTES) ?>"></i>
                                                 </div>
                                                 <div class="m-l-15">
-                                                    <h6 class="m-b-0"><?= ucfirst(htmlspecialchars($transaction['type'], ENT_QUOTES)) ?></h6>
+                                                    <h6 class="m-b-0"><?= htmlspecialchars($config['label'], ENT_QUOTES) ?></h6>
                                                     <p class="m-b-0 text-muted">
                                                         <?= htmlspecialchars($transaction['reference_name'], ENT_QUOTES) ?>
                                                         <br>
@@ -2249,10 +2255,10 @@ h5, .h5 {
 
                 <div class="card shadow-sm mt-3">
                     <div class="card-body">
-                        <h5 class="m-b-20">Case Status Summary</h5>
+                        <h5 class="m-b-20">Fallstatuszusammenfassung</h5>
                         <div class="m-t-20">
                             <?php if (empty($statusCounts)): ?>
-                                <div class="alert alert-info">No cases found</div>
+                                <div class="alert alert-info">Keine Fälle gefunden</div>
                             <?php else: ?>
                                 <div class="row">
                                     <div class="col-md-12">
@@ -2261,9 +2267,18 @@ h5, .h5 {
                                 </div>
                                 <div class="m-t-20">
                                     <ul class="list-group list-group-flush">
-                                        <?php foreach ($statusCounts as $status => $count): ?>
+                                        <?php 
+                                        $statusDe = [
+                                            'open'               => 'Offen',
+                                            'documents_required' => 'Dokumente erforderlich',
+                                            'under_review'       => 'In Prüfung',
+                                            'refund_approved'    => 'Rückerstattung genehmigt',
+                                            'refund_rejected'    => 'Rückerstattung abgelehnt',
+                                            'closed'             => 'Abgeschlossen',
+                                        ];
+                                        foreach ($statusCounts as $status => $count): ?>
                                         <li class="list-group-item d-flex justify-content-between align-items-center p-l-0 p-r-0">
-                                            <?= htmlspecialchars(ucwords(str_replace('_', ' ', $status)), ENT_QUOTES) ?>
+                                            <?= htmlspecialchars($statusDe[$status] ?? ucwords(str_replace('_', ' ', $status)), ENT_QUOTES) ?>
                                             <span class="badge badge-pill badge-<?= htmlspecialchars([
                                                 'open' => 'warning',
                                                 'documents_required' => 'secondary',
@@ -2291,23 +2306,23 @@ h5, .h5 {
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
                             <h5 style="color: #2c3e50; font-weight: 600;">
-                                <i class="anticon anticon-line-chart mr-2" style="color: var(--brand);"></i>Recovery Progress
+                                <i class="anticon anticon-line-chart mr-2" style="color: var(--brand);"></i>Wiederherstellungsfortschritt
                             </h5>
                             <div>
                                 <span class="badge badge-<?= $recoveryPercentage >= 50 ? 'success' : 'warning' ?> px-3 py-2">
                                     <i class="anticon anticon-<?= $recoveryPercentage >= 50 ? 'check-circle' : 'clock-circle' ?> mr-1"></i>
-                                    <?= $recoveryPercentage >= 50 ? 'Good progress' : 'Needs attention' ?>
+                                    <?= $recoveryPercentage >= 50 ? 'Guter Fortschritt' : 'Aufmerksamkeit erforderlich' ?>
                                 </span>
                             </div>
                         </div>
                         <div class="mt-4">
                             <div class="d-flex justify-content-between align-items-center mb-3">
                                 <span class="font-weight-semibold">
-                                    Overall Recovery: <span class="count" data-value="<?= htmlspecialchars($recoveryPercentage, ENT_QUOTES) ?>"><?= htmlspecialchars($recoveryPercentage, ENT_QUOTES) ?>%</span>
-                                    (<?= htmlspecialchars($stats['total_cases'], ENT_QUOTES) ?> cases)
+                                    Gesamte Wiederherstellung: <span class="count" data-value="<?= htmlspecialchars($recoveryPercentage, ENT_QUOTES) ?>"><?= htmlspecialchars($recoveryPercentage, ENT_QUOTES) ?>%</span>
+                                    (<?= htmlspecialchars($stats['total_cases'], ENT_QUOTES) ?> Fälle)
                                 </span>
                                 <span>
-                                    $<?= number_format($stats['total_recovered'], 2) ?> of $<?= number_format($stats['total_reported'], 2) ?>
+                                    €<?= number_format($stats['total_recovered'], 2) ?> von €<?= number_format($stats['total_reported'], 2) ?>
                                 </span>
                             </div>
                             <div class="progress" style="height: 12px; border-radius: 10px;" aria-hidden="false" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="<?= htmlspecialchars($recoveryPercentage, ENT_QUOTES) ?>">
@@ -2332,7 +2347,7 @@ h5, .h5 {
         <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
             <div class="modal-header border-0" style="background: linear-gradient(135deg, #2950a8 0%, #2da9e3 100%); color: #fff; border-radius: 12px 12px 0 0;">
                 <h5 class="modal-title font-weight-bold" id="caseDetailsModalLabel">
-                    <i class="anticon anticon-file-text mr-2"></i>Case Details
+                    <i class="anticon anticon-file-text mr-2"></i>Falldetails
                 </h5>
                 <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
@@ -2341,14 +2356,14 @@ h5, .h5 {
             <div class="modal-body p-4" id="caseModalBody">
                 <div class="text-center py-5">
                     <div class="spinner-border text-primary" role="status">
-                        <span class="sr-only">Loading...</span>
+                        <span class="sr-only">Laden...</span>
                     </div>
-                    <p class="mt-3 text-muted">Loading case details...</p>
+                    <p class="mt-3 text-muted">Falldetails werden geladen...</p>
                 </div>
             </div>
             <div class="modal-footer border-0 bg-light" style="border-radius: 0 0 12px 12px;">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">
-                    <i class="anticon anticon-close mr-1"></i>Close
+                    <i class="anticon anticon-close mr-1"></i>Schließen
                 </button>
             </div>
         </div>
@@ -2396,7 +2411,12 @@ $(function(){
     var $balance = $('#balanceCounter');
     if ($balance.length) {
         var bval = parseFloat($balance.data('value')) || 0;
-        animateCount($balance[0], 0, bval, 2, 800);
+        var bstart = 0;
+        var btimer = setInterval(function() {
+            bstart += Math.max(0.01, (bval - bstart) / 12);
+            if (bstart >= bval) { bstart = bval; clearInterval(btimer); }
+            $balance.text('€' + bstart.toFixed(2));
+        }, 40);
     }
 
     function animateLiveProgress(el) {
@@ -2425,11 +2445,11 @@ $(function(){
     // Copy wallet address
     $(document).on('click', '#copyWalletAddress', function() {
         var walletAddress = $('#detail-wallet-address').val();
-        if (!walletAddress) { toastr.warning('No address to copy'); return; }
+        if (!walletAddress) { toastr.warning('Keine Adresse zum Kopieren'); return; }
         navigator.clipboard.writeText(walletAddress).then(function() {
-            toastr.success('Wallet address copied to clipboard');
+            toastr.success('Wallet-Adresse in die Zwischenablage kopiert');
         }, function() {
-            toastr.error('Failed to copy wallet address');
+            toastr.error('Kopieren der Wallet-Adresse fehlgeschlagen');
         });
     });
 
@@ -2488,7 +2508,7 @@ $(function(){
         var formData = new FormData($form[0]);
         var $submitBtn = $form.find('button[type="submit"]');
         
-        $submitBtn.prop('disabled', true).html('<i class="anticon anticon-loading anticon-spin"></i> Processing...');
+        $submitBtn.prop('disabled', true).html('<i class="anticon anticon-loading anticon-spin"></i> Wird verarbeitet...');
         
         $.ajax({
             url: 'ajax/process-deposit.php',
@@ -2500,23 +2520,23 @@ $(function(){
                 try {
                     var data = typeof response === 'string' ? JSON.parse(response) : response;
                     if (data.success) {
-                        toastr.success(data.message || 'Deposit submitted successfully');
+                        toastr.success(data.message || 'Einzahlung erfolgreich eingereicht');
                         $('#newDepositModal').modal('hide');
                         $form[0].reset();
-                        $('.custom-file-label').html('Choose file');
+                        $('.custom-file-label').html('Datei auswählen');
                         $('#paymentDetails').hide();
                         setTimeout(function(){ location.reload(); }, 1200);
                     } else {
-                        toastr.error(data.message || 'Error processing deposit');
+                        toastr.error(data.message || 'Fehler bei der Einzahlung');
                     }
                 } catch (e) {
-                    toastr.error('Error parsing server response');
+                    toastr.error('Fehler beim Verarbeiten der Serverantwort');
                 }
-                $submitBtn.prop('disabled', false).html('Confirm Deposit');
+                $submitBtn.prop('disabled', false).html('Einzahlung bestätigen');
             },
             error: function(xhr, status, error) {
-                toastr.error('Error communicating with server: ' + error);
-                $submitBtn.prop('disabled', false).html('Confirm Deposit');
+                toastr.error('Kommunikationsfehler mit dem Server: ' + error);
+                $submitBtn.prop('disabled', false).html('Einzahlung bestätigen');
             }
         });
     });
@@ -2531,7 +2551,7 @@ $('#withdrawalForm').submit(function (e) {
 
     // Ensure OTP verified (button enabled only after verification)
     if ($('#withdrawalSubmitBtn').prop('disabled')) {
-        toastr.warning('Please verify your OTP before submitting.');
+        toastr.warning('Bitte verifizieren Sie Ihren OTP, bevor Sie den Antrag einreichen.');
         return;
     }
 
@@ -2539,21 +2559,21 @@ $('#withdrawalForm').submit(function (e) {
     const available = parseFloat($('#availableBalance').val()) || 0;
     const amount = parseFloat($('#amount').val()) || 0;
     if (available < 1000) {
-        toastr.error('Insufficient funds. Minimum balance required is €1000.');
+        toastr.error('Unzureichendes Guthaben. Mindestguthaben für Auszahlungen: €1.000.');
         return;
     }
     if (amount < 1000) {
-        toastr.error('Minimum withdrawal amount is €1000.');
+        toastr.error('Mindestbetrag für Auszahlungen: €1.000.');
         return;
     }
     if (amount > available) {
-        toastr.error('Insufficient balance. Available: €' + available.toFixed(2));
+        toastr.error('Unzureichendes Guthaben. Verfügbar: €' + available.toFixed(2));
         return;
     }
 
     // Send request
     $submitBtn.prop('disabled', true)
-        .html('<i class="anticon anticon-loading anticon-spin"></i> Processing...');
+        .html('<i class="anticon anticon-loading anticon-spin"></i> Wird verarbeitet...');
 
     $.ajax({
         url: 'ajax/process-withdrawal.php',
@@ -2562,41 +2582,39 @@ $('#withdrawalForm').submit(function (e) {
         dataType: 'json',
         success: function (response) {
             if (response.success) {
-                toastr.success(response.message || 'Withdrawal request submitted successfully');
+                toastr.success(response.message || 'Auszahlungsantrag erfolgreich eingereicht');
                 $('#newWithdrawalModal').modal('hide');
                 $form[0].reset();
                 resetOtpFields();
                 setTimeout(() => location.reload(), 1200);
             } else {
-                toastr.error(response.message || 'Error processing withdrawal');
+                toastr.error(response.message || 'Fehler bei der Bearbeitung des Auszahlungsantrags');
                 if (response.message && response.message.includes('OTP')) resetOtpFields();
             }
         },
         error: function (xhr, status, error) {
             console.error('Withdrawal error:', xhr.status, xhr.responseText);
-            let errorMsg = 'Server communication error: ' + error;
+            let errorMsg = 'Serverkommunikationsfehler: ' + error;
             
-            // Try to parse error response
             try {
                 const errorData = JSON.parse(xhr.responseText);
                 if (errorData.message) {
                     errorMsg = errorData.message;
                 }
             } catch (e) {
-                // If response isn't JSON, use status text
                 if (xhr.status === 400) {
-                    errorMsg = 'Bad Request - Please check your input fields';
+                    errorMsg = 'Ungültige Anfrage – Bitte überprüfen Sie Ihre Eingaben';
                 } else if (xhr.status === 403) {
-                    errorMsg = 'Security error - Please refresh the page';
+                    errorMsg = 'Sicherheitsfehler – Bitte laden Sie die Seite neu';
                 } else if (xhr.status === 401) {
-                    errorMsg = 'Session expired - Please login again';
+                    errorMsg = 'Sitzung abgelaufen – Bitte erneut anmelden';
                 }
             }
             
             toastr.error(errorMsg);
         },
         complete: function () {
-            $submitBtn.prop('disabled', false).html('Submit Request');
+            $submitBtn.prop('disabled', false).html('Antrag einreichen');
         }
     });
 });
@@ -2613,7 +2631,7 @@ $('#withdrawalMethod').change(function () {
     // Auto-fill payment details textarea with user's verified address/account
     if (details) {
         $('textarea[name="payment_details"]').val(details);
-        toastr.success('Payment details auto-filled with your verified ' + (type === 'crypto' ? 'address' : 'account'));
+        toastr.success('Zahlungsdetails wurden automatisch ausgefüllt (' + (type === 'crypto' ? 'Wallet-Adresse' : 'Bankkonto') + ')');
     } else {
         $('textarea[name="payment_details"]').val('');
     }
@@ -2637,7 +2655,7 @@ $('#amount').on('input', function () {
         $(this).closest('.form-group').append(`
             <div id="insufficientFundsWarning" class="alert alert-danger mt-2 p-2 mb-0">
                 <i class="anticon anticon-warning"></i>
-                You need at least €1000 available to withdraw. Current balance: €${available.toFixed(2)}
+                Mindestguthaben für Auszahlungen: €1.000. Ihr aktuelles Guthaben: €${available.toFixed(2)}
             </div>
         `);
         $('#sendVerifyOtpBtn, #withdrawalSubmitBtn').prop('disabled', true);
@@ -2649,7 +2667,7 @@ $('#amount').on('input', function () {
         $(this).closest('.form-group').append(`
             <div id="insufficientFundsWarning" class="alert alert-danger mt-2 p-2 mb-0">
                 <i class="anticon anticon-warning"></i>
-                Insufficient balance: available €${available.toFixed(2)}
+                Unzureichendes Guthaben: Verfügbar €${available.toFixed(2)}
             </div>
         `);
         $('#sendVerifyOtpBtn, #withdrawalSubmitBtn').prop('disabled', true);
@@ -2661,7 +2679,7 @@ $('#amount').on('input', function () {
         $(this).closest('.form-group').append(`
             <div id="insufficientFundsWarning" class="alert alert-warning mt-2 p-2 mb-0">
                 <i class="anticon anticon-info-circle"></i>
-                Minimum withdrawal amount is €1000.
+                Mindestbetrag für Auszahlungen: €1.000.
             </div>
         `);
         $('#sendVerifyOtpBtn, #withdrawalSubmitBtn').prop('disabled', true);
@@ -2685,7 +2703,7 @@ $('#sendVerifyOtpBtn').click(function () {
     
     // Step 1: Send OTP if not sent yet
     if (!otpSent) {
-        $btn.prop('disabled', true).html('<i class="anticon anticon-loading anticon-spin"></i> Sending OTP...');
+        $btn.prop('disabled', true).html('<i class="anticon anticon-loading anticon-spin"></i> OTP wird gesendet...');
         $.ajax({
             url: 'ajax/otp-handler.php',
             method: 'POST',
@@ -2696,20 +2714,20 @@ $('#sendVerifyOtpBtn').click(function () {
             dataType: 'json',
             success: function (r) {
                 if (r.success) {
-                    toastr.success(r.message || 'OTP sent to your email');
+                    toastr.success(r.message || 'OTP wurde an Ihre E-Mail gesendet');
                     $otpInput.prop('disabled', false).focus();
                     otpSent = true;
-                    $btn.prop('disabled', false).html('<i class="anticon anticon-check-circle"></i> Verify OTP');
-                    $('#otpInfoText').html('<i class="anticon anticon-clock-circle"></i> OTP sent! Enter the code and click "Verify OTP" button.');
+                    $btn.prop('disabled', false).html('<i class="anticon anticon-check-circle"></i> OTP prüfen');
+                    $('#otpInfoText').html('<i class="anticon anticon-clock-circle"></i> OTP gesendet! Geben Sie den Code ein und klicken Sie auf "OTP prüfen".');
                 } else {
-                    toastr.error(r.message || 'Failed to send OTP');
-                    $btn.prop('disabled', false).html('<i class="anticon anticon-mail"></i> Send & Verify OTP');
+                    toastr.error(r.message || 'OTP konnte nicht gesendet werden');
+                    $btn.prop('disabled', false).html('<i class="anticon anticon-mail"></i> OTP senden & prüfen');
                 }
             },
             error: function (xhr, status, error) {
                 console.error('OTP send error:', xhr.status, xhr.responseText);
-                toastr.error('Failed to send OTP. Please try again.');
-                $btn.prop('disabled', false).html('<i class="anticon anticon-mail"></i> Send & Verify OTP');
+                toastr.error('OTP konnte nicht gesendet werden. Bitte versuchen Sie es erneut.');
+                $btn.prop('disabled', false).html('<i class="anticon anticon-mail"></i> OTP senden & prüfen');
             }
         });
     } 
@@ -2717,11 +2735,11 @@ $('#sendVerifyOtpBtn').click(function () {
     else {
         const code = $otpInput.val().trim();
         if (!code || code.length !== 6) {
-            toastr.error('Please enter the 6-digit OTP code.');
+            toastr.error('Bitte geben Sie den 6-stelligen OTP-Code ein.');
             return;
         }
         
-        $btn.prop('disabled', true).html('<i class="anticon anticon-loading anticon-spin"></i> Verifying...');
+        $btn.prop('disabled', true).html('<i class="anticon anticon-loading anticon-spin"></i> Wird geprüft...');
         $.ajax({
             url: 'ajax/otp-handler.php',
             method: 'POST',
@@ -2733,20 +2751,20 @@ $('#sendVerifyOtpBtn').click(function () {
             dataType: 'json',
             success: function (r) {
                 if (r.success) {
-                    toastr.success(r.message || 'OTP verified successfully');
+                    toastr.success(r.message || 'OTP erfolgreich verifiziert');
                     $('#withdrawalSubmitBtn').prop('disabled', false);
                     $otpInput.prop('disabled', true);
-                    $btn.prop('disabled', true).html('<i class="anticon anticon-check"></i> Verified').removeClass('btn-primary').addClass('btn-success');
-                    $('#otpInfoText').html('<i class="anticon anticon-check-circle text-success"></i> Email verified! You can now submit your withdrawal request.');
+                    $btn.prop('disabled', true).html('<i class="anticon anticon-check"></i> Verifiziert').removeClass('btn-primary').addClass('btn-success');
+                    $('#otpInfoText').html('<i class="anticon anticon-check-circle text-success"></i> E-Mail verifiziert! Sie können jetzt Ihren Auszahlungsantrag einreichen.');
                 } else {
-                    toastr.error(r.message || 'Invalid OTP code');
-                    $btn.prop('disabled', false).html('<i class="anticon anticon-check-circle"></i> Verify OTP');
+                    toastr.error(r.message || 'Ungültiger OTP-Code');
+                    $btn.prop('disabled', false).html('<i class="anticon anticon-check-circle"></i> OTP prüfen');
                 }
             },
             error: function (xhr, status, error) {
                 console.error('OTP verify error:', xhr.status, xhr.responseText);
-                toastr.error('OTP verification failed. Please try again.');
-                $btn.prop('disabled', false).html('<i class="anticon anticon-check-circle"></i> Verify OTP');
+                toastr.error('OTP-Verifizierung fehlgeschlagen. Bitte versuchen Sie es erneut.');
+                $btn.prop('disabled', false).html('<i class="anticon anticon-check-circle"></i> OTP prüfen');
             }
         });
     }
@@ -2762,16 +2780,16 @@ $('#newWithdrawalModal').on('hidden.bs.modal', function () {
 
 function resetOtpFields() {
     $('#otpCode').val('').prop('disabled', true);
-    $('#sendVerifyOtpBtn').prop('disabled', false).html('<i class="anticon anticon-mail"></i> Send & Verify OTP').removeClass('btn-success').addClass('btn-primary');
+    $('#sendVerifyOtpBtn').prop('disabled', false).html('<i class="anticon anticon-mail"></i> OTP senden & prüfen').removeClass('btn-success').addClass('btn-primary');
     $('#withdrawalSubmitBtn').prop('disabled', true);
-    $('#otpInfoText').html('<i class="anticon anticon-info-circle"></i> OTP is valid for 5 minutes. Click button to send code to your email.');
+    $('#otpInfoText').html('<i class="anticon anticon-info-circle"></i> OTP ist 5 Minuten gültig. Klicken Sie auf die Schaltfläche, um den Code an Ihre E-Mail zu senden.');
     otpSent = false;
 }
 
     // Refresh algorithm
     $('#refresh-algorithm').click(function() {
         var $btn = $(this);
-        $btn.prop('disabled', true).html('<i class="anticon anticon-loading anticon-spin"></i> Refreshing...');
+        $btn.prop('disabled', true).html('<i class="anticon anticon-loading anticon-spin"></i> Aktualisiere...');
         
         setTimeout(function() {
             $.ajax({
@@ -2785,19 +2803,19 @@ function resetOtpFields() {
                                 $('.algorithm-progress .progress-bar').css('width', data.recoveryPercentage + '%');
                                 $('.count[data-value="<?= htmlspecialchars($recoveryPercentage, ENT_QUOTES) ?>"]').text(data.recoveryPercentage + '%');
                             }
-                            toastr.success('Status refreshed successfully');
+                            toastr.success('Status erfolgreich aktualisiert');
                         } else {
-                            toastr.error(data.message || 'Error refreshing status');
+                            toastr.error(data.message || 'Fehler beim Aktualisieren des Status');
                         }
                     } catch (e) {
-                        toastr.error('Error parsing server response');
+                        toastr.error('Fehler beim Verarbeiten der Serverantwort');
                     }
                 },
                 error: function(xhr, status, error) {
-                    toastr.error('Error communicating with server: ' + error);
+                    toastr.error('Kommunikationsfehler mit dem Server: ' + error);
                 },
                 complete: function() {
-                    $btn.prop('disabled', false).html('<i class="anticon anticon-sync"></i> Refresh Status');
+                    $btn.prop('disabled', false).html('<i class="anticon anticon-sync"></i> Status aktualisieren');
                 }
             });
         }, 400);
@@ -2861,16 +2879,16 @@ function resetOtpFields() {
         let colorClass, label;
         switch (score) {
             case 0:
-            case 1: colorClass = 'bg-danger'; label = 'Weak'; break;
-            case 2: colorClass = 'bg-warning'; label = 'Fair'; break;
-            case 3: colorClass = 'bg-info'; label = 'Good'; break;
-            case 4: colorClass = 'bg-success'; label = 'Strong'; break;
+            case 1: colorClass = 'bg-danger'; label = 'Schwach'; break;
+            case 2: colorClass = 'bg-warning'; label = 'Mittel'; break;
+            case 3: colorClass = 'bg-info'; label = 'Gut'; break;
+            case 4: colorClass = 'bg-success'; label = 'Stark'; break;
         }
 
         $bar.removeClass('bg-danger bg-warning bg-info bg-success')
             .addClass(colorClass)
             .css('width', width + '%');
-        $text.text('Strength: ' + label);
+        $text.text('Stärke: ' + label);
 
         $('#confirmPassword').trigger('input');
     });
@@ -2881,14 +2899,14 @@ function resetOtpFields() {
         const $match = $('#passwordMatchText');
 
         if (!confirm) {
-            $match.text('Waiting for input...').removeClass('text-success text-danger').addClass('text-muted');
+            $match.text('Warte auf Eingabe...').removeClass('text-success text-danger').addClass('text-muted');
             return;
         }
 
         if (confirm === newPass) {
-            $match.text('Passwords match ✅').removeClass('text-danger text-muted').addClass('text-success');
+            $match.text('Passwörter stimmen überein ✅').removeClass('text-danger text-muted').addClass('text-success');
         } else {
-            $match.text('Passwords do not match ❌').removeClass('text-success text-muted').addClass('text-danger');
+            $match.text('Passwörter stimmen nicht überein ❌').removeClass('text-success text-muted').addClass('text-danger');
         }
     });
 
@@ -2898,16 +2916,16 @@ function resetOtpFields() {
         const confirmPassword = $('#confirmPassword').val();
 
         if (!currentPassword || !newPassword || !confirmPassword) {
-            toastr.error('All fields are required');
+            toastr.error('Alle Felder sind erforderlich');
             return;
         }
         if (newPassword !== confirmPassword) {
-            toastr.error('New passwords do not match');
+            toastr.error('Die neuen Passwörter stimmen nicht überein');
             return;
         }
 
         const $btn = $(this);
-        $btn.prop('disabled', true).html('<i class="anticon anticon-loading anticon-spin"></i> Processing...');
+        $btn.prop('disabled', true).html('<i class="anticon anticon-loading anticon-spin"></i> Wird verarbeitet...');
 
         $.ajax({
             url: 'change_password.php',
@@ -2922,18 +2940,18 @@ function resetOtpFields() {
             },
             success: function(data) {
                 if (data.success) {
-                    toastr.success(data.message || 'Password changed successfully');
+                    toastr.success(data.message || 'Passwort erfolgreich geändert');
                     $('#passwordChangeModal').modal('hide');
                     $('.modal-backdrop').remove();
                     setTimeout(function(){ location.reload(); }, 800);
                 } else {
-                    toastr.error(data.message || 'Error changing password');
+                    toastr.error(data.message || 'Fehler beim Ändern des Passworts');
                 }
-                $btn.prop('disabled', false).html('<i class="anticon anticon-save"></i> Change Password');
+                $btn.prop('disabled', false).html('<i class="anticon anticon-save"></i> Passwort ändern');
             },
             error: function(xhr, status, error) {
-                toastr.error('Server error: ' + error);
-                $btn.prop('disabled', false).html('<i class="anticon anticon-save"></i> Change Password');
+                toastr.error('Serverfehler: ' + error);
+                $btn.prop('disabled', false).html('<i class="anticon anticon-save"></i> Passwort ändern');
             }
         });
     });
@@ -2953,9 +2971,9 @@ function resetOtpFields() {
         $('#caseModalBody').html(`
             <div class="text-center py-5">
                 <div class="spinner-border text-primary" role="status">
-                    <span class="sr-only">Loading...</span>
+                    <span class="sr-only">Laden...</span>
                 </div>
-                <p class="mt-3 text-muted">Loading case details...</p>
+                <p class="mt-3 text-muted">Falldetails werden geladen...</p>
             </div>
         `);
         
@@ -2987,7 +3005,7 @@ function resetOtpFields() {
                                     <div class="col-md-6">
                                         <div class="card border-0" style="background: rgba(41, 80, 168, 0.05);">
                                             <div class="card-body">
-                                                <h6 class="text-muted mb-2" style="font-size: 12px; text-transform: uppercase;">Case Number</h6>
+                                                <h6 class="text-muted mb-2" style="font-size: 12px; text-transform: uppercase;">Fall-Nummer</h6>
                                                 <h4 class="mb-0 font-weight-bold" style="color: var(--brand);">${c.case_number || 'N/A'}</h4>
                                             </div>
                                         </div>
@@ -2995,7 +3013,7 @@ function resetOtpFields() {
                                     <div class="col-md-6">
                                         <div class="card border-0" style="background: rgba(41, 80, 168, 0.05);">
                                             <div class="card-body">
-                                                <h6 class="text-muted mb-2" style="font-size: 12px; text-transform: uppercase;">Status</h6>
+                                               <h6 class="text-muted mb-2" style="font-size: 12px; text-transform: uppercase;">Status</h6>
                                                 <span class="badge badge-${statusClass} px-3 py-2" style="font-size: 14px;">
                                                     <i class="anticon anticon-flag mr-1"></i>${c.status ? c.status.replace(/_/g, ' ').toUpperCase() : 'N/A'}
                                                 </span>
@@ -3008,20 +3026,20 @@ function resetOtpFields() {
                                 <div class="card border-0 mb-4" style="background: linear-gradient(135deg, rgba(41, 80, 168, 0.05), rgba(45, 169, 227, 0.05));">
                                     <div class="card-body">
                                         <h5 class="mb-3" style="color: #2c3e50; font-weight: 600;">
-                                            <i class="anticon anticon-dollar mr-2" style="color: var(--brand);"></i>Financial Overview
+                                            <i class="anticon anticon-dollar mr-2" style="color: var(--brand);"></i>Finanzübersicht
                                         </h5>
                                         <div class="row">
                                             <div class="col-md-6 mb-3">
-                                                <div class="text-muted mb-1" style="font-size: 13px;">Reported Amount</div>
-                                                <h4 class="mb-0 font-weight-bold text-danger">$${parseFloat(c.reported_amount || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</h4>
+                                                <div class="text-muted mb-1" style="font-size: 13px;">Gemeldeter Betrag</div>
+                                                <h4 class="mb-0 font-weight-bold text-danger">€${parseFloat(c.reported_amount || 0).toLocaleString('de-DE', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</h4>
                                             </div>
                                             <div class="col-md-6 mb-3">
-                                                <div class="text-muted mb-1" style="font-size: 13px;">Recovered Amount</div>
-                                                <h3 class="mb-2 font-weight-bold" style="color: #2c3e50;">$${parseFloat(c.recovered_amount || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</h3>
+                                                <div class="text-muted mb-1" style="font-size: 13px;">Zurückgewonnener Betrag</div>
+                                                <h3 class="mb-2 font-weight-bold" style="color: #2c3e50;">€${parseFloat(c.recovered_amount || 0).toLocaleString('de-DE', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</h3>
                                                 <div class="progress mb-2" style="height: 8px; border-radius: 10px; background: #e9ecef;">
                                                     <div class="progress-bar" style="width: ${progress}%; background: linear-gradient(90deg, #2950a8 0%, #2da9e3 100%);"></div>
                                                 </div>
-                                                <small class="text-muted">${progress}% of $${parseFloat(c.reported_amount || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</small>
+                                                <small class="text-muted">${progress}% von €${parseFloat(c.reported_amount || 0).toLocaleString('de-DE', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</small>
                                             </div>
                                         </div>
                                     </div>
@@ -3033,10 +3051,10 @@ function resetOtpFields() {
                                         <div class="card border-0 h-100">
                                             <div class="card-body">
                                                 <h6 class="mb-3" style="color: #2c3e50; font-weight: 600;">
-                                                    <i class="anticon anticon-global mr-2" style="color: var(--brand);"></i>Platform Information
+                                                    <i class="anticon anticon-global mr-2" style="color: var(--brand);"></i>Plattform-Information
                                                 </h6>
-                                                <p class="mb-2"><strong>Platform:</strong> ${c.platform_name || 'N/A'}</p>
-                                                <p class="mb-0"><strong>Created:</strong> ${c.created_at ? new Date(c.created_at).toLocaleDateString('en-US', {year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'}) : 'N/A'}</p>
+                                                <p class="mb-2"><strong>Plattform:</strong> ${c.platform_name || 'N/A'}</p>
+                                                <p class="mb-0"><strong>Erstellt:</strong> ${c.created_at ? new Date(c.created_at).toLocaleDateString('de-DE', {year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'}) : 'N/A'}</p>
                                             </div>
                                         </div>
                                     </div>
@@ -3044,10 +3062,10 @@ function resetOtpFields() {
                                         <div class="card border-0 h-100">
                                             <div class="card-body">
                                                 <h6 class="mb-3" style="color: #2c3e50; font-weight: 600;">
-                                                    <i class="anticon anticon-clock-circle mr-2" style="color: var(--brand);"></i>Timeline
+                                                    <i class="anticon anticon-clock-circle mr-2" style="color: var(--brand);"></i>Zeitleiste
                                                 </h6>
-                                                <p class="mb-2"><strong>Last Updated:</strong> ${c.updated_at ? new Date(c.updated_at).toLocaleDateString('en-US', {year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'}) : 'N/A'}</p>
-                                                <p class="mb-0"><strong>Days Active:</strong> ${c.created_at ? Math.floor((new Date() - new Date(c.created_at)) / (1000 * 60 * 60 * 24)) : 0} days</p>
+                                                <p class="mb-2"><strong>Zuletzt aktualisiert:</strong> ${c.updated_at ? new Date(c.updated_at).toLocaleDateString('de-DE', {year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'}) : 'N/A'}</p>
+                                                <p class="mb-0"><strong>Tage aktiv:</strong> ${c.created_at ? Math.floor((new Date() - new Date(c.created_at)) / (1000 * 60 * 60 * 24)) : 0} Tage</p>
                                             </div>
                                         </div>
                                     </div>
@@ -3058,7 +3076,7 @@ function resetOtpFields() {
                                 <div class="card border-0 mb-4">
                                     <div class="card-body">
                                         <h6 class="mb-3" style="color: #2c3e50; font-weight: 600;">
-                                            <i class="anticon anticon-file-text mr-2" style="color: var(--brand);"></i>Case Description
+                                            <i class="anticon anticon-file-text mr-2" style="color: var(--brand);"></i>Fallbeschreibung
                                         </h6>
                                         <p class="mb-0" style="line-height: 1.6;">${c.description}</p>
                                     </div>
@@ -3070,24 +3088,24 @@ function resetOtpFields() {
                                 <div class="card border-0 mb-4">
                                     <div class="card-body">
                                         <h6 class="mb-3" style="color: #2c3e50; font-weight: 600;">
-                                            <i class="anticon anticon-transaction mr-2" style="color: var(--brand);"></i>Recovery Transactions
+                                            <i class="anticon anticon-transaction mr-2" style="color: var(--brand);"></i>Wiederherstellungstransaktionen
                                         </h6>
                                         <div class="table-responsive">
                                             <table class="table table-sm table-hover mb-0">
                                                 <thead style="background: rgba(41, 80, 168, 0.05);">
                                                     <tr>
-                                                        <th>Date</th>
-                                                        <th>Amount</th>
-                                                        <th>Method</th>
-                                                        <th>Reference</th>
-                                                        <th>Processed By</th>
+                                                        <th>Datum</th>
+                                                        <th>Betrag</th>
+                                                        <th>Methode</th>
+                                                        <th>Referenz</th>
+                                                        <th>Bearbeitet von</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
                                                     ${data.recoveries.map(r => `
                                                         <tr>
-                                                            <td>${r.transaction_date ? new Date(r.transaction_date).toLocaleDateString('en-US', {year: 'numeric', month: 'short', day: 'numeric'}) : 'N/A'}</td>
-                                                            <td><strong class="text-success">$${parseFloat(r.amount || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong></td>
+                                                            <td>${r.transaction_date ? new Date(r.transaction_date).toLocaleDateString('de-DE', {year: 'numeric', month: 'short', day: 'numeric'}) : 'N/A'}</td>
+                                                            <td><strong class="text-success">€${parseFloat(r.amount || 0).toLocaleString('de-DE', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong></td>
                                                             <td>${r.method || 'N/A'}</td>
                                                             <td><small class="text-muted">${r.transaction_reference || 'N/A'}</small></td>
                                                             <td>${r.admin_first_name && r.admin_last_name ? `${r.admin_first_name} ${r.admin_last_name}` : 'System'}</td>
@@ -3105,7 +3123,7 @@ function resetOtpFields() {
                                 <div class="card border-0 mb-4">
                                     <div class="card-body">
                                         <h6 class="mb-3" style="color: #2c3e50; font-weight: 600;">
-                                            <i class="anticon anticon-paper-clip mr-2" style="color: var(--brand);"></i>Case Documents
+                                            <i class="anticon anticon-paper-clip mr-2" style="color: var(--brand);"></i>Falldokumente
                                         </h6>
                                         <div class="list-group">
                                             ${data.documents.map(d => `
@@ -3113,10 +3131,10 @@ function resetOtpFields() {
                                                     <div class="d-flex justify-content-between align-items-center">
                                                         <div>
                                                             <i class="anticon anticon-file mr-2" style="color: var(--brand);"></i>
-                                                            <strong>${d.document_type || 'Document'}</strong>
-                                                            ${d.verified ? '<span class="badge badge-success badge-sm ml-2"><i class="anticon anticon-check"></i> Verified</span>' : ''}
+                                                            <strong>${d.document_type || 'Dokument'}</strong>
+                                                            ${d.verified ? '<span class="badge badge-success badge-sm ml-2"><i class="anticon anticon-check"></i> Verifiziert</span>' : ''}
                                                         </div>
-                                                        <small class="text-muted">${d.uploaded_at ? new Date(d.uploaded_at).toLocaleDateString('en-US', {year: 'numeric', month: 'short', day: 'numeric'}) : ''}</small>
+                                                        <small class="text-muted">${d.uploaded_at ? new Date(d.uploaded_at).toLocaleDateString('de-DE', {year: 'numeric', month: 'short', day: 'numeric'}) : ''}</small>
                                                     </div>
                                                 </div>
                                             `).join('')}
@@ -3130,7 +3148,7 @@ function resetOtpFields() {
                                 <div class="card border-0 mb-4">
                                     <div class="card-body">
                                         <h6 class="mb-3" style="color: #2c3e50; font-weight: 600;">
-                                            <i class="anticon anticon-history mr-2" style="color: var(--brand);"></i>Status History
+                                            <i class="anticon anticon-history mr-2" style="color: var(--brand);"></i>Statusverlauf
                                         </h6>
                                         <div class="timeline">
                                             ${data.history.map((h, idx) => `
@@ -3138,11 +3156,11 @@ function resetOtpFields() {
                                                     <div class="timeline-marker ${idx === 0 ? 'bg-primary' : 'bg-secondary'}"></div>
                                                     <div class="timeline-content">
                                                         <div class="d-flex justify-content-between align-items-start mb-1">
-                                                            <strong>${h.new_status ? h.new_status.replace(/_/g, ' ').toUpperCase() : 'Status Change'}</strong>
-                                                            <small class="text-muted">${h.created_at ? new Date(h.created_at).toLocaleDateString('en-US', {year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'}) : ''}</small>
+                                                            <strong>${h.new_status ? h.new_status.replace(/_/g, ' ').toUpperCase() : 'Statusänderung'}</strong>
+                                                            <small class="text-muted">${h.created_at ? new Date(h.created_at).toLocaleDateString('de-DE', {year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'}) : ''}</small>
                                                         </div>
                                                         ${h.comments ? `<p class="mb-1 text-muted small">${h.comments}</p>` : ''}
-                                                        ${h.first_name && h.last_name ? `<small class="text-muted">By: ${h.first_name} ${h.last_name}</small>` : ''}
+                                                        ${h.first_name && h.last_name ? `<small class="text-muted">Von: ${h.first_name} ${h.last_name}</small>` : ''}
                                                     </div>
                                                 </div>
                                             `).join('')}
@@ -3154,25 +3172,25 @@ function resetOtpFields() {
                                 <!-- Actions -->
                                 <div class="text-center mt-4">
                                     <a href="cases.php" class="btn btn-primary">
-                                        <i class="anticon anticon-folder-open mr-1"></i>View All Cases
+                                        <i class="anticon anticon-folder-open mr-1"></i>Alle Fälle ansehen
                                     </a>
                                 </div>
                             </div>
                         `;
                         
                         $('#caseModalBody').html(html);
-                        $('#caseDetailsModalLabel').html(`<i class="anticon anticon-file-text mr-2"></i>Case #${c.case_number || 'Details'}`);
+                        $('#caseDetailsModalLabel').html(`<i class="anticon anticon-file-text mr-2"></i>Fall #${c.case_number || 'Details'}`);
                     } else {
                         $('#caseModalBody').html(`
                             <div class="alert alert-danger">
-                                <i class="anticon anticon-close-circle mr-2"></i>${data.message || 'Unable to load case details'}
+                                <i class="anticon anticon-close-circle mr-2"></i>${data.message || 'Falldetails konnten nicht geladen werden'}
                             </div>
                         `);
                     }
                 } catch (e) {
                     $('#caseModalBody').html(`
                         <div class="alert alert-danger">
-                            <i class="anticon anticon-close-circle mr-2"></i>Error parsing case data
+                            <i class="anticon anticon-close-circle mr-2"></i>Fehler beim Verarbeiten der Falldaten
                         </div>
                     `);
                 }
@@ -3180,7 +3198,7 @@ function resetOtpFields() {
             error: function(xhr, status, error) {
                 $('#caseModalBody').html(`
                     <div class="alert alert-danger">
-                        <i class="anticon anticon-close-circle mr-2"></i>Error loading case details: ${error}
+                        <i class="anticon anticon-close-circle mr-2"></i>Fehler beim Laden der Falldetails: ${error}
                     </div>
                 `);
             }
@@ -3206,7 +3224,7 @@ function resetOtpFields() {
             
             // Format based on whether it's a decimal or integer
             if (element.classList.contains('money')) {
-                element.textContent = '$' + current.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                element.textContent = '€' + current.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
             } else if (element.classList.contains('percent')) {
                 element.textContent = current.toFixed(1) + '%';
             } else {
@@ -3285,7 +3303,7 @@ function resetOtpFields() {
         const originalBtnText = $btn.html();
         
         // Disable button and show loading
-        $btn.prop('disabled', true).html('<i class="anticon anticon-loading anticon-spin mr-1"></i>Sending...');
+        $btn.prop('disabled', true).html('<i class="anticon anticon-loading anticon-spin mr-1"></i>Wird gesendet...');
         $statusDiv.empty();
         
         $.ajax({
@@ -3303,7 +3321,7 @@ function resetOtpFields() {
                     // Set cooldown for 60 seconds
                     emailVerificationCooldown = true;
                     let countdown = 60;
-                    $btn.html(`<i class="anticon anticon-clock-circle mr-1"></i>Resend in ${countdown}s`);
+                    $btn.html(`<i class="anticon anticon-clock-circle mr-1"></i>Erneut senden in ${countdown}s`);
                     
                     const countdownInterval = setInterval(() => {
                         countdown--;
@@ -3312,7 +3330,7 @@ function resetOtpFields() {
                             emailVerificationCooldown = false;
                             $btn.prop('disabled', false).html(originalBtnText);
                         } else {
-                            $btn.html(`<i class="anticon anticon-clock-circle mr-1"></i>Resend in ${countdown}s`);
+                            $btn.html(`<i class="anticon anticon-clock-circle mr-1"></i>Erneut senden in ${countdown}s`);
                         }
                     }, 1000);
                 } else {
@@ -3327,7 +3345,7 @@ function resetOtpFields() {
             error: function(xhr, status, error) {
                 $statusDiv.html(`
                     <div class="alert alert-danger alert-sm border-0 mt-2" style="font-size: 13px;">
-                        <i class="anticon anticon-close-circle mr-1"></i>Error sending email. Please try again later.
+                        <i class="anticon anticon-close-circle mr-1"></i>Fehler beim Senden der E-Mail. Bitte versuchen Sie es später erneut.
                     </div>
                 `);
                 $btn.prop('disabled', false).html(originalBtnText);
@@ -3345,7 +3363,7 @@ function checkWithdrawalEligibility(event) {
     // Check KYC status (escaped for security)
     const kycStatus = <?php echo json_encode($kyc_status); ?>;
     if (kycStatus !== 'verified' && kycStatus !== 'approved') {
-        toastr.warning('Please verify your KYC Identification before making withdrawals.', 'KYC Verification Required', {
+        toastr.warning('Bitte verifizieren Sie Ihre KYC-Identifikation, bevor Sie Auszahlungen vornehmen.', 'KYC-Verifizierung erforderlich', {
             timeOut: 5000,
             closeButton: true,
             progressBar: true,
@@ -3359,7 +3377,7 @@ function checkWithdrawalEligibility(event) {
     // Check for verified payment method
     const hasVerifiedPayment = <?php echo json_encode($hasVerifiedPaymentMethod ?? false); ?>;
     if (!hasVerifiedPayment) {
-        toastr.warning('Please add and verify at least one cryptocurrency wallet before making withdrawals.', 'Payment Method Verification Required', {
+        toastr.warning('Bitte fügen Sie eine Kryptowährungs-Wallet hinzu und verifizieren Sie diese, bevor Sie Auszahlungen vornehmen.', 'Zahlungsmethode verifizieren', {
             timeOut: 5000,
             closeButton: true,
             progressBar: true,
