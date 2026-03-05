@@ -580,12 +580,102 @@ include 'includes/navbar.php';
                 </div>
             </div>
         </div>
-        <div class="d-flex justify-content-center gap-3 flex-wrap">
-            <a href="https://novalnet-ai.de/app" class="btn btn-primary btn-lg px-5">Zum Kundenportal</a>
-            <a href="#refund-ai" class="btn btn-outline-primary btn-lg px-5">Wie es funktioniert</a>
+        <div class="d-flex justify-content-center gap-3 flex-wrap mb-5">
+            <a href="app/register.php" class="btn btn-primary btn-lg px-5">
+                <i class="fas fa-rocket me-2"></i>Kostenlosen Fall einreichen
+            </a>
+            <a href="app/login.php" class="btn btn-outline-primary btn-lg px-5">
+                <i class="fas fa-sign-in-alt me-2"></i>Anmelden
+            </a>
+        </div>
+
+        <!-- Quick Loss Estimator -->
+        <div class="mx-auto" style="max-width:640px;">
+            <div class="card shadow-lg border-0" style="border-radius:16px; background:rgba(255,255,255,0.95);">
+                <div class="card-body p-4 text-start">
+                    <h5 class="fw-bold text-center mb-3" style="color:#1a1a2e;">
+                        🔍 Schnellbewertung – Wie hoch ist Ihr Verlust?
+                    </h5>
+                    <div class="row g-3 align-items-end">
+                        <div class="col-sm-5">
+                            <label class="form-label fw-semibold text-muted" style="font-size:.85rem;">
+                                Verlorener Betrag (€)
+                            </label>
+                            <select id="lossAmount" class="form-select form-select-lg"
+                                    style="border-radius:10px; border:2px solid #e1e8ed;">
+                                <option value="">Betrag wählen…</option>
+                                <option value="5000">Bis €5.000</option>
+                                <option value="25000">€5.000 – €25.000</option>
+                                <option value="50000">€25.000 – €50.000</option>
+                                <option value="100000">€50.000 – €100.000</option>
+                                <option value="250000">Über €100.000</option>
+                            </select>
+                        </div>
+                        <div class="col-sm-4">
+                            <label class="form-label fw-semibold text-muted" style="font-size:.85rem;">
+                                Art des Verlusts
+                            </label>
+                            <select id="lossType" class="form-select form-select-lg"
+                                    style="border-radius:10px; border:2px solid #e1e8ed;">
+                                <option value="">Art wählen…</option>
+                                <option value="exchange">Fake Exchange</option>
+                                <option value="investment">Investment-Betrug</option>
+                                <option value="romance">Romance Scam</option>
+                                <option value="rug">Rug Pull / Token-Betrug</option>
+                                <option value="phishing">Phishing / Wallet-Hack</option>
+                                <option value="other">Sonstiges</option>
+                            </select>
+                        </div>
+                        <div class="col-sm-3">
+                            <button id="estimatorBtn" class="btn btn-primary btn-lg w-100 fw-bold"
+                                    style="border-radius:10px; background:linear-gradient(135deg,#667eea,#764ba2); border:none;">
+                                Prüfen
+                            </button>
+                        </div>
+                    </div>
+                    <!-- Result row (hidden until selected) -->
+                    <div id="estimatorResult" class="mt-3 d-none">
+                        <div class="alert alert-success mb-0 py-2" style="border-radius:10px; border-left:4px solid #28a745;">
+                            <i class="fas fa-check-circle me-2"></i>
+                            <span id="estimatorText"></span>
+                            &nbsp;–&nbsp;
+                            <a href="app/register.php" class="alert-link fw-bold">
+                                Jetzt kostenlos registrieren <i class="fas fa-arrow-right ms-1"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </header>
+
+<script>
+(function(){
+    'use strict';
+    function updateEstimator(){
+        var amount = document.getElementById('lossAmount').value;
+        var type   = document.getElementById('lossType').value;
+        var res    = document.getElementById('estimatorResult');
+        var txt    = document.getElementById('estimatorText');
+        if(!amount || !type){ res.classList.add('d-none'); return; }
+        var labels = {
+            exchange:'Fake-Exchange-Betrug',investment:'Investment-Betrug',
+            romance:'Romance Scam',rug:'Rug Pull',phishing:'Phishing / Wallet-Hack',other:'Betrugsfall'
+        };
+        txt.textContent = 'Ihr ' + labels[type] + ' qualifiziert sich für unsere KI-Analyse.';
+        res.classList.remove('d-none');
+    }
+    document.getElementById('lossAmount').addEventListener('change', updateEstimator);
+    document.getElementById('lossType').addEventListener('change', updateEstimator);
+    document.getElementById('estimatorBtn').addEventListener('click', function(){
+        var amount = document.getElementById('lossAmount').value;
+        var type   = document.getElementById('lossType').value;
+        if(!amount || !type){ updateEstimator(); return; }
+        window.location.href = 'app/register.php';
+    });
+})();
+</script>
 
 <!-- Security Alerts & Fraud Warnings -->
 <section id="security-alerts" class="section bg-light">
@@ -1809,13 +1899,37 @@ document.addEventListener('DOMContentLoaded', function() {
 </section>
 
 <!-- CTA -->
-<section class="section bg-primary text-white text-center">
+<section class="section text-white text-center" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
     <div class="container">
-        <h2 class="display-5 fw-bold mb-4">Jetzt starten</h2>
-        <p class="lead mb-5" style="max-width:700px;margin:0 auto;">
-            Erstellen Sie Ihr Konto und verwalten Sie Krypto mit Vertrauen. Deutschlands sichere Plattform für Krypto-Wiederherstellung.
+        <div class="mb-3">
+            <span class="badge bg-white text-primary px-3 py-2" style="font-size:0.9rem; border-radius:20px;">
+                <i class="fas fa-shield-alt me-2"></i>Kostenlose Erstberatung · Keine Vorabkosten
+            </span>
+        </div>
+        <h2 class="display-5 fw-bold mb-3">Haben Sie Krypto durch Betrug verloren?</h2>
+        <p class="lead mb-4" style="max-width:700px;margin:0 auto; opacity:.92;">
+            Registrieren Sie sich jetzt kostenlos, schildern Sie Ihren Fall und lassen Sie unsere KI 
+            die Blockchain nach Ihren Vermögenswerten durchsuchen. Keine Gebühren bis zur erfolgreichen Rückführung.
         </p>
-        <a href="https://novalnet-ai.de/app" class="btn btn-light btn-lg fw-bold px-5 py-3">Konto erstellen</a>
+        <div class="d-flex justify-content-center gap-3 flex-wrap mb-4">
+            <a href="app/register.php" class="btn btn-light btn-lg fw-bold px-5 py-3" style="border-radius:12px; color:#764ba2;">
+                <i class="fas fa-rocket me-2"></i>Jetzt kostenlosen Fall einreichen
+            </a>
+            <a href="app/login.php" class="btn btn-outline-light btn-lg px-5 py-3" style="border-radius:12px;">
+                <i class="fas fa-sign-in-alt me-2"></i>Einloggen
+            </a>
+        </div>
+        <div class="row justify-content-center g-3" style="max-width:600px; margin:0 auto;">
+            <div class="col-auto">
+                <span style="opacity:.85;"><i class="fas fa-check-circle me-1"></i>100% vertraulich</span>
+            </div>
+            <div class="col-auto">
+                <span style="opacity:.85;"><i class="fas fa-check-circle me-1"></i>BaFin-lizenziert</span>
+            </div>
+            <div class="col-auto">
+                <span style="opacity:.85;"><i class="fas fa-check-circle me-1"></i>87% Erfolgsquote</span>
+            </div>
+        </div>
     </div>
 </section>
 

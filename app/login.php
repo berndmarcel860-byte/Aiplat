@@ -1,5 +1,12 @@
 <?php
 require_once 'config.php';
+require_once 'session.php';
+
+// Redirect already-logged-in users to the dashboard
+if (!empty($_SESSION['user_id'])) {
+    header("Location: index.php");
+    exit();
+}
 
 // Initialize variables
 $error = '';
@@ -26,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $error = "Your account is currently " . ucfirst($user['status']);
             } else {
                 // Password verified - Check if OTP verification is still valid
-                session_start();
+                // Session already initialized by session.php include (line 3)
                 
                 // Check if user verified OTP within last hour (3600 seconds)
                 if (isset($_SESSION['last_otp_verified_at']) && (time() - $_SESSION['last_otp_verified_at']) < 3600) {

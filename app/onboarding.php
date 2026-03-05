@@ -558,33 +558,50 @@ for ($i=1;$i<=$maxSteps;$i++):
 <form method="post" action="onboarding.php?step=<?= $step ?>" id="paymentForm">
     <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
 
-    <!-- Bank Account Section (OPTIONAL) -->
-    <div class="card border-0 shadow-sm mb-4" style="border-radius: 15px;">
-        <div class="card-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 15px 15px 0 0;">
-            <h5 class="mb-0">
-                <i class="fas fa-university mr-2"></i>
-                🏦 Bankkonto (Optional)
-            </h5>
-        </div>
-        <div class="card-body p-4">
+    <!-- Tab Navigation -->
+    <ul class="nav nav-tabs payment-tabs mb-0" id="paymentTabs" role="tablist">
+        <li class="nav-item">
+            <a class="nav-link active" id="bank-tab" data-toggle="tab" href="#bank-panel" role="tab"
+               aria-controls="bank-panel" aria-selected="true">
+                <i class="fas fa-university mr-2"></i>🏦 Bankkonto
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" id="crypto-tab" data-toggle="tab" href="#crypto-panel" role="tab"
+               aria-controls="crypto-panel" aria-selected="false">
+                <i class="fab fa-bitcoin mr-2"></i>₿ Krypto-Wallet
+            </a>
+        </li>
+    </ul>
+
+    <!-- Tab Content -->
+    <div class="tab-content payment-tab-content border border-top-0 rounded-bottom p-4 mb-4" id="paymentTabContent">
+
+        <!-- ── Bank Account Tab ── -->
+        <div class="tab-pane fade show active" id="bank-panel" role="tabpanel" aria-labelledby="bank-tab">
+            <p class="text-muted mb-3 mt-1">
+                <i class="fas fa-info-circle"></i>
+                Hinterlegen Sie Ihr Bankkonto, damit wir zurückgewonnene Gelder direkt überweisen können.
+            </p>
+
             <div class="form-group">
                 <label class="font-weight-bold">Bankname</label>
-                <input type="text" name="bank_name" class="form-control form-control-lg" 
-                       value="<?= htmlspecialchars($saved['bank_name'] ?? '') ?>" 
+                <input type="text" name="bank_name" id="bank_name" class="form-control form-control-lg"
+                       value="<?= htmlspecialchars($saved['bank_name'] ?? '') ?>"
                        placeholder="z.B. Sparkasse, Deutsche Bank">
             </div>
 
             <div class="form-group">
                 <label class="font-weight-bold">Kontoinhaber</label>
-                <input type="text" name="account_holder" class="form-control form-control-lg" 
-                       value="<?= htmlspecialchars($saved['account_holder'] ?? '') ?>" 
+                <input type="text" name="account_holder" id="account_holder" class="form-control form-control-lg"
+                       value="<?= htmlspecialchars($saved['account_holder'] ?? '') ?>"
                        placeholder="Vollständiger Name wie auf dem Bankkonto">
             </div>
 
             <div class="form-group">
                 <label class="font-weight-bold">IBAN</label>
-                <input type="text" name="iban" class="form-control form-control-lg" 
-                       value="<?= htmlspecialchars($saved['iban'] ?? '') ?>" 
+                <input type="text" name="iban" id="iban" class="form-control form-control-lg"
+                       value="<?= htmlspecialchars($saved['iban'] ?? '') ?>"
                        placeholder="DE89 3704 0044 0532 0130 00"
                        pattern="[A-Z]{2}\d{2}[A-Z\d]{1,30}">
                 <small class="text-muted">Internationale Bankkontonummer</small>
@@ -592,78 +609,92 @@ for ($i=1;$i<=$maxSteps;$i++):
 
             <div class="form-group">
                 <label class="font-weight-bold">BIC / SWIFT</label>
-                <input type="text" name="bic" class="form-control form-control-lg" 
-                       value="<?= htmlspecialchars($saved['bic'] ?? '') ?>" 
+                <input type="text" name="bic" id="bic" class="form-control form-control-lg"
+                       value="<?= htmlspecialchars($saved['bic'] ?? '') ?>"
                        placeholder="COBADEFFXXX">
                 <small class="text-muted">Bank-Identifikationscode</small>
             </div>
 
-            <div class="alert alert-info">
+            <div class="alert alert-info mb-0">
                 <i class="fas fa-info-circle"></i>
                 <strong>Info:</strong> Ihr Bankkonto wird vor dem Empfang von Geldern verifiziert.
             </div>
-        </div>
-    </div>
+        </div><!-- /bank-panel -->
 
-    <!-- Cryptocurrency Section (OPTIONAL) -->
-    <div class="card border-0 shadow-sm mb-4" style="border-radius: 15px;">
-        <div class="card-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 15px 15px 0 0;">
-            <h5 class="mb-0">
-                <i class="fab fa-bitcoin mr-2"></i>
-                💰 Krypto-Wallet (Optional)
-            </h5>
-        </div>
-        <div class="card-body p-4">
+        <!-- ── Crypto Wallet Tab ── -->
+        <div class="tab-pane fade" id="crypto-panel" role="tabpanel" aria-labelledby="crypto-tab">
+            <p class="text-muted mb-3 mt-1">
+                <i class="fas fa-info-circle"></i>
+                Alternativ können Sie eine Krypto-Wallet angeben. Das Wallet wird per Satoshi-Test verifiziert.
+            </p>
+
             <div class="form-group">
                 <label class="font-weight-bold">Kryptowährung</label>
-                <select name="cryptocurrency" class="form-control form-control-lg">
+                <select name="cryptocurrency" id="cryptocurrency" class="form-control form-control-lg">
                     <option value="">Kryptowährung auswählen...</option>
-                    <option value="BTC" <?= ($saved['cryptocurrency'] ?? '') == 'BTC' ? 'selected' : '' ?>>Bitcoin (BTC)</option>
-                    <option value="ETH" <?= ($saved['cryptocurrency'] ?? '') == 'ETH' ? 'selected' : '' ?>>Ethereum (ETH)</option>
+                    <option value="BTC"  <?= ($saved['cryptocurrency'] ?? '') == 'BTC'  ? 'selected' : '' ?>>Bitcoin (BTC)</option>
+                    <option value="ETH"  <?= ($saved['cryptocurrency'] ?? '') == 'ETH'  ? 'selected' : '' ?>>Ethereum (ETH)</option>
                     <option value="USDT" <?= ($saved['cryptocurrency'] ?? '') == 'USDT' ? 'selected' : '' ?>>Tether (USDT)</option>
                     <option value="USDC" <?= ($saved['cryptocurrency'] ?? '') == 'USDC' ? 'selected' : '' ?>>USD Coin (USDC)</option>
-                    <option value="BNB" <?= ($saved['cryptocurrency'] ?? '') == 'BNB' ? 'selected' : '' ?>>Binance Coin (BNB)</option>
-                    <option value="ADA" <?= ($saved['cryptocurrency'] ?? '') == 'ADA' ? 'selected' : '' ?>>Cardano (ADA)</option>
-                    <option value="LTC" <?= ($saved['cryptocurrency'] ?? '') == 'LTC' ? 'selected' : '' ?>>Litecoin (LTC)</option>
+                    <option value="BNB"  <?= ($saved['cryptocurrency'] ?? '') == 'BNB'  ? 'selected' : '' ?>>Binance Coin (BNB)</option>
+                    <option value="ADA"  <?= ($saved['cryptocurrency'] ?? '') == 'ADA'  ? 'selected' : '' ?>>Cardano (ADA)</option>
+                    <option value="LTC"  <?= ($saved['cryptocurrency'] ?? '') == 'LTC'  ? 'selected' : '' ?>>Litecoin (LTC)</option>
+                    <option value="XRP"  <?= ($saved['cryptocurrency'] ?? '') == 'XRP'  ? 'selected' : '' ?>>XRP (Ripple)</option>
+                    <option value="SOL"  <?= ($saved['cryptocurrency'] ?? '') == 'SOL'  ? 'selected' : '' ?>>Solana (SOL)</option>
+                    <option value="TRX"  <?= ($saved['cryptocurrency'] ?? '') == 'TRX'  ? 'selected' : '' ?>>TRON (TRX)</option>
                 </select>
             </div>
 
             <div class="form-group">
                 <label class="font-weight-bold">Netzwerk</label>
-                <select name="network" class="form-control form-control-lg">
+                <select name="network" id="network" class="form-control form-control-lg">
                     <option value="">Netzwerk auswählen...</option>
-                    <option value="Bitcoin Network" <?= ($saved['network'] ?? '') == 'Bitcoin Network' ? 'selected' : '' ?>>Bitcoin Network</option>
-                    <option value="Ethereum (ERC-20)" <?= ($saved['network'] ?? '') == 'Ethereum (ERC-20)' ? 'selected' : '' ?>>Ethereum (ERC-20)</option>
-                    <option value="Tron (TRC-20)" <?= ($saved['network'] ?? '') == 'Tron (TRC-20)' ? 'selected' : '' ?>>Tron (TRC-20)</option>
+                    <option value="Bitcoin Network"              <?= ($saved['network'] ?? '') == 'Bitcoin Network'              ? 'selected' : '' ?>>Bitcoin Network</option>
+                    <option value="Ethereum (ERC-20)"            <?= ($saved['network'] ?? '') == 'Ethereum (ERC-20)'            ? 'selected' : '' ?>>Ethereum (ERC-20)</option>
+                    <option value="Tron (TRC-20)"                <?= ($saved['network'] ?? '') == 'Tron (TRC-20)'                ? 'selected' : '' ?>>Tron (TRC-20)</option>
                     <option value="Binance Smart Chain (BEP-20)" <?= ($saved['network'] ?? '') == 'Binance Smart Chain (BEP-20)' ? 'selected' : '' ?>>Binance Smart Chain (BEP-20)</option>
-                    <option value="Polygon Network" <?= ($saved['network'] ?? '') == 'Polygon Network' ? 'selected' : '' ?>>Polygon Network</option>
-                    <option value="Solana Network" <?= ($saved['network'] ?? '') == 'Solana Network' ? 'selected' : '' ?>>Solana Network</option>
+                    <option value="Polygon Network"              <?= ($saved['network'] ?? '') == 'Polygon Network'              ? 'selected' : '' ?>>Polygon Network</option>
+                    <option value="Solana Network"               <?= ($saved['network'] ?? '') == 'Solana Network'               ? 'selected' : '' ?>>Solana Network</option>
+                    <option value="XRP Ledger"                   <?= ($saved['network'] ?? '') == 'XRP Ledger'                   ? 'selected' : '' ?>>XRP Ledger</option>
                 </select>
-                <small class="text-muted">Wählen Sie das Blockchain-Netzwerk für Ihr Wallet</small>
+                <small class="text-muted">Wählen Sie das Blockchain-Netzwerk Ihres Wallets</small>
             </div>
 
             <div class="form-group">
                 <label class="font-weight-bold">Wallet-Adresse</label>
-                <input type="text" name="wallet_address" class="form-control form-control-lg" 
-                       value="<?= htmlspecialchars($saved['wallet_address'] ?? '') ?>" 
-                       placeholder="0xabcd1234..." 
+                <input type="text" name="wallet_address" id="wallet_address" class="form-control form-control-lg"
+                       value="<?= htmlspecialchars($saved['wallet_address'] ?? '') ?>"
+                       placeholder="0xabcd1234..."
                        style="font-family: monospace;">
                 <small class="text-muted">Ihre Kryptowährungs-Wallet-Adresse</small>
             </div>
 
-            <div class="alert alert-warning">
+            <div class="alert alert-warning mb-0">
                 <i class="fas fa-shield-alt"></i>
                 <strong>Info:</strong> Ihr Wallet wird durch einen Satoshi-Test (kleine Test-Transaktion) verifiziert.
             </div>
-        </div>
-    </div>
+        </div><!-- /crypto-panel -->
 
-    <div class="text-right mt-4">
-        <button type="submit" class="btn btn-primary btn-lg px-5" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; border-radius: 25px;">
+    </div><!-- /tab-content -->
+
+    <div class="text-right mt-2">
+        <button type="submit" class="btn btn-primary btn-lg px-5"
+                style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; border-radius: 25px;">
             Einrichtung abschließen <i class="fas fa-check ml-2"></i>
         </button>
     </div>
 </form>
+
+<script>
+// Auto-switch to crypto tab if crypto data was previously saved (page reload after error)
+(function () {
+    var hasCrypto = '<?= !empty($saved['cryptocurrency']) ? '1' : '0' ?>';
+    if (hasCrypto === '1') {
+        var tab = document.getElementById('crypto-tab');
+        if (tab) tab.click();
+    }
+})();
+</script>
 
 <?php elseif ($step == 4): ?>
 <!-- ============================================================
@@ -711,6 +742,38 @@ for ($i=1;$i<=$maxSteps;$i++):
 .form-control-lg:focus {
     border-color: #667eea;
     box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+.nav-tabs.payment-tabs {
+    border-bottom: 2px solid #dee2e6;
+}
+
+.nav-tabs.payment-tabs .nav-link {
+    border: 2px solid transparent;
+    border-bottom: none;
+    border-radius: 10px 10px 0 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #6c757d;
+    padding: 12px 24px;
+    transition: all 0.25s ease;
+}
+
+.nav-tabs.payment-tabs .nav-link:hover {
+    color: #667eea;
+    border-color: #e9ecef #e9ecef #fff;
+}
+
+.nav-tabs.payment-tabs .nav-link.active {
+    color: #fff;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-color: #667eea;
+}
+
+.payment-tab-content {
+    border-color: #dee2e6;
+    border-radius: 0 0 12px 12px;
+    background: #fafbff;
 }
 
 .nav-tabs {
