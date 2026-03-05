@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../config.php';
-// Check if user is logged in
+require_once __DIR__ . '/../admin/AdminEmailHelper.php';
+
 // Start session if not already started
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -16,7 +17,6 @@ if (!isset($_SESSION['user_id'])) {
     ]));
 }
 
-
 header('Content-Type: application/json');
 
 try {
@@ -24,15 +24,30 @@ try {
         throw new Exception('Invalid request method');
     }
     
-    $subject = trim($_POST['subject'] ?? '');
-    $message = trim($_POST['message'] ?? '');
+    $subject  = trim($_POST['subject']  ?? '');
+    $message  = trim($_POST['message']  ?? '');
     $category = trim($_POST['category'] ?? '');
     $priority = $_POST['priority'] ?? 'medium';
+
+    // Validate priority against allowed values; fall back to 'medium' for unknown input
+    $allowedPriorities = ['low', 'medium', 'high', 'critical'];
+    if (!in_array($priority, $allowedPriorities, true)) {
+        $priority = 'medium';
+    }
     
     if (empty($subject) || empty($message) || empty($category)) {
         throw new Exception('Subject, message, and category are required');
     }
     
+    // Translate priority to German for the email
+    $priorityLabels = [
+        'low'      => 'Niedrig',
+        'medium'   => 'Mittel',
+        'high'     => 'Hoch',
+        'critical' => 'Kritisch',
+    ];
+    $priorityLabel = $priorityLabels[$priority];
+
     // Generate ticket number
     $ticket_number = 'TICKET-' . strtoupper(uniqid());
     
@@ -57,22 +72,35 @@ try {
         $_SERVER['HTTP_USER_AGENT'] ?? ''
     ]);
     
+    // Send ticket-created notification email (non-fatal if it fails)
+    try {
+        $emailHelper = new AdminEmailHelper($pdo);
+        $emailHelper->sendTemplateEmail('ticket_created', $_SESSION['user_id'], [
+            'ticket_number'   => $ticket_number,
+            'ticket_subject'  => $subject,
+            'ticket_category' => $category,
+            'ticket_priority' => $priorityLabel,
+        ]);
+    } catch (Exception $emailError) {
+        error_log("Ticket creation email failed (ticket $ticket_number): " . $emailError->getMessage());
+    }
+    
     echo json_encode([
-        'success' => true,
-        'message' => 'Ticket created successfully',
-        'ticket_number' => $ticket_number
+        'success'       => true,
+        'message'       => 'Ticket created successfully',
+        'ticket_number' => $ticket_number,
     ]);
     
 } catch (Exception $e) {
     echo json_encode([
-        'success' => false,
-        'message' => $e->getMessage()
+        'success'  => false,
+        'message'  => $e->getMessage(),
     ]);
 } catch (PDOException $e) {
     error_log("Database error in create_ticket.php: " . $e->getMessage());
     echo json_encode([
-        'success' => false,
-        'message' => 'Database error occurred'
+        'success'  => false,
+        'message'  => 'Database error occurred',
     ]);
 }
 ?>
