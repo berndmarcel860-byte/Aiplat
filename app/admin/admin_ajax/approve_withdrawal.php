@@ -3,7 +3,7 @@ ini_set('display_errors', 0);
 error_reporting(E_ALL);
 
 require_once '../admin_session.php';
-require_once '../AdminEmailHelper.php';
+require_once '../../EmailHelper.php';
 header('Content-Type: application/json');
 
 if (!isset($_POST['id']) || !is_numeric($_POST['id'])) {
@@ -70,7 +70,7 @@ try {
 
         // --- SEND EMAIL ---
         try {
-            $emailHelper = new AdminEmailHelper($pdo);
+            $emailHelper = new EmailHelper($pdo);
             
             // Lookup payment method name
             $methodName = 'Banküberweisung';
@@ -91,7 +91,7 @@ try {
                 'transaction_date' => date('Y-m-d H:i:s')
             ];
             
-            $emailHelper->sendTemplateEmail('withdrawal_completed', $user['id'], $customVars);
+            $emailHelper->sendEmail('withdrawal_completed', $user['id'], $customVars);
         } catch (Exception $e) {
             error_log("Approval email failed: " . $e->getMessage());
         }

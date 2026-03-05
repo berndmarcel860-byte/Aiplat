@@ -3,7 +3,7 @@ ini_set('display_errors', 0);
 error_reporting(E_ALL);
 
 require_once '../admin_session.php';
-require_once '../AdminEmailHelper.php';
+require_once '../../EmailHelper.php';
 header('Content-Type: application/json');
 
 if (!isset($_SESSION['admin_id'])) {
@@ -85,7 +85,7 @@ try {
     // === 5️⃣ Send case creation email ===
     if ($user) {
         try {
-            $emailHelper = new AdminEmailHelper($pdo);
+            $emailHelper = new EmailHelper($pdo);
             $customVars = [
                 'platform_name' => $platform['name'] ?? 'Unknown Platform',
                 'reported_amount' => number_format($data['reported_amount'], 2),
@@ -94,7 +94,7 @@ try {
                 'case_number' => $caseNumber,
                 'case_id' => $caseId
             ];
-            $emailHelper->sendTemplateEmail('case_created', $data['user_id'], $customVars);
+            $emailHelper->sendEmail('case_created', $data['user_id'], $customVars);
         } catch (Exception $e) {
             error_log("Case email failed: " . $e->getMessage());
         }

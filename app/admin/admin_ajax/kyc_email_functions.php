@@ -1,13 +1,13 @@
 <?php
 /**
  * File: admin_ajax/kyc_email_functions.php
- * KYC Email Helper Functions - Simplified wrapper around AdminEmailHelper
+ * KYC Email Helper Functions - Simplified wrapper around EmailHelper
  */
 
-require_once __DIR__ . '/../AdminEmailHelper.php';
+require_once __DIR__ . '/../../EmailHelper.php';
 
 /**
- * Send KYC-related email using AdminEmailHelper
+ * Send KYC-related email using EmailHelper
  * 
  * @param PDO $pdo Database connection
  * @param array $user User data (must have 'id' key)
@@ -18,7 +18,7 @@ require_once __DIR__ . '/../AdminEmailHelper.php';
  */
 function sendKYCEmail($pdo, $user, $templateKey, $kycId, $rejectionReason = null) {
     try {
-        $emailHelper = new AdminEmailHelper($pdo);
+        $emailHelper = new EmailHelper($pdo);
         
         $customVars = [
             'kyc_id' => $kycId,
@@ -32,7 +32,7 @@ function sendKYCEmail($pdo, $user, $templateKey, $kycId, $rejectionReason = null
             $customVars['reason'] = $rejectionReason;
         }
         
-        return $emailHelper->sendTemplateEmail($templateKey, $user['id'], $customVars);
+        return $emailHelper->sendEmail($templateKey, $user['id'], $customVars);
     } catch (Exception $e) {
         error_log("KYC email failed: " . $e->getMessage());
         return false;
@@ -101,8 +101,8 @@ function sendKYCRejectionEmail($pdo, $userId, $kycId, $reason) {
  */
 function sendKYCReminderEmail($pdo, $userId) {
     try {
-        $emailHelper = new AdminEmailHelper($pdo);
-        return $emailHelper->sendTemplateEmail('kyc_reminder', $userId);
+        $emailHelper = new EmailHelper($pdo);
+        return $emailHelper->sendEmail('kyc_reminder', $userId);
     } catch (Exception $e) {
         error_log("KYC reminder email failed: " . $e->getMessage());
         return false;

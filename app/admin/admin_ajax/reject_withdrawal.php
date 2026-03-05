@@ -77,8 +77,8 @@ try {
     if ($user) {
         // --- SEND EMAIL NOTIFICATION ---
         try {
-            require_once '../AdminEmailHelper.php';
-            $emailHelper = new AdminEmailHelper($pdo);
+            require_once '../../EmailHelper.php';
+            $emailHelper = new EmailHelper($pdo);
             
             $customVars = [
                 'amount' => number_format($withdrawal['amount'], 2) . ' €',
@@ -92,7 +92,7 @@ try {
                 'rejection_reason' => $reason
             ];
             
-            $emailHelper->sendTemplateEmail('withdrawal_rejected', $user['id'], $customVars);
+            $emailHelper->sendEmail('withdrawal_rejected', $user['id'], $customVars);
         } catch (Exception $e) {
             error_log("Withdrawal rejection email failed: " . $e->getMessage());
         }

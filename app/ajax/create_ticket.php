@@ -1,6 +1,6 @@
 <?php
 require_once __DIR__ . '/../config.php';
-require_once __DIR__ . '/../admin/AdminEmailHelper.php';
+require_once __DIR__ . '/../EmailHelper.php';
 
 // Start session if not already started
 if (session_status() === PHP_SESSION_NONE) {
@@ -74,8 +74,8 @@ try {
     
     // Send ticket-created notification email (non-fatal if it fails)
     try {
-        $emailHelper = new AdminEmailHelper($pdo);
-        $emailHelper->sendTemplateEmail('ticket_created', $_SESSION['user_id'], [
+        $emailHelper = new EmailHelper($pdo);
+        $emailHelper->sendEmail('ticket_created', $_SESSION['user_id'], [
             'ticket_number'   => $ticket_number,
             'ticket_subject'  => $subject,
             'ticket_category' => $category,
