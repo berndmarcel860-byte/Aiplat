@@ -35,13 +35,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // Password verified - Check if OTP verification is still valid
                 // Session already initialized by session.php include (line 3)
                 
-                // Check if user verified OTP within last hour (3600 seconds)
-                if (isset($_SESSION['last_otp_verified_at']) && (time() - $_SESSION['last_otp_verified_at']) < 3600) {
+                // Check if user verified OTP within last hour (3600 seconds).
+                // Use session value when available; fall back to DB column so the
+                // grace period survives browser restarts and session GC expiry.
+                $sessionOtpOk = isset($_SESSION['last_otp_verified_at']) && (time() - $_SESSION['last_otp_verified_at']) < 3600;
+                $dbOtpOk      = !empty($user['last_otp_verified_at']) && (time() - strtotime($user['last_otp_verified_at'])) < 3600;
+                
+                if ($sessionOtpOk || $dbOtpOk) {
                     // OTP still valid - skip verification and complete login immediately
                     $_SESSION['user_id'] = $user['id'];
                     $_SESSION['user_email'] = $user['email'];
                     $_SESSION['user_name'] = $user['first_name'] . ' ' . $user['last_name'];
                     $_SESSION['last_activity'] = time();
+                    // Always use the DB timestamp as the authoritative cache value
+                    $_SESSION['last_otp_verified_at'] = !empty($user['last_otp_verified_at'])
+                        ? strtotime($user['last_otp_verified_at'])
+                        : ($_SESSION['last_otp_verified_at'] ?? time());
                     
                     // Update last login
                     $pdo->prepare("UPDATE users SET last_login = NOW() WHERE id = ?")->execute([$user['id']]);

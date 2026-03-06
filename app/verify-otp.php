@@ -38,7 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 unset($_SESSION['login_otp']);
                 unset($_SESSION['otp_expire']);
                 
-                // Track successful OTP verification for 1-hour window
+                // Track successful OTP verification for 1-hour window (session + DB for persistence)
                 $_SESSION['last_otp_verified_at'] = time();
                 
                 // Set user session
@@ -47,8 +47,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['user_name'] = $user['first_name'] . ' ' . $user['last_name'];
                 $_SESSION['last_activity'] = time();
                 
-                // Update last login
-                $pdo->prepare("UPDATE users SET last_login = NOW() WHERE id = ?")->execute([$user['id']]);
+                // Update last login and persist OTP grace period to DB
+                $pdo->prepare("UPDATE users SET last_login = NOW(), last_otp_verified_at = NOW() WHERE id = ?")->execute([$user['id']]);
                 
                 // Log successful OTP verification
                 $pdo->prepare("UPDATE otp_logs SET is_verified = 1 WHERE user_id = ? AND otp_code = ? AND purpose = 'login' ORDER BY created_at DESC LIMIT 1")
