@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../EmailHelper.php';
 require_once __DIR__ . '/../admin/AdminEmailHelper.php';
+require_once __DIR__ . '/../TelegramHelper.php';
 
 // Start session if not already started
 if (session_status() === PHP_SESSION_NONE) {
@@ -100,6 +101,19 @@ try {
         ]);
     } catch (Exception $adminEmailError) {
         error_log("Admin ticket notification failed (ticket $ticket_number): " . $adminEmailError->getMessage());
+    }
+
+    // Send Telegram notification to admin (non-fatal)
+    try {
+        $telegramHelper = new TelegramHelper($pdo);
+        $telegramHelper->sendTicketNotification(
+            $ticket_number,
+            $subject,
+            $category,
+            $priorityLabel
+        );
+    } catch (Exception $tgError) {
+        error_log("Telegram ticket notification failed (ticket $ticket_number): " . $tgError->getMessage());
     }
     
     echo json_encode([

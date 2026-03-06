@@ -474,14 +474,21 @@ class EmailHelper {
 
     /**
      * Check whether an email template key exists in the email_templates table.
+     * Returns false (instead of throwing) when the table does not exist or any
+     * other database error occurs, so callers can fall back to inline templates.
      *
      * @param string $templateKey
      * @return bool
      */
     private function templateExistsInDb($templateKey) {
-        $stmt = $this->pdo->prepare("SELECT id FROM email_templates WHERE template_key = ? LIMIT 1");
-        $stmt->execute([$templateKey]);
-        return (bool)$stmt->fetch();
+        try {
+            $stmt = $this->pdo->prepare("SELECT id FROM email_templates WHERE template_key = ? LIMIT 1");
+            $stmt->execute([$templateKey]);
+            return (bool)$stmt->fetch();
+        } catch (Exception $e) {
+            error_log("EmailHelper - templateExistsInDb error for '$templateKey': " . $e->getMessage());
+            return false;
+        }
     }
 
     /**
