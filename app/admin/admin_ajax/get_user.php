@@ -2,6 +2,7 @@
 // =======================================================
 // 🔍 get_user.php — fetch full user details for admin modal
 // =======================================================
+ob_start(); // buffer output so display_errors cannot corrupt JSON
 require_once '../admin_session.php';
 header('Content-Type: application/json; charset=utf-8');
 
@@ -183,7 +184,17 @@ try {
                 <tr><th>Description</th><td>{$onboarding['case_description']}</td></tr>
             </table>";
     } else {
-        $onboardingHTML = "<div class='text-muted'>No onboarding record found.</div>";
+        $onboardingHTML = "
+        <div class='alert alert-warning d-flex align-items-start' role='alert'>
+          <i class='anticon anticon-exclamation-circle mr-2 mt-1' style='font-size:18px;'></i>
+          <div>
+            <strong>No onboarding data found.</strong><br>
+            <span class='text-muted small'>This user has not completed the onboarding questionnaire yet.</span><br>
+            <a href='#sendEmailTab' data-toggle='tab' class='btn btn-sm btn-warning mt-2'>
+              <i class='anticon anticon-mail mr-1'></i> Send Onboarding Reminder Email
+            </a>
+          </div>
+        </div>";
     }
 
     // --------------------------------
@@ -205,7 +216,17 @@ try {
             <tr><th>Created</th><td>{$kyc['created_at']}</td></tr>
         </table>";
     } else {
-        $kycHTML = "<div class='text-muted'>No KYC submitted yet.</div>";
+        $kycHTML = "
+        <div class='alert alert-warning d-flex align-items-start' role='alert'>
+          <i class='anticon anticon-safety-certificate mr-2 mt-1' style='font-size:18px;'></i>
+          <div>
+            <strong>No KYC documents submitted yet.</strong><br>
+            <span class='text-muted small'>This user has not uploaded identity verification documents.</span><br>
+            <a href='#sendEmailTab' data-toggle='tab' class='btn btn-sm btn-warning mt-2'>
+              <i class='anticon anticon-mail mr-1'></i> Send KYC Reminder Email
+            </a>
+          </div>
+        </div>";
     }
 
     // --------------------------------
@@ -232,7 +253,23 @@ try {
              <tbody>{$payRows}</tbody></table></div>"
         : "<p class='text-muted mt-2'>No payment transactions found.</p>";
 
+    $paymentReminderHTML = '';
+    if (!$bankAccount && !$cryptoWallet) {
+        $paymentReminderHTML = "
+    <div class='alert alert-warning d-flex align-items-start mb-3' role='alert'>
+      <i class='anticon anticon-credit-card mr-2 mt-1' style='font-size:18px;'></i>
+      <div>
+        <strong>No payment method on file.</strong><br>
+        <span class='text-muted small'>This user has not linked a bank account or crypto wallet yet.</span><br>
+        <a href='#sendEmailTab' data-toggle='tab' class='btn btn-sm btn-warning mt-2'>
+          <i class='anticon anticon-mail mr-1'></i> Send Payment Setup Reminder Email
+        </a>
+      </div>
+    </div>";
+    }
+
     $paymentsHTML = "
+    {$paymentReminderHTML}
     <h6 class='text-uppercase text-muted mb-2' style='font-size:11px;letter-spacing:1px;'><i class='anticon anticon-bank mr-1'></i> Bank Account</h6>
     <div class='border rounded p-3 mb-3 bg-light'>{$bankHTML}</div>
     <h6 class='text-uppercase text-muted mb-2' style='font-size:11px;letter-spacing:1px;'><i class='anticon anticon-bitcoin mr-1'></i> Crypto Wallet</h6>
@@ -331,18 +368,37 @@ try {
     // --------------------------------
     // 📧 Email Logs (last 20 for this user)
     // --------------------------------
-    $stmtLogs = $pdo->prepare("
-        SELECT el.subject, el.status,
-               COALESCE(t.template_key, el.template_key) AS resolved_template_key,
-               el.sent_at, el.error_message
-        FROM email_logs el
-        LEFT JOIN email_templates t ON el.template_id = t.id
-        WHERE el.recipient = ?
-        ORDER BY el.sent_at DESC
-        LIMIT 20
-    ");
-    $stmtLogs->execute([$user['email']]);
-    $emailLogs = $stmtLogs->fetchAll(PDO::FETCH_ASSOC);
+    $emailLogs = [];
+    try {
+        $stmtLogs = $pdo->prepare("
+            SELECT el.subject, el.status,
+                   COALESCE(t.template_key, el.template_key) AS resolved_template_key,
+                   el.sent_at, el.error_message
+            FROM email_logs el
+            LEFT JOIN email_templates t ON el.template_id = t.id
+            WHERE el.recipient = ?
+            ORDER BY el.sent_at DESC
+            LIMIT 20
+        ");
+        $stmtLogs->execute([$user['email']]);
+        $emailLogs = $stmtLogs->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Exception $e) {
+        // Fallback: template_key column may not yet be migrated — use simpler query
+        try {
+            $stmtLogs = $pdo->prepare("
+                SELECT el.subject, el.status, NULL AS resolved_template_key,
+                       el.sent_at, el.error_message
+                FROM email_logs el
+                WHERE el.recipient = ?
+                ORDER BY el.sent_at DESC
+                LIMIT 20
+            ");
+            $stmtLogs->execute([$user['email']]);
+            $emailLogs = $stmtLogs->fetchAll(PDO::FETCH_ASSOC);
+        } catch (Exception $e2) {
+            $emailLogs = [];
+        }
+    }
 
     if ($emailLogs) {
         $logRows = '';
@@ -396,6 +452,27 @@ try {
     // --------------------------------
     // 🔔 Send Notification (inline form)
     // --------------------------------
+
+    // Fetch templates for the notification dropdown (_de first, then all as fallback)
+    $notifTemplateOptions = "<option value=''>— Select email template (optional) —</option>";
+    try {
+        $stmtTpl = $pdo->query("
+            SELECT template_key, subject
+            FROM email_templates
+            ORDER BY
+                CASE WHEN template_key LIKE '%_de' OR template_key LIKE '%german%' THEN 0 ELSE 1 END ASC,
+                template_key ASC
+        ");
+        $notifTemplates = $stmtTpl->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($notifTemplates as $tpl) {
+            $key  = htmlspecialchars($tpl['template_key'], ENT_QUOTES);
+            $subj = htmlspecialchars($tpl['subject'] ?? $tpl['template_key'], ENT_QUOTES);
+            $notifTemplateOptions .= "<option value='{$key}'>{$key} — {$subj}</option>";
+        }
+    } catch (Exception $e) {
+        // email_templates table unavailable — leave the select empty
+    }
+
     $sendNotifHTML = "
     <div class='p-1'>
       <div class='alert alert-warning py-2 mb-3'>
@@ -407,7 +484,7 @@ try {
         <div class='form-group'>
           <label class='small font-weight-bold'>Template</label>
           <select class='form-control' name='template_key' id='modalNotifTemplate'>
-            <option value=''>— Select email template (optional) —</option>
+            {$notifTemplateOptions}
           </select>
           <small class='text-muted'>Or write a custom message below.</small>
         </div>
@@ -439,6 +516,7 @@ try {
         'total_recovered' => $caseStats['total_recovered']
     ];
     
+    ob_clean(); // discard any PHP warning/notice output so JSON is not corrupted
     echo json_encode([
         'success' => true,
         // Raw data for classification page modals
@@ -461,5 +539,6 @@ try {
     ], JSON_UNESCAPED_UNICODE);
 
 } catch (Exception $e) {
+    ob_clean();
     echo json_encode(['success' => false, 'message' => $e->getMessage()]);
 }
