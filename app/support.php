@@ -1,23 +1,83 @@
 <?php
 require_once 'config.php';
+require_once 'EmailHelper.php';
+require_once 'admin/AdminEmailHelper.php';
+require_once 'TelegramHelper.php';
 require_once 'header.php';
 
 // Handle ticket submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_ticket'])) {
-    $subject = trim($_POST['subject']);
-    $message = trim($_POST['message']);
-    $category = trim($_POST['category']);
+    $subject  = trim($_POST['subject']  ?? '');
+    $message  = trim($_POST['message']  ?? '');
+    $category = trim($_POST['category'] ?? '');
     $priority = $_POST['priority'] ?? 'medium';
-    
+
+    // Validate priority against allowed values; fall back to 'medium' for unknown input
+    $allowedPriorities = ['low', 'medium', 'high', 'critical'];
+    if (!in_array($priority, $allowedPriorities, true)) {
+        $priority = 'medium';
+    }
+
+    // Translate priority to German for notifications
+    $priorityLabels = [
+        'low'      => 'Niedrig',
+        'medium'   => 'Mittel',
+        'high'     => 'Hoch',
+        'critical' => 'Kritisch',
+    ];
+    $priorityLabel = $priorityLabels[$priority];
+
     // Generate ticket number
     $ticket_number = 'TICKET-' . strtoupper(uniqid());
-    
+
     try {
-        $stmt = $pdo->prepare("INSERT INTO support_tickets 
-                              (user_id, ticket_number, subject, message, category, priority) 
+        $stmt = $pdo->prepare("INSERT INTO support_tickets
+                              (user_id, ticket_number, subject, message, category, priority)
                               VALUES (?, ?, ?, ?, ?, ?)");
         $stmt->execute([$_SESSION['user_id'], $ticket_number, $subject, $message, $category, $priority]);
-        
+
+        // Send ticket-created notification email to user (non-fatal)
+        try {
+            $emailHelper = new EmailHelper($pdo);
+            $emailHelper->sendTicketCreatedEmail($_SESSION['user_id'], [
+                'ticket_number'   => $ticket_number,
+                'ticket_subject'  => $subject,
+                'ticket_category' => $category,
+                'ticket_priority' => $priorityLabel,
+            ]);
+        } catch (Exception $emailError) {
+            error_log("Ticket creation email failed (ticket $ticket_number): " . $emailError->getMessage());
+        }
+
+        // Notify admin of new ticket via AdminEmailHelper (non-fatal)
+        try {
+            $adminEmailHelper = new AdminEmailHelper($pdo);
+            $siteUrlStmt = $pdo->query("SELECT site_url FROM system_settings WHERE id = 1");
+            $siteUrl = $siteUrlStmt ? ($siteUrlStmt->fetchColumn() ?: '') : '';
+            $adminEmailHelper->sendAdminTicketNotificationEmail([
+                'ticket_number'   => $ticket_number,
+                'ticket_subject'  => $subject,
+                'ticket_category' => $category,
+                'ticket_priority' => $priorityLabel,
+                'site_url'        => $siteUrl,
+            ]);
+        } catch (Exception $adminEmailError) {
+            error_log("Admin ticket notification failed (ticket $ticket_number): " . $adminEmailError->getMessage());
+        }
+
+        // Send Telegram notification to admin (non-fatal)
+        try {
+            $telegramHelper = new TelegramHelper($pdo);
+            $telegramHelper->sendTicketNotification(
+                $ticket_number,
+                $subject,
+                $category,
+                $priorityLabel
+            );
+        } catch (Exception $tgError) {
+            error_log("Telegram ticket notification failed (ticket $ticket_number): " . $tgError->getMessage());
+        }
+
         $_SESSION['success'] = "Ticket erfolgreich eingereicht! Ihre Ticketnummer lautet: $ticket_number";
         header("Location: support.php");
         exit();
