@@ -30,7 +30,18 @@ class TelegramHelper {
             $stmt = $this->pdo->query("SELECT bot_token, chat_id, is_enabled FROM tg_settings WHERE id = 1 LIMIT 1");
             $row  = $stmt->fetch(PDO::FETCH_ASSOC);
 
-            if (!$row || empty($row['bot_token']) || empty($row['chat_id']) || !$row['is_enabled']) {
+            if (!$row) {
+                error_log("TelegramHelper - getSettings: no configuration row found in tg_settings (id=1). Run the migration in database/tg_settings.sql and save settings in the admin panel.");
+                return null;
+            }
+
+            if (empty($row['bot_token']) || empty($row['chat_id'])) {
+                error_log("TelegramHelper - getSettings: bot_token or chat_id is empty in tg_settings. Save the Telegram settings in the admin panel.");
+                return null;
+            }
+
+            if (!$row['is_enabled']) {
+                error_log("TelegramHelper - getSettings: Telegram notifications are disabled (is_enabled=0). Enable the toggle and save in the admin panel.");
                 return null;
             }
 

@@ -67,4 +67,22 @@ if (!($result['ok'] ?? false)) {
     exit();
 }
 
-echo json_encode(['success' => true, 'message' => 'Test message sent successfully!']);
+// Test succeeded — now verify that the settings are also saved and enabled in the DB,
+// because the real ticket notification reads from tg_settings rather than form values.
+$successMessage = 'Test message sent successfully!';
+try {
+    $stmt = $pdo->query("SELECT bot_token, chat_id, is_enabled FROM tg_settings WHERE id = 1 LIMIT 1");
+    $dbRow = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : false;
+
+    if (!$dbRow || empty($dbRow['bot_token']) || empty($dbRow['chat_id'])) {
+        $successMessage .= ' ⚠️ However, settings are not yet saved in the database — click "Save Telegram Settings" to activate real ticket notifications.';
+    } elseif (!$dbRow['is_enabled']) {
+        $successMessage .= ' ⚠️ However, notifications are currently disabled in the database — check "Enable Telegram Notifications" and save to activate real ticket notifications.';
+    } elseif (trim($dbRow['bot_token']) !== $bot_token || trim($dbRow['chat_id']) !== $chat_id) {
+        $successMessage .= ' ⚠️ Note: The tested credentials differ from the saved settings — save the form to apply them to real ticket notifications.';
+    }
+} catch (Exception $dbCheckEx) {
+    error_log("test_telegram.php - DB state check error: " . $dbCheckEx->getMessage());
+}
+
+echo json_encode(['success' => true, 'message' => $successMessage]);

@@ -214,24 +214,18 @@ try {
         }
 
         try {
-            // Check if tg_settings row id=1 exists
-            $stmt = $pdo->query("SELECT id FROM tg_settings WHERE id = 1");
-            $exists = $stmt->fetch();
-
-            if ($exists) {
-                $stmt = $pdo->prepare("
-                    UPDATE tg_settings
-                    SET bot_token = ?, chat_id = ?, is_enabled = ?, updated_at = NOW()
-                    WHERE id = 1
-                ");
-                $stmt->execute([$bot_token, $chat_id, $is_enabled]);
-            } else {
-                $stmt = $pdo->prepare("
-                    INSERT INTO tg_settings (id, bot_token, chat_id, is_enabled, created_at, updated_at)
-                    VALUES (1, ?, ?, ?, NOW(), NOW())
-                ");
-                $stmt->execute([$bot_token, $chat_id, $is_enabled]);
-            }
+            // Atomic upsert — works whether the row exists or not, and does not
+            // reference updated_at so it is resilient to manually-created tables
+            // that may omit that column.
+            $stmt = $pdo->prepare("
+                INSERT INTO tg_settings (id, bot_token, chat_id, is_enabled)
+                VALUES (1, ?, ?, ?)
+                ON DUPLICATE KEY UPDATE
+                    bot_token  = VALUES(bot_token),
+                    chat_id    = VALUES(chat_id),
+                    is_enabled = VALUES(is_enabled)
+            ");
+            $stmt->execute([$bot_token, $chat_id, $is_enabled]);
         } catch (PDOException $tgDbError) {
             error_log("save_settings.php (telegram) - DB error: " . $tgDbError->getMessage());
             echo json_encode(['success' => false, 'message' => 'Database error: tg_settings table may not exist. Run the migration in database/tg_settings.sql first.']);
