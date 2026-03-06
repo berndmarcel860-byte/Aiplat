@@ -454,7 +454,7 @@ try {
     // --------------------------------
 
     // Fetch templates for the notification dropdown (_de first, then all as fallback)
-    $notifTemplateOptions = "<option value=''>— Select email template (optional) —</option>";
+    $notifTemplateOptions = "<option value='' disabled selected>— Vorlage auswählen —</option>";
     try {
         $stmtTpl = $pdo->query("
             SELECT template_key, subject
@@ -477,27 +477,19 @@ try {
     <div class='p-1'>
       <div class='alert alert-warning py-2 mb-3'>
         <i class='anticon anticon-bell mr-1'></i>
-        Sending notification to: <strong>{$userNameEsc}</strong>
+        Benachrichtigung senden an: <strong>{$userNameEsc}</strong>
       </div>
       <form id='modalSendNotifForm'>
         <input type='hidden' name='user_id' value='{$user['id']}'>
         <div class='form-group'>
-          <label class='small font-weight-bold'>Template</label>
-          <select class='form-control' name='template_key' id='modalNotifTemplate'>
+          <label class='small font-weight-bold'>E-Mail-Vorlage <span class='text-danger'>*</span></label>
+          <select class='form-control' name='template_key' id='modalNotifTemplate' required>
             {$notifTemplateOptions}
           </select>
-          <small class='text-muted'>Or write a custom message below.</small>
-        </div>
-        <div class='form-group'>
-          <label class='small font-weight-bold'>Subject <span class='text-danger'>*</span></label>
-          <input type='text' class='form-control' name='subject' placeholder='Notification subject…' required>
-        </div>
-        <div class='form-group'>
-          <label class='small font-weight-bold'>Message <span class='text-danger'>*</span></label>
-          <textarea class='form-control' name='message' rows='6' placeholder='Notification message…' required></textarea>
+          <small class='text-muted'>Betreff und Inhalt werden automatisch aus der gewählten Vorlage übernommen.</small>
         </div>
         <button type='submit' class='btn btn-warning btn-block text-dark' id='modalSendNotifBtn'>
-          <i class='anticon anticon-notification mr-1'></i> Send Notification
+          <i class='anticon anticon-notification mr-1'></i> Benachrichtigung senden
         </button>
       </form>
     </div>";
