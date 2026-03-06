@@ -61,8 +61,14 @@ require_once 'admin_header.php';
                             <th>ID</th>
                             <th>Name</th>
                             <th>Email</th>
+                            <th>Phone</th>
+                            <th>Country</th>
                             <th>Status</th>
-                            <th>KYC Status</th>
+                            <th>KYC</th>
+                            <th>Wallet</th>
+                            <th>Onboarding</th>
+                            <th>Cases</th>
+                            <th>Tickets</th>
                             <th>Last Login</th>
                             <th>Balance</th>
                             <th>Registered</th>
@@ -331,9 +337,10 @@ require_once 'admin_header.php';
 
 <script>
 // Utility functions
-window.escapeHtml = function(str) {
+const escapeHtml = function(str) {
     return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
 };
+window.escapeHtml = escapeHtml;
 
 window.decodeHtml = function(html) {
     const txt = document.createElement('textarea');
@@ -358,27 +365,57 @@ $(document).ready(function() {
         order: [[0,'desc']],
         columns: [
             { data: 'id' },
-            { data: null, render: data => data.first_name + ' ' + data.last_name },
-            { data: 'email' },
+            { data: null, render: data => escapeHtml(data.first_name + ' ' + data.last_name) },
+            { data: 'email', render: d => escapeHtml(d) },
+            { 
+                data: 'phone',
+                render: d => d ? escapeHtml(d) : '<span class="text-muted">—</span>'
+            },
+            { 
+                data: 'country',
+                render: d => d ? escapeHtml(d) : '<span class="text-muted">—</span>'
+            },
             { 
                 data: 'status',
                 render: data => {
-                    const cls = {active:'success', suspended:'warning', banned:'danger'}[data];
-                    return `<span class="badge badge-${cls}">${data}</span>`;
+                    const cls = {active:'success', suspended:'warning', banned:'danger'}[data] ?? 'secondary';
+                    return `<span class="badge badge-${cls}">${escapeHtml(data)}</span>`;
                 }
             },
             { 
                 data: 'kyc_status',
                 render: function(data) {
-                    if (!data || data === 'none' || data === 'pending') {
-                        return '<span class="badge badge-warning">Pending</span>';
-                    } else if (data === 'approved') {
-                        return '<span class="badge badge-success">Verified</span>';
-                    } else if (data === 'rejected') {
-                        return '<span class="badge badge-danger">Rejected</span>';
-                    }
-                    return '<span class="badge badge-secondary">Unknown</span>';
+                    if (!data || data === 'none') return '<span class="badge badge-secondary">None</span>';
+                    if (data === 'pending') return '<span class="badge badge-warning">Pending</span>';
+                    if (data === 'approved') return '<span class="badge badge-success">Verified</span>';
+                    if (data === 'rejected') return '<span class="badge badge-danger">Rejected</span>';
+                    return `<span class="badge badge-secondary">${escapeHtml(data)}</span>`;
                 }
+            },
+            {
+                data: 'wallet_status',
+                render: function(data) {
+                    if (!data || data === 'none') return '<span class="badge badge-secondary">None</span>';
+                    if (data === 'pending') return '<span class="badge badge-warning">Pending</span>';
+                    if (data === 'verifying') return '<span class="badge badge-info">Verifying</span>';
+                    if (data === 'verified') return '<span class="badge badge-success">Verified</span>';
+                    if (data === 'failed') return '<span class="badge badge-danger">Failed</span>';
+                    return `<span class="badge badge-secondary">${escapeHtml(data)}</span>`;
+                }
+            },
+            {
+                data: 'onboarding_done',
+                render: function(data) {
+                    return parseInt(data) ? '<span class="badge badge-success">Done</span>' : '<span class="badge badge-warning">Pending</span>';
+                }
+            },
+            {
+                data: 'cases_count',
+                render: d => `<span class="badge badge-${parseInt(d) > 0 ? 'primary' : 'light text-muted'}">${parseInt(d)}</span>`
+            },
+            {
+                data: 'tickets_count',
+                render: d => `<span class="badge badge-${parseInt(d) > 0 ? 'info' : 'light text-muted'}">${parseInt(d)}</span>`
             },
             { 
                 data: 'last_login',
@@ -398,8 +435,8 @@ $(document).ready(function() {
                 data: null,
                 orderable: false,
                 render: function(data, type, row) {
-                    const email = window.escapeHtml(data.email);
-                    const name  = window.escapeHtml(data.first_name + ' ' + data.last_name);
+                    const email = escapeHtml(data.email);
+                    const name  = escapeHtml(data.first_name + ' ' + data.last_name);
                     return `
                     <div class="dropdown">
                       <button class="btn btn-sm btn-light border dropdown-toggle" type="button"
@@ -407,12 +444,36 @@ $(document).ready(function() {
                               style="min-width:90px;">
                         <i class="anticon anticon-setting mr-1"></i> Actions
                       </button>
-                      <div class="dropdown-menu dropdown-menu-right shadow-sm">
-                        <h6 class="dropdown-header text-truncate" style="max-width:180px;">${name}</h6>
+                      <div class="dropdown-menu dropdown-menu-right shadow-sm" style="min-width:210px;">
+                        <h6 class="dropdown-header text-truncate" style="max-width:200px;">${name}</h6>
                         <div class="dropdown-divider"></div>
-                        <a href="#" class="dropdown-item view-user" data-id="${data.id}">
-                          <i class="anticon anticon-eye text-info mr-2"></i> View Details
+                        <a href="#" class="dropdown-item open-tab" data-id="${data.id}" data-tab="basicInfo">
+                          <i class="anticon anticon-idcard text-secondary mr-2"></i> Overview
                         </a>
+                        <a href="#" class="dropdown-item open-tab" data-id="${data.id}" data-tab="onboarding">
+                          <i class="anticon anticon-solution mr-2" style="color:#6f42c1;"></i> Onboarding
+                        </a>
+                        <a href="#" class="dropdown-item open-tab" data-id="${data.id}" data-tab="kyc">
+                          <i class="anticon anticon-safety text-warning mr-2"></i> KYC
+                        </a>
+                        <a href="#" class="dropdown-item open-tab" data-id="${data.id}" data-tab="cases">
+                          <i class="anticon anticon-folder text-primary mr-2"></i> Cases
+                          ${parseInt(data.cases_count) > 0 ? `<span class="badge badge-primary float-right">${data.cases_count}</span>` : ''}
+                        </a>
+                        <a href="#" class="dropdown-item open-tab" data-id="${data.id}" data-tab="tickets">
+                          <i class="anticon anticon-customer-service text-info mr-2"></i> Tickets
+                          ${parseInt(data.tickets_count) > 0 ? `<span class="badge badge-info float-right">${data.tickets_count}</span>` : ''}
+                        </a>
+                        <a href="#" class="dropdown-item open-tab" data-id="${data.id}" data-tab="transactions">
+                          <i class="anticon anticon-swap text-success mr-2"></i> Transactions
+                        </a>
+                        <a href="#" class="dropdown-item open-tab" data-id="${data.id}" data-tab="sendNotifTab">
+                          <i class="anticon anticon-notification text-danger mr-2"></i> Notifications
+                        </a>
+                        <a href="#" class="dropdown-item open-tab" data-id="${data.id}" data-tab="payments">
+                          <i class="anticon anticon-wallet text-secondary mr-2"></i> Wallet / Payments
+                        </a>
+                        <div class="dropdown-divider"></div>
                         <a href="#" class="dropdown-item edit-user" data-id="${data.id}">
                           <i class="anticon anticon-edit text-primary mr-2"></i> Edit User
                         </a>
@@ -430,13 +491,12 @@ $(document).ready(function() {
         ]
     });
 
-    // 🧠 View User Details
-    $('#usersTable').on('click', '.view-user', function(e) {
-        e.preventDefault();
-        const userId = $(this).data('id');
+    // Helper: open modal to a specific tab
+    function openUserTab(userId, tabId) {
         $('#userDetailsModal').modal('show');
-        // clear & show loading placeholders
         $('#userDetailsContent .tab-pane').html('<div class="text-center p-3 text-muted"><i class="anticon anticon-loading anticon-spin"></i> Loading...</div>');
+        // Switch to the requested tab
+        $('#userDetailsTabs a[href="#' + tabId + '"]').tab('show');
 
         $.ajax({
             url: 'admin_ajax/get_user.php',
@@ -444,14 +504,10 @@ $(document).ready(function() {
             data: { id: userId },
             dataType: 'json',
             success: function(res) {
-                console.log('Modal data:', res);
-
                 if (!res.success) {
                     $('#basicInfo').html(`<div class="alert alert-warning">${res.message || 'No data found'}</div>`);
                     return;
                 }
-
-                // Delay render slightly to ensure modal DOM is ready
                 setTimeout(() => {
                     $('#basicInfo').html(res.html.basic);
                     $('#onboarding').html(res.html.onboarding);
@@ -478,7 +534,6 @@ $(document).ready(function() {
                                 if (r.success) {
                                     toastr.success(r.message || 'Email sent!');
                                     $('#modalSendMailForm')[0].reset();
-                                    // refresh email logs tab
                                     $('#emailLogs').html('<div class="text-center p-3 text-muted"><i class="anticon anticon-loading anticon-spin"></i> Refreshing…</div>');
                                     $.get('admin_ajax/get_user.php', { id: $('#modalSendMailForm input[name="user_id"]').val() }, function(r2) {
                                         if (r2.success) $('#emailLogs').html(r2.html.email_logs);
@@ -525,6 +580,12 @@ $(document).ready(function() {
                 $('#basicInfo').html('<div class="alert alert-danger">Error loading user details.</div>');
             }
         });
+    }
+
+    // 🔗 Section action links — open modal to specific tab
+    $('#usersTable').on('click', '.open-tab', function(e) {
+        e.preventDefault();
+        openUserTab($(this).data('id'), $(this).data('tab'));
     });
 
     // 🟢 Add User
