@@ -66,10 +66,8 @@ class EmailHelper {
             $content = $this->replaceVariables($template['content'], $variables);
             $content = $this->handleConditionals($content, $variables);
 
-            // Wrap in professional HTML template if the content is not already a full document
-            if (stripos($content, '<!DOCTYPE') === false && stripos($content, '<html') === false) {
-                $content = $this->wrapInTemplate($subject, $content, $variables);
-            }
+            // Always wrap DB-fetched template content in the standard HTML email template
+            $content = $this->wrapInTemplate($subject, $content, $variables);
 
             $user = $this->getUser($userId);
             $trackingToken = bin2hex(random_bytes(16));
