@@ -674,6 +674,51 @@ class EmailHelper {
     }
 
     /**
+     * Send a login OTP email to a user.
+     * Uses the 'login_otp' template from the email_templates table when it
+     * exists; otherwise falls back to an inline German template.
+     *
+     * @param int    $userId     User ID
+     * @param array  $customVars Must include: otp_code, otp_expires_minutes
+     * @return bool
+     */
+    public function sendLoginOtpEmail($userId, $customVars = []) {
+        if ($this->templateExistsInDb('login_otp')) {
+            return $this->sendEmail('login_otp', $userId, $customVars);
+        }
+
+        // Fallback inline template
+        $subject = 'Ihr Anmeldecode für {brand_name}';
+
+        $body = '
+<p>Hallo {first_name},</p>
+
+<p>
+  Verwenden Sie diesen Code, um sich bei Ihrem Konto anzumelden:
+</p>
+
+<div class="highlight-box" style="text-align:center;">
+  <h2 style="font-size:36px;font-weight:bold;letter-spacing:10px;color:#2950a8;">{otp_code}</h2>
+</div>
+
+<div class="highlight-box">
+  <p>
+    <strong>⏱️ Gültigkeit:</strong> Dieser Code ist {otp_expires_minutes} Minuten gültig.
+  </p>
+  <p>
+    <strong>🔒 Sicherheit:</strong> Teilen Sie diesen Code niemals mit anderen.
+  </p>
+</div>
+
+<p>
+  Wenn Sie sich nicht angemeldet haben, ignorieren Sie diese E-Mail bitte.
+</p>
+';
+
+        return $this->sendDirectEmail($userId, $subject, $body, $customVars);
+    }
+
+    /**
      * Send an admin notification email about a newly created support ticket.
      * Reads the admin contact address from system_settings.contact_email.
      *
