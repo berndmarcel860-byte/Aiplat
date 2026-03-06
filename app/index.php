@@ -39,8 +39,8 @@ if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
 
-// Current date/time UTC
-$currentDateTime = new DateTime('now', new DateTimeZone('UTC'));
+// Current date/time in application timezone
+$currentDateTime = new DateTime('now');
 $currentDateTimeFormatted = $currentDateTime->format('Y-m-d H:i:s');
 
 // Branding - Already loaded from header.php but ensure defaults if not set
@@ -631,7 +631,7 @@ $outstandingAmount = max(0, $reportedTotal - $recoveredTotal);
 <!-- Current Date and Time Display -->
 <div class="fixed-bottom text-right p-2" style="z-index: 1000;">
     <small class="bg-dark text-light px-2 py-1 rounded" role="status" aria-live="polite">
-        Datum &amp; Uhrzeit (UTC): <?= htmlspecialchars($currentDateTimeFormatted, ENT_QUOTES) ?> | Angemeldeter Benutzer: <?= htmlspecialchars($currentUserLogin, ENT_QUOTES) ?>
+        Datum &amp; Uhrzeit: <?= htmlspecialchars($currentDateTimeFormatted, ENT_QUOTES) ?> | Angemeldeter Benutzer: <?= htmlspecialchars($currentUserLogin, ENT_QUOTES) ?>
     </small>
 </div>
 
