@@ -1,8 +1,7 @@
 <?php
 require_once '../../config.php'; // Contains SITE_URL and other configurations
 require_once '../admin_session.php';
-require_once '../AdminEmailHelper.php';
-
+require_once '../../EmailHelper.php';
 header('Content-Type: application/json');
 
 // Verify admin is logged in
@@ -78,7 +77,7 @@ try {
     // Send welcome email with plain text password
     $emailSent = false;
     try {
-        $emailHelper = new AdminEmailHelper($pdo);
+        $emailHelper = new EmailHelper($pdo);
         $siteUrl = defined('SITE_URL') ? SITE_URL : 'https://blockchainfahndung.com/app/';
         
         $customVars = [
@@ -89,7 +88,7 @@ try {
             'change_password_link' => $siteUrl . 'change-password.php'
         ];
         
-        $emailSent = $emailHelper->sendTemplateEmail('welcome_email', $userId, $customVars);
+        $emailSent = $emailHelper->sendEmail('welcome_email', $userId, $customVars);
     } catch (Exception $e) {
         error_log("Welcome email failed: " . $e->getMessage());
         $emailSent = false;

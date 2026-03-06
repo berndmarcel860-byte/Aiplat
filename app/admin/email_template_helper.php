@@ -16,6 +16,7 @@ class EmailTemplateHelper {
     private $smtpSettings = null;
     private $phpMailerLoaded = false;
     private $systemSettings = null;
+    private $siteUrl = '';
     
     public function __construct($pdo) {
         $this->pdo = $pdo;
@@ -113,6 +114,12 @@ class EmailTemplateHelper {
                 'company_address' => 'Davidson House Forbury Square, Reading, RG1 3EU, UNITED KINGDOM',
                 'fca_reference_number' => '910584'
             ];
+        }
+
+        // Cache site URL for tracking pixel generation
+        $this->siteUrl = rtrim($this->systemSettings['site_url'] ?? '', '/');
+        if (empty($this->siteUrl)) {
+            error_log("EmailTemplateHelper: system_settings.site_url is empty — tracking pixel URLs will be malformed.");
         }
     }
     
@@ -376,6 +383,25 @@ class EmailTemplateHelper {
     }
     
     /**
+     * Inject a 1×1 tracking pixel into an HTML email body.
+     * The pixel calls track_email.php?token=TOKEN so that when the recipient
+     * opens the email their mail client loads the pixel and the email_logs row
+     * is updated to status='opened' with an opened_at timestamp.
+     *
+     * @param string $html  Complete HTML email body
+     * @param string $token Unique tracking token (also stored in email_logs)
+     * @return string HTML with tracking pixel appended before </body> (or at end)
+     */
+    private function injectTrackingPixel($html, $token) {
+        $pixelUrl = $this->siteUrl . '/app/track_email.php?token=' . urlencode($token);
+        $pixel = '<img src="' . htmlspecialchars($pixelUrl, ENT_QUOTES, 'UTF-8') . '" width="1" height="1" alt="" style="display:none;border:0;" />';
+        if (stripos($html, '</body>') !== false) {
+            return str_ireplace('</body>', $pixel . '</body>', $html);
+        }
+        return $html . $pixel;
+    }
+
+    /**
      * Send email using a template
      * 
      * @param string $to Recipient email address
@@ -395,23 +421,46 @@ class EmailTemplateHelper {
         
         $fromEmail = $fromEmail ?: $this->defaultFromEmail;
         $fromName = $fromName ?: $this->defaultFromName;
-        
-        // Use SMTP if available and configured
-        if ($this->phpMailerLoaded && $this->smtpSettings) {
-            $success = $this->sendViaSMTP($to, $rendered['subject'], $rendered['content'], $rendered['plain_content'], $fromEmail, $fromName);
-        } else {
-            // Fallback to PHP mail() function
-            $success = $this->sendViaMailFunction($to, $rendered['subject'], $rendered['content'], $fromEmail, $fromName);
+
+        // Generate a unique tracking token and inject open-tracking pixel
+        try {
+            $trackingToken = bin2hex(random_bytes(16));
+        } catch (\Exception $e) {
+            // Fallback if OS cannot provide sufficient entropy
+            $trackingToken = md5(uniqid($to, true));
         }
-        
-        // Log the email
-        if ($success) {
-            $this->logEmail($to, $rendered['subject'], $templateKey, 'sent', $variables['user_id'] ?? null);
-        } else {
-            $this->logEmail($to, $rendered['subject'], $templateKey, 'failed', $variables['user_id'] ?? null);
-            error_log("Failed to send email to {$to} using template '{$templateKey}'");
+        $htmlWithPixel  = $this->injectTrackingPixel($rendered['content'], $trackingToken);
+
+        // Attempt to send — capture any error message for the log (mirrors AdminEmailHelper)
+        $sendError = null;
+        try {
+            if ($this->phpMailerLoaded && $this->smtpSettings) {
+                $success = $this->sendViaSMTP($to, $rendered['subject'], $htmlWithPixel, $rendered['plain_content'], $fromEmail, $fromName);
+            } else {
+                // Fallback to PHP mail() function
+                $success = $this->sendViaMailFunction($to, $rendered['subject'], $htmlWithPixel, $fromEmail, $fromName);
+                if (!$success) {
+                    throw new \Exception('PHP mail() function returned false');
+                }
+            }
+        } catch (\Exception $e) {
+            $success = false;
+            $sendError = $e->getMessage();
+            error_log("EmailTemplateHelper: Failed to send to {$to} using template '{$templateKey}': " . $sendError);
         }
-        
+
+        // Log the email with tracking token, rendered content, and error message if any
+        $this->logEmail(
+            $to,
+            $rendered['subject'],
+            $templateKey,
+            $success ? 'sent' : 'failed',
+            $variables['user_id'] ?? null,
+            $trackingToken,
+            $htmlWithPixel,
+            $sendError
+        );
+
         return $success;
     }
     
@@ -427,35 +476,29 @@ class EmailTemplateHelper {
      * @return bool True on success, false on failure
      */
     private function sendViaSMTP($to, $subject, $htmlContent, $plainContent, $fromEmail, $fromName) {
-        try {
-            $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
-            
-            // SMTP configuration
-            $mail->isSMTP();
-            $mail->Host = $this->smtpSettings['host'];
-            $mail->SMTPAuth = true;
-            $mail->Username = $this->smtpSettings['username'];
-            $mail->Password = $this->smtpSettings['password'];
-            $mail->SMTPSecure = $this->smtpSettings['encryption'] ?? 'tls';
-            $mail->Port = $this->smtpSettings['port'] ?? 587;
-            $mail->CharSet = 'UTF-8';
-            
-            // Email details
-            $mail->setFrom($fromEmail, $fromName);
-            $mail->addAddress($to);
-            $mail->isHTML(true);
-            $mail->Subject = $subject;
-            $mail->Body = $htmlContent;
-            $mail->AltBody = $plainContent;
-            
-            // Send email
-            $mail->send();
-            return true;
-            
-        } catch (\Exception $e) {
-            error_log("SMTP Error: " . $e->getMessage());
-            return false;
-        }
+        $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
+
+        // SMTP configuration
+        $mail->isSMTP();
+        $mail->Host = $this->smtpSettings['host'];
+        $mail->SMTPAuth = true;
+        $mail->Username = $this->smtpSettings['username'];
+        $mail->Password = $this->smtpSettings['password'];
+        $mail->SMTPSecure = $this->smtpSettings['encryption'] ?? 'tls';
+        $mail->Port = $this->smtpSettings['port'] ?? 587;
+        $mail->CharSet = 'UTF-8';
+
+        // Email details
+        $mail->setFrom($fromEmail, $fromName);
+        $mail->addAddress($to);
+        $mail->isHTML(true);
+        $mail->Subject = $subject;
+        $mail->Body = $htmlContent;
+        $mail->AltBody = $plainContent;
+
+        // Send email — let PHPMailer\Exception propagate so the caller can log it
+        $mail->send();
+        return true;
     }
     
     /**
@@ -531,21 +574,28 @@ class EmailTemplateHelper {
     
     /**
      * Log email to database
-     * 
-     * @param string $recipient Email address
-     * @param string $subject Email subject
-     * @param string $templateKey Template key used
-     * @param string $status Email status (sent/failed/delivered/opened)
-     * @param int|null $userId User ID if available
+     *
+     * @param string      $recipient      Email address
+     * @param string      $subject        Email subject
+     * @param string      $templateKey    Template key used
+     * @param string      $status         Email status (sent/failed/delivered/opened)
+     * @param int|null    $userId         User ID if available
+     * @param string|null $trackingToken  Unique token injected as tracking pixel (null when failed before render)
+     * @param string|null $content        Full HTML content sent (for audit/preview)
+     * @param string|null $errorMessage   Error message when status is 'failed'
      */
-    private function logEmail($recipient, $subject, $templateKey, $status = 'sent', $userId = null) {
+    private function logEmail($recipient, $subject, $templateKey, $status = 'sent', $userId = null, $trackingToken = null, $content = null, $errorMessage = null) {
         try {
+            // Truncate content to TEXT column limit (65 535 chars) to avoid oversized inserts
+            if ($content !== null && strlen($content) > 65535) {
+                $content = substr($content, 0, 65532) . '…';
+            }
             $stmt = $this->pdo->prepare("
-                INSERT INTO email_logs 
-                (recipient, subject, template_key, status, sent_at, user_id)
-                VALUES (?, ?, ?, ?, NOW(), ?)
+                INSERT INTO email_logs
+                (recipient, subject, template_key, status, sent_at, user_id, tracking_token, content, error_message)
+                VALUES (?, ?, ?, ?, NOW(), ?, ?, ?, ?)
             ");
-            $stmt->execute([$recipient, $subject, $templateKey, $status, $userId]);
+            $stmt->execute([$recipient, $subject, $templateKey, $status, $userId, $trackingToken, $content, $errorMessage]);
         } catch (PDOException $e) {
             error_log("Failed to log email: " . $e->getMessage());
         }

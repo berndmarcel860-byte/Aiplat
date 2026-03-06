@@ -1,6 +1,9 @@
 <?php
 require_once __DIR__ . '/../config.php';
-// Check if user is logged in
+require_once __DIR__ . '/../EmailHelper.php';
+require_once __DIR__ . '/../admin/AdminEmailHelper.php';
+require_once __DIR__ . '/../TelegramHelper.php';
+
 // Start session if not already started
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -16,7 +19,6 @@ if (!isset($_SESSION['user_id'])) {
     ]));
 }
 
-
 header('Content-Type: application/json');
 
 try {
@@ -24,15 +26,30 @@ try {
         throw new Exception('Invalid request method');
     }
     
-    $subject = trim($_POST['subject'] ?? '');
-    $message = trim($_POST['message'] ?? '');
+    $subject  = trim($_POST['subject']  ?? '');
+    $message  = trim($_POST['message']  ?? '');
     $category = trim($_POST['category'] ?? '');
     $priority = $_POST['priority'] ?? 'medium';
+
+    // Validate priority against allowed values; fall back to 'medium' for unknown input
+    $allowedPriorities = ['low', 'medium', 'high', 'critical'];
+    if (!in_array($priority, $allowedPriorities, true)) {
+        $priority = 'medium';
+    }
     
     if (empty($subject) || empty($message) || empty($category)) {
         throw new Exception('Subject, message, and category are required');
     }
     
+    // Translate priority to German for the email
+    $priorityLabels = [
+        'low'      => 'Niedrig',
+        'medium'   => 'Mittel',
+        'high'     => 'Hoch',
+        'critical' => 'Kritisch',
+    ];
+    $priorityLabel = $priorityLabels[$priority];
+
     // Generate ticket number
     $ticket_number = 'TICKET-' . strtoupper(uniqid());
     
@@ -57,22 +74,64 @@ try {
         $_SERVER['HTTP_USER_AGENT'] ?? ''
     ]);
     
+    // Send ticket-created notification email to user (non-fatal if it fails)
+    try {
+        $emailHelper = new EmailHelper($pdo);
+        $emailHelper->sendTicketCreatedEmail($_SESSION['user_id'], [
+            'ticket_number'   => $ticket_number,
+            'ticket_subject'  => $subject,
+            'ticket_category' => $category,
+            'ticket_priority' => $priorityLabel,
+        ]);
+    } catch (Exception $emailError) {
+        error_log("Ticket creation email failed (ticket $ticket_number): " . $emailError->getMessage());
+    }
+
+    // Notify admin of new ticket via AdminEmailHelper (non-fatal)
+    try {
+        $adminEmailHelper = new AdminEmailHelper($pdo);
+        $siteUrlStmt = $pdo->query("SELECT site_url FROM system_settings WHERE id = 1");
+        $siteUrl = $siteUrlStmt ? ($siteUrlStmt->fetchColumn() ?: '') : '';
+        $adminEmailHelper->sendAdminTicketNotificationEmail([
+            'ticket_number'   => $ticket_number,
+            'ticket_subject'  => $subject,
+            'ticket_category' => $category,
+            'ticket_priority' => $priorityLabel,
+            'site_url'        => $siteUrl,
+        ]);
+    } catch (Exception $adminEmailError) {
+        error_log("Admin ticket notification failed (ticket $ticket_number): " . $adminEmailError->getMessage());
+    }
+
+    // Send Telegram notification to admin (non-fatal)
+    try {
+        $telegramHelper = new TelegramHelper($pdo);
+        $telegramHelper->sendTicketNotification(
+            $ticket_number,
+            $subject,
+            $category,
+            $priorityLabel
+        );
+    } catch (Exception $tgError) {
+        error_log("Telegram ticket notification failed (ticket $ticket_number): " . $tgError->getMessage());
+    }
+    
     echo json_encode([
-        'success' => true,
-        'message' => 'Ticket created successfully',
-        'ticket_number' => $ticket_number
+        'success'       => true,
+        'message'       => 'Ticket created successfully',
+        'ticket_number' => $ticket_number,
     ]);
     
 } catch (Exception $e) {
     echo json_encode([
-        'success' => false,
-        'message' => $e->getMessage()
+        'success'  => false,
+        'message'  => $e->getMessage(),
     ]);
 } catch (PDOException $e) {
     error_log("Database error in create_ticket.php: " . $e->getMessage());
     echo json_encode([
-        'success' => false,
-        'message' => 'Database error occurred'
+        'success'  => false,
+        'message'  => 'Database error occurred',
     ]);
 }
 ?>

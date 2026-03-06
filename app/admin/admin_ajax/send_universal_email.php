@@ -33,14 +33,63 @@ if (!$autoloadFound) {
 use PHPMailer\PHPMailer\PHPMailer;
 
 // Validate required fields
-if (empty($_POST['user_id']) || empty($_POST['subject']) || empty($_POST['message'])) {
-    echo json_encode(['success' => false, 'message' => 'Missing required fields: user_id, subject, message']);
+if (empty($_POST['user_id'])) {
+    echo json_encode(['success' => false, 'message' => 'Missing required field: user_id']);
     exit();
 }
 
-$userId = (int)$_POST['user_id'];
-$subject = trim($_POST['subject']);
-$message = trim($_POST['message']);
+$userId      = (int)$_POST['user_id'];
+$templateKey = trim($_POST['template_key'] ?? '');
+$subject     = trim($_POST['subject'] ?? '');
+$message     = trim($_POST['message'] ?? '');
+
+// A template_key alone is sufficient; otherwise subject+message are required
+if (empty($templateKey) && (empty($subject) || empty($message))) {
+    echo json_encode(['success' => false, 'message' => 'Bitte eine E-Mail-Vorlage auswählen.']);
+    exit();
+}
+
+// If template_key provided, resolve subject + content from email_templates
+if (!empty($templateKey)) {
+    // Use EmailTemplateHelper if the notification form posts only template_key
+    require_once __DIR__ . '/../email_template_helper.php';
+    try {
+        $emailHelper = new EmailTemplateHelper($pdo);
+        $stmt = $pdo->prepare("SELECT id, email, first_name, last_name, balance, status FROM users WHERE id = ?");
+        $stmt->execute([$userId]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$user) { throw new Exception('User not found'); }
+
+        // Resolve configured site URL instead of relying on Host header
+        $siteUrlRow = $pdo->query("SELECT site_url FROM system_settings LIMIT 1")->fetch(PDO::FETCH_ASSOC);
+        $siteBase   = rtrim($siteUrlRow['site_url'] ?? ('https://' . $_SERVER['HTTP_HOST']), '/');
+
+        $variables = [
+            'user_id'          => $user['id'],
+            'first_name'       => $user['first_name'],
+            'last_name'        => $user['last_name'],
+            'email'            => $user['email'],
+            'balance'          => number_format($user['balance'], 2, ',', '.'),
+            'login_url'        => $siteBase . '/app/login.php',
+            'kyc_url'          => $siteBase . '/app/kyc.php',
+            'onboarding_url'   => $siteBase . '/app/onboarding.php',
+            'dashboard_url'    => $siteBase . '/dashboard.php',
+            'case_number'      => 'CASE-' . str_pad($user['id'], 6, '0', STR_PAD_LEFT),
+        ];
+
+        $ok = $emailHelper->sendTemplateEmail($user['email'], $templateKey, $variables);
+
+        if ($ok) {
+            echo json_encode(['success' => true, 'message' => 'Benachrichtigung erfolgreich gesendet an ' . $user['email']]);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Fehler beim Senden der E-Mail.']);
+        }
+    } catch (Exception $e) {
+        error_log("Template email error: " . $e->getMessage());
+        echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+    }
+    exit();
+}
 
 try {
     // Get user details

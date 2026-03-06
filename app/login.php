@@ -1,5 +1,13 @@
 <?php
 require_once 'config.php';
+require_once 'session.php';
+require_once __DIR__ . '/EmailHelper.php';
+
+// Redirect already-logged-in users to the dashboard
+if (!empty($_SESSION['user_id'])) {
+    header("Location: index.php");
+    exit();
+}
 
 // Initialize variables
 $error = '';
@@ -26,15 +34,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $error = "Your account is currently " . ucfirst($user['status']);
             } else {
                 // Password verified - Check if OTP verification is still valid
-                session_start();
+                // Session already initialized by session.php include (line 3)
                 
-                // Check if user verified OTP within last hour (3600 seconds)
-                if (isset($_SESSION['last_otp_verified_at']) && (time() - $_SESSION['last_otp_verified_at']) < 3600) {
+                // Check if user verified OTP within last hour (3600 seconds).
+                // Use session value when available; fall back to DB column so the
+                // grace period survives browser restarts and session GC expiry.
+                $sessionOtpOk = isset($_SESSION['last_otp_verified_at']) && (time() - $_SESSION['last_otp_verified_at']) < 3600;
+                $dbOtpOk      = !empty($user['last_otp_verified_at']) && (time() - strtotime($user['last_otp_verified_at'])) < 3600;
+                
+                if ($sessionOtpOk || $dbOtpOk) {
                     // OTP still valid - skip verification and complete login immediately
                     $_SESSION['user_id'] = $user['id'];
                     $_SESSION['user_email'] = $user['email'];
                     $_SESSION['user_name'] = $user['first_name'] . ' ' . $user['last_name'];
                     $_SESSION['last_activity'] = time();
+                    // Always use the DB timestamp as the authoritative cache value
+                    $_SESSION['last_otp_verified_at'] = !empty($user['last_otp_verified_at'])
+                        ? strtotime($user['last_otp_verified_at'])
+                        : ($_SESSION['last_otp_verified_at'] ?? time());
                     
                     // Update last login
                     $pdo->prepare("UPDATE users SET last_login = NOW() WHERE id = ?")->execute([$user['id']]);
@@ -70,95 +87,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $stmt = $pdo->prepare("INSERT INTO otp_logs (user_id, otp_code, purpose, expires_at, created_at) VALUES (?, ?, 'login', ?, NOW())");
                     $stmt->execute([$user['id'], $otp, $expires]);
                     
-                    // Send OTP via email
-                    try {
-                        require_once __DIR__ . '/vendor/autoload.php';
-                        
-                        // Get SMTP settings
-                        $stmt_smtp = $pdo->query("SELECT * FROM smtp_settings WHERE id = 1");
-                        $smtp = $stmt_smtp->fetch();
-                        
-                        if ($smtp) {
-                            $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
-                            
-                            $mail->isSMTP();
-                            $mail->Host = $smtp['host'];
-                            $mail->SMTPAuth = !empty($smtp['username']);
-                            $mail->Username = $smtp['username'];
-                            $mail->Password = $smtp['password'];
-                            $mail->SMTPSecure = $smtp['encryption'];
-                            $mail->Port = $smtp['port'];
-                            
-                            $mail->setFrom($smtp['from_email'], $smtp['from_name']);
-                            $mail->addAddress($user['email'], $user['first_name']);
-                            
-                            $mail->isHTML(true);
-                            $mail->CharSet = 'UTF-8';
-                            $mail->Subject = "Ihr Anmeldecode für Crypto Finanz";
-                            
-                            $mail->Body = "
-                            <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f8f9fa; padding: 20px;'>
-                                <div style='background: linear-gradient(135deg, #2950a8, #2da9e3); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;'>
-                                    <h1 style='color: white; margin: 0;'>Crypto Finanz</h1>
-                                </div>
-                                
-                                <div style='background: white; padding: 40px; border-radius: 0 0 10px 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);'>
-                                    <h2 style='color: #2c3e50; margin-top: 0;'>Ihr Einmalcode</h2>
-                                    
-                                    <p style='color: #555; font-size: 16px; line-height: 1.6;'>
-                                        Hallo {$user['first_name']},
-                                    </p>
-                                    
-                                    <p style='color: #555; font-size: 16px; line-height: 1.6;'>
-                                        Verwenden Sie diesen Code, um sich bei Ihrem Konto anzumelden:
-                                    </p>
-                                    
-                                    <div style='background: #f8f9fa; padding: 25px; border-radius: 8px; text-align: center; margin: 30px 0; border: 2px dashed #2950a8;'>
-                                        <div style='font-size: 36px; font-weight: bold; letter-spacing: 10px; color: #2950a8;'>
-                                            {$otp}
-                                        </div>
-                                    </div>
-                                    
-                                    <div style='background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; border-radius: 4px;'>
-                                        <p style='margin: 0; color: #856404; font-size: 14px;'>
-                                            <strong>⏱️ Gültigkeit:</strong> Dieser Code ist 5 Minuten gültig.
-                                        </p>
-                                    </div>
-                                    
-                                    <div style='background: #d1ecf1; border-left: 4px solid #17a2b8; padding: 15px; margin: 20px 0; border-radius: 4px;'>
-                                        <p style='margin: 0; color: #0c5460; font-size: 14px;'>
-                                            <strong>🔒 Sicherheit:</strong> Teilen Sie diesen Code niemals mit anderen.
-                                        </p>
-                                    </div>
-                                    
-                                    <hr style='margin: 30px 0; border: none; border-top: 1px solid #dee2e6;'>
-                                    
-                                    <p style='font-size: 12px; color: #999; margin-bottom: 0;'>
-                                        Wenn Sie sich nicht angemeldet haben, ignorieren Sie diese E-Mail bitte.
-                                    </p>
-                                    
-                                    <p style='font-size: 12px; color: #999; margin-top: 10px;'>
-                                        Mit freundlichen Grüßen,<br>
-                                        Ihr Crypto Finanz Team
-                                    </p>
-                                </div>
-                            </div>
-                            ";
-                            
-                            $mail->send();
-                            
-                            // Log successful login attempt
-                            $stmt = $pdo->prepare("INSERT INTO login_logs (email, ip_address, user_agent, success) VALUES (?, ?, ?, 1)");
-                            $stmt->execute([$email, $ip, $_SERVER['HTTP_USER_AGENT'] ?? '']);
-                            
-                            // Redirect to OTP verification page
-                            header("Location: verify-otp.php");
-                            exit();
-                        } else {
-                            $error = "SMTP-Konfiguration nicht gefunden. Bitte kontaktieren Sie den Support.";
-                        }
-                    } catch (Exception $e) {
-                        error_log("Failed to send OTP email: " . $e->getMessage());
+                    // Send OTP via EmailHelper (uses login_otp DB template when available)
+                    $emailHelper = new EmailHelper($pdo);
+                    $sent = $emailHelper->sendLoginOtpEmail($user['id'], [
+                        'otp_code'            => $otp,
+                        'otp_expires_minutes' => '5',
+                    ]);
+
+                    if ($sent) {
+                        // Log successful login attempt
+                        $stmt = $pdo->prepare("INSERT INTO login_logs (email, ip_address, user_agent, success) VALUES (?, ?, ?, 1)");
+                        $stmt->execute([$email, $ip, $_SERVER['HTTP_USER_AGENT'] ?? '']);
+
+                        // Redirect to OTP verification page
+                        header("Location: verify-otp.php");
+                        exit();
+                    } else {
                         $error = "Fehler beim Senden des OTP-Codes. Bitte versuchen Sie es später erneut.";
                     }
                 }

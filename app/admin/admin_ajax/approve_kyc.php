@@ -96,12 +96,12 @@ try {
 }
 
 /**
- * Send KYC status email using AdminEmailHelper
+ * Send KYC status email using EmailHelper
  */
 function sendKYCEmail($pdo, $user, $templateKey, $kycId, $rejectionReason = null) {
     try {
-        require_once '../AdminEmailHelper.php';
-        $emailHelper = new AdminEmailHelper($pdo);
+        require_once '../../EmailHelper.php';
+        $emailHelper = new EmailHelper($pdo);
         
         // Prepare custom variables
         $customVars = [
@@ -117,11 +117,11 @@ function sendKYCEmail($pdo, $user, $templateKey, $kycId, $rejectionReason = null
             $customVars['resubmit_link'] = ($settings['site_url'] ?? 'https://cryptofinanze.de') . '/kyc.php';
         }
         
-        // Send template email with all 41+ variables automatically available
-        $success = $emailHelper->sendTemplateEmail($templateKey, $user['id'], $customVars);
+        // Send template email with all variables automatically available
+        $success = $emailHelper->sendEmail($templateKey, $user['id'], $customVars);
         
         if (!$success) {
-            throw new Exception("Failed to send KYC email via AdminEmailHelper");
+            throw new Exception("Failed to send KYC email via EmailHelper");
         }
         
         error_log("KYC email sent to: " . $user['email'] . " for KYC ID: " . $kycId);

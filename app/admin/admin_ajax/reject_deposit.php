@@ -49,10 +49,10 @@ try {
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
     
     if ($user) {
-        // Send rejection email using AdminEmailHelper
+        // Send rejection email using EmailHelper
         try {
-            require_once '../AdminEmailHelper.php';
-            $emailHelper = new AdminEmailHelper($pdo);
+            require_once '../../EmailHelper.php';
+            $emailHelper = new EmailHelper($pdo);
             
             $customVars = [
                 'amount' => number_format($deposit['amount'], 2) . ' €',
@@ -62,7 +62,7 @@ try {
                 'transaction_date' => date('Y-m-d H:i:s')
             ];
             
-            $emailHelper->sendTemplateEmail('deposit_rejected', $user['id'], $customVars);
+            $emailHelper->sendEmail('deposit_rejected', $user['id'], $customVars);
         } catch (Exception $e) {
             error_log("Deposit rejection email failed: " . $e->getMessage());
         }

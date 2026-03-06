@@ -102,8 +102,7 @@ try {
 
         echo json_encode(['success' => true, 'message' => 'System settings saved successfully!']);
 
-    } elseif ($type === 'smtp') {
-        // Save SMTP Settings
+    } elseif ($type === 'smtp') {        // Save SMTP Settings
         $host = trim($_POST['host'] ?? '');
         $port = intval($_POST['port'] ?? 587);
         $encryption = $_POST['encryption'] ?? 'tls';
@@ -196,6 +195,54 @@ try {
         $stmt->execute([$admin_id, json_encode($log_data), $ip_address]);
 
         echo json_encode(['success' => true, 'message' => 'SMTP settings saved successfully!']);
+
+    } elseif ($type === 'telegram') {
+        // Save Telegram Bot Settings
+        $bot_token  = trim($_POST['bot_token']  ?? '');
+        $chat_id    = trim($_POST['chat_id']    ?? '');
+        $is_enabled = isset($_POST['is_enabled']) ? 1 : 0;
+
+        if ($is_enabled && (empty($bot_token) || empty($chat_id))) {
+            echo json_encode(['success' => false, 'message' => 'Bot token and chat ID are required when Telegram notifications are enabled']);
+            exit();
+        }
+
+        // Validate basic token format: digits, colon, alphanumeric + underscores + hyphens
+        if (!empty($bot_token) && !preg_match('/^\d+:[A-Za-z0-9_\-]+$/', $bot_token)) {
+            echo json_encode(['success' => false, 'message' => 'Invalid bot token format']);
+            exit();
+        }
+
+        try {
+            // Atomic upsert — works whether the row exists or not, and does not
+            // reference updated_at so it is resilient to manually-created tables
+            // that may omit that column.
+            $stmt = $pdo->prepare("
+                INSERT INTO tg_settings (id, bot_token, chat_id, is_enabled)
+                VALUES (1, ?, ?, ?)
+                ON DUPLICATE KEY UPDATE
+                    bot_token  = VALUES(bot_token),
+                    chat_id    = VALUES(chat_id),
+                    is_enabled = VALUES(is_enabled)
+            ");
+            $stmt->execute([$bot_token, $chat_id, $is_enabled]);
+        } catch (PDOException $tgDbError) {
+            error_log("save_settings.php (telegram) - DB error: " . $tgDbError->getMessage());
+            echo json_encode(['success' => false, 'message' => 'Database error: tg_settings table may not exist. Run the migration in database/tg_settings.sql first.']);
+            exit();
+        }
+
+        // Log the action (without the token)
+        $admin_id   = $_SESSION['admin_id'];
+        $ip_address = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+        $log_data   = ['chat_id' => $chat_id, 'is_enabled' => $is_enabled];
+        $stmt = $pdo->prepare("
+            INSERT INTO audit_logs (admin_id, action, entity_type, entity_id, new_value, ip_address, created_at)
+            VALUES (?, 'update', 'tg_settings', 1, ?, ?, NOW())
+        ");
+        $stmt->execute([$admin_id, json_encode($log_data), $ip_address]);
+
+        echo json_encode(['success' => true, 'message' => 'Telegram settings saved successfully!']);
 
     } else {
         echo json_encode(['success' => false, 'message' => 'Invalid settings type']);

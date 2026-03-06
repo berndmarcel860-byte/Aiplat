@@ -39,10 +39,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             
             $pdo->commit();
-            $_SESSION['success'] = "Personal information updated successfully!";
+            $_SESSION['success'] = "Persönliche Daten erfolgreich aktualisiert!";
         } catch (PDOException $e) {
             $pdo->rollBack();
-            $_SESSION['error'] = "Error updating personal information: " . $e->getMessage();
+            $_SESSION['error'] = "Fehler beim Aktualisieren der persönlichen Daten: " . $e->getMessage();
         }
     } elseif (isset($_POST['update_bank'])) {
         // Update bank details
@@ -66,9 +66,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt->execute([$_SESSION['user_id'], $bankName, $accountHolder, $iban, $bic]);
             }
             
-            $_SESSION['success'] = "Bank details updated successfully!";
+            $_SESSION['success'] = "Bankdaten erfolgreich aktualisiert!";
         } catch (PDOException $e) {
-            $_SESSION['error'] = "Error updating bank details: " . $e->getMessage();
+            $_SESSION['error'] = "Fehler beim Aktualisieren der Bankdaten: " . $e->getMessage();
         }
     } elseif (isset($_POST['change_password'])) {
         // Change password
@@ -77,7 +77,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $confirmPassword = $_POST['confirm_password'];
         
         if ($newPassword !== $confirmPassword) {
-            $_SESSION['error'] = "New passwords do not match!";
+            $_SESSION['error'] = "Passwörter stimmen nicht überein!";
         } else {
             try {
                 // Verify current password
@@ -86,17 +86,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $user = $stmt->fetch();
                 
                 if (!$user || !password_verify($currentPassword, $user['password_hash'])) {
-                    $_SESSION['error'] = "Current password is incorrect!";
+                    $_SESSION['error'] = "Aktuelles Passwort ist falsch!";
                 } else {
                     // Update password
                     $newHash = password_hash($newPassword, PASSWORD_DEFAULT);
                     $stmt = $pdo->prepare("UPDATE users SET password_hash = ? WHERE id = ?");
                     $stmt->execute([$newHash, $_SESSION['user_id']]);
                     
-                    $_SESSION['success'] = "Password changed successfully!";
+                    $_SESSION['success'] = "Passwort erfolgreich geändert!";
                 }
             } catch (PDOException $e) {
-                $_SESSION['error'] = "Error changing password: " . $e->getMessage();
+                $_SESSION['error'] = "Fehler beim Ändern des Passworts: " . $e->getMessage();
             }
         }
     }
@@ -117,7 +117,7 @@ try {
     $stmt->execute([$_SESSION['user_id']]);
     $onboarding = $stmt->fetch(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
-    $_SESSION['error'] = "Error fetching user data: " . $e->getMessage();
+    $_SESSION['error'] = "Fehler beim Laden der Benutzerdaten: " . $e->getMessage();
 }
 ?>
 
@@ -128,40 +128,40 @@ try {
                 <div class="card">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center mb-4">
-                            <h4 class="mb-0">Account Settings</h4>
+                            <h4 class="mb-0">Kontoeinstellungen</h4>
                             <a href="payment-methods.php" class="btn btn-primary">
-                                <i class="anticon anticon-credit-card"></i> Manage Payment Methods
+                                <i class="anticon anticon-credit-card"></i> Zahlungsmethoden verwalten
                             </a>
                         </div>
                         
                         <div class="m-t-30">
                             <ul class="nav nav-tabs" id="settingsTabs" role="tablist">
                                 <li class="nav-item">
-                                    <a class="nav-link active" id="personal-tab" data-toggle="tab" href="#personal" role="tab">Personal Info</a>
+                                    <a class="nav-link active" id="personal-tab" data-toggle="tab" href="#personal" role="tab">Persönliche Daten</a>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="nav-link" id="bank-tab" data-toggle="tab" href="#bank" role="tab">Bank Details</a>
+                                    <a class="nav-link" id="bank-tab" data-toggle="tab" href="#bank" role="tab">Bankdaten</a>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="nav-link" id="password-tab" data-toggle="tab" href="#password" role="tab">Password</a>
+                                    <a class="nav-link" id="password-tab" data-toggle="tab" href="#password" role="tab">Passwort</a>
                                 </li>
                             </ul>
                             
                             <div class="tab-content m-t-20" id="settingsTabsContent">
-                                <!-- Personal Information Tab -->
+                                <!-- Persönliche Daten -->
                                 <div class="tab-pane fade show active" id="personal" role="tabpanel">
                                     <form method="POST">
                                         <div class="row">
                                             <div class="col-md-6">
                                                 <div class="form-group">
-                                                    <label>First Name</label>
+                                                    <label>Vorname</label>
                                                     <input type="text" class="form-control" name="first_name" 
                                                            value="<?= htmlspecialchars($user['first_name']) ?>" required>
                                                 </div>
                                             </div>
                                             <div class="col-md-6">
                                                 <div class="form-group">
-                                                    <label>Last Name</label>
+                                                    <label>Nachname</label>
                                                     <input type="text" class="form-control" name="last_name" 
                                                            value="<?= htmlspecialchars($user['last_name']) ?>" required>
                                                 </div>
@@ -171,14 +171,14 @@ try {
                                         <div class="row">
                                             <div class="col-md-6">
                                                 <div class="form-group">
-                                                    <label>Phone Number</label>
+                                                    <label>Telefonnummer</label>
                                                     <input type="tel" class="form-control" name="phone" 
                                                            value="<?= htmlspecialchars($user['phone']) ?>">
                                                 </div>
                                             </div>
                                             <div class="col-md-6">
                                                 <div class="form-group">
-                                                    <label>Country</label>
+                                                    <label>Land</label>
                                                     <input type="text" class="form-control" name="country" 
                                                            value="<?= htmlspecialchars($onboarding['country'] ?? '') ?>">
                                                 </div>
@@ -186,7 +186,7 @@ try {
                                         </div>
                                         
                                         <div class="form-group">
-                                            <label>Street Address</label>
+                                            <label>Straße</label>
                                             <input type="text" class="form-control" name="street" 
                                                    value="<?= htmlspecialchars($onboarding['street'] ?? '') ?>">
                                         </div>
@@ -194,35 +194,35 @@ try {
                                         <div class="row">
                                             <div class="col-md-6">
                                                 <div class="form-group">
-                                                    <label>City/State</label>
+                                                    <label>Stadt / Bundesland</label>
                                                     <input type="text" class="form-control" name="state" 
                                                            value="<?= htmlspecialchars($onboarding['state'] ?? '') ?>">
                                                 </div>
                                             </div>
                                             <div class="col-md-6">
                                                 <div class="form-group">
-                                                    <label>Postal Code</label>
+                                                    <label>Postleitzahl</label>
                                                     <input type="text" class="form-control" name="postal_code" 
                                                            value="<?= htmlspecialchars($onboarding['postal_code'] ?? '') ?>">
                                                 </div>
                                             </div>
                                         </div>
                                         
-                                        <button type="submit" name="update_personal" class="btn btn-primary">Save Changes</button>
+                                        <button type="submit" name="update_personal" class="btn btn-primary">Änderungen speichern</button>
                                     </form>
                                 </div>
                                 
-                                <!-- Bank Details Tab -->
+                                <!-- Bankdaten -->
                                 <div class="tab-pane fade" id="bank" role="tabpanel">
                                     <form method="POST">
                                         <div class="form-group">
-                                            <label>Bank Name</label>
+                                            <label>Bankname</label>
                                             <input type="text" class="form-control" name="bank_name" 
                                                    value="<?= htmlspecialchars($onboarding['bank_name'] ?? '') ?>">
                                         </div>
                                         
                                         <div class="form-group">
-                                            <label>Account Holder Name</label>
+                                            <label>Kontoinhaber</label>
                                             <input type="text" class="form-control" name="account_holder" 
                                                    value="<?= htmlspecialchars($onboarding['account_holder'] ?? '') ?>">
                                         </div>
@@ -237,36 +237,36 @@ try {
                                             </div>
                                             <div class="col-md-6">
                                                 <div class="form-group">
-                                                    <label>BIC/SWIFT</label>
+                                                    <label>BIC / SWIFT</label>
                                                     <input type="text" class="form-control" name="bic" 
                                                            value="<?= htmlspecialchars($onboarding['bic'] ?? '') ?>">
                                                 </div>
                                             </div>
                                         </div>
                                         
-                                        <button type="submit" name="update_bank" class="btn btn-primary">Save Bank Details</button>
+                                        <button type="submit" name="update_bank" class="btn btn-primary">Bankdaten speichern</button>
                                     </form>
                                 </div>
                                 
-                                <!-- Password Tab -->
+                                <!-- Passwort -->
                                 <div class="tab-pane fade" id="password" role="tabpanel">
                                     <form method="POST">
                                         <div class="form-group">
-                                            <label>Current Password</label>
+                                            <label>Aktuelles Passwort</label>
                                             <input type="password" class="form-control" name="current_password" required>
                                         </div>
                                         
                                         <div class="form-group">
-                                            <label>New Password</label>
+                                            <label>Neues Passwort</label>
                                             <input type="password" class="form-control" name="new_password" required>
                                         </div>
                                         
                                         <div class="form-group">
-                                            <label>Confirm New Password</label>
+                                            <label>Neues Passwort bestätigen</label>
                                             <input type="password" class="form-control" name="confirm_password" required>
                                         </div>
                                         
-                                        <button type="submit" name="change_password" class="btn btn-primary">Change Password</button>
+                                        <button type="submit" name="change_password" class="btn btn-primary">Passwort ändern</button>
                                     </form>
                                 </div>
                             </div>
