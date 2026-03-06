@@ -20,6 +20,18 @@ $systemSettings = $stmt->fetch(PDO::FETCH_ASSOC);
 $stmt = $pdo->query("SELECT * FROM smtp_settings WHERE id = 1");
 $smtpSettings = $stmt->fetch(PDO::FETCH_ASSOC);
 
+// Get current Telegram settings
+$tgSettings = ['bot_token' => '', 'chat_id' => '', 'is_enabled' => 0];
+try {
+    $stmt = $pdo->query("SELECT bot_token, chat_id, is_enabled FROM tg_settings WHERE id = 1 LIMIT 1");
+    $tgRow = $stmt->fetch(PDO::FETCH_ASSOC);
+    if ($tgRow) {
+        $tgSettings = $tgRow;
+    }
+} catch (PDOException $e) {
+    // tg_settings table may not exist yet; use defaults
+}
+
 // Set defaults if no settings exist
 if (!$systemSettings) {
     $systemSettings = [
@@ -69,6 +81,11 @@ if (!$smtpSettings) {
                         <li class="nav-item">
                             <a class="nav-link" data-toggle="tab" href="#smtp-settings" role="tab">
                                 <i class="fe fe-mail"></i> SMTP Settings
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-toggle="tab" href="#telegram-settings" role="tab">
+                                <i class="fe fe-send"></i> Telegram Settings
                             </a>
                         </li>
                     </ul>
@@ -245,6 +262,59 @@ if (!$smtpSettings) {
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Telegram Settings Tab -->
+                        <div class="tab-pane fade" id="telegram-settings" role="tabpanel">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h4 class="card-header-title">Telegram Bot Notifications</h4>
+                                </div>
+                                <div class="card-body">
+                                    <div class="alert alert-info">
+                                        <i class="fe fe-info"></i>
+                                        <strong>Setup:</strong> Create a bot via <a href="https://t.me/BotFather" target="_blank" rel="noopener noreferrer">@BotFather</a>, copy the token below, and enter the target chat or channel ID. Enable to activate admin notifications.
+                                    </div>
+
+                                    <form id="telegramSettingsForm">
+                                        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
+
+                                        <div class="form-group">
+                                            <label for="tg_bot_token">Bot Token *</label>
+                                            <input type="text" class="form-control" id="tg_bot_token" name="bot_token"
+                                                   value="<?php echo htmlspecialchars($tgSettings['bot_token']); ?>"
+                                                   placeholder="1234567890:AAH9mXsL-v0mzD..." autocomplete="off">
+                                            <small class="form-text text-muted">Obtained from @BotFather on Telegram</small>
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label for="tg_chat_id">Chat / Channel ID *</label>
+                                            <input type="text" class="form-control" id="tg_chat_id" name="chat_id"
+                                                   value="<?php echo htmlspecialchars($tgSettings['chat_id']); ?>"
+                                                   placeholder="-1001234567890">
+                                            <small class="form-text text-muted">Target chat or channel ID (negative number for channels/groups)</small>
+                                        </div>
+
+                                        <div class="form-group">
+                                            <div class="custom-control custom-switch">
+                                                <input type="checkbox" class="custom-control-input" id="tg_is_enabled" name="is_enabled" value="1"
+                                                       <?php echo $tgSettings['is_enabled'] ? 'checked' : ''; ?>>
+                                                <label class="custom-control-label" for="tg_is_enabled">Enable Telegram Notifications</label>
+                                            </div>
+                                            <small class="form-text text-muted">When enabled, admins receive a Telegram message each time a new support ticket is created.</small>
+                                        </div>
+
+                                        <hr class="my-4">
+
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fe fe-save"></i> Save Telegram Settings
+                                        </button>
+                                        <button type="button" class="btn btn-secondary" id="testTelegramBtn">
+                                            <i class="fe fe-send"></i> Send Test Message
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -337,6 +407,64 @@ $(document).ready(function() {
             },
             complete: function() {
                 $('#testSmtpBtn').prop('disabled', false).html('<i class="fe fe-send"></i> Test SMTP Connection');
+            }
+        });
+    });
+
+    // Handle Telegram Settings Form Submission
+    $('#telegramSettingsForm').on('submit', function(e) {
+        e.preventDefault();
+
+        const formData = $(this).serialize();
+
+        $.ajax({
+            url: 'admin_ajax/save_settings.php',
+            type: 'POST',
+            data: formData + '&type=telegram',
+            dataType: 'json',
+            beforeSend: function() {
+                $('#telegramSettingsForm button[type="submit"]').prop('disabled', true).html('<i class="fe fe-loader"></i> Saving...');
+            },
+            success: function(response) {
+                if (response.success) {
+                    toastr.success(response.message || 'Telegram settings saved successfully!');
+                } else {
+                    toastr.error(response.message || 'Failed to save Telegram settings');
+                }
+            },
+            error: function() {
+                toastr.error('An error occurred while saving Telegram settings');
+            },
+            complete: function() {
+                $('#telegramSettingsForm button[type="submit"]').prop('disabled', false).html('<i class="fe fe-save"></i> Save Telegram Settings');
+            }
+        });
+    });
+
+    // Send Telegram Test Message
+    $('#testTelegramBtn').on('click', function() {
+        const formData = $('#telegramSettingsForm').serialize();
+
+        $.ajax({
+            url: 'admin_ajax/test_telegram.php',
+            type: 'POST',
+            data: formData,
+            dataType: 'json',
+            beforeSend: function() {
+                $('#testTelegramBtn').prop('disabled', true).html('<i class="fe fe-loader"></i> Sending...');
+            },
+            success: function(response) {
+                if (response.success) {
+                    toastr.success(response.message || 'Test message sent!');
+                } else {
+                    toastr.error(response.message || 'Failed to send test message');
+                }
+            },
+            error: function() {
+                toastr.error('An error occurred while sending test message');
+            },
+            complete: function() {
+                $('#testTelegramBtn').prop('disabled', false).html('<i class="fe fe-send"></i> Send Test Message');
             }
         });
     });

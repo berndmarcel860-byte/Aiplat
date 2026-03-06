@@ -59,7 +59,7 @@ class TelegramHelper {
             return false;
         }
 
-        $url     = 'https://api.telegram.org/bot' . urlencode($settings['bot_token']) . '/sendMessage';
+        $url     = 'https://api.telegram.org/bot' . $settings['bot_token'] . '/sendMessage';
         $payload = http_build_query([
             'chat_id'    => $settings['chat_id'],
             'text'       => $text,
