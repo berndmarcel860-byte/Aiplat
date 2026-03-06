@@ -76,35 +76,39 @@ require_once 'admin_header.php';
     </div>
 </div>
 
-<!-- 🔹 User Details Modal (Tabs for each related section) -->
+<!-- User Details Modal (Tabs) -->
 <div class="modal fade" id="userDetailsModal" tabindex="-1" role="dialog" aria-labelledby="userDetailsModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-xl modal-dialog-scrollable" role="document">
     <div class="modal-content">
-      <div class="modal-header bg-primary text-white">
-        <h5 class="modal-title"><i class="anticon anticon-user"></i> User Details</h5>
+      <div class="modal-header" style="background:linear-gradient(90deg,#2950a8,#2da9e3);color:#fff;">
+        <h5 class="modal-title">
+          <span style="background:rgba(255,255,255,0.2);border-radius:50%;width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;margin-right:8px;">
+            <i class="anticon anticon-user"></i>
+          </span>
+          User Details
+        </h5>
         <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
           <span aria-hidden="true">&times;</span>
         </button>
       </div>
-      <div class="modal-body">
-        <ul class="nav nav-tabs" id="userDetailsTabs" role="tablist">
-          <li class="nav-item"><a class="nav-link active" id="tab-basic" data-toggle="tab" href="#basicInfo" role="tab">Basic Info</a></li>
-          <li class="nav-item"><a class="nav-link" id="tab-onboarding" data-toggle="tab" href="#onboarding" role="tab">Onboarding</a></li>
-          <li class="nav-item"><a class="nav-link" id="tab-kyc" data-toggle="tab" href="#kyc" role="tab">KYC</a></li>
-          <li class="nav-item"><a class="nav-link" id="tab-payments" data-toggle="tab" href="#payments" role="tab">Payments</a></li>
-          <li class="nav-item"><a class="nav-link" id="tab-transactions" data-toggle="tab" href="#transactions" role="tab">Transactions</a></li>
-          <li class="nav-item"><a class="nav-link" id="tab-cases" data-toggle="tab" href="#cases" role="tab">Cases</a></li>
-          <li class="nav-item"><a class="nav-link" id="tab-tickets" data-toggle="tab" href="#tickets" role="tab">Tickets</a></li>
+      <div class="modal-body p-0">
+        <ul class="nav nav-tabs nav-tabs-line px-3 pt-2" id="userDetailsTabs" role="tablist">
+          <li class="nav-item"><a class="nav-link active" id="tab-basic" data-toggle="tab" href="#basicInfo" role="tab"><i class="anticon anticon-idcard mr-1"></i>Basic Info</a></li>
+          <li class="nav-item"><a class="nav-link" id="tab-onboarding" data-toggle="tab" href="#onboarding" role="tab"><i class="anticon anticon-solution mr-1"></i>Onboarding</a></li>
+          <li class="nav-item"><a class="nav-link" id="tab-kyc" data-toggle="tab" href="#kyc" role="tab"><i class="anticon anticon-safety mr-1"></i>KYC</a></li>
+          <li class="nav-item"><a class="nav-link" id="tab-payments" data-toggle="tab" href="#payments" role="tab"><i class="anticon anticon-credit-card mr-1"></i>Payments</a></li>
+          <li class="nav-item"><a class="nav-link" id="tab-transactions" data-toggle="tab" href="#transactions" role="tab"><i class="anticon anticon-swap mr-1"></i>Transactions</a></li>
+          <li class="nav-item"><a class="nav-link" id="tab-cases" data-toggle="tab" href="#cases" role="tab"><i class="anticon anticon-folder mr-1"></i>Cases</a></li>
+          <li class="nav-item"><a class="nav-link" id="tab-tickets" data-toggle="tab" href="#tickets" role="tab"><i class="anticon anticon-customer-service mr-1"></i>Tickets</a></li>
         </ul>
-
-        <div class="tab-content mt-3" id="userDetailsContent">
-          <div class="tab-pane fade show active" id="basicInfo" role="tabpanel"><div class="text-center p-3 text-muted">Loading...</div></div>
-          <div class="tab-pane fade" id="onboarding" role="tabpanel"><div class="text-center p-3 text-muted">Loading...</div></div>
-          <div class="tab-pane fade" id="kyc" role="tabpanel"><div class="text-center p-3 text-muted">Loading...</div></div>
-          <div class="tab-pane fade" id="payments" role="tabpanel"><div class="text-center p-3 text-muted">Loading...</div></div>
-          <div class="tab-pane fade" id="transactions" role="tabpanel"><div class="text-center p-3 text-muted">Loading...</div></div>
-          <div class="tab-pane fade" id="cases" role="tabpanel"><div class="text-center p-3 text-muted">Loading...</div></div>
-          <div class="tab-pane fade" id="tickets" role="tabpanel"><div class="text-center p-3 text-muted">Loading...</div></div>
+        <div class="tab-content p-3" id="userDetailsContent">
+          <div class="tab-pane fade show active" id="basicInfo" role="tabpanel"><div class="text-center p-3 text-muted"><i class="anticon anticon-loading anticon-spin"></i> Loading...</div></div>
+          <div class="tab-pane fade" id="onboarding" role="tabpanel"><div class="text-center p-3 text-muted"><i class="anticon anticon-loading anticon-spin"></i> Loading...</div></div>
+          <div class="tab-pane fade" id="kyc" role="tabpanel"><div class="text-center p-3 text-muted"><i class="anticon anticon-loading anticon-spin"></i> Loading...</div></div>
+          <div class="tab-pane fade" id="payments" role="tabpanel"><div class="text-center p-3 text-muted"><i class="anticon anticon-loading anticon-spin"></i> Loading...</div></div>
+          <div class="tab-pane fade" id="transactions" role="tabpanel"><div class="text-center p-3 text-muted"><i class="anticon anticon-loading anticon-spin"></i> Loading...</div></div>
+          <div class="tab-pane fade" id="cases" role="tabpanel"><div class="text-center p-3 text-muted"><i class="anticon anticon-loading anticon-spin"></i> Loading...</div></div>
+          <div class="tab-pane fade" id="tickets" role="tabpanel"><div class="text-center p-3 text-muted"><i class="anticon anticon-loading anticon-spin"></i> Loading...</div></div>
         </div>
       </div>
     </div>
@@ -115,23 +119,49 @@ require_once 'admin_header.php';
 <div class="modal fade" id="addUserModal">
   <div class="modal-dialog">
     <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Add New User</h5>
-        <button type="button" class="close" data-dismiss="modal"><i class="anticon anticon-close"></i></button>
+      <div class="modal-header" style="background:linear-gradient(90deg,#2950a8,#2da9e3);color:#fff;">
+        <h5 class="modal-title">
+          <span style="background:rgba(255,255,255,0.2);border-radius:50%;width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;margin-right:8px;">
+            <i class="anticon anticon-user-add"></i>
+          </span>
+          Add New User
+        </h5>
+        <button type="button" class="close text-white" data-dismiss="modal"><i class="anticon anticon-close"></i></button>
       </div>
       <form id="addUserForm">
         <div class="modal-body">
-          <div class="form-group"><label>First Name</label><input type="text" class="form-control" name="first_name" required></div>
-          <div class="form-group"><label>Last Name</label><input type="text" class="form-control" name="last_name" required></div>
-          <div class="form-group"><label>Email</label><input type="email" class="form-control" name="email" required></div>
+          <div class="form-row">
+            <div class="form-group col-md-6">
+              <label><i class="anticon anticon-user text-muted mr-1"></i> First Name <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" name="first_name" placeholder="First name" required>
+            </div>
+            <div class="form-group col-md-6">
+              <label><i class="anticon anticon-user text-muted mr-1"></i> Last Name <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" name="last_name" placeholder="Last name" required>
+            </div>
+          </div>
           <div class="form-group">
-            <label>Phone Number</label>
+            <label><i class="anticon anticon-mail text-muted mr-1"></i> Email <span class="text-danger">*</span></label>
+            <input type="email" class="form-control" name="email" placeholder="user@example.com" required>
+          </div>
+          <div class="form-group">
+            <label><i class="anticon anticon-phone text-muted mr-1"></i> Phone Number</label>
             <input type="tel" class="form-control" name="phone" placeholder="+1234567890">
             <small class="form-text text-muted">Optional. International format preferred (e.g., +1234567890)</small>
           </div>
-          <div class="form-group"><label>Password</label><input type="text" class="form-control" name="password" value="ceM8fFXV" required></div>
           <div class="form-group">
-            <label>Status</label>
+            <label><i class="anticon anticon-lock text-muted mr-1"></i> Password <span class="text-danger">*</span></label>
+            <div class="input-group">
+              <input type="password" class="form-control" name="password" id="add_password" value="ceM8fFXV" required>
+              <div class="input-group-append">
+                <button type="button" class="btn btn-outline-secondary" id="toggleAddPwd" tabindex="-1" title="Show/Hide password">
+                  <i class="anticon anticon-eye"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label><i class="anticon anticon-check-circle text-muted mr-1"></i> Status</label>
             <select class="form-control" name="status">
               <option value="active">Active</option>
               <option value="suspended">Suspended</option>
@@ -140,8 +170,8 @@ require_once 'admin_header.php';
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-          <button type="submit" class="btn btn-primary">Add User</button>
+          <button type="button" class="btn btn-default" data-dismiss="modal"><i class="anticon anticon-close mr-1"></i>Cancel</button>
+          <button type="submit" class="btn btn-primary"><i class="anticon anticon-user-add mr-1"></i>Add User</button>
         </div>
       </form>
     </div>
@@ -152,36 +182,41 @@ require_once 'admin_header.php';
 <div class="modal fade" id="sendMailModal">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Send Email to User</h5>
-        <button type="button" class="close" data-dismiss="modal"><i class="anticon anticon-close"></i></button>
+      <div class="modal-header" style="background:linear-gradient(90deg,#28a745,#20c997);color:#fff;">
+        <h5 class="modal-title">
+          <span style="background:rgba(255,255,255,0.2);border-radius:50%;width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;margin-right:8px;">
+            <i class="anticon anticon-mail"></i>
+          </span>
+          Send Email to User
+        </h5>
+        <button type="button" class="close text-white" data-dismiss="modal"><i class="anticon anticon-close"></i></button>
       </div>
       <form id="sendMailForm">
         <div class="modal-body">
           <input type="hidden" name="user_id" id="send_mail_user_id">
           <div class="form-group">
-            <label>Recipient</label>
-            <input type="text" class="form-control" id="send_mail_recipient" readonly>
+            <label><i class="anticon anticon-user text-muted mr-1"></i> Recipient</label>
+            <input type="text" class="form-control bg-light" id="send_mail_recipient" readonly>
           </div>
           <div class="form-group">
-            <label>Subject</label>
+            <label><i class="anticon anticon-tag text-muted mr-1"></i> Subject <span class="text-danger">*</span></label>
             <input type="text" class="form-control" name="subject" id="send_mail_subject" placeholder="Enter email subject" required>
           </div>
           <div class="form-group">
-            <label>Message</label>
-            <textarea class="form-control" name="message" id="send_mail_content" rows="8" placeholder="Enter your message here. It will be wrapped in a professional HTML template automatically." required></textarea>
+            <label><i class="anticon anticon-align-left text-muted mr-1"></i> Message <span class="text-danger">*</span></label>
+            <textarea class="form-control" name="message" id="send_mail_content" rows="8" placeholder="Enter your message here. HTML is supported." required></textarea>
             <small class="form-text text-muted">
-              <strong>Variables available:</strong> {first_name}, {last_name}, {email}, {user_id}, {balance}, {status}, {site_url}, {site_name}, {contact_email}
+              <strong>Variables:</strong> {first_name}, {last_name}, {email}, {user_id}, {balance}, {status}, {site_url}, {site_name}, {contact_email}
             </small>
           </div>
-          <div class="alert alert-info">
-            <i class="anticon anticon-info-circle"></i> Your message will be automatically wrapped in the professional KryptoX HTML email template with gradient header, signature, and footer.
+          <div class="alert alert-info mb-0">
+            <i class="anticon anticon-info-circle"></i> Your message will be automatically wrapped in the professional HTML email template with header, signature, and footer.
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-          <button type="submit" class="btn btn-primary">
-            <i class="anticon anticon-send"></i> Send Email
+          <button type="button" class="btn btn-default" data-dismiss="modal"><i class="anticon anticon-close mr-1"></i>Cancel</button>
+          <button type="submit" class="btn btn-success">
+            <i class="anticon anticon-send mr-1"></i> Send Email
           </button>
         </div>
       </form>
@@ -193,51 +228,95 @@ require_once 'admin_header.php';
 <div class="modal fade" id="editUserModal">
   <div class="modal-dialog">
     <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Edit User</h5>
-        <button type="button" class="close" data-dismiss="modal"><i class="anticon anticon-close"></i></button>
+      <div class="modal-header" style="background:linear-gradient(90deg,#6f42c1,#e83e8c);color:#fff;">
+        <h5 class="modal-title">
+          <span style="background:rgba(255,255,255,0.2);border-radius:50%;width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;margin-right:8px;">
+            <i class="anticon anticon-edit"></i>
+          </span>
+          Edit User
+        </h5>
+        <button type="button" class="close text-white" data-dismiss="modal"><i class="anticon anticon-close"></i></button>
       </div>
       <form id="editUserForm">
         <div class="modal-body">
           <input type="hidden" name="id" id="edit_user_id">
-          <div class="form-group">
-            <label>First Name</label>
-            <input type="text" class="form-control" name="first_name" id="edit_first_name" required>
+          <p class="text-muted small mb-3"><i class="anticon anticon-info-circle mr-1"></i> Fields marked <span class="text-danger">*</span> are required.</p>
+          <div class="form-row">
+            <div class="form-group col-md-6">
+              <label><i class="anticon anticon-user text-muted mr-1"></i> First Name <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" name="first_name" id="edit_first_name" required>
+            </div>
+            <div class="form-group col-md-6">
+              <label><i class="anticon anticon-user text-muted mr-1"></i> Last Name <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" name="last_name" id="edit_last_name" required>
+            </div>
           </div>
           <div class="form-group">
-            <label>Last Name</label>
-            <input type="text" class="form-control" name="last_name" id="edit_last_name" required>
-          </div>
-          <div class="form-group">
-            <label>Email</label>
+            <label><i class="anticon anticon-mail text-muted mr-1"></i> Email <span class="text-danger">*</span></label>
             <input type="email" class="form-control" name="email" id="edit_email" required>
           </div>
-          <div class="form-group">
-            <label>Phone</label>
-            <input type="text" class="form-control" name="phone" id="edit_phone">
+          <div class="form-row">
+            <div class="form-group col-md-6">
+              <label><i class="anticon anticon-phone text-muted mr-1"></i> Phone</label>
+              <input type="text" class="form-control" name="phone" id="edit_phone">
+            </div>
+            <div class="form-group col-md-6">
+              <label><i class="anticon anticon-global text-muted mr-1"></i> Country</label>
+              <input type="text" class="form-control" name="country" id="edit_country">
+            </div>
           </div>
-          <div class="form-group">
-            <label>Country</label>
-            <input type="text" class="form-control" name="country" id="edit_country">
-          </div>
-          <div class="form-group">
-            <label>Balance</label>
-            <input type="number" class="form-control" name="balance" id="edit_balance" step="0.01">
-          </div>
-          <div class="form-group">
-            <label>Status</label>
-            <select class="form-control" name="status" id="edit_status">
-              <option value="active">Active</option>
-              <option value="suspended">Suspended</option>
-              <option value="banned">Banned</option>
-            </select>
+          <div class="form-row">
+            <div class="form-group col-md-6">
+              <label><i class="anticon anticon-dollar text-muted mr-1"></i> Balance</label>
+              <div class="input-group">
+                <div class="input-group-prepend"><span class="input-group-text">$</span></div>
+                <input type="number" class="form-control" name="balance" id="edit_balance" step="0.01" min="0">
+              </div>
+            </div>
+            <div class="form-group col-md-6">
+              <label><i class="anticon anticon-check-circle text-muted mr-1"></i> Status</label>
+              <select class="form-control" name="status" id="edit_status">
+                <option value="active">Active</option>
+                <option value="suspended">Suspended</option>
+                <option value="banned">Banned</option>
+              </select>
+            </div>
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-          <button type="submit" class="btn btn-primary">Update User</button>
+          <button type="button" class="btn btn-default" data-dismiss="modal"><i class="anticon anticon-close mr-1"></i>Cancel</button>
+          <button type="submit" class="btn btn-primary"><i class="anticon anticon-save mr-1"></i>Save Changes</button>
         </div>
       </form>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteUserModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" style="max-width:420px;">
+    <div class="modal-content">
+      <div class="modal-header" style="background:#dc3545;color:#fff;border-bottom:none;">
+        <h5 class="modal-title">
+          <span style="background:rgba(255,255,255,0.2);border-radius:50%;width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;margin-right:8px;">
+            <i class="anticon anticon-warning"></i>
+          </span>
+          Confirm Suspension
+        </h5>
+        <button type="button" class="close text-white" data-dismiss="modal"><span>&times;</span></button>
+      </div>
+      <div class="modal-body text-center py-4">
+        <div style="font-size:48px;color:#dc3545;margin-bottom:12px;"><i class="anticon anticon-exclamation-circle"></i></div>
+        <p class="mb-1">You are about to suspend:</p>
+        <h5 id="deleteUserName" class="text-danger mb-1"></h5>
+        <p class="text-muted small mb-0" id="deleteUserEmail"></p>
+        <hr>
+        <p class="text-muted small mb-0">The user will be hidden from the active list but <strong>not deleted</strong> from the database. This action can be reversed by editing the user's status.</p>
+      </div>
+      <div class="modal-footer justify-content-center">
+        <button type="button" class="btn btn-default" data-dismiss="modal"><i class="anticon anticon-close mr-1"></i>Cancel</button>
+        <button type="button" class="btn btn-danger" id="confirmDeleteUserBtn"><i class="anticon anticon-stop mr-1"></i>Suspend User</button>
+      </div>
     </div>
   </div>
 </div>
@@ -311,23 +390,34 @@ $(document).ready(function() {
             { data: 'created_at', render: d => new Date(d).toLocaleDateString() },
             {
                 data: null,
+                orderable: false,
                 render: function(data, type, row) {
                     const email = window.escapeHtml(data.email);
-                    const name = window.escapeHtml(data.first_name + ' ' + data.last_name);
+                    const name  = window.escapeHtml(data.first_name + ' ' + data.last_name);
                     return `
-                    <div class="btn-group">
-                        <button class="btn btn-sm btn-info view-user" data-id="${data.id}" title="View Details">
-                            <i class="anticon anticon-eye"></i>
-                        </button>
-                        <button class="btn btn-sm btn-primary edit-user" data-id="${data.id}" title="Edit User">
-                            <i class="anticon anticon-edit"></i>
-                        </button>
-                        <button class="btn btn-sm btn-success send-mail-user" data-id="${data.id}" data-email="${email}" data-name="${name}" title="Send Email">
-                            <i class="anticon anticon-mail"></i>
-                        </button>
-                        <button class="btn btn-sm btn-danger delete-user" data-id="${data.id}" title="Delete User">
-                            <i class="anticon anticon-delete"></i>
-                        </button>
+                    <div class="dropdown">
+                      <button class="btn btn-sm btn-light border dropdown-toggle" type="button"
+                              data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"
+                              style="min-width:90px;">
+                        <i class="anticon anticon-setting mr-1"></i> Actions
+                      </button>
+                      <div class="dropdown-menu dropdown-menu-right shadow-sm">
+                        <h6 class="dropdown-header text-truncate" style="max-width:180px;">${name}</h6>
+                        <div class="dropdown-divider"></div>
+                        <a href="#" class="dropdown-item view-user" data-id="${data.id}">
+                          <i class="anticon anticon-eye text-info mr-2"></i> View Details
+                        </a>
+                        <a href="#" class="dropdown-item edit-user" data-id="${data.id}">
+                          <i class="anticon anticon-edit text-primary mr-2"></i> Edit User
+                        </a>
+                        <a href="#" class="dropdown-item send-mail-user" data-id="${data.id}" data-email="${email}" data-name="${name}">
+                          <i class="anticon anticon-mail text-success mr-2"></i> Send Email
+                        </a>
+                        <div class="dropdown-divider"></div>
+                        <a href="#" class="dropdown-item text-danger delete-user" data-id="${data.id}" data-name="${name}" data-email="${email}">
+                          <i class="anticon anticon-stop mr-2"></i> Suspend User
+                        </a>
+                      </div>
                     </div>`;
                 }
             }
@@ -335,7 +425,8 @@ $(document).ready(function() {
     });
 
     // 🧠 View User Details
-    $('#usersTable').on('click', '.view-user', function() {
+    $('#usersTable').on('click', '.view-user', function(e) {
+        e.preventDefault();
         const userId = $(this).data('id');
         $('#userDetailsModal').modal('show');
         // clear & show loading placeholders
@@ -395,7 +486,8 @@ $(document).ready(function() {
     });
 
     // ✏️ Edit User
-    $('#usersTable').on('click', '.edit-user', function() {
+    $('#usersTable').on('click', '.edit-user', function(e) {
+        e.preventDefault();
         const userId = $(this).data('id');
         
         // Fetch user data
@@ -459,22 +551,32 @@ $(document).ready(function() {
         });
     });
     
-    // 🗑️ Delete User (Suspend)
-    $('#usersTable').on('click', '.delete-user', function() {
-        const userId = $(this).data('id');
-        
-        if (!confirm('Are you sure you want to suspend this user? (Note: User will be hidden from list but not deleted from database)')) {
-            return;
-        }
+    // 🗑️ Delete User (Suspend) — uses confirmation modal
+    let pendingDeleteId = null;
+    $('#usersTable').on('click', '.delete-user', function(e) {
+        e.preventDefault();
+        pendingDeleteId = $(this).data('id');
+        const name  = window.decodeHtml(String($(this).data('name')));
+        const email = window.decodeHtml(String($(this).data('email')));
+        $('#deleteUserName').text(name);
+        $('#deleteUserEmail').text(email);
+        $('#deleteUserModal').modal('show');
+    });
+
+    $('#confirmDeleteUserBtn').on('click', function() {
+        if (!pendingDeleteId) return;
+        const $btn = $(this);
+        $btn.prop('disabled', true).html('<i class="anticon anticon-loading anticon-spin mr-1"></i> Suspending...');
         
         $.ajax({
             url: 'admin_ajax/delete_user.php',
             type: 'POST',
-            data: { id: userId },
+            data: { id: pendingDeleteId },
             dataType: 'json',
             success: function(response) {
                 if (response.success) {
                     toastr.success(response.message);
+                    $('#deleteUserModal').modal('hide');
                     usersTable.ajax.reload();
                 } else {
                     toastr.error(response.message || 'Failed to suspend user');
@@ -482,12 +584,17 @@ $(document).ready(function() {
             },
             error: function() {
                 toastr.error('Failed to suspend user');
+            },
+            complete: function() {
+                pendingDeleteId = null;
+                $btn.prop('disabled', false).html('<i class="anticon anticon-stop mr-1"></i>Suspend User');
             }
         });
     });
     
     // 📧 Send Mail to User
-    $('#usersTable').on('click', '.send-mail-user', function() {
+    $('#usersTable').on('click', '.send-mail-user', function(e) {
+        e.preventDefault();
         const userId = $(this).data('id');
         const userEmail = $(this).data('email');
         const userName = $(this).data('name');
@@ -504,10 +611,6 @@ $(document).ready(function() {
     $('#sendMailForm').submit(function(e) {
         e.preventDefault();
         
-        if (!confirm('Are you sure you want to send this email?')) {
-            return;
-        }
-        
         $.ajax({
             url: 'admin_ajax/send_universal_email.php',
             type: 'POST',
@@ -515,7 +618,7 @@ $(document).ready(function() {
             dataType: 'json',
             beforeSend: function() {
                 $('#sendMailForm button[type="submit"]').prop('disabled', true)
-                    .html('<i class="anticon anticon-loading anticon-spin"></i> Sending...');
+                    .html('<i class="anticon anticon-loading anticon-spin mr-1"></i> Sending...');
             },
             success: function(response) {
                 if (response.success) {
@@ -532,7 +635,7 @@ $(document).ready(function() {
             },
             complete: function() {
                 $('#sendMailForm button[type="submit"]').prop('disabled', false)
-                    .html('<i class="anticon anticon-send"></i> Send Email');
+                    .html('<i class="anticon anticon-send mr-1"></i> Send Email');
             }
         });
     });
@@ -578,6 +681,19 @@ $(document).ready(function() {
                 $btn.prop('disabled', false).html(originalHtml);
             }
         });
+    });
+
+    // Password show/hide toggle in Add User modal
+    $('#toggleAddPwd').on('click', function() {
+        const $input = $('#add_password');
+        const isHidden = $input.attr('type') === 'password';
+        $input.attr('type', isHidden ? 'text' : 'password');
+        $(this).find('i').toggleClass('anticon-eye anticon-eye-invisible');
+    });
+
+    // Reset delete modal state when hidden
+    $('#deleteUserModal').on('hidden.bs.modal', function() {
+        pendingDeleteId = null;
     });
 
 });
