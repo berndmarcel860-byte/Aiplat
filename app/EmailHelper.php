@@ -650,4 +650,58 @@ class EmailHelper {
 
         return $this->sendDirectEmail($userId, $subject, $body, $customVars);
     }
+
+    /**
+     * Send an admin notification email about a newly created support ticket.
+     * Reads the admin contact address from system_settings.contact_email.
+     *
+     * @param array $customVars Must include: ticket_number, ticket_subject,
+     *                          ticket_category, ticket_priority
+     * @return bool
+     */
+    public function sendAdminNewTicketEmail($customVars = []) {
+        try {
+            $stmt = $this->pdo->query("SELECT contact_email, brand_name FROM system_settings WHERE id = 1");
+            $settings   = $stmt->fetch(PDO::FETCH_ASSOC);
+            $adminEmail = $settings['contact_email'] ?? '';
+            $brandName  = $settings['brand_name'] ?? $this->brandName;
+
+            if (!filter_var($adminEmail, FILTER_VALIDATE_EMAIL)) {
+                error_log("EmailHelper::sendAdminNewTicketEmail — admin contact_email not configured");
+                return false;
+            }
+
+            $ticketNumber  = htmlspecialchars($customVars['ticket_number']  ?? '');
+            $ticketSubject = htmlspecialchars($customVars['ticket_subject'] ?? '');
+            $ticketCat     = htmlspecialchars($customVars['ticket_category'] ?? '');
+            $ticketPrio    = htmlspecialchars($customVars['ticket_priority'] ?? '');
+
+            $subject = "Neues Support-Ticket: $ticketNumber";
+
+            $htmlBody = '
+<p>Ein neues Support-Ticket wurde erstellt.</p>
+
+<div class="highlight-box">
+  <h3>&#127931; Ticket-Details</h3>
+  <p><strong>Ticket-Nr.:</strong> ' . $ticketNumber . '</p>
+  <p><strong>Betreff:</strong> ' . $ticketSubject . '</p>
+  <p><strong>Kategorie:</strong> ' . $ticketCat . '</p>
+  <p><strong>Priorität:</strong> ' . $ticketPrio . '</p>
+</div>
+
+<p><a href="' . htmlspecialchars($this->siteUrl) . '/app/admin/admin_support_tickets.php" class="btn">Ticket ansehen</a></p>
+';
+
+            $sent = $this->sendWithPHPMailer($adminEmail, $subject, $htmlBody);
+
+            $logStmt = $this->pdo->prepare("INSERT INTO email_logs (recipient, subject, content, sent_at, status) VALUES (?, ?, ?, NOW(), ?)");
+            $logStmt->execute([$adminEmail, $subject, $htmlBody, $sent ? 'sent' : 'failed']);
+
+            return $sent;
+
+        } catch (Exception $e) {
+            error_log("EmailHelper::sendAdminNewTicketEmail error: " . $e->getMessage());
+            return false;
+        }
+    }
 }

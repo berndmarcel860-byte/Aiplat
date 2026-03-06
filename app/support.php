@@ -1,7 +1,6 @@
 <?php
 require_once 'config.php';
 require_once 'EmailHelper.php';
-require_once 'admin/AdminEmailHelper.php';
 require_once 'TelegramHelper.php';
 require_once 'header.php';
 
@@ -36,33 +35,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_ticket'])) {
                               VALUES (?, ?, ?, ?, ?, ?)");
         $stmt->execute([$_SESSION['user_id'], $ticket_number, $subject, $message, $category, $priority]);
 
-        // Send ticket-created notification email to user (non-fatal)
+        $ticketVars = [
+            'ticket_number'   => $ticket_number,
+            'ticket_subject'  => $subject,
+            'ticket_category' => $category,
+            'ticket_priority' => $priorityLabel,
+        ];
+
+        // Instantiate once; both user and admin emails are sent through EmailHelper
+        $emailHelper = new EmailHelper($pdo);
+
+        // Send ticket-created confirmation email to the user (non-fatal)
         try {
-            $emailHelper = new EmailHelper($pdo);
-            $emailHelper->sendTicketCreatedEmail($_SESSION['user_id'], [
-                'ticket_number'   => $ticket_number,
-                'ticket_subject'  => $subject,
-                'ticket_category' => $category,
-                'ticket_priority' => $priorityLabel,
-            ]);
+            $emailHelper->sendTicketCreatedEmail($_SESSION['user_id'], $ticketVars);
         } catch (Exception $emailError) {
-            error_log("Ticket creation email failed (ticket $ticket_number): " . $emailError->getMessage());
+            error_log("Ticket creation user email failed (ticket $ticket_number): " . $emailError->getMessage());
         }
 
-        // Notify admin of new ticket via AdminEmailHelper (non-fatal)
+        // Notify admin of new ticket by email (non-fatal)
         try {
-            $adminEmailHelper = new AdminEmailHelper($pdo);
-            $siteUrlStmt = $pdo->query("SELECT site_url FROM system_settings WHERE id = 1");
-            $siteUrl = $siteUrlStmt ? ($siteUrlStmt->fetchColumn() ?: '') : '';
-            $adminEmailHelper->sendAdminTicketNotificationEmail([
-                'ticket_number'   => $ticket_number,
-                'ticket_subject'  => $subject,
-                'ticket_category' => $category,
-                'ticket_priority' => $priorityLabel,
-                'site_url'        => $siteUrl,
-            ]);
+            $emailHelper->sendAdminNewTicketEmail($ticketVars);
         } catch (Exception $adminEmailError) {
-            error_log("Admin ticket notification failed (ticket $ticket_number): " . $adminEmailError->getMessage());
+            error_log("Admin ticket notification email failed (ticket $ticket_number): " . $adminEmailError->getMessage());
         }
 
         // Send Telegram notification to admin (non-fatal)
