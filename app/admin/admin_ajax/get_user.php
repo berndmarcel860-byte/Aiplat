@@ -481,6 +481,7 @@ try {
       </div>
       <form id='modalSendNotifForm'>
         <input type='hidden' name='user_id' value='{$user['id']}'>
+        <input type='hidden' name='user_email' value='" . htmlspecialchars($user['email'], ENT_QUOTES) . "'>
         <div class='form-group'>
           <label class='small font-weight-bold'>E-Mail-Vorlage <span class='text-danger'>*</span></label>
           <select class='form-control' name='template_key' id='modalNotifTemplate' required>

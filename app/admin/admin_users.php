@@ -573,9 +573,15 @@ $(document).ready(function() {
                     const $btn = $('#modalSendNotifBtn');
                     $btn.prop('disabled', true).html('<i class="anticon anticon-loading anticon-spin mr-1"></i> Sending…');
                     $.ajax({
-                        url: 'admin_ajax/send_universal_email.php',
+                        url: 'admin_ajax/send_bulk_notifications.php',
                         type: 'POST',
-                        data: $(this).serialize(),
+                        data: {
+                            template_key: $(this).find('[name=template_key]').val(),
+                            users: JSON.stringify([{
+                                id: $(this).find('[name=user_id]').val(),
+                                email: $(this).find('[name=user_email]').val() || ''
+                            }])
+                        },
                         dataType: 'json',
                         success: function(r) {
                             if (r.success) {

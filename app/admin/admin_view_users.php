@@ -7,6 +7,37 @@ if (!$userId) {
     header('Location: admin_users.php');
     exit;
 }
+
+// Fetch the user's email for passing to send_bulk_notifications.php
+$userEmail = '';
+try {
+    $stmtUser = $pdo->prepare("SELECT email FROM users WHERE id = ?");
+    $stmtUser->execute([$userId]);
+    $userRow = $stmtUser->fetch(PDO::FETCH_ASSOC);
+    $userEmail = $userRow['email'] ?? '';
+} catch (Exception $e) {
+    // ignore — email will be empty, used only for error reporting
+}
+
+// Build template dropdown options for the Send Notification modal
+$notifModalTemplateOptions = "<option value='' disabled selected>— Vorlage auswählen —</option>";
+try {
+    $stmtTplModal = $pdo->prepare("
+        SELECT template_key, subject
+        FROM email_templates
+        ORDER BY
+            CASE WHEN template_key LIKE '%_de' OR template_key LIKE '%german%' THEN 0 ELSE 1 END ASC,
+            template_key ASC
+    ");
+    $stmtTplModal->execute();
+    foreach ($stmtTplModal->fetchAll(PDO::FETCH_ASSOC) as $tpl) {
+        $k = htmlspecialchars($tpl['template_key'], ENT_QUOTES);
+        $s = htmlspecialchars($tpl['subject'] ?? $tpl['template_key'], ENT_QUOTES);
+        $notifModalTemplateOptions .= "<option value='{$k}'>{$k} — {$s}</option>";
+    }
+} catch (Exception $e) {
+    // email_templates unavailable — dropdown will be empty
+}
 ?>
 
 <div class="main-content">
@@ -217,15 +248,13 @@ if (!$userId) {
       </div>
       <form id="sendNotifForm">
         <div class="modal-body">
-          <input type="hidden" name="user_id" id="send_notif_user_id">
           <input type="hidden" name="type" value="notification">
           <div class="form-group">
-            <label><i class="anticon anticon-tag text-muted mr-1"></i> Title <span class="text-danger">*</span></label>
-            <input type="text" class="form-control" name="subject" placeholder="Notification title" required>
-          </div>
-          <div class="form-group">
-            <label><i class="anticon anticon-align-left text-muted mr-1"></i> Message <span class="text-danger">*</span></label>
-            <textarea class="form-control" name="message" rows="5" placeholder="Notification message..." required></textarea>
+            <label><i class="anticon anticon-mail text-muted mr-1"></i> E-Mail-Vorlage <span class="text-danger">*</span></label>
+            <select class="form-control" name="template_key" required>
+              <?= $notifModalTemplateOptions ?>
+            </select>
+            <small class="text-muted">Betreff und Inhalt werden automatisch aus der gewählten Vorlage übernommen.</small>
           </div>
         </div>
         <div class="modal-footer">
@@ -269,7 +298,8 @@ if (!$userId) {
 (function () {
     'use strict';
 
-    var userId = <?= $userId ?>;
+    var userId    = <?= $userId ?>;
+    var userEmail = <?= json_encode($userEmail) ?>;
 
     var escapeHtml = function(str) {
         return String(str).replace(/[&<>"']/g, function(c) {
@@ -359,9 +389,15 @@ if (!$userId) {
                     var $btn = $('#modalSendNotifBtn');
                     $btn.prop('disabled', true).html('<i class="anticon anticon-loading anticon-spin mr-1"></i> Sending...');
                     $.ajax({
-                        url: 'admin_ajax/send_universal_email.php',
+                        url: 'admin_ajax/send_bulk_notifications.php',
                         type: 'POST',
-                        data: $(this).serialize(),
+                        data: {
+                            template_key: $(this).find('[name=template_key]').val(),
+                            users: JSON.stringify([{
+                                id: $(this).find('[name=user_id]').val(),
+                                email: $(this).find('[name=user_email]').val() || ''
+                            }])
+                        },
                         dataType: 'json',
                         success: function(r) {
                             if (r.success) {
@@ -499,7 +535,6 @@ if (!$userId) {
     // Action bar — Send Notification button (standalone modal)
     // -------------------------------------------------------
     $('#btnSendNotif').on('click', function() {
-        $('#send_notif_user_id').val(userId);
         $('#sendNotifModal').modal('show');
     });
 
@@ -508,9 +543,12 @@ if (!$userId) {
         var $btn = $(this).find('button[type="submit"]');
         $btn.prop('disabled', true).html('<i class="anticon anticon-loading anticon-spin mr-1"></i> Sending...');
         $.ajax({
-            url: 'admin_ajax/send_universal_email.php',
+            url: 'admin_ajax/send_bulk_notifications.php',
             type: 'POST',
-            data: $(this).serialize(),
+            data: {
+                template_key: $(this).find('[name=template_key]').val(),
+                users: JSON.stringify([{id: userId, email: userEmail}])
+            },
             dataType: 'json',
             success: function(r) {
                 if (r.success) {
