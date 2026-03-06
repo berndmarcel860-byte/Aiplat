@@ -267,6 +267,7 @@ $(document).ready(function() {
                             </div>
                             <div class="card-body">
                                 ${reply.message.replace(/\n/g, '<br>')}
+                                ${getAttachmentsHtml(reply.attachments)}
                             </div>
                         </div>
                     `;
@@ -393,6 +394,36 @@ $(document).ready(function() {
             'closed': 'secondary'
         };
         return classes[status] || 'secondary';
+    }
+
+    function getAttachmentsHtml(attachments) {
+        if (!attachments) return '';
+        try {
+            const files = JSON.parse(attachments);
+            if (!Array.isArray(files) || !files.length) return '';
+            const imageExts = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+            const escHtml = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+            let html = '<div class="mt-3"><small class="text-muted font-weight-bold"><i class="anticon anticon-paper-clip"></i> Attachments:</small><div class="mt-1">';
+            files.forEach(function(file) {
+                const ext = file.split('.').pop().toLowerCase();
+                const isImage = imageExts.includes(ext);
+                const url = '../uploads/tickets/' + encodeURIComponent(file);
+                const safeFile = escHtml(file);
+                if (isImage) {
+                    html += `<a href="${url}" target="_blank" class="d-inline-block mr-2 mb-2" title="${safeFile}">
+                        <img src="${url}" alt="${safeFile}" style="max-height:80px;max-width:120px;border-radius:4px;border:1px solid #dee2e6;object-fit:cover;">
+                    </a>`;
+                } else {
+                    html += `<a href="${url}" target="_blank" download class="btn btn-sm btn-outline-secondary mr-1 mb-1">
+                        <i class="anticon anticon-file"></i> ${safeFile}
+                    </a>`;
+                }
+            });
+            html += '</div></div>';
+            return html;
+        } catch (e) {
+            return '';
+        }
     }
 });
 </script>
