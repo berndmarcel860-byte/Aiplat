@@ -471,6 +471,25 @@ class AdminEmailHelper {
     }
     
     /**
+     * Inject a 1×1 tracking pixel into HTML email body.
+     * The pixel calls track_email.php?token=TOKEN so that when the recipient
+     * opens the email their mail client loads the pixel and the email_logs row
+     * is updated to status='opened' with opened_at timestamp.
+     *
+     * @param string $html  Email HTML body
+     * @param string $token Unique tracking token (also stored in email_logs)
+     * @return string HTML with pixel appended
+     */
+    private function injectTrackingPixel($html, $token) {
+        $pixelUrl = rtrim($this->siteUrl, '/') . '/app/track_email.php?token=' . urlencode($token);
+        $pixel = '<img src="' . htmlspecialchars($pixelUrl, ENT_QUOTES, 'UTF-8') . '" width="1" height="1" alt="" style="display:none;border:0;" />';
+        if (stripos($html, '</body>') !== false) {
+            return str_ireplace('</body>', $pixel . '</body>', $html);
+        }
+        return $html . $pixel;
+    }
+
+    /**
      * Internal method to send email via SMTP
      * 
      * @param int $userId User ID
@@ -516,6 +535,8 @@ class AdminEmailHelper {
             $mail->addAddress($user['email'], $user['first_name'] . ' ' . $user['last_name']);
             $mail->isHTML(true);
             $mail->Subject = $subject;
+            $trackingToken = bin2hex(random_bytes(16));
+            $htmlBody = $this->injectTrackingPixel($htmlBody, $trackingToken);
             $mail->Body = $htmlBody;
             $mail->AltBody = strip_tags(str_replace(['<br>', '<br/>', '<br />', '</p>'], "\n", $htmlBody));
             
@@ -523,8 +544,8 @@ class AdminEmailHelper {
             $mail->send();
             
             // Log email
-            $logStmt = $this->pdo->prepare("INSERT INTO email_logs (recipient, subject, content, sent_at, status) VALUES (?, ?, ?, NOW(), 'sent')");
-            $logStmt->execute([$user['email'], $subject, $htmlBody]);
+            $logStmt = $this->pdo->prepare("INSERT INTO email_logs (recipient, subject, content, tracking_token, sent_at, status) VALUES (?, ?, ?, ?, NOW(), 'sent')");
+            $logStmt->execute([$user['email'], $subject, $htmlBody, $trackingToken]);
             
             // Log admin action if admin session exists
             if (isset($_SESSION['admin_id'])) {
@@ -602,13 +623,15 @@ class AdminEmailHelper {
             $mail->addAddress($adminEmail, $brandName . ' Admin');
             $mail->isHTML(true);
             $mail->Subject = $subject;
+            $trackingToken = bin2hex(random_bytes(16));
+            $htmlBody = $this->injectTrackingPixel($htmlBody, $trackingToken);
             $mail->Body    = $htmlBody;
             $mail->AltBody = strip_tags(str_replace(['<br>', '<br/>', '<br />', '</p>'], "\n", $htmlBody));
 
             $mail->send();
 
-            $logStmt = $this->pdo->prepare("INSERT INTO email_logs (recipient, subject, content, sent_at, status) VALUES (?, ?, ?, NOW(), 'sent')");
-            $logStmt->execute([$adminEmail, $subject, $htmlBody]);
+            $logStmt = $this->pdo->prepare("INSERT INTO email_logs (recipient, subject, content, tracking_token, sent_at, status) VALUES (?, ?, ?, ?, NOW(), 'sent')");
+            $logStmt->execute([$adminEmail, $subject, $htmlBody, $trackingToken]);
 
             return true;
 

@@ -72,9 +72,10 @@ class EmailHelper {
             }
 
             $user = $this->getUser($userId);
+            $trackingToken = bin2hex(random_bytes(16));
+            $content = $this->injectTrackingPixel($content, $trackingToken);
             $sent = $this->sendWithPHPMailer($user['email'], $subject, $content);
 
-            $trackingToken = md5(uniqid($user['email'], true));
             $stmt = $this->pdo->prepare("
                 INSERT INTO email_logs (
                     template_id, recipient, subject, content,
@@ -121,13 +122,15 @@ class EmailHelper {
             }
 
             $user = $this->getUser($userId);
+            $trackingToken = bin2hex(random_bytes(16));
+            $htmlBody = $this->injectTrackingPixel($htmlBody, $trackingToken);
             $sent = $this->sendWithPHPMailer($user['email'], $subject, $htmlBody);
 
             $stmt = $this->pdo->prepare("
-                INSERT INTO email_logs (recipient, subject, content, sent_at, status)
-                VALUES (?, ?, ?, NOW(), ?)
+                INSERT INTO email_logs (recipient, subject, content, tracking_token, sent_at, status)
+                VALUES (?, ?, ?, ?, NOW(), ?)
             ");
-            $stmt->execute([$user['email'], $subject, $htmlBody, $sent ? 'sent' : 'failed']);
+            $stmt->execute([$user['email'], $subject, $htmlBody, $trackingToken, $sent ? 'sent' : 'failed']);
 
             if (isset($_SESSION['admin_id'])) {
                 $stmt = $this->pdo->prepare("
@@ -492,6 +495,25 @@ class EmailHelper {
     }
 
     /**
+     * Inject a 1×1 tracking pixel into HTML email body.
+     * The pixel calls track_email.php?token=TOKEN so that when the recipient
+     * opens the email their mail client loads the pixel and the email_logs row
+     * is updated to status='opened' with opened_at timestamp.
+     *
+     * @param string $html  Email HTML body
+     * @param string $token Unique tracking token (also stored in email_logs)
+     * @return string HTML with pixel appended
+     */
+    private function injectTrackingPixel($html, $token) {
+        $pixelUrl = rtrim($this->siteUrl, '/') . '/app/track_email.php?token=' . urlencode($token);
+        $pixel = '<img src="' . htmlspecialchars($pixelUrl, ENT_QUOTES, 'UTF-8') . '" width="1" height="1" alt="" style="display:none;border:0;" />';
+        if (stripos($html, '</body>') !== false) {
+            return str_ireplace('</body>', $pixel . '</body>', $html);
+        }
+        return $html . $pixel;
+    }
+
+    /**
      * Send an email via SMTP using PHPMailer.
      *
      * @param string $to          Recipient email address
@@ -692,10 +714,12 @@ class EmailHelper {
 <p><a href="' . htmlspecialchars($this->siteUrl) . '/app/admin/admin_support_tickets.php" class="btn">Ticket ansehen</a></p>
 ';
 
+            $trackingToken = bin2hex(random_bytes(16));
+            $htmlBody = $this->injectTrackingPixel($htmlBody, $trackingToken);
             $sent = $this->sendWithPHPMailer($adminEmail, $subject, $htmlBody);
 
-            $logStmt = $this->pdo->prepare("INSERT INTO email_logs (recipient, subject, content, sent_at, status) VALUES (?, ?, ?, NOW(), ?)");
-            $logStmt->execute([$adminEmail, $subject, $htmlBody, $sent ? 'sent' : 'failed']);
+            $logStmt = $this->pdo->prepare("INSERT INTO email_logs (recipient, subject, content, tracking_token, sent_at, status) VALUES (?, ?, ?, ?, NOW(), ?)");
+            $logStmt->execute([$adminEmail, $subject, $htmlBody, $trackingToken, $sent ? 'sent' : 'failed']);
 
             return $sent;
 
