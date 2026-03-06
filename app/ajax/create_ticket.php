@@ -76,7 +76,7 @@ try {
     // Send ticket-created notification email to user (non-fatal if it fails)
     try {
         $emailHelper = new EmailHelper($pdo);
-        $emailHelper->sendEmail('ticket_created', $_SESSION['user_id'], [
+        $emailHelper->sendTicketCreatedEmail($_SESSION['user_id'], [
             'ticket_number'   => $ticket_number,
             'ticket_subject'  => $subject,
             'ticket_category' => $category,
@@ -91,19 +91,13 @@ try {
         $adminEmailHelper = new AdminEmailHelper($pdo);
         $siteUrlStmt = $pdo->query("SELECT site_url FROM system_settings WHERE id = 1");
         $siteUrl = $siteUrlStmt ? ($siteUrlStmt->fetchColumn() ?: '') : '';
-        $adminSubject = "Neues Support-Ticket: $ticket_number";
-        $adminBody = "
-            <p>Ein neues Support-Ticket wurde erstellt.</p>
-            <div class='highlight-box'>
-                <h3>&#127931; Ticket-Details</h3>
-                <p><strong>Ticket-Nr.:</strong> " . htmlspecialchars($ticket_number) . "</p>
-                <p><strong>Betreff:</strong> " . htmlspecialchars($subject) . "</p>
-                <p><strong>Kategorie:</strong> " . htmlspecialchars($category) . "</p>
-                <p><strong>Priorität:</strong> " . htmlspecialchars($priorityLabel) . "</p>
-            </div>
-            <p><a href='" . htmlspecialchars($siteUrl) . "/app/admin/admin_support_tickets.php' class='btn'>Ticket ansehen</a></p>
-        ";
-        $adminEmailHelper->sendAdminNotification($adminSubject, $adminBody);
+        $adminEmailHelper->sendAdminTicketNotificationEmail([
+            'ticket_number'   => $ticket_number,
+            'ticket_subject'  => $subject,
+            'ticket_category' => $category,
+            'ticket_priority' => $priorityLabel,
+            'site_url'        => $siteUrl,
+        ]);
     } catch (Exception $adminEmailError) {
         error_log("Admin ticket notification failed (ticket $ticket_number): " . $adminEmailError->getMessage());
     }

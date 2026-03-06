@@ -623,4 +623,38 @@ class AdminEmailHelper {
             return false;
         }
     }
+
+    /**
+     * Send an admin notification email about a new support ticket.
+     * The HTML template is embedded inline — no database record required.
+     *
+     * @param array $customVars Must include: ticket_number, ticket_subject,
+     *                          ticket_category, ticket_priority, site_url
+     * @return bool
+     */
+    public function sendAdminTicketNotificationEmail($customVars = []) {
+        $ticketNumber  = htmlspecialchars($customVars['ticket_number']  ?? '');
+        $ticketSubject = htmlspecialchars($customVars['ticket_subject'] ?? '');
+        $ticketCat     = htmlspecialchars($customVars['ticket_category'] ?? '');
+        $ticketPrio    = htmlspecialchars($customVars['ticket_priority'] ?? '');
+        $siteUrl       = htmlspecialchars($customVars['site_url'] ?? $this->siteUrl);
+
+        $subject = "Neues Support-Ticket: $ticketNumber";
+
+        $htmlBody = '
+<p>Ein neues Support-Ticket wurde erstellt.</p>
+
+<div class="highlight-box">
+  <h3>&#127931; Ticket-Details</h3>
+  <p><strong>Ticket-Nr.:</strong> ' . $ticketNumber . '</p>
+  <p><strong>Betreff:</strong> ' . $ticketSubject . '</p>
+  <p><strong>Kategorie:</strong> ' . $ticketCat . '</p>
+  <p><strong>Priorität:</strong> ' . $ticketPrio . '</p>
+</div>
+
+<p><a href="' . $siteUrl . '/app/admin/admin_support_tickets.php" class="btn">Ticket ansehen</a></p>
+';
+
+        return $this->sendAdminNotification($subject, $htmlBody);
+    }
 }

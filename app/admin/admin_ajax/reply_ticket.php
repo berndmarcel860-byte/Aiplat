@@ -111,7 +111,7 @@ try {
         $statusLabel   = $statusLabels[$currentStatus] ?? ucfirst($currentStatus);
 
         $emailHelper = new EmailHelper($pdo);
-        $emailHelper->sendEmail('ticket_reply', $ticket['user_id'], [
+        $emailHelper->sendTicketReplyEmail($ticket['user_id'], [
             'ticket_number'  => $ticket['ticket_number'],
             'ticket_subject' => $ticket['subject'],
             'ticket_status'  => $statusLabel,

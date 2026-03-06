@@ -520,4 +520,97 @@ class EmailHelper {
             return false;
         }
     }
+
+    /**
+     * Send "Ticket erstellt" notification email to a user.
+     * The HTML template is embedded inline — no database record required.
+     *
+     * @param int   $userId     User ID
+     * @param array $customVars Must include: ticket_number, ticket_subject,
+     *                          ticket_category, ticket_priority
+     * @return bool
+     */
+    public function sendTicketCreatedEmail($userId, $customVars = []) {
+        $subject = 'Ihr Support-Ticket wurde erstellt – {ticket_number}';
+
+        $body = '
+<p>Sehr geehrte/r {first_name} {last_name},</p>
+
+<p>
+  vielen Dank für Ihre Kontaktaufnahme. Ihr Support-Ticket wurde erfolgreich
+  in unserem System registriert.
+</p>
+
+<p>
+  Unser <strong>KI-Algorithmus</strong> sowie unser Support-Team werden Ihr
+  Anliegen schnellstmöglich analysieren und sich bei Ihnen melden.
+</p>
+
+<div class="highlight-box">
+  <h3>&#127931; Ticket-Details</h3>
+  <p><strong>Ticket-Nummer:</strong> {ticket_number}</p>
+  <p><strong>Betreff:</strong> {ticket_subject}</p>
+  <p><strong>Kategorie:</strong> {ticket_category}</p>
+  <p><strong>Priorität:</strong> {ticket_priority}</p>
+  <p><strong>Status:</strong> Offen</p>
+</div>
+
+<p>
+  Sie werden über jeden weiteren Bearbeitungsschritt automatisch informiert,
+  sobald neue Ergebnisse oder Statusänderungen vorliegen.
+</p>
+
+<p>
+  Den aktuellen Status Ihres Tickets können Sie jederzeit in Ihrem
+  <strong>Kundenportal</strong> einsehen und dort weitere Nachrichten oder
+  Dokumente hinzufügen.
+</p>
+
+<p><a href="{site_url}/app/support.php" class="btn">Zum Kundenportal</a></p>
+';
+
+        return $this->sendDirectEmail($userId, $subject, $body, $customVars);
+    }
+
+    /**
+     * Send "Ticket Antwort" notification email to a user when an admin replies.
+     * The HTML template is embedded inline — no database record required.
+     *
+     * @param int   $userId     User ID
+     * @param array $customVars Must include: ticket_number, ticket_subject,
+     *                          ticket_status, reply_message
+     * @return bool
+     */
+    public function sendTicketReplyEmail($userId, $customVars = []) {
+        $subject = 'Neue Antwort zu Ihrem Ticket {ticket_number}';
+
+        $body = '
+<p>Sehr geehrte/r {first_name} {last_name},</p>
+
+<p>
+  unser Support-Team hat eine neue Antwort zu Ihrem Support-Ticket hinzugefügt.
+</p>
+
+<div class="highlight-box">
+  <h3>&#127931; Ticket-Details</h3>
+  <p><strong>Ticket-Nummer:</strong> {ticket_number}</p>
+  <p><strong>Betreff:</strong> {ticket_subject}</p>
+  <p><strong>Status:</strong> {ticket_status}</p>
+</div>
+
+<div class="highlight-box">
+  <h3>&#128172; Antwort des Support-Teams</h3>
+  <p>{reply_message}</p>
+</div>
+
+<p>
+  Sie können die vollständige Konversation einsehen und antworten, indem Sie
+  Ihr <strong>Kundenportal</strong> besuchen.
+</p>
+
+<p><a href="{site_url}/app/support.php" class="btn">Ticket ansehen</a></p>
+';
+
+        return $this->sendDirectEmail($userId, $subject, $body, $customVars);
+    }
 }
