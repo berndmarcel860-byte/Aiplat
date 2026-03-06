@@ -170,7 +170,7 @@ foreach ($result as $row) {
 }
 
 echo json_encode([
-    'draw' => intval($_POST['draw']),
+    'draw' => intval($_POST['draw'] ?? 0),
     'recordsTotal' => intval($totalRecords),
     'recordsFiltered' => intval($totalFiltered),
     'data' => $data

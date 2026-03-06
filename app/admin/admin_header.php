@@ -25,7 +25,7 @@ $avatarPath = file_exists('../assets/images/avatars/default.jpg')
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <meta name="csrf-token" content="<?php echo $_SESSION['csrf_token']; ?>">
+    <meta name="csrf-token" content="<?php echo $_SESSION['csrf_token'] ?? ''; ?>">
     <title>Admin Dashboard - Scam Recovery</title>
     <link rel="shortcut icon" href="../assets/images/logo/favicon.png">
     
