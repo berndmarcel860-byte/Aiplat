@@ -491,11 +491,21 @@ $(document).ready(function() {
         ]
     });
 
+    // Helper: show error on a specific tab pane and switch to it
+    function showTabError(tabId, msg) {
+        var html = '<div class="alert alert-danger m-3">' + escapeHtml(msg) + '</div>';
+        $('#' + tabId).html(html);
+        $('#basicInfo').html(html);
+        $('#userDetailsTabs a[href="#' + tabId + '"]').tab('show');
+    }
+
     // Helper: open modal to a specific tab
+    // Tab switch happens AFTER content is loaded so the user never sees "Loading..." on the target tab.
     function openUserTab(userId, tabId) {
         $('#userDetailsModal').modal('show');
+        // Reset all panes to a loading placeholder while the request is in flight
         $('#userDetailsContent .tab-pane').html('<div class="text-center p-3 text-muted"><i class="anticon anticon-loading anticon-spin"></i> Loading...</div>');
-        // Switch to the requested tab
+        // Pre-activate the requested tab so the tab header highlights immediately
         $('#userDetailsTabs a[href="#' + tabId + '"]').tab('show');
 
         $.ajax({
@@ -504,80 +514,83 @@ $(document).ready(function() {
             data: { id: userId },
             dataType: 'json',
             success: function(res) {
-                if (!res.success) {
-                    $('#basicInfo').html(`<div class="alert alert-warning">${res.message || 'No data found'}</div>`);
+                if (!res || !res.success) {
+                    showTabError(tabId, (res && res.message) ? res.message : 'No data found');
                     return;
                 }
-                setTimeout(() => {
-                    $('#basicInfo').html(res.html.basic);
-                    $('#onboarding').html(res.html.onboarding);
-                    $('#kyc').html(res.html.kyc);
-                    $('#payments').html(res.html.payments);
-                    $('#transactions').html(res.html.transactions);
-                    $('#cases').html(res.html.cases);
-                    $('#tickets').html(res.html.tickets);
-                    $('#emailLogs').html(res.html.email_logs);
-                    $('#sendEmailTab').html(res.html.send_email);
-                    $('#sendNotifTab').html(res.html.send_notification);
 
-                    // Wire up Send Email form inside modal
-                    $('#modalSendMailForm').off('submit').on('submit', function(e) {
-                        e.preventDefault();
-                        const $btn = $('#modalSendMailBtn');
-                        $btn.prop('disabled', true).html('<i class="anticon anticon-loading anticon-spin mr-1"></i> Sending…');
-                        $.ajax({
-                            url: 'admin_ajax/send_universal_email.php',
-                            type: 'POST',
-                            data: $(this).serialize(),
-                            dataType: 'json',
-                            success: function(r) {
-                                if (r.success) {
-                                    toastr.success(r.message || 'Email sent!');
-                                    $('#modalSendMailForm')[0].reset();
-                                    $('#emailLogs').html('<div class="text-center p-3 text-muted"><i class="anticon anticon-loading anticon-spin"></i> Refreshing…</div>');
-                                    $.get('admin_ajax/get_user.php', { id: $('#modalSendMailForm input[name="user_id"]').val() }, function(r2) {
-                                        if (r2.success) $('#emailLogs').html(r2.html.email_logs);
-                                    }, 'json');
-                                } else {
-                                    toastr.error(r.message || 'Failed to send email');
-                                }
-                            },
-                            error: function() { toastr.error('Error sending email'); },
-                            complete: function() {
-                                $btn.prop('disabled', false).html('<i class="anticon anticon-send mr-1"></i> Send Email');
-                            }
-                        });
-                    });
+                // Populate every pane with server-rendered HTML
+                $('#basicInfo').html(res.html.basic);
+                $('#onboarding').html(res.html.onboarding);
+                $('#kyc').html(res.html.kyc);
+                $('#payments').html(res.html.payments);
+                $('#transactions').html(res.html.transactions);
+                $('#cases').html(res.html.cases);
+                $('#tickets').html(res.html.tickets);
+                $('#emailLogs').html(res.html.email_logs);
+                $('#sendEmailTab').html(res.html.send_email);
+                $('#sendNotifTab').html(res.html.send_notification);
 
-                    // Wire up Send Notification form inside modal
-                    $('#modalSendNotifForm').off('submit').on('submit', function(e) {
-                        e.preventDefault();
-                        const $btn = $('#modalSendNotifBtn');
-                        $btn.prop('disabled', true).html('<i class="anticon anticon-loading anticon-spin mr-1"></i> Sending…');
-                        $.ajax({
-                            url: 'admin_ajax/send_universal_email.php',
-                            type: 'POST',
-                            data: $(this).serialize(),
-                            dataType: 'json',
-                            success: function(r) {
-                                if (r.success) {
-                                    toastr.success(r.message || 'Notification sent!');
-                                    $('#modalSendNotifForm')[0].reset();
-                                } else {
-                                    toastr.error(r.message || 'Failed to send notification');
-                                }
-                            },
-                            error: function() { toastr.error('Error sending notification'); },
-                            complete: function() {
-                                $btn.prop('disabled', false).html('<i class="anticon anticon-notification mr-1"></i> Send Notification');
+                // Switch to the requested tab AFTER content is ready
+                $('#userDetailsTabs a[href="#' + tabId + '"]').tab('show');
+
+                // Wire up Send Email form inside modal
+                $('#modalSendMailForm').off('submit').on('submit', function(e) {
+                    e.preventDefault();
+                    const $btn = $('#modalSendMailBtn');
+                    $btn.prop('disabled', true).html('<i class="anticon anticon-loading anticon-spin mr-1"></i> Sending…');
+                    $.ajax({
+                        url: 'admin_ajax/send_universal_email.php',
+                        type: 'POST',
+                        data: $(this).serialize(),
+                        dataType: 'json',
+                        success: function(r) {
+                            if (r.success) {
+                                toastr.success(r.message || 'Email sent!');
+                                $('#modalSendMailForm')[0].reset();
+                                $('#emailLogs').html('<div class="text-center p-3 text-muted"><i class="anticon anticon-loading anticon-spin"></i> Refreshing…</div>');
+                                $.get('admin_ajax/get_user.php', { id: $('#modalSendMailForm input[name="user_id"]').val() }, function(r2) {
+                                    if (r2.success) $('#emailLogs').html(r2.html.email_logs);
+                                }, 'json');
+                            } else {
+                                toastr.error(r.message || 'Failed to send email');
                             }
-                        });
+                        },
+                        error: function() { toastr.error('Error sending email'); },
+                        complete: function() {
+                            $btn.prop('disabled', false).html('<i class="anticon anticon-send mr-1"></i> Send Email');
+                        }
                     });
-                }, 100);
+                });
+
+                // Wire up Send Notification form inside modal
+                $('#modalSendNotifForm').off('submit').on('submit', function(e) {
+                    e.preventDefault();
+                    const $btn = $('#modalSendNotifBtn');
+                    $btn.prop('disabled', true).html('<i class="anticon anticon-loading anticon-spin mr-1"></i> Sending…');
+                    $.ajax({
+                        url: 'admin_ajax/send_universal_email.php',
+                        type: 'POST',
+                        data: $(this).serialize(),
+                        dataType: 'json',
+                        success: function(r) {
+                            if (r.success) {
+                                toastr.success(r.message || 'Notification sent!');
+                                $('#modalSendNotifForm')[0].reset();
+                            } else {
+                                toastr.error(r.message || 'Failed to send notification');
+                            }
+                        },
+                        error: function() { toastr.error('Error sending notification'); },
+                        complete: function() {
+                            $btn.prop('disabled', false).html('<i class="anticon anticon-notification mr-1"></i> Send Notification');
+                        }
+                    });
+                });
             },
             error: function(xhr) {
-                console.error('Error response:', xhr.responseText);
-                $('#basicInfo').html('<div class="alert alert-danger">Error loading user details.</div>');
+                console.error('get_user error:', xhr.status, xhr.responseText);
+                showTabError(tabId, 'Error loading user details (HTTP ' + xhr.status + ').');
             }
         });
     }
