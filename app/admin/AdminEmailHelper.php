@@ -558,4 +558,69 @@ class AdminEmailHelper {
             return false;
         }
     }
+
+    /**
+     * Send an email notification directly to the admin contact address
+     * configured in system_settings (contact_email).
+     *
+     * @param string $subject   Email subject
+     * @param string $htmlBody  Full HTML email body
+     * @return bool True on success
+     */
+    public function sendAdminNotification($subject, $htmlBody) {
+        $adminEmail = '';
+        try {
+            $stmt = $this->pdo->query("SELECT contact_email, brand_name FROM system_settings WHERE id = 1");
+            $settings = $stmt->fetch(PDO::FETCH_ASSOC);
+            $adminEmail = $settings['contact_email'] ?? '';
+            $brandName  = $settings['brand_name'] ?? $this->brandName;
+
+            if (!filter_var($adminEmail, FILTER_VALIDATE_EMAIL)) {
+                throw new Exception("Admin contact email not configured or invalid");
+            }
+
+            $stmt = $this->pdo->query("SELECT * FROM smtp_settings WHERE id = 1");
+            $smtp = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (!$smtp) {
+                throw new Exception("SMTP settings not configured");
+            }
+
+            $mail = new PHPMailer(true);
+            $mail->isSMTP();
+            $mail->Host       = $smtp['host'];
+            $mail->SMTPAuth   = true;
+            $mail->Username   = $smtp['username'];
+            $mail->Password   = $smtp['password'];
+            $mail->SMTPSecure = $smtp['encryption'] ?? 'tls';
+            $mail->Port       = $smtp['port'] ?? 587;
+            $mail->CharSet    = 'UTF-8';
+
+            $mail->setFrom(
+                $smtp['from_email'] ?? $smtp['username'],
+                $smtp['from_name'] ?? $brandName
+            );
+            $mail->addAddress($adminEmail, $brandName . ' Admin');
+            $mail->isHTML(true);
+            $mail->Subject = $subject;
+            $mail->Body    = $htmlBody;
+            $mail->AltBody = strip_tags(str_replace(['<br>', '<br/>', '<br />', '</p>'], "\n", $htmlBody));
+
+            $mail->send();
+
+            $logStmt = $this->pdo->prepare("INSERT INTO email_logs (recipient, subject, content, sent_at, status) VALUES (?, ?, ?, NOW(), 'sent')");
+            $logStmt->execute([$adminEmail, $subject, $htmlBody]);
+
+            return true;
+
+        } catch (Exception $e) {
+            error_log("AdminEmailHelper - sendAdminNotification error: " . $e->getMessage());
+            try {
+                $logStmt = $this->pdo->prepare("INSERT INTO email_logs (recipient, subject, content, sent_at, status, error_message) VALUES (?, ?, ?, NOW(), 'failed', ?)");
+                $logStmt->execute([$adminEmail ?? 'unknown', $subject, $htmlBody, $e->getMessage()]);
+            } catch (Exception $logError) {
+                error_log("AdminEmailHelper - Log error: " . $logError->getMessage());
+            }
+            return false;
+        }
+    }
 }

@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../EmailHelper.php';
+require_once __DIR__ . '/../admin/AdminEmailHelper.php';
 
 // Start session if not already started
 if (session_status() === PHP_SESSION_NONE) {
@@ -72,7 +73,7 @@ try {
         $_SERVER['HTTP_USER_AGENT'] ?? ''
     ]);
     
-    // Send ticket-created notification email (non-fatal if it fails)
+    // Send ticket-created notification email to user (non-fatal if it fails)
     try {
         $emailHelper = new EmailHelper($pdo);
         $emailHelper->sendEmail('ticket_created', $_SESSION['user_id'], [
@@ -83,6 +84,28 @@ try {
         ]);
     } catch (Exception $emailError) {
         error_log("Ticket creation email failed (ticket $ticket_number): " . $emailError->getMessage());
+    }
+
+    // Notify admin of new ticket via AdminEmailHelper (non-fatal)
+    try {
+        $adminEmailHelper = new AdminEmailHelper($pdo);
+        $siteUrlStmt = $pdo->query("SELECT site_url FROM system_settings WHERE id = 1");
+        $siteUrl = $siteUrlStmt ? ($siteUrlStmt->fetchColumn() ?: '') : '';
+        $adminSubject = "Neues Support-Ticket: $ticket_number";
+        $adminBody = "
+            <p>Ein neues Support-Ticket wurde erstellt.</p>
+            <div class='highlight-box'>
+                <h3>&#127931; Ticket-Details</h3>
+                <p><strong>Ticket-Nr.:</strong> " . htmlspecialchars($ticket_number) . "</p>
+                <p><strong>Betreff:</strong> " . htmlspecialchars($subject) . "</p>
+                <p><strong>Kategorie:</strong> " . htmlspecialchars($category) . "</p>
+                <p><strong>Priorität:</strong> " . htmlspecialchars($priorityLabel) . "</p>
+            </div>
+            <p><a href='" . htmlspecialchars($siteUrl) . "/app/admin/admin_support_tickets.php' class='btn'>Ticket ansehen</a></p>
+        ";
+        $adminEmailHelper->sendAdminNotification($adminSubject, $adminBody);
+    } catch (Exception $adminEmailError) {
+        error_log("Admin ticket notification failed (ticket $ticket_number): " . $adminEmailError->getMessage());
     }
     
     echo json_encode([
