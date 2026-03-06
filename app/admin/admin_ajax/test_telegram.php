@@ -67,22 +67,31 @@ if (!($result['ok'] ?? false)) {
     exit();
 }
 
-// Test succeeded — now verify that the settings are also saved and enabled in the DB,
-// because the real ticket notification reads from tg_settings rather than form values.
-$successMessage = 'Test message sent successfully!';
+// Test succeeded — automatically save the verified credentials to tg_settings so that
+// real ticket notifications use them. On first setup (INSERT), notifications are enabled
+// by default. If the row already exists, only the credentials are updated and the current
+// is_enabled flag is preserved (so an admin who deliberately disabled notifications won't
+// have that decision silently overridden).
+$successMessage = 'Test message sent successfully! Credentials saved — Telegram notifications are active.';
 try {
-    $stmt = $pdo->query("SELECT bot_token, chat_id, is_enabled FROM tg_settings WHERE id = 1 LIMIT 1");
-    $dbRow = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : false;
+    $stmt = $pdo->prepare("
+        INSERT INTO tg_settings (id, bot_token, chat_id, is_enabled)
+        VALUES (1, ?, ?, 1)
+        ON DUPLICATE KEY UPDATE
+            bot_token = VALUES(bot_token),
+            chat_id   = VALUES(chat_id)
+    ");
+    $stmt->execute([$bot_token, $chat_id]);
 
-    if (!$dbRow || empty($dbRow['bot_token']) || empty($dbRow['chat_id'])) {
-        $successMessage .= ' ⚠️ However, settings are not yet saved in the database — click "Save Telegram Settings" to activate real ticket notifications.';
-    } elseif (!$dbRow['is_enabled']) {
-        $successMessage .= ' ⚠️ However, notifications are currently disabled in the database — check "Enable Telegram Notifications" and save to activate real ticket notifications.';
-    } elseif (trim($dbRow['bot_token']) !== $bot_token || trim($dbRow['chat_id']) !== $chat_id) {
-        $successMessage .= ' ⚠️ Note: The tested credentials differ from the saved settings — save the form to apply them to real ticket notifications.';
+    // Check whether notifications are actually enabled after the save
+    $checkStmt = $pdo->query("SELECT is_enabled FROM tg_settings WHERE id = 1 LIMIT 1");
+    $savedRow  = $checkStmt ? $checkStmt->fetch(PDO::FETCH_ASSOC) : false;
+    if ($savedRow && !$savedRow['is_enabled']) {
+        $successMessage = 'Test message sent successfully! Credentials saved. ⚠️ However, notifications are currently disabled — check "Enable Telegram Notifications" and click "Save Telegram Settings" to activate real ticket notifications.';
     }
-} catch (Exception $dbCheckEx) {
-    error_log("test_telegram.php - DB state check error: " . $dbCheckEx->getMessage());
+} catch (Exception $dbSaveEx) {
+    error_log("test_telegram.php - failed to auto-save settings after successful test: " . $dbSaveEx->getMessage());
+    $successMessage = 'Test message sent successfully! ⚠️ Settings could not be saved automatically — please click "Save Telegram Settings" to activate real ticket notifications.';
 }
 
 echo json_encode(['success' => true, 'message' => $successMessage]);
