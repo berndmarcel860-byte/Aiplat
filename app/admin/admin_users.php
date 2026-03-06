@@ -447,6 +447,10 @@ $(document).ready(function() {
                       <div class="dropdown-menu dropdown-menu-right shadow-sm" style="min-width:210px;">
                         <h6 class="dropdown-header text-truncate" style="max-width:200px;">${name}</h6>
                         <div class="dropdown-divider"></div>
+                        <a href="admin_view_users.php?id=${data.id}" class="dropdown-item">
+                          <i class="anticon anticon-profile text-primary mr-2"></i> View Full Profile
+                        </a>
+                        <div class="dropdown-divider"></div>
                         <a href="#" class="dropdown-item open-tab" data-id="${data.id}" data-tab="basicInfo">
                           <i class="anticon anticon-idcard text-secondary mr-2"></i> Overview
                         </a>
