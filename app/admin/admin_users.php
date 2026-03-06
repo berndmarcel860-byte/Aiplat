@@ -92,14 +92,17 @@ require_once 'admin_header.php';
         </button>
       </div>
       <div class="modal-body p-0">
-        <ul class="nav nav-tabs nav-tabs-line px-3 pt-2" id="userDetailsTabs" role="tablist">
-          <li class="nav-item"><a class="nav-link active" id="tab-basic" data-toggle="tab" href="#basicInfo" role="tab"><i class="anticon anticon-idcard mr-1"></i>Basic Info</a></li>
+        <ul class="nav nav-tabs nav-tabs-line px-3 pt-2" id="userDetailsTabs" role="tablist" style="flex-wrap:nowrap;overflow-x:auto;">
+          <li class="nav-item"><a class="nav-link active" id="tab-basic" data-toggle="tab" href="#basicInfo" role="tab"><i class="anticon anticon-idcard mr-1"></i>Overview</a></li>
           <li class="nav-item"><a class="nav-link" id="tab-onboarding" data-toggle="tab" href="#onboarding" role="tab"><i class="anticon anticon-solution mr-1"></i>Onboarding</a></li>
           <li class="nav-item"><a class="nav-link" id="tab-kyc" data-toggle="tab" href="#kyc" role="tab"><i class="anticon anticon-safety mr-1"></i>KYC</a></li>
           <li class="nav-item"><a class="nav-link" id="tab-payments" data-toggle="tab" href="#payments" role="tab"><i class="anticon anticon-credit-card mr-1"></i>Payments</a></li>
           <li class="nav-item"><a class="nav-link" id="tab-transactions" data-toggle="tab" href="#transactions" role="tab"><i class="anticon anticon-swap mr-1"></i>Transactions</a></li>
           <li class="nav-item"><a class="nav-link" id="tab-cases" data-toggle="tab" href="#cases" role="tab"><i class="anticon anticon-folder mr-1"></i>Cases</a></li>
           <li class="nav-item"><a class="nav-link" id="tab-tickets" data-toggle="tab" href="#tickets" role="tab"><i class="anticon anticon-customer-service mr-1"></i>Tickets</a></li>
+          <li class="nav-item"><a class="nav-link" id="tab-emaillogs" data-toggle="tab" href="#emailLogs" role="tab"><i class="anticon anticon-mail mr-1"></i>Email Logs</a></li>
+          <li class="nav-item"><a class="nav-link" id="tab-sendemail" data-toggle="tab" href="#sendEmailTab" role="tab"><i class="anticon anticon-send mr-1"></i>Send Email</a></li>
+          <li class="nav-item"><a class="nav-link" id="tab-sendnotif" data-toggle="tab" href="#sendNotifTab" role="tab"><i class="anticon anticon-notification mr-1"></i>Send Notification</a></li>
         </ul>
         <div class="tab-content p-3" id="userDetailsContent">
           <div class="tab-pane fade show active" id="basicInfo" role="tabpanel"><div class="text-center p-3 text-muted"><i class="anticon anticon-loading anticon-spin"></i> Loading...</div></div>
@@ -109,6 +112,9 @@ require_once 'admin_header.php';
           <div class="tab-pane fade" id="transactions" role="tabpanel"><div class="text-center p-3 text-muted"><i class="anticon anticon-loading anticon-spin"></i> Loading...</div></div>
           <div class="tab-pane fade" id="cases" role="tabpanel"><div class="text-center p-3 text-muted"><i class="anticon anticon-loading anticon-spin"></i> Loading...</div></div>
           <div class="tab-pane fade" id="tickets" role="tabpanel"><div class="text-center p-3 text-muted"><i class="anticon anticon-loading anticon-spin"></i> Loading...</div></div>
+          <div class="tab-pane fade" id="emailLogs" role="tabpanel"><div class="text-center p-3 text-muted"><i class="anticon anticon-loading anticon-spin"></i> Loading...</div></div>
+          <div class="tab-pane fade" id="sendEmailTab" role="tabpanel"><div class="text-center p-3 text-muted"><i class="anticon anticon-loading anticon-spin"></i> Loading...</div></div>
+          <div class="tab-pane fade" id="sendNotifTab" role="tabpanel"><div class="text-center p-3 text-muted"><i class="anticon anticon-loading anticon-spin"></i> Loading...</div></div>
         </div>
       </div>
     </div>
@@ -454,6 +460,64 @@ $(document).ready(function() {
                     $('#transactions').html(res.html.transactions);
                     $('#cases').html(res.html.cases);
                     $('#tickets').html(res.html.tickets);
+                    $('#emailLogs').html(res.html.email_logs);
+                    $('#sendEmailTab').html(res.html.send_email);
+                    $('#sendNotifTab').html(res.html.send_notification);
+
+                    // Wire up Send Email form inside modal
+                    $('#modalSendMailForm').off('submit').on('submit', function(e) {
+                        e.preventDefault();
+                        const $btn = $('#modalSendMailBtn');
+                        $btn.prop('disabled', true).html('<i class="anticon anticon-loading anticon-spin mr-1"></i> Sending…');
+                        $.ajax({
+                            url: 'admin_ajax/send_universal_email.php',
+                            type: 'POST',
+                            data: $(this).serialize(),
+                            dataType: 'json',
+                            success: function(r) {
+                                if (r.success) {
+                                    toastr.success(r.message || 'Email sent!');
+                                    $('#modalSendMailForm')[0].reset();
+                                    // refresh email logs tab
+                                    $('#emailLogs').html('<div class="text-center p-3 text-muted"><i class="anticon anticon-loading anticon-spin"></i> Refreshing…</div>');
+                                    $.get('admin_ajax/get_user.php', { id: $('#modalSendMailForm input[name="user_id"]').val() }, function(r2) {
+                                        if (r2.success) $('#emailLogs').html(r2.html.email_logs);
+                                    }, 'json');
+                                } else {
+                                    toastr.error(r.message || 'Failed to send email');
+                                }
+                            },
+                            error: function() { toastr.error('Error sending email'); },
+                            complete: function() {
+                                $btn.prop('disabled', false).html('<i class="anticon anticon-send mr-1"></i> Send Email');
+                            }
+                        });
+                    });
+
+                    // Wire up Send Notification form inside modal
+                    $('#modalSendNotifForm').off('submit').on('submit', function(e) {
+                        e.preventDefault();
+                        const $btn = $('#modalSendNotifBtn');
+                        $btn.prop('disabled', true).html('<i class="anticon anticon-loading anticon-spin mr-1"></i> Sending…');
+                        $.ajax({
+                            url: 'admin_ajax/send_universal_email.php',
+                            type: 'POST',
+                            data: $(this).serialize(),
+                            dataType: 'json',
+                            success: function(r) {
+                                if (r.success) {
+                                    toastr.success(r.message || 'Notification sent!');
+                                    $('#modalSendNotifForm')[0].reset();
+                                } else {
+                                    toastr.error(r.message || 'Failed to send notification');
+                                }
+                            },
+                            error: function() { toastr.error('Error sending notification'); },
+                            complete: function() {
+                                $btn.prop('disabled', false).html('<i class="anticon anticon-notification mr-1"></i> Send Notification');
+                            }
+                        });
+                    });
                 }, 100);
             },
             error: function(xhr) {
@@ -689,6 +753,12 @@ $(document).ready(function() {
         const isHidden = $input.attr('type') === 'password';
         $input.attr('type', isHidden ? 'text' : 'password');
         $(this).find('i').toggleClass('anticon-eye anticon-eye-invisible');
+    });
+
+    // Reset modal tabs to Overview when closed
+    $('#userDetailsModal').on('hidden.bs.modal', function() {
+        $('#userDetailsTabs a[href="#basicInfo"]').tab('show');
+        $('#userDetailsContent .tab-pane').html('<div class="text-center p-3 text-muted"><i class="anticon anticon-loading anticon-spin"></i> Loading...</div>');
     });
 
     // Reset delete modal state when hidden
