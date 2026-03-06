@@ -2,6 +2,10 @@
 *.sql
 *.sql.gz
 
+# Allow schema migration files in the database/ directory
+!database/
+!database/*.sql
+
 # Configuration with credentials
 app/config.php
 
