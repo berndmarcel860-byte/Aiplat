@@ -473,6 +473,18 @@ class EmailHelper {
     }
 
     /**
+     * Check whether an email template key exists in the email_templates table.
+     *
+     * @param string $templateKey
+     * @return bool
+     */
+    private function templateExistsInDb($templateKey) {
+        $stmt = $this->pdo->prepare("SELECT id FROM email_templates WHERE template_key = ? LIMIT 1");
+        $stmt->execute([$templateKey]);
+        return (bool)$stmt->fetch();
+    }
+
+    /**
      * Send an email via SMTP using PHPMailer.
      *
      * @param string $to          Recipient email address
@@ -523,7 +535,9 @@ class EmailHelper {
 
     /**
      * Send "Ticket erstellt" notification email to a user.
-     * The HTML template is embedded inline — no database record required.
+     * Fetches the 'ticket_created' template from the email_templates table and
+     * wraps it in the standard HTML email template.  Falls back to an inline
+     * template when no database record exists.
      *
      * @param int   $userId     User ID
      * @param array $customVars Must include: ticket_number, ticket_subject,
@@ -531,6 +545,13 @@ class EmailHelper {
      * @return bool
      */
     public function sendTicketCreatedEmail($userId, $customVars = []) {
+        // Use the DB template when available — sendEmail() fetches the record,
+        // substitutes variables, and wraps the content in wrapInTemplate().
+        if ($this->templateExistsInDb('ticket_created')) {
+            return $this->sendEmail('ticket_created', $userId, $customVars);
+        }
+
+        // Fallback: inline template (used when the seed script has not been run)
         $subject = 'Ihr Support-Ticket wurde erstellt – {ticket_number}';
 
         $body = '
@@ -574,7 +595,9 @@ class EmailHelper {
 
     /**
      * Send "Ticket Antwort" notification email to a user when an admin replies.
-     * The HTML template is embedded inline — no database record required.
+     * Fetches the 'ticket_reply' template from the email_templates table and
+     * wraps it in the standard HTML email template.  Falls back to an inline
+     * template when no database record exists.
      *
      * @param int   $userId     User ID
      * @param array $customVars Must include: ticket_number, ticket_subject,
@@ -582,6 +605,13 @@ class EmailHelper {
      * @return bool
      */
     public function sendTicketReplyEmail($userId, $customVars = []) {
+        // Use the DB template when available — sendEmail() fetches the record,
+        // substitutes variables, and wraps the content in wrapInTemplate().
+        if ($this->templateExistsInDb('ticket_reply')) {
+            return $this->sendEmail('ticket_reply', $userId, $customVars);
+        }
+
+        // Fallback: inline template (used when the seed script has not been run)
         $subject = 'Neue Antwort zu Ihrem Ticket {ticket_number}';
 
         $body = '
