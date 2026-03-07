@@ -38,6 +38,16 @@ try {
         throw new Exception('Ticket not found or access denied');
     }
     
+    // Mark all unread admin replies as read now that the user is viewing
+    $markRead = $pdo->prepare("
+        UPDATE ticket_replies
+        SET read_at = NOW()
+        WHERE ticket_id = ?
+          AND admin_id IS NOT NULL
+          AND read_at IS NULL
+    ");
+    $markRead->execute([$ticket_id]);
+
     // Get replies
     $stmt = $pdo->prepare("
         SELECT 

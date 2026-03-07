@@ -260,8 +260,14 @@ $(document).ready(function() {
                     repliesHtml += `
                         <div class="card mb-3 ${isAdmin ? 'border-primary' : 'border-secondary'}">
                             <div class="card-header ${isAdmin ? 'bg-primary text-white' : 'bg-light'}">
-                                <div class="d-flex justify-content-between">
-                                    <strong>${isAdmin ? reply.admin_name : reply.user_name}</strong>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>${isAdmin ? reply.admin_name : reply.user_name}</strong>
+                                        ${isAdmin ? (reply.read_at
+                                            ? `<span class="badge badge-success ml-2" title="Read at ${new Date(reply.read_at).toLocaleString()}" aria-label="Read at ${new Date(reply.read_at).toLocaleString()}"><i class="anticon anticon-eye" aria-hidden="true"></i> Read</span>`
+                                            : `<span class="badge badge-light text-muted ml-2" aria-label="Not yet read by user"><i class="anticon anticon-eye-invisible" aria-hidden="true"></i> Not yet read</span>`)
+                                        : ''}
+                                    </div>
                                     <small>${new Date(reply.created_at).toLocaleString()}</small>
                                 </div>
                             </div>
