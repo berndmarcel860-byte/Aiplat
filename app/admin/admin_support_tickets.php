@@ -264,7 +264,7 @@ $(document).ready(function() {
                                     <div>
                                         <strong>${isAdmin ? reply.admin_name : reply.user_name}</strong>
                                         ${isAdmin ? (reply.read_at
-                                            ? `<span class="badge badge-success ml-2" title="Read at ${new Date(reply.read_at).toLocaleString()}" aria-label="Read at ${new Date(reply.read_at).toLocaleString()}"><i class="anticon anticon-eye" aria-hidden="true"></i> Read</span>`
+                                            ? `<span class="badge badge-success ml-2" aria-label="Read at ${new Date(reply.read_at).toLocaleString()}"><i class="anticon anticon-eye" aria-hidden="true"></i> Read &mdash; ${new Date(reply.read_at).toLocaleString()} (${timeAgo(reply.read_at)})</span>`
                                             : `<span class="badge badge-light text-muted ml-2" aria-label="Not yet read by user"><i class="anticon anticon-eye-invisible" aria-hidden="true"></i> Not yet read</span>`)
                                         : ''}
                                     </div>
@@ -382,6 +382,23 @@ $(document).ready(function() {
     });
     
     // Helper functions
+    function timeAgo(dateStr) {
+        const date = new Date(dateStr);
+        const now = new Date();
+        const seconds = Math.floor((now - date) / 1000);
+        if (seconds < 60)         return seconds + ' second' + (seconds !== 1 ? 's' : '') + ' ago';
+        const minutes = Math.floor(seconds / 60);
+        if (minutes < 60)         return minutes + ' minute' + (minutes !== 1 ? 's' : '') + ' ago';
+        const hours = Math.floor(minutes / 60);
+        if (hours < 24)           return hours + ' hour' + (hours !== 1 ? 's' : '') + ' ago';
+        const days = Math.floor(hours / 24);
+        if (days < 30)            return days + ' day' + (days !== 1 ? 's' : '') + ' ago';
+        const months = Math.floor(days / 30);
+        if (months < 12)          return months + ' month' + (months !== 1 ? 's' : '') + ' ago';
+        const years = Math.floor(months / 12);
+        return years + ' year' + (years !== 1 ? 's' : '') + ' ago';
+    }
+
     function getPriorityClass(priority) {
         const classes = {
             'low': 'info',
