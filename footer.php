@@ -1,3 +1,4 @@
+<?php if (!isset($siteSettings)) { include_once __DIR__ . '/includes/site_settings.php'; } ?>
 <!-- ========================================================= -->
 <!-- Footer – Novalnet AI -->
 <!-- ========================================================= -->
@@ -6,18 +7,18 @@
         <div class="row py-5">
             <!-- Company Info -->
             <div class="col-lg-4 mb-4 mb-lg-0">
-                <h5 class="fw-bold mb-3">Novalnet AI</h5>
+                <h5 class="fw-bold mb-3"><?php echo htmlspecialchars($siteSettings['brand_name']); ?></h5>
                 <p class="text-muted mb-3">
                     KI-gestützte Blockchain-Analyse für sichere Krypto-Wiederherstellung. 
                     BaFin-lizenziert und nach europäischen Compliance-Standards.
                 </p>
                 <div class="mb-2">
                     <i class="fas fa-map-marker-alt me-2 text-primary"></i>
-                    <small>Gutenbergstraße 7, 85748 Garching b.München</small>
+                    <small><?php echo htmlspecialchars($siteSettings['company_address']); ?></small>
                 </div>
                 <div class="mb-2">
                     <i class="fas fa-envelope me-2 text-primary"></i>
-                    <small>no-reply@novalnet-ai.de</small>
+                    <small><?php echo htmlspecialchars($siteSettings['contact_email']); ?></small>
                 </div>
                 <div class="mb-2">
                     <i class="fas fa-shield-alt me-2 text-primary"></i>
@@ -72,7 +73,7 @@
         <div class="row border-top pt-4 pb-3">
             <div class="col-md-6 text-center text-md-start">
                 <small class="text-muted">
-                    &copy; <?php echo date('Y'); ?> Novalnet AI. Alle Rechte vorbehalten.
+                    &copy; <?php echo date('Y'); ?> <?php echo htmlspecialchars($siteSettings['brand_name']); ?>. Alle Rechte vorbehalten.
                 </small>
             </div>
             <div class="col-md-6 text-center text-md-end">

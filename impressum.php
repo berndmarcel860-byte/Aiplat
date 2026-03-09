@@ -4,6 +4,7 @@ $page_description = 'Impressum und rechtliche Informationen von Novalnet AI. Gut
 $page_keywords = 'Impressum, Kontakt, Rechtliches, Novalnet AI';
 $page_url = 'https://novalnet-ai.de/Frontend/impressum.php';
 
+include_once 'includes/site_settings.php';
 include 'includes/header.php';
 include 'includes/navbar.php';
 ?>
@@ -20,15 +21,12 @@ include 'includes/navbar.php';
     <!-- Firmeninformationen -->
     <div class="impressum-box">
       <h4>Firmeninformationen</h4>
-      <p><strong>Firmenname:</strong> ONLINE CURRENCY TRANSFERS LTD</p>
+      <p><strong>Firmenname:</strong> <?php echo htmlspecialchars($siteSettings['brand_name']); ?></p>
       <p><strong>Vertreten durch:</strong> Mark Senger und Natalie Stenzel</p>
       <p><strong>Adresse:</strong><br>
-        Davidson House<br>
-Forbury Square<br>
-Reading<br>
-RG1 3EUR G 1 3 E U<br>
-UNITED KINGDOM      </p>
-      <p><strong>E-Mail:</strong> <a href="mailto:info@novalnet-ai.de">info@novalnet-ai.de</a></p>
+        <?php echo nl2br(htmlspecialchars($siteSettings['company_address'])); ?>
+      </p>
+      <p><strong>E-Mail:</strong> <a href="mailto:<?php echo htmlspecialchars($siteSettings['contact_email']); ?>"><?php echo htmlspecialchars($siteSettings['contact_email']); ?></a></p>
     <!--<p><strong>Handelsre:</strong> HRB 11885733</p>-->
       <!--<p><strong>USt-IdNr:</strong> DE 345 987 210</p>-->
      <!-- <p><strong>LEI:</strong> 529900TVESTCRYPTO54M10</p>-->
@@ -57,7 +55,7 @@ UNITED KINGDOM      </p>
     <!-- Zweck der Website -->
     <div class="impressum-box">
       <h4>Zweck der Website</h4>
-      <p>Der Zweck dieser Website ist die Bereitstellung von Informationen über die KryptoX GmbH für B2B-affine Zielgruppen wie:</p>
+      <p>Der Zweck dieser Website ist die Bereitstellung von Informationen über <?php echo htmlspecialchars($siteSettings['brand_name']); ?> für B2B-affine Zielgruppen wie:</p>
       <ul>
         <li>Mitarbeiter von Research-Teams</li>
         <li>Procurement-Teams</li>
@@ -68,8 +66,8 @@ UNITED KINGDOM      </p>
       </ul>
 
       <p><strong>Wichtiger Hinweis:</strong> Ein Onboarding oder ein Service-Abonnement über die Website ist nicht möglich.</p>
-      <p>Die KryptoX GmbH wickelt ausschließlich Geschäfte mit professionellen Kunden und geeigneten Gegenparteien im Sinne von MiFID II ab.</p>
-      <p>KryptoX GmbH bietet ausdrücklich keine Dienstleistungen an und schließt keine Verträge mit Verbrauchern oder Einzelpersonen ab. Die Definition des Begriffs „Verbraucher“ basiert auf der EU-Richtlinie 2011/83/EU und dem UK Consumer Rights Act 2015.</p>
+      <p><?php echo htmlspecialchars($siteSettings['brand_name']); ?> wickelt ausschließlich Geschäfte mit professionellen Kunden und geeigneten Gegenparteien im Sinne von MiFID II ab.</p>
+      <p><?php echo htmlspecialchars($siteSettings['brand_name']); ?> bietet ausdrücklich keine Dienstleistungen an und schließt keine Verträge mit Verbrauchern oder Einzelpersonen ab. Die Definition des Begriffs „Verbraucher“ basiert auf der EU-Richtlinie 2011/83/EU und dem UK Consumer Rights Act 2015.</p>
     </div>
 
     <!-- Partner -->
