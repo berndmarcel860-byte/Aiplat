@@ -2073,388 +2073,355 @@ document.addEventListener('DOMContentLoaded', function() {
         </div>
     </div>
 </section>
-
 <!-- ========================================================= -->
-<!-- 🪙 CRYPTO COINS – 3D Live Ticker Section               -->
+<!-- 🔬 AI RECOVERY – 3D Live Animation Section           -->
 <!-- ========================================================= -->
-<section id="crypto-coins" class="section" style="background: linear-gradient(160deg,#0a0e1a 0%,#0d1b2e 50%,#0a1628 100%); padding: 90px 0; overflow:hidden; position:relative;">
-    <!-- Decorative blobs -->
-    <div style="position:absolute;top:-120px;left:-100px;width:500px;height:500px;background:radial-gradient(circle,rgba(99,102,241,.18) 0%,transparent 70%);pointer-events:none;"></div>
-    <div style="position:absolute;bottom:-80px;right:-80px;width:400px;height:400px;background:radial-gradient(circle,rgba(168,85,247,.14) 0%,transparent 70%);pointer-events:none;"></div>
+<section id="ai-recovery-scene" style="position:relative;overflow:hidden;background:#04091a;padding:0;min-height:680px;display:flex;align-items:center;">
 
-    <div class="container position-relative">
-        <!-- Heading -->
-        <div class="text-center mb-5">
-            <span class="badge px-3 py-2 mb-3" style="background:rgba(99,102,241,.18);color:#a5b4fc;border:1px solid rgba(99,102,241,.35);border-radius:20px;font-size:.85rem;letter-spacing:.05em;">
-                <i class="fas fa-chart-line me-2"></i>LIVE MARKTDATEN
-            </span>
-            <h2 class="fw-bold mb-3" style="color:#fff;font-size:clamp(1.7rem,4vw,2.6rem);">
-                Kryptowährungen im Überblick
-            </h2>
-            <p class="mb-0" style="color:#94a3b8;max-width:540px;margin:0 auto;font-size:1.05rem;">
-                Echtzeit-Preise der wichtigsten digitalen Assets – direkt auf Ihrer Handelsplattform.
-            </p>
+  <!-- THREE.JS CANVAS fills the background -->
+  <canvas id="recovery-canvas" style="position:absolute;inset:0;width:100%;height:100%;display:block;"></canvas>
+
+  <!-- Scanline overlay for "live video" feel -->
+  <div style="position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,255,180,.018) 3px,rgba(0,255,180,.018) 4px);pointer-events:none;z-index:1;"></div>
+
+  <!-- Live badge -->
+  <div style="position:absolute;top:24px;left:32px;z-index:10;display:flex;align-items:center;gap:8px;">
+    <span style="width:10px;height:10px;border-radius:50%;background:#ff3c3c;display:inline-block;animation:livePulse 1.2s infinite;box-shadow:0 0 8px #ff3c3c;"></span>
+    <span style="color:#fff;font-size:.82rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;opacity:.9;">LIVE</span>
+  </div>
+
+  <!-- Overlay content -->
+  <div class="container position-relative" style="z-index:5;padding:90px 16px;">
+    <div class="row align-items-center gy-5">
+
+      <!-- Left: copy -->
+      <div class="col-lg-6">
+        <span style="display:inline-block;background:rgba(0,255,180,.12);border:1px solid rgba(0,255,180,.35);color:#00ffb4;font-size:.8rem;font-weight:700;letter-spacing:.1em;border-radius:20px;padding:5px 16px;margin-bottom:18px;text-transform:uppercase;">
+          <i class="fas fa-shield-alt me-2"></i>AI-Powered Scam Recovery
+        </span>
+
+        <h2 style="color:#fff;font-size:clamp(1.9rem,4.5vw,2.9rem);font-weight:800;line-height:1.18;margin-bottom:20px;">
+          Recovering Stolen Funds<br>
+          <span style="background:linear-gradient(90deg,#00ffb4,#00c6ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">with Deep-Chain AI&trade;</span>
+        </h2>
+
+        <p style="color:#94a3b8;font-size:1.05rem;max-width:460px;line-height:1.75;margin-bottom:32px;">
+          Our autonomous AI engine traces fraudulent transactions across 120+ blockchains,
+          reconstructs wallet graphs, and initiates regulated recovery procedures — all in real time.
+        </p>
+
+        <!-- Live stats row -->
+        <div style="display:flex;flex-wrap:wrap;gap:18px;margin-bottom:36px;">
+          <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:16px 22px;min-width:130px;">
+            <div style="color:#00ffb4;font-size:1.7rem;font-weight:800;" id="stat-cases">0</div>
+            <div style="color:#64748b;font-size:.82rem;margin-top:4px;">Cases Active</div>
+          </div>
+          <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:16px 22px;min-width:130px;">
+            <div style="color:#00c6ff;font-size:1.7rem;font-weight:800;" id="stat-recovered">$0M</div>
+            <div style="color:#64748b;font-size:.82rem;margin-top:4px;">Recovered</div>
+          </div>
+          <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:16px 22px;min-width:130px;">
+            <div style="color:#a78bfa;font-size:1.7rem;font-weight:800;" id="stat-rate">0%</div>
+            <div style="color:#64748b;font-size:.82rem;margin-top:4px;">Success Rate</div>
+          </div>
         </div>
 
-        <!-- Coin Cards -->
-        <div class="row g-4 justify-content-center" id="coin-cards-row">
-            <!-- BTC -->
-            <div class="col-12 col-sm-6 col-xl-3">
-                <div class="coin-card" id="card-btc">
-                    <div class="coin-scene">
-                        <div class="coin-3d coin-btc">
-                            <div class="coin-face coin-front">
-                                <svg viewBox="0 0 80 80" width="52" height="52">
-                                    <circle cx="40" cy="40" r="38" fill="#f7931a"/>
-                                    <text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" font-family="Arial,sans-serif" font-weight="900" font-size="34" fill="#fff">₿</text>
-                                </svg>
-                            </div>
-                            <div class="coin-face coin-back">
-                                <svg viewBox="0 0 80 80" width="52" height="52">
-                                    <circle cx="40" cy="40" r="38" fill="#e07b10"/>
-                                    <text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" font-family="Arial,sans-serif" font-weight="900" font-size="22" fill="#fff">BTC</text>
-                                </svg>
-                            </div>
-                            <div class="coin-edge"></div>
-                        </div>
-                    </div>
-                    <div class="coin-info">
-                        <div class="coin-name">Bitcoin <span class="coin-symbol">BTC</span></div>
-                        <div class="coin-price" id="price-btc">–</div>
-                        <div class="coin-change" id="change-btc">
-                            <span class="change-badge neutral">Laden…</span>
-                        </div>
-                    </div>
-                    <canvas class="sparkline-canvas" id="spark-btc" width="200" height="48"></canvas>
-                </div>
-            </div>
-            <!-- ETH -->
-            <div class="col-12 col-sm-6 col-xl-3">
-                <div class="coin-card" id="card-eth">
-                    <div class="coin-scene">
-                        <div class="coin-3d coin-eth">
-                            <div class="coin-face coin-front">
-                                <svg viewBox="0 0 80 80" width="52" height="52">
-                                    <circle cx="40" cy="40" r="38" fill="#627eea"/>
-                                    <polygon points="40,14 55,40 40,48 25,40" fill="#fff" opacity=".9"/>
-                                    <polygon points="40,52 55,43 40,66 25,43" fill="#fff" opacity=".6"/>
-                                </svg>
-                            </div>
-                            <div class="coin-face coin-back">
-                                <svg viewBox="0 0 80 80" width="52" height="52">
-                                    <circle cx="40" cy="40" r="38" fill="#4e6ad6"/>
-                                    <text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" font-family="Arial,sans-serif" font-weight="900" font-size="22" fill="#fff">ETH</text>
-                                </svg>
-                            </div>
-                            <div class="coin-edge"></div>
-                        </div>
-                    </div>
-                    <div class="coin-info">
-                        <div class="coin-name">Ethereum <span class="coin-symbol">ETH</span></div>
-                        <div class="coin-price" id="price-eth">–</div>
-                        <div class="coin-change" id="change-eth">
-                            <span class="change-badge neutral">Laden…</span>
-                        </div>
-                    </div>
-                    <canvas class="sparkline-canvas" id="spark-eth" width="200" height="48"></canvas>
-                </div>
-            </div>
-            <!-- USDT -->
-            <div class="col-12 col-sm-6 col-xl-3">
-                <div class="coin-card" id="card-usdt">
-                    <div class="coin-scene">
-                        <div class="coin-3d coin-usdt">
-                            <div class="coin-face coin-front">
-                                <svg viewBox="0 0 80 80" width="52" height="52">
-                                    <circle cx="40" cy="40" r="38" fill="#26a17b"/>
-                                    <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="Arial,sans-serif" font-weight="900" font-size="30" fill="#fff">₮</text>
-                                </svg>
-                            </div>
-                            <div class="coin-face coin-back">
-                                <svg viewBox="0 0 80 80" width="52" height="52">
-                                    <circle cx="40" cy="40" r="38" fill="#1a8562"/>
-                                    <text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" font-family="Arial,sans-serif" font-weight="900" font-size="18" fill="#fff">USDT</text>
-                                </svg>
-                            </div>
-                            <div class="coin-edge"></div>
-                        </div>
-                    </div>
-                    <div class="coin-info">
-                        <div class="coin-name">Tether <span class="coin-symbol">USDT</span></div>
-                        <div class="coin-price" id="price-usdt">–</div>
-                        <div class="coin-change" id="change-usdt">
-                            <span class="change-badge neutral">Laden…</span>
-                        </div>
-                    </div>
-                    <canvas class="sparkline-canvas" id="spark-usdt" width="200" height="48"></canvas>
-                </div>
-            </div>
-            <!-- LTC -->
-            <div class="col-12 col-sm-6 col-xl-3">
-                <div class="coin-card" id="card-ltc">
-                    <div class="coin-scene">
-                        <div class="coin-3d coin-ltc">
-                            <div class="coin-face coin-front">
-                                <svg viewBox="0 0 80 80" width="52" height="52">
-                                    <circle cx="40" cy="40" r="38" fill="#bfbbbb"/>
-                                    <text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" font-family="Arial,sans-serif" font-weight="900" font-size="34" fill="#fff">Ł</text>
-                                </svg>
-                            </div>
-                            <div class="coin-face coin-back">
-                                <svg viewBox="0 0 80 80" width="52" height="52">
-                                    <circle cx="40" cy="40" r="38" fill="#a8a4a4"/>
-                                    <text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" font-family="Arial,sans-serif" font-weight="900" font-size="22" fill="#fff">LTC</text>
-                                </svg>
-                            </div>
-                            <div class="coin-edge"></div>
-                        </div>
-                    </div>
-                    <div class="coin-info">
-                        <div class="coin-name">Litecoin <span class="coin-symbol">LTC</span></div>
-                        <div class="coin-price" id="price-ltc">–</div>
-                        <div class="coin-change" id="change-ltc">
-                            <span class="change-badge neutral">Laden…</span>
-                        </div>
-                    </div>
-                    <canvas class="sparkline-canvas" id="spark-ltc" width="200" height="48"></canvas>
-                </div>
-            </div>
-        </div><!-- /row -->
+        <a href="support.php" class="btn btn-primary" style="background:linear-gradient(135deg,#00c6ff,#00ffb4);border:none;color:#04091a;font-weight:700;padding:14px 34px;border-radius:10px;font-size:1rem;box-shadow:0 0 28px rgba(0,198,255,.35);">
+          <i class="fas fa-search-dollar me-2"></i>Start Recovery Process
+        </a>
+      </div>
 
-        <p class="text-center mt-4 mb-0" style="color:#475569;font-size:.78rem;">
-            Preise in EUR · Daten via CoinGecko API · Aktualisierung alle 60 s
-        </p>
-    </div><!-- /container -->
+      <!-- Right: info panels -->
+      <div class="col-lg-6">
+        <div style="display:flex;flex-direction:column;gap:16px;">
+
+          <div style="background:rgba(255,255,255,.05);border:1px solid rgba(0,255,180,.2);border-radius:14px;padding:20px 24px;backdrop-filter:blur(6px);">
+            <div style="display:flex;align-items:center;gap:14px;">
+              <div style="width:44px;height:44px;border-radius:10px;background:rgba(0,255,180,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <i class="fas fa-network-wired" style="color:#00ffb4;font-size:1.25rem;"></i>
+              </div>
+              <div>
+                <div style="color:#fff;font-weight:700;font-size:.97rem;">Blockchain Trace Engine</div>
+                <div style="color:#64748b;font-size:.83rem;margin-top:3px;">Real-time graph traversal across BTC, ETH, BSC &amp; 117 more chains</div>
+              </div>
+            </div>
+          </div>
+
+          <div style="background:rgba(255,255,255,.05);border:1px solid rgba(0,198,255,.2);border-radius:14px;padding:20px 24px;backdrop-filter:blur(6px);">
+            <div style="display:flex;align-items:center;gap:14px;">
+              <div style="width:44px;height:44px;border-radius:10px;background:rgba(0,198,255,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <i class="fas fa-brain" style="color:#00c6ff;font-size:1.25rem;"></i>
+              </div>
+              <div>
+                <div style="color:#fff;font-weight:700;font-size:.97rem;">Deep-Learning Pattern Match</div>
+                <div style="color:#64748b;font-size:.83rem;margin-top:3px;">Identifies mixer obfuscation, exchange hops &amp; money-mule clusters</div>
+              </div>
+            </div>
+          </div>
+
+          <div style="background:rgba(255,255,255,.05);border:1px solid rgba(167,139,250,.2);border-radius:14px;padding:20px 24px;backdrop-filter:blur(6px);">
+            <div style="display:flex;align-items:center;gap:14px;">
+              <div style="width:44px;height:44px;border-radius:10px;background:rgba(167,139,250,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <i class="fas fa-gavel" style="color:#a78bfa;font-size:1.25rem;"></i>
+              </div>
+              <div>
+                <div style="color:#fff;font-weight:700;font-size:.97rem;">Regulated Legal Escalation</div>
+                <div style="color:#64748b;font-size:.83rem;margin-top:3px;">Automated evidence packages sent to FCA, BaFin &amp; Interpol liaisons</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Progress bar -->
+          <div style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:18px 24px;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+              <span style="color:#94a3b8;font-size:.85rem;">AI Analysis Progress</span>
+              <span style="color:#00ffb4;font-weight:700;font-size:.85rem;" id="progress-label">87%</span>
+            </div>
+            <div style="background:rgba(255,255,255,.08);border-radius:999px;height:8px;overflow:hidden;">
+              <div id="recovery-bar" style="height:100%;width:0%;border-radius:999px;background:linear-gradient(90deg,#00c6ff,#00ffb4);transition:width 2s ease-out;"></div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </div><!-- /container -->
+
 </section>
 
-<!-- ===== Crypto Coin CSS ===== -->
+<!-- ===== Recovery Section CSS ===== -->
 <style>
-/* ---------- Card ---------- */
-.coin-card {
-    background: rgba(255,255,255,.04);
-    border: 1px solid rgba(255,255,255,.08);
-    border-radius: 20px;
-    padding: 28px 20px 18px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0;
-    transition: transform .3s, box-shadow .3s, border-color .3s;
-    backdrop-filter: blur(8px);
-    position: relative;
-    overflow: hidden;
-}
-.coin-card::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: 20px;
-    background: linear-gradient(135deg, rgba(255,255,255,.06) 0%, transparent 60%);
-    pointer-events: none;
-}
-.coin-card:hover {
-    transform: translateY(-6px);
-    box-shadow: 0 24px 60px rgba(0,0,0,.45);
-    border-color: rgba(99,102,241,.4);
-}
-/* ---------- 3-D Scene ---------- */
-.coin-scene {
-    width: 100px;
-    height: 100px;
-    perspective: 600px;
-    margin-bottom: 18px;
-}
-.coin-3d {
-    width: 100%;
-    height: 100%;
-    position: relative;
-    transform-style: preserve-3d;
-    animation: coinSpin 5s linear infinite;
-}
-.coin-btc  { animation-duration: 5.5s; }
-.coin-eth  { animation-duration: 6s;   }
-.coin-usdt { animation-duration: 6.8s; }
-.coin-ltc  { animation-duration: 5.0s; }
-
-@keyframes coinSpin {
-    0%   { transform: rotateY(0deg)   rotateX(8deg); }
-    100% { transform: rotateY(360deg) rotateX(8deg); }
-}
-.coin-face {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    backface-visibility: hidden;
-    box-shadow: 0 8px 30px rgba(0,0,0,.5);
-}
-.coin-front { transform: translateZ(8px); }
-.coin-back  { transform: rotateY(180deg) translateZ(8px); }
-.coin-edge  {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
-    transform: translateZ(-8px) scaleZ(4);
-    background: transparent;
-    box-shadow: 0 0 0 8px rgba(0,0,0,.25) inset;
-}
-/* glow rings on hover */
-.coin-card:hover .coin-3d { animation-play-state: paused; }
-
-/* ---------- Info ---------- */
-.coin-info {
-    text-align: center;
-    margin-bottom: 14px;
-}
-.coin-name {
-    color: #e2e8f0;
-    font-size: 1rem;
-    font-weight: 600;
-    margin-bottom: 4px;
-}
-.coin-symbol {
-    color: #64748b;
-    font-size: .78rem;
-    font-weight: 500;
-    margin-left: 4px;
-}
-.coin-price {
-    color: #f8fafc;
-    font-size: 1.45rem;
-    font-weight: 800;
-    letter-spacing: -.02em;
-    margin-bottom: 6px;
-    font-variant-numeric: tabular-nums;
-}
-.change-badge {
-    display: inline-block;
-    padding: 3px 10px;
-    border-radius: 20px;
-    font-size: .8rem;
-    font-weight: 700;
-}
-.change-badge.up      { background: rgba(34,197,94,.15); color: #4ade80; border: 1px solid rgba(34,197,94,.3); }
-.change-badge.down    { background: rgba(239,68,68,.15);  color: #f87171; border: 1px solid rgba(239,68,68,.3); }
-.change-badge.neutral { background: rgba(100,116,139,.15); color: #94a3b8; border: 1px solid rgba(100,116,139,.3); }
-
-/* ---------- Sparkline ---------- */
-.sparkline-canvas {
-    width: 100%;
-    height: 48px;
-    display: block;
-    border-radius: 8px;
+@keyframes livePulse {
+  0%,100% { opacity:1; transform:scale(1); }
+  50%      { opacity:.5; transform:scale(1.4); }
 }
 </style>
 
-<!-- ===== Crypto Coin JS ===== -->
+<!-- ===== Three.js 3D Recovery Canvas ===== -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js" crossorigin="anonymous"></script>
 <script>
 (function () {
-    'use strict';
+  'use strict';
 
-    const coins = [
-        { id: 'bitcoin',  key: 'btc',  color: '#f7931a', fallbackPrice: 58420,  fallbackChange: 2.4  },
-        { id: 'ethereum', key: 'eth',  color: '#627eea', fallbackPrice: 3180,   fallbackChange: -1.1 },
-        { id: 'tether',   key: 'usdt', color: '#26a17b', fallbackPrice: 0.92,   fallbackChange: 0.04 },
-        { id: 'litecoin', key: 'ltc',  color: '#bfbbbb', fallbackPrice: 68.50,  fallbackChange: 3.2  }
-    ];
-
-    const fmt = (n) => new Intl.NumberFormat('de-DE', {
-        style: 'currency', currency: 'EUR',
-        minimumFractionDigits: n < 10 ? 4 : n < 100 ? 2 : 0,
-        maximumFractionDigits: n < 10 ? 4 : n < 100 ? 2 : 0
-    }).format(n);
-
-    function renderChange(key, pct) {
-        const el = document.getElementById('change-' + key);
-        if (!el) return;
-        const sign = pct > 0 ? '+' : '';
-        const cls  = pct > 0 ? 'up' : pct < 0 ? 'down' : 'neutral';
-        const icon = pct > 0 ? '▲' : pct < 0 ? '▼' : '–';
-        el.innerHTML = `<span class="change-badge ${cls}">${icon} ${sign}${pct.toFixed(2)} %</span>`;
+  /* ---- Counter animation helper ---- */
+  function animateCounter(el, target, suffix, duration, isFloat) {
+    var start = 0, startTime = null;
+    function step(ts) {
+      if (!startTime) startTime = ts;
+      var progress = Math.min((ts - startTime) / duration, 1);
+      var eased = 1 - Math.pow(1 - progress, 3);
+      var val = isFloat ? (eased * target).toFixed(1) : Math.round(eased * target);
+      el.textContent = val + suffix;
+      if (progress < 1) requestAnimationFrame(step);
     }
+    requestAnimationFrame(step);
+  }
 
-    function drawSparkline(canvasId, values, color) {
-        const canvas = document.getElementById(canvasId);
-        if (!canvas || !canvas.getContext) return;
-        const ctx = canvas.getContext('2d');
-        const w = canvas.width, h = canvas.height;
-        const min = Math.min(...values), max = Math.max(...values);
-        const range = max - min || 1;
-        ctx.clearRect(0, 0, w, h);
-        const grad = ctx.createLinearGradient(0, 0, 0, h);
-        grad.addColorStop(0, color + '55');
-        grad.addColorStop(1, color + '05');
-        ctx.beginPath();
-        values.forEach((v, i) => {
-            const x = (i / (values.length - 1)) * w;
-            const y = h - ((v - min) / range) * (h - 4) - 2;
-            i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-        });
-        const lastX = w, lastY = h - ((values[values.length - 1] - min) / range) * (h - 4) - 2;
-        ctx.lineTo(lastX, h); ctx.lineTo(0, h); ctx.closePath();
-        ctx.fillStyle = grad; ctx.fill();
-        ctx.beginPath();
-        values.forEach((v, i) => {
-            const x = (i / (values.length - 1)) * w;
-            const y = h - ((v - min) / range) * (h - 4) - 2;
-            i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-        });
-        ctx.strokeStyle = color; ctx.lineWidth = 2.5; ctx.lineJoin = 'round'; ctx.stroke();
-    }
-
-    function fakeSparkline(base, pct) {
-        const pts = 20;
-        const arr = [];
-        let v = base * (1 - Math.abs(pct) / 200);
-        for (let i = 0; i < pts; i++) {
-            v += v * (Math.random() - 0.48) * 0.015;
-            arr.push(v);
-        }
-        arr.push(base);
-        return arr;
-    }
-
-    function applyFallback() {
-        coins.forEach(c => {
-            const prEl = document.getElementById('price-' + c.key);
-            if (prEl) prEl.textContent = fmt(c.fallbackPrice);
-            renderChange(c.key, c.fallbackChange);
-            drawSparkline('spark-' + c.key, fakeSparkline(c.fallbackPrice, c.fallbackChange), c.color);
-        });
-    }
-
-    function fetchPrices() {
-        const ids = coins.map(c => c.id).join(',');
-        const url = `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=eur&include_24hr_change=true&include_sparkline=false`;
-        fetch(url, { signal: AbortSignal.timeout(8000) })
-            .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-            .then(data => {
-                coins.forEach(c => {
-                    const d = data[c.id];
-                    if (!d) return;
-                    const price  = d['eur'];
-                    const change = d['eur_24h_change'];
-                    const prEl = document.getElementById('price-' + c.key);
-                    if (prEl) prEl.textContent = fmt(price);
-                    renderChange(c.key, change);
-                    drawSparkline('spark-' + c.key, fakeSparkline(price, change), c.color);
-                });
-            })
-            .catch(() => applyFallback());
-    }
-
-    /* Run on load, then every 60 s */
-    document.addEventListener('DOMContentLoaded', () => {
-        applyFallback(); /* show immediately while fetching */
-        fetchPrices();
-        setInterval(fetchPrices, 60000);
+  /* Trigger counters + progress bar once section enters viewport */
+  var STAT_CASES     = 1847;
+  var STAT_RECOVERED = 23.7;  /* millions */
+  var STAT_RATE      = 87;    /* percent */
+  var statsTriggered = false;
+  var recoverySection = document.getElementById('ai-recovery-scene');
+  var io = new IntersectionObserver(function (entries) {
+    if (statsTriggered) return;
+    entries.forEach(function (e) {
+      if (e.isIntersecting) {
+        statsTriggered = true;
+        animateCounter(document.getElementById('stat-cases'),     STAT_CASES,     '',  1800, false);
+        animateCounter(document.getElementById('stat-recovered'),  STAT_RECOVERED, 'M', 2000, true);
+        animateCounter(document.getElementById('stat-rate'),       STAT_RATE,      '%', 1600, false);
+        setTimeout(function () {
+          document.getElementById('recovery-bar').style.width = '87%';
+        }, 300);
+      }
     });
+  }, { threshold: 0.25 });
+  if (recoverySection) io.observe(recoverySection);
+
+  /* ---- THREE.JS 3D scene ---- */
+  var canvas = document.getElementById('recovery-canvas');
+  if (!canvas || typeof THREE === 'undefined') {
+    console.warn('[AI Recovery] Three.js canvas or library unavailable – 3D scene skipped.');
+    return;
+  }
+
+  var W = canvas.parentElement.offsetWidth  || window.innerWidth;
+  var H = canvas.parentElement.offsetHeight || 680;
+
+  /* Renderer */
+  var renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(W, H);
+  renderer.setClearColor(0x04091a, 1);
+
+  /* Scene + Camera */
+  var scene  = new THREE.Scene();
+  var camera = new THREE.PerspectiveCamera(55, W / H, 0.1, 2000);
+  camera.position.set(0, 0, 260);
+
+  /* Fog */
+  scene.fog = new THREE.FogExp2(0x04091a, 0.0022);
+
+  /* ---------- Starfield background ---------- */
+  var starGeo = new THREE.BufferGeometry();
+  var starCnt = 1200; /* Reduced for performance on lower-end devices */
+  var starPos = new Float32Array(starCnt * 3);
+  for (var i = 0; i < starCnt * 3; i++) starPos[i] = (Math.random() - 0.5) * 1600;
+  starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+  var starMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.7, transparent: true, opacity: 0.55 });
+  scene.add(new THREE.Points(starGeo, starMat));
+
+  /* ---------- Wireframe globe ---------- */
+  var globeGeo  = new THREE.IcosahedronGeometry(100, 3);
+  var globeMat  = new THREE.MeshBasicMaterial({ color: 0x00c6ff, wireframe: true, transparent: true, opacity: 0.18 });
+  var globe     = new THREE.Mesh(globeGeo, globeMat);
+  scene.add(globe);
+
+  /* ---------- Inner glowing core ---------- */
+  var coreGeo = new THREE.SphereGeometry(18, 32, 32);
+  var coreMat = new THREE.MeshBasicMaterial({ color: 0x00ffb4, transparent: true, opacity: 0.55 });
+  var core    = new THREE.Mesh(coreGeo, coreMat);
+  scene.add(core);
+
+  /* Core glow rings */
+  for (var r = 0; r < 3; r++) {
+    var rGeo = new THREE.TorusGeometry(22 + r * 8, 0.5, 6, 60);
+    var rMat = new THREE.MeshBasicMaterial({ color: 0x00ffb4, transparent: true, opacity: 0.25 - r * 0.07 });
+    var ring = new THREE.Mesh(rGeo, rMat);
+    ring.rotation.x = Math.PI / 2.2 + r * 0.4;
+    ring.rotation.z = r * 0.9;
+    scene.add(ring);
+  }
+
+  /* ---------- Network nodes on sphere surface ---------- */
+  var nodeGroup = new THREE.Group();
+  scene.add(nodeGroup);
+  var nodeMeshes = [];
+  var nodeCount = 60;
+  var nodeColors = [0x00ffb4, 0x00c6ff, 0xa78bfa, 0xffd700];
+
+  for (var n = 0; n < nodeCount; n++) {
+    var phi   = Math.acos(-1 + (2 * n) / nodeCount);
+    var theta = Math.sqrt(nodeCount * Math.PI) * phi;
+    var nodeGeo = new THREE.SphereGeometry(1.6, 8, 8);
+    var nodeMat = new THREE.MeshBasicMaterial({
+      color: nodeColors[n % nodeColors.length],
+      transparent: true,
+      opacity: 0.9
+    });
+    var node = new THREE.Mesh(nodeGeo, nodeMat);
+    node.position.setFromSphericalCoords(101, phi, theta);
+    nodeGroup.add(node);
+    nodeMeshes.push(node);
+  }
+
+  /* ---------- Connection lines between nearby nodes ----------
+     Note: O(n²) loop runs once at load time (not per frame) to pre-build geometry. */
+  var lineGroup = new THREE.Group();
+  scene.add(lineGroup);
+  var lineMat = new THREE.LineBasicMaterial({ color: 0x00c6ff, transparent: true, opacity: 0.22 });
+
+  for (var a = 0; a < nodeCount; a++) {
+    for (var b = a + 1; b < nodeCount; b++) {
+      var dist = nodeMeshes[a].position.distanceTo(nodeMeshes[b].position);
+      if (dist < 55) {
+        var lGeo = new THREE.BufferGeometry().setFromPoints([
+          nodeMeshes[a].position.clone(),
+          nodeMeshes[b].position.clone()
+        ]);
+        lineGroup.add(new THREE.Line(lGeo, lineMat));
+      }
+    }
+  }
+
+  /* ---------- Flowing data particles ---------- */
+  var Y_BOUNDARY   = 90;  /* Vertical extent of particle field */
+  var particleCount = 200; /* Reduced for better mobile performance */
+  var pGeo = new THREE.BufferGeometry();
+  var pPositions = new Float32Array(particleCount * 3);
+  var pVelocities = [];
+  for (var p = 0; p < particleCount; p++) {
+    var angle = Math.random() * Math.PI * 2;
+    var radius = 40 + Math.random() * 80;
+    pPositions[p * 3]     = Math.cos(angle) * radius;
+    pPositions[p * 3 + 1] = (Math.random() - 0.5) * 180;
+    pPositions[p * 3 + 2] = Math.sin(angle) * radius;
+    pVelocities.push({
+      r: radius,
+      angle: angle,
+      speed: 0.003 + Math.random() * 0.008,
+      y: pPositions[p * 3 + 1],
+      ySpeed: (Math.random() - 0.5) * 0.25
+    });
+  }
+  pGeo.setAttribute('position', new THREE.BufferAttribute(pPositions, 3));
+  var pMat = new THREE.PointsMaterial({
+    color: 0x00ffb4,
+    size: 1.8,
+    transparent: true,
+    opacity: 0.75
+  });
+  var particles = new THREE.Points(pGeo, pMat);
+  scene.add(particles);
+
+  /* ---------- Ambient light (not needed for MeshBasic but good practice) ---------- */
+  scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+
+  /* ---------- Animation loop ---------- */
+  var clock = new THREE.Clock();
+  function animate() {
+    requestAnimationFrame(animate);
+    var t = clock.getElapsedTime();
+
+    globe.rotation.y  += 0.0015;
+    globe.rotation.x  += 0.0005;
+    nodeGroup.rotation.y = globe.rotation.y;
+    nodeGroup.rotation.x = globe.rotation.x;
+    lineGroup.rotation.y = globe.rotation.y;
+    lineGroup.rotation.x = globe.rotation.x;
+
+    /* Pulse core */
+    var pulse = 0.5 + 0.5 * Math.sin(t * 2);
+    core.scale.setScalar(0.9 + 0.15 * pulse);
+    coreMat.opacity = 0.4 + 0.25 * pulse;
+
+    /* Move data particles */
+    var pos = particles.geometry.attributes.position.array;
+    for (var i = 0; i < particleCount; i++) {
+      var v = pVelocities[i];
+      v.angle += v.speed;
+      v.y     += v.ySpeed;
+      if (v.y >  Y_BOUNDARY) { v.y = -Y_BOUNDARY; }
+      if (v.y < -Y_BOUNDARY) { v.y =  Y_BOUNDARY; }
+      pos[i * 3]     = Math.cos(v.angle) * v.r;
+      pos[i * 3 + 1] = v.y;
+      pos[i * 3 + 2] = Math.sin(v.angle) * v.r;
+    }
+    particles.geometry.attributes.position.needsUpdate = true;
+
+    /* Camera slow drift */
+    camera.position.x = Math.sin(t * 0.08) * 20;
+    camera.position.y = Math.cos(t * 0.06) * 10;
+    camera.lookAt(scene.position);
+
+    renderer.render(scene, camera);
+  }
+  animate();
+
+  /* ---------- Responsive resize ---------- */
+  window.addEventListener('resize', function () {
+    var parent = canvas.parentElement;
+    W = parent.offsetWidth;
+    H = Math.max(parent.offsetHeight, 680);
+    renderer.setSize(W, H);
+    camera.aspect = W / H;
+    camera.updateProjectionMatrix();
+  });
 })();
 </script>
+
 
 <!-- CTA -->
 <section class="section text-white text-center" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
