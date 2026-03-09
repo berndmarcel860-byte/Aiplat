@@ -1,10 +1,9 @@
 <?php
-$page_title = 'Unsere Mission – Krypto-Betrugsopfern helfen | Novalnet AI';
+include_once 'includes/site_settings.php';
+$page_title = 'Unsere Mission – Krypto-Betrugsopfern helfen | ' . ($siteSettings['brand_name'] ?? 'Novalnet AI');
 $page_description = 'Unsere Mission ist es, Opfern von Krypto-Betrug zu helfen, ihre gestohlenen Vermögenswerte durch KI-gestützte Blockchain-Analyse wiederzuerlangen.';
 $page_keywords = 'Mission, Krypto Betrug, Wiederherstellung, Blockchain Analyse, Opferhilfe';
-$page_url = 'https://novalnet-ai.de/Frontend/mission.php';
-
-include_once 'includes/site_settings.php';
+$page_url = ($siteSettings['site_url'] ?? 'https://novalnet-ai.de') . '/Frontend/mission.php';
 include 'includes/header.php';
 include 'includes/navbar.php';
 ?>

@@ -26,7 +26,7 @@ if (!isset($siteSettings)) {
             ]
         );
 
-        $stmt = $pdoSite->prepare("SELECT brand_name, company_address, contact_email, fca_reference_number FROM system_settings WHERE id = 1 LIMIT 1");
+        $stmt = $pdoSite->prepare("SELECT brand_name, company_address, contact_email, fca_reference_number, site_url FROM system_settings WHERE id = 1 LIMIT 1");
         $stmt->execute();
         $row = $stmt->fetch();
         if ($row) {
@@ -42,5 +42,6 @@ if (!isset($siteSettings)) {
         'company_address'      => 'Davidson House, Forbury Square, Reading, RG1 3EU, United Kingdom',
         'contact_email'        => 'info@novalnet-ai.de',
         'fca_reference_number' => '122702',
+        'site_url'             => 'https://novalnet-ai.de',
     ];
 }

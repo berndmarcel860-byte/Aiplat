@@ -1,10 +1,9 @@
 <?php
-$page_title = 'Impressum – Novalnet AI';
+include_once 'includes/site_settings.php';
+$page_title = 'Impressum – ' . ($siteSettings['brand_name'] ?? 'Novalnet AI');
 $page_description = 'Impressum und rechtliche Informationen von Novalnet AI. Gutenbergstraße 7, 85748 Garching b.München.';
 $page_keywords = 'Impressum, Kontakt, Rechtliches, Novalnet AI';
-$page_url = 'https://novalnet-ai.de/Frontend/impressum.php';
-
-include_once 'includes/site_settings.php';
+$page_url = ($siteSettings['site_url'] ?? 'https://novalnet-ai.de') . '/Frontend/impressum.php';
 include 'includes/header.php';
 include 'includes/navbar.php';
 ?>

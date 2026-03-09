@@ -1,10 +1,9 @@
 <?php
-$page_title = 'Über uns – Das Novalnet AI Team';
+include_once 'includes/site_settings.php';
+$page_title = 'Über uns – Das ' . ($siteSettings['brand_name'] ?? 'Novalnet AI') . ' Team';
 $page_description = 'Lernen Sie das Expertenteam von Novalnet AI kennen. Spezialisiert auf KI-gestützte Blockchain-Analyse und Krypto-Wiederherstellung.';
 $page_keywords = 'Über uns, Team, Experten, Blockchain Analyse, Novalnet AI';
-$page_url = 'https://novalnet-ai.de/Frontend/ueber-uns.php';
-
-include_once 'includes/site_settings.php';
+$page_url = ($siteSettings['site_url'] ?? 'https://novalnet-ai.de') . '/Frontend/ueber-uns.php';
 include 'includes/header.php';
 include 'includes/navbar.php';
 ?>

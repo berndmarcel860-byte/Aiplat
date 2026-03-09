@@ -1,10 +1,9 @@
 <?php
-$page_title = 'Kontakt – Novalnet AI Support';
+include_once 'includes/site_settings.php';
+$page_title = 'Kontakt – ' . ($siteSettings['brand_name'] ?? 'Novalnet AI') . ' Support';
 $page_description = 'Kontaktieren Sie unser Expertenteam für Krypto-Wiederherstellung. BaFin-lizenziert, kostenlose Erstberatung.';
 $page_keywords = 'Kontakt, Support, Krypto Beratung, BaFin lizenziert';
-$page_url = 'https://novalnet-ai.de/Frontend/kontakt.php';
-
-include_once 'includes/site_settings.php';
+$page_url = ($siteSettings['site_url'] ?? 'https://novalnet-ai.de') . '/Frontend/kontakt.php';
 include 'includes/header.php';
 include 'includes/navbar.php';
 ?>

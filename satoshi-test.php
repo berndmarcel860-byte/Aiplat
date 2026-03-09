@@ -1,10 +1,9 @@
 <?php
-$page_title = 'Satoshi Test – Blockchain-Verifizierung | Novalnet AI';
+include_once 'includes/site_settings.php';
+$page_title = 'Satoshi Test – Blockchain-Verifizierung | ' . ($siteSettings['brand_name'] ?? 'Novalnet AI');
 $page_description = 'Testen Sie Ihre Blockchain-Kenntnisse mit unserem Satoshi Test. Verifizieren Sie Ihre Wallet-Historie und Transaktionen.';
 $page_keywords = 'Satoshi Test, Blockchain Verifizierung, Wallet Test, Krypto Test';
-$page_url = 'https://novalnet-ai.de/Frontend/satoshi-test.php';
-
-include_once 'includes/site_settings.php';
+$page_url = ($siteSettings['site_url'] ?? 'https://novalnet-ai.de') . '/Frontend/satoshi-test.php';
 include 'includes/header.php';
 include 'includes/navbar.php';
 ?>

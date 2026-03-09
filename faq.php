@@ -1,10 +1,9 @@
 <?php
-$page_title = 'FAQ – Häufige Fragen | Novalnet AI';
+include_once 'includes/site_settings.php';
+$page_title = 'FAQ – Häufige Fragen | ' . ($siteSettings['brand_name'] ?? 'Novalnet AI');
 $page_description = 'Häufig gestellte Fragen zu Krypto-Wiederherstellung, Blockchain-Analyse und unseren Services. Finden Sie schnelle Antworten.';
 $page_keywords = 'FAQ, Häufige Fragen, Support, Hilfe, Krypto-Wiederherstellung';
-$page_url = 'https://novalnet-ai.de/Frontend/faq.php';
-
-include_once 'includes/site_settings.php';
+$page_url = ($siteSettings['site_url'] ?? 'https://novalnet-ai.de') . '/Frontend/faq.php';
 include 'includes/header.php';
 include 'includes/navbar.php';
 ?>

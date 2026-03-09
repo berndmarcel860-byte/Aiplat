@@ -3,7 +3,7 @@ include_once 'includes/site_settings.php';
 $page_title = ($siteSettings['brand_name'] ?? 'Novalnet AI') . ' – Sichere Krypto-Rückführung & Wiederherstellung';
 $page_description = 'KI-gestützte Blockchain-Analyse zur Identifizierung und Wiederherstellung betrügerisch entwendeter Kryptowährungen. BaFin-lizenziert mit 87% Erfolgsquote.';
 $page_keywords = 'Krypto Wiederherstellung, Blockchain Analyse, Betrugsaufklärung, KI Krypto, BaFin lizenziert';
-$page_url = 'https://novalnet-ai.de/index.php';
+$page_url = ($siteSettings['site_url'] ?? 'https://novalnet-ai.de') . '/index.php';
 
 include 'includes/header.php';
 include 'includes/navbar.php';
@@ -1523,7 +1523,7 @@ function dismissAlert(button) {
         <i class="fas fa-clock me-2"></i>
         Keine Vorauszahlung – <strong>3% Gebühr nur bei Erfolg</strong>
       </p>
-      <a href="https://novalnet-ai.de/app" class="btn btn-primary btn-lg px-5 py-3 btn-glow">
+      <a href="<?= htmlspecialchars(($siteSettings['site_url'] ?? 'https://novalnet-ai.de') . '/app') ?>" class="btn btn-primary btn-lg px-5 py-3 btn-glow">
         <i class="fas fa-rocket me-2"></i>Kostenlose KI-Analyse starten
       </a>
       <p class="text-muted mt-3 small">
