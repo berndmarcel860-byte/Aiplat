@@ -904,7 +904,7 @@ include 'includes/navbar.php';
           </div>
         </div>
 
-        <a href="support.php" class="btn btn-primary" style="background:linear-gradient(135deg,#00c6ff,#00ffb4);border:none;color:#04091a;font-weight:700;padding:14px 34px;border-radius:10px;font-size:1rem;box-shadow:0 0 28px rgba(0,198,255,.35);">
+        <a href="#" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#contactLeadModal" style="background:linear-gradient(135deg,#00c6ff,#00ffb4);border:none;color:#04091a;font-weight:700;padding:14px 34px;border-radius:10px;font-size:1rem;box-shadow:0 0 28px rgba(0,198,255,.35);">
           <i class="fas fa-search-dollar me-2"></i>Wiederherstellung starten
         </a>
       </div>
