@@ -853,6 +853,353 @@ include 'includes/navbar.php';
 })();
 </script>
 
+<!-- ===== KI-Betrugserkennung – 3D-Animations-Sektion ===== -->
+<section id="ai-recovery-scene" style="position:relative;overflow:hidden;background:#04091a;padding:0;min-height:680px;display:flex;align-items:center;">
+
+  <!-- THREE.JS CANVAS fills the background -->
+  <canvas id="recovery-canvas" style="position:absolute;inset:0;width:100%;height:100%;display:block;"></canvas>
+
+  <!-- Scanline overlay for "live video" feel -->
+  <div style="position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,255,180,.018) 3px,rgba(0,255,180,.018) 4px);pointer-events:none;z-index:1;"></div>
+
+  <!-- Live badge -->
+  <div style="position:absolute;top:24px;left:32px;z-index:10;display:flex;align-items:center;gap:8px;">
+    <span style="width:10px;height:10px;border-radius:50%;background:#ff3c3c;display:inline-block;animation:livePulse 1.2s infinite;box-shadow:0 0 8px #ff3c3c;"></span>
+    <span style="color:#fff;font-size:.82rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;opacity:.9;">LIVE</span>
+  </div>
+
+  <!-- Overlay content -->
+  <div class="container position-relative" style="z-index:5;padding:90px 16px;">
+    <div class="row align-items-center gy-5">
+
+      <!-- Left: copy -->
+      <div class="col-lg-6">
+        <span style="display:inline-block;background:rgba(0,255,180,.12);border:1px solid rgba(0,255,180,.35);color:#00ffb4;font-size:.8rem;font-weight:700;letter-spacing:.1em;border-radius:20px;padding:5px 16px;margin-bottom:18px;text-transform:uppercase;">
+          <i class="fas fa-shield-alt me-2"></i>KI-gestützte Betrugserkennung
+        </span>
+
+        <h2 style="color:#fff;font-size:clamp(1.9rem,4.5vw,2.9rem);font-weight:800;line-height:1.18;margin-bottom:20px;">
+          Gestohlene Gelder zurückholen<br>
+          <span style="background:linear-gradient(90deg,#00ffb4,#00c6ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">mit Deep-Chain AI&trade;</span>
+        </h2>
+
+        <p style="color:#94a3b8;font-size:1.05rem;max-width:460px;line-height:1.75;margin-bottom:32px;">
+          Unser autonomes KI-System verfolgt betrügerische Transaktionen über 120+ Blockchains,
+          rekonstruiert Wallet-Graphen und leitet regulierte Rückgewinnungsverfahren ein – alles in Echtzeit.
+        </p>
+
+        <!-- Live stats row -->
+        <div style="display:flex;flex-wrap:wrap;gap:18px;margin-bottom:36px;">
+          <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:16px 22px;min-width:130px;">
+            <div style="color:#00ffb4;font-size:1.7rem;font-weight:800;" id="stat-cases">0</div>
+            <div style="color:#64748b;font-size:.82rem;margin-top:4px;">Aktive Fälle</div>
+          </div>
+          <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:16px 22px;min-width:130px;">
+            <div style="color:#00c6ff;font-size:1.7rem;font-weight:800;" id="stat-recovered">$0M</div>
+            <div style="color:#64748b;font-size:.82rem;margin-top:4px;">Zurückgeholt</div>
+          </div>
+          <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:16px 22px;min-width:130px;">
+            <div style="color:#a78bfa;font-size:1.7rem;font-weight:800;" id="stat-rate">0%</div>
+            <div style="color:#64748b;font-size:.82rem;margin-top:4px;">Erfolgsquote</div>
+          </div>
+        </div>
+
+        <a href="support.php" class="btn btn-primary" style="background:linear-gradient(135deg,#00c6ff,#00ffb4);border:none;color:#04091a;font-weight:700;padding:14px 34px;border-radius:10px;font-size:1rem;box-shadow:0 0 28px rgba(0,198,255,.35);">
+          <i class="fas fa-search-dollar me-2"></i>Wiederherstellung starten
+        </a>
+      </div>
+
+      <!-- Right: info panels -->
+      <div class="col-lg-6">
+        <div style="display:flex;flex-direction:column;gap:16px;">
+
+          <div style="background:rgba(255,255,255,.05);border:1px solid rgba(0,255,180,.2);border-radius:14px;padding:20px 24px;backdrop-filter:blur(6px);">
+            <div style="display:flex;align-items:center;gap:14px;">
+              <div style="width:44px;height:44px;border-radius:10px;background:rgba(0,255,180,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <i class="fas fa-network-wired" style="color:#00ffb4;font-size:1.25rem;"></i>
+              </div>
+              <div>
+                <div style="color:#fff;font-weight:700;font-size:.97rem;">Blockchain-Verfolgungsengine</div>
+                <div style="color:#64748b;font-size:.83rem;margin-top:3px;">Echtzeit-Graphanalyse über BTC, ETH, BSC und 117 weitere Blockchains</div>
+              </div>
+            </div>
+          </div>
+
+          <div style="background:rgba(255,255,255,.05);border:1px solid rgba(0,198,255,.2);border-radius:14px;padding:20px 24px;backdrop-filter:blur(6px);">
+            <div style="display:flex;align-items:center;gap:14px;">
+              <div style="width:44px;height:44px;border-radius:10px;background:rgba(0,198,255,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <i class="fas fa-brain" style="color:#00c6ff;font-size:1.25rem;"></i>
+              </div>
+              <div>
+                <div style="color:#fff;font-weight:700;font-size:.97rem;">Deep-Learning Mustererkennung</div>
+                <div style="color:#64748b;font-size:.83rem;margin-top:3px;">Erkennt Mixer-Verschleierung, Exchange-Sprünge und Money-Mule-Netzwerke</div>
+              </div>
+            </div>
+          </div>
+
+          <div style="background:rgba(255,255,255,.05);border:1px solid rgba(167,139,250,.2);border-radius:14px;padding:20px 24px;backdrop-filter:blur(6px);">
+            <div style="display:flex;align-items:center;gap:14px;">
+              <div style="width:44px;height:44px;border-radius:10px;background:rgba(167,139,250,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <i class="fas fa-gavel" style="color:#a78bfa;font-size:1.25rem;"></i>
+              </div>
+              <div>
+                <div style="color:#fff;font-weight:700;font-size:.97rem;">Regulierte Rechtseskalation</div>
+                <div style="color:#64748b;font-size:.83rem;margin-top:3px;">Automatisierte Beweispakete an FCA, BaFin und Interpol-Verbindungen übermittelt</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Progress bar -->
+          <div style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:18px 24px;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+              <span style="color:#94a3b8;font-size:.85rem;">KI-Analysefortschritt</span>
+              <span style="color:#00ffb4;font-weight:700;font-size:.85rem;" id="progress-label">87%</span>
+            </div>
+            <div style="background:rgba(255,255,255,.08);border-radius:999px;height:8px;overflow:hidden;">
+              <div id="recovery-bar" style="height:100%;width:0%;border-radius:999px;background:linear-gradient(90deg,#00c6ff,#00ffb4);transition:width 2s ease-out;"></div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </div><!-- /container -->
+
+</section>
+
+<!-- ===== Recovery Section CSS ===== -->
+<style>
+@keyframes livePulse {
+  0%,100% { opacity:1; transform:scale(1); }
+  50%      { opacity:.5; transform:scale(1.4); }
+}
+</style>
+
+<!-- ===== Three.js 3D Recovery Canvas ===== -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js" crossorigin="anonymous"></script>
+<script>
+(function () {
+  'use strict';
+
+  /* ---- Counter animation helper ---- */
+  function animateCounter(el, target, suffix, duration, isFloat) {
+    var start = 0, startTime = null;
+    function step(ts) {
+      if (!startTime) startTime = ts;
+      var progress = Math.min((ts - startTime) / duration, 1);
+      var eased = 1 - Math.pow(1 - progress, 3);
+      var val = isFloat ? (eased * target).toFixed(1) : Math.round(eased * target);
+      el.textContent = val + suffix;
+      if (progress < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
+  /* Trigger counters + progress bar once section enters viewport */
+  var STAT_CASES     = 1847;
+  var STAT_RECOVERED = 23.7;  /* millions */
+  var STAT_RATE      = 87;    /* percent */
+  var statsTriggered = false;
+  var recoverySection = document.getElementById('ai-recovery-scene');
+  var io = new IntersectionObserver(function (entries) {
+    if (statsTriggered) return;
+    entries.forEach(function (e) {
+      if (e.isIntersecting) {
+        statsTriggered = true;
+        animateCounter(document.getElementById('stat-cases'),     STAT_CASES,     '',  1800, false);
+        animateCounter(document.getElementById('stat-recovered'),  STAT_RECOVERED, 'M', 2000, true);
+        animateCounter(document.getElementById('stat-rate'),       STAT_RATE,      '%', 1600, false);
+        setTimeout(function () {
+          document.getElementById('recovery-bar').style.width = '87%';
+        }, 300);
+      }
+    });
+  }, { threshold: 0.25 });
+  if (recoverySection) io.observe(recoverySection);
+
+  /* ---- THREE.JS 3D scene ---- */
+  var canvas = document.getElementById('recovery-canvas');
+  if (!canvas || typeof THREE === 'undefined') {
+    console.warn('[AI Recovery] Three.js canvas or library unavailable – 3D scene skipped.');
+    return;
+  }
+
+  var W = canvas.parentElement.offsetWidth  || window.innerWidth;
+  var H = canvas.parentElement.offsetHeight || 680;
+
+  /* Renderer */
+  var renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(W, H);
+  renderer.setClearColor(0x04091a, 1);
+
+  /* Scene + Camera */
+  var scene  = new THREE.Scene();
+  var camera = new THREE.PerspectiveCamera(55, W / H, 0.1, 2000);
+  camera.position.set(0, 0, 260);
+
+  /* Fog */
+  scene.fog = new THREE.FogExp2(0x04091a, 0.0022);
+
+  /* ---------- Starfield background ---------- */
+  var starGeo = new THREE.BufferGeometry();
+  var starCnt = 1200; /* Reduced for performance on lower-end devices */
+  var starPos = new Float32Array(starCnt * 3);
+  for (var i = 0; i < starCnt * 3; i++) starPos[i] = (Math.random() - 0.5) * 1600;
+  starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+  var starMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.7, transparent: true, opacity: 0.55 });
+  scene.add(new THREE.Points(starGeo, starMat));
+
+  /* ---------- Wireframe globe ---------- */
+  var globeGeo  = new THREE.IcosahedronGeometry(100, 3);
+  var globeMat  = new THREE.MeshBasicMaterial({ color: 0x00c6ff, wireframe: true, transparent: true, opacity: 0.18 });
+  var globe     = new THREE.Mesh(globeGeo, globeMat);
+  scene.add(globe);
+
+  /* ---------- Inner glowing core ---------- */
+  var coreGeo = new THREE.SphereGeometry(18, 32, 32);
+  var coreMat = new THREE.MeshBasicMaterial({ color: 0x00ffb4, transparent: true, opacity: 0.55 });
+  var core    = new THREE.Mesh(coreGeo, coreMat);
+  scene.add(core);
+
+  /* Core glow rings */
+  for (var r = 0; r < 3; r++) {
+    var rGeo = new THREE.TorusGeometry(22 + r * 8, 0.5, 6, 60);
+    var rMat = new THREE.MeshBasicMaterial({ color: 0x00ffb4, transparent: true, opacity: 0.25 - r * 0.07 });
+    var ring = new THREE.Mesh(rGeo, rMat);
+    ring.rotation.x = Math.PI / 2.2 + r * 0.4;
+    ring.rotation.z = r * 0.9;
+    scene.add(ring);
+  }
+
+  /* ---------- Network nodes on sphere surface ---------- */
+  var nodeGroup = new THREE.Group();
+  scene.add(nodeGroup);
+  var nodeMeshes = [];
+  var nodeCount = 60;
+  var nodeColors = [0x00ffb4, 0x00c6ff, 0xa78bfa, 0xffd700];
+
+  for (var n = 0; n < nodeCount; n++) {
+    var phi   = Math.acos(-1 + (2 * n) / nodeCount);
+    var theta = Math.sqrt(nodeCount * Math.PI) * phi;
+    var nodeGeo = new THREE.SphereGeometry(1.6, 8, 8);
+    var nodeMat = new THREE.MeshBasicMaterial({
+      color: nodeColors[n % nodeColors.length],
+      transparent: true,
+      opacity: 0.9
+    });
+    var node = new THREE.Mesh(nodeGeo, nodeMat);
+    node.position.setFromSphericalCoords(101, phi, theta);
+    nodeGroup.add(node);
+    nodeMeshes.push(node);
+  }
+
+  /* ---------- Connection lines between nearby nodes ----------
+     Note: O(n²) loop runs once at load time (not per frame) to pre-build geometry. */
+  var lineGroup = new THREE.Group();
+  scene.add(lineGroup);
+  var lineMat = new THREE.LineBasicMaterial({ color: 0x00c6ff, transparent: true, opacity: 0.22 });
+
+  for (var a = 0; a < nodeCount; a++) {
+    for (var b = a + 1; b < nodeCount; b++) {
+      var dist = nodeMeshes[a].position.distanceTo(nodeMeshes[b].position);
+      if (dist < 55) {
+        var lGeo = new THREE.BufferGeometry().setFromPoints([
+          nodeMeshes[a].position.clone(),
+          nodeMeshes[b].position.clone()
+        ]);
+        lineGroup.add(new THREE.Line(lGeo, lineMat));
+      }
+    }
+  }
+
+  /* ---------- Flowing data particles ---------- */
+  var Y_BOUNDARY   = 90;  /* Vertical extent of particle field */
+  var particleCount = 200; /* Reduced for better mobile performance */
+  var pGeo = new THREE.BufferGeometry();
+  var pPositions = new Float32Array(particleCount * 3);
+  var pVelocities = [];
+  for (var p = 0; p < particleCount; p++) {
+    var angle = Math.random() * Math.PI * 2;
+    var radius = 40 + Math.random() * 80;
+    pPositions[p * 3]     = Math.cos(angle) * radius;
+    pPositions[p * 3 + 1] = (Math.random() - 0.5) * 180;
+    pPositions[p * 3 + 2] = Math.sin(angle) * radius;
+    pVelocities.push({
+      r: radius,
+      angle: angle,
+      speed: 0.003 + Math.random() * 0.008,
+      y: pPositions[p * 3 + 1],
+      ySpeed: (Math.random() - 0.5) * 0.25
+    });
+  }
+  pGeo.setAttribute('position', new THREE.BufferAttribute(pPositions, 3));
+  var pMat = new THREE.PointsMaterial({
+    color: 0x00ffb4,
+    size: 1.8,
+    transparent: true,
+    opacity: 0.75
+  });
+  var particles = new THREE.Points(pGeo, pMat);
+  scene.add(particles);
+
+  /* ---------- Ambient light (not needed for MeshBasic but good practice) ---------- */
+  scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+
+  /* ---------- Animation loop ---------- */
+  var clock = new THREE.Clock();
+  function animate() {
+    requestAnimationFrame(animate);
+    var t = clock.getElapsedTime();
+
+    globe.rotation.y  += 0.0015;
+    globe.rotation.x  += 0.0005;
+    nodeGroup.rotation.y = globe.rotation.y;
+    nodeGroup.rotation.x = globe.rotation.x;
+    lineGroup.rotation.y = globe.rotation.y;
+    lineGroup.rotation.x = globe.rotation.x;
+
+    /* Pulse core */
+    var pulse = 0.5 + 0.5 * Math.sin(t * 2);
+    core.scale.setScalar(0.9 + 0.15 * pulse);
+    coreMat.opacity = 0.4 + 0.25 * pulse;
+
+    /* Move data particles */
+    var pos = particles.geometry.attributes.position.array;
+    for (var i = 0; i < particleCount; i++) {
+      var v = pVelocities[i];
+      v.angle += v.speed;
+      v.y     += v.ySpeed;
+      if (v.y >  Y_BOUNDARY) { v.y = -Y_BOUNDARY; }
+      if (v.y < -Y_BOUNDARY) { v.y =  Y_BOUNDARY; }
+      pos[i * 3]     = Math.cos(v.angle) * v.r;
+      pos[i * 3 + 1] = v.y;
+      pos[i * 3 + 2] = Math.sin(v.angle) * v.r;
+    }
+    particles.geometry.attributes.position.needsUpdate = true;
+
+    /* Camera slow drift */
+    camera.position.x = Math.sin(t * 0.08) * 20;
+    camera.position.y = Math.cos(t * 0.06) * 10;
+    camera.lookAt(scene.position);
+
+    renderer.render(scene, camera);
+  }
+  animate();
+
+  /* ---------- Responsive resize ---------- */
+  window.addEventListener('resize', function () {
+    var parent = canvas.parentElement;
+    W = parent.offsetWidth;
+    H = Math.max(parent.offsetHeight, 680);
+    renderer.setSize(W, H);
+    camera.aspect = W / H;
+    camera.updateProjectionMatrix();
+  });
+})();
+</script>
+
 <!-- Security Alerts & Fraud Warnings -->
 <section id="security-alerts" class="section bg-light">
     <div class="container">
@@ -2076,352 +2423,6 @@ document.addEventListener('DOMContentLoaded', function() {
 <!-- ========================================================= -->
 <!-- 🔬 AI RECOVERY – 3D Live Animation Section           -->
 <!-- ========================================================= -->
-<section id="ai-recovery-scene" style="position:relative;overflow:hidden;background:#04091a;padding:0;min-height:680px;display:flex;align-items:center;">
-
-  <!-- THREE.JS CANVAS fills the background -->
-  <canvas id="recovery-canvas" style="position:absolute;inset:0;width:100%;height:100%;display:block;"></canvas>
-
-  <!-- Scanline overlay for "live video" feel -->
-  <div style="position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,255,180,.018) 3px,rgba(0,255,180,.018) 4px);pointer-events:none;z-index:1;"></div>
-
-  <!-- Live badge -->
-  <div style="position:absolute;top:24px;left:32px;z-index:10;display:flex;align-items:center;gap:8px;">
-    <span style="width:10px;height:10px;border-radius:50%;background:#ff3c3c;display:inline-block;animation:livePulse 1.2s infinite;box-shadow:0 0 8px #ff3c3c;"></span>
-    <span style="color:#fff;font-size:.82rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;opacity:.9;">LIVE</span>
-  </div>
-
-  <!-- Overlay content -->
-  <div class="container position-relative" style="z-index:5;padding:90px 16px;">
-    <div class="row align-items-center gy-5">
-
-      <!-- Left: copy -->
-      <div class="col-lg-6">
-        <span style="display:inline-block;background:rgba(0,255,180,.12);border:1px solid rgba(0,255,180,.35);color:#00ffb4;font-size:.8rem;font-weight:700;letter-spacing:.1em;border-radius:20px;padding:5px 16px;margin-bottom:18px;text-transform:uppercase;">
-          <i class="fas fa-shield-alt me-2"></i>AI-Powered Scam Recovery
-        </span>
-
-        <h2 style="color:#fff;font-size:clamp(1.9rem,4.5vw,2.9rem);font-weight:800;line-height:1.18;margin-bottom:20px;">
-          Recovering Stolen Funds<br>
-          <span style="background:linear-gradient(90deg,#00ffb4,#00c6ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">with Deep-Chain AI&trade;</span>
-        </h2>
-
-        <p style="color:#94a3b8;font-size:1.05rem;max-width:460px;line-height:1.75;margin-bottom:32px;">
-          Our autonomous AI engine traces fraudulent transactions across 120+ blockchains,
-          reconstructs wallet graphs, and initiates regulated recovery procedures — all in real time.
-        </p>
-
-        <!-- Live stats row -->
-        <div style="display:flex;flex-wrap:wrap;gap:18px;margin-bottom:36px;">
-          <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:16px 22px;min-width:130px;">
-            <div style="color:#00ffb4;font-size:1.7rem;font-weight:800;" id="stat-cases">0</div>
-            <div style="color:#64748b;font-size:.82rem;margin-top:4px;">Cases Active</div>
-          </div>
-          <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:16px 22px;min-width:130px;">
-            <div style="color:#00c6ff;font-size:1.7rem;font-weight:800;" id="stat-recovered">$0M</div>
-            <div style="color:#64748b;font-size:.82rem;margin-top:4px;">Recovered</div>
-          </div>
-          <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:16px 22px;min-width:130px;">
-            <div style="color:#a78bfa;font-size:1.7rem;font-weight:800;" id="stat-rate">0%</div>
-            <div style="color:#64748b;font-size:.82rem;margin-top:4px;">Success Rate</div>
-          </div>
-        </div>
-
-        <a href="support.php" class="btn btn-primary" style="background:linear-gradient(135deg,#00c6ff,#00ffb4);border:none;color:#04091a;font-weight:700;padding:14px 34px;border-radius:10px;font-size:1rem;box-shadow:0 0 28px rgba(0,198,255,.35);">
-          <i class="fas fa-search-dollar me-2"></i>Start Recovery Process
-        </a>
-      </div>
-
-      <!-- Right: info panels -->
-      <div class="col-lg-6">
-        <div style="display:flex;flex-direction:column;gap:16px;">
-
-          <div style="background:rgba(255,255,255,.05);border:1px solid rgba(0,255,180,.2);border-radius:14px;padding:20px 24px;backdrop-filter:blur(6px);">
-            <div style="display:flex;align-items:center;gap:14px;">
-              <div style="width:44px;height:44px;border-radius:10px;background:rgba(0,255,180,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                <i class="fas fa-network-wired" style="color:#00ffb4;font-size:1.25rem;"></i>
-              </div>
-              <div>
-                <div style="color:#fff;font-weight:700;font-size:.97rem;">Blockchain Trace Engine</div>
-                <div style="color:#64748b;font-size:.83rem;margin-top:3px;">Real-time graph traversal across BTC, ETH, BSC &amp; 117 more chains</div>
-              </div>
-            </div>
-          </div>
-
-          <div style="background:rgba(255,255,255,.05);border:1px solid rgba(0,198,255,.2);border-radius:14px;padding:20px 24px;backdrop-filter:blur(6px);">
-            <div style="display:flex;align-items:center;gap:14px;">
-              <div style="width:44px;height:44px;border-radius:10px;background:rgba(0,198,255,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                <i class="fas fa-brain" style="color:#00c6ff;font-size:1.25rem;"></i>
-              </div>
-              <div>
-                <div style="color:#fff;font-weight:700;font-size:.97rem;">Deep-Learning Pattern Match</div>
-                <div style="color:#64748b;font-size:.83rem;margin-top:3px;">Identifies mixer obfuscation, exchange hops &amp; money-mule clusters</div>
-              </div>
-            </div>
-          </div>
-
-          <div style="background:rgba(255,255,255,.05);border:1px solid rgba(167,139,250,.2);border-radius:14px;padding:20px 24px;backdrop-filter:blur(6px);">
-            <div style="display:flex;align-items:center;gap:14px;">
-              <div style="width:44px;height:44px;border-radius:10px;background:rgba(167,139,250,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                <i class="fas fa-gavel" style="color:#a78bfa;font-size:1.25rem;"></i>
-              </div>
-              <div>
-                <div style="color:#fff;font-weight:700;font-size:.97rem;">Regulated Legal Escalation</div>
-                <div style="color:#64748b;font-size:.83rem;margin-top:3px;">Automated evidence packages sent to FCA, BaFin &amp; Interpol liaisons</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Progress bar -->
-          <div style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:18px 24px;">
-            <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
-              <span style="color:#94a3b8;font-size:.85rem;">AI Analysis Progress</span>
-              <span style="color:#00ffb4;font-weight:700;font-size:.85rem;" id="progress-label">87%</span>
-            </div>
-            <div style="background:rgba(255,255,255,.08);border-radius:999px;height:8px;overflow:hidden;">
-              <div id="recovery-bar" style="height:100%;width:0%;border-radius:999px;background:linear-gradient(90deg,#00c6ff,#00ffb4);transition:width 2s ease-out;"></div>
-            </div>
-          </div>
-
-        </div>
-      </div>
-
-    </div>
-  </div><!-- /container -->
-
-</section>
-
-<!-- ===== Recovery Section CSS ===== -->
-<style>
-@keyframes livePulse {
-  0%,100% { opacity:1; transform:scale(1); }
-  50%      { opacity:.5; transform:scale(1.4); }
-}
-</style>
-
-<!-- ===== Three.js 3D Recovery Canvas ===== -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js" crossorigin="anonymous"></script>
-<script>
-(function () {
-  'use strict';
-
-  /* ---- Counter animation helper ---- */
-  function animateCounter(el, target, suffix, duration, isFloat) {
-    var start = 0, startTime = null;
-    function step(ts) {
-      if (!startTime) startTime = ts;
-      var progress = Math.min((ts - startTime) / duration, 1);
-      var eased = 1 - Math.pow(1 - progress, 3);
-      var val = isFloat ? (eased * target).toFixed(1) : Math.round(eased * target);
-      el.textContent = val + suffix;
-      if (progress < 1) requestAnimationFrame(step);
-    }
-    requestAnimationFrame(step);
-  }
-
-  /* Trigger counters + progress bar once section enters viewport */
-  var STAT_CASES     = 1847;
-  var STAT_RECOVERED = 23.7;  /* millions */
-  var STAT_RATE      = 87;    /* percent */
-  var statsTriggered = false;
-  var recoverySection = document.getElementById('ai-recovery-scene');
-  var io = new IntersectionObserver(function (entries) {
-    if (statsTriggered) return;
-    entries.forEach(function (e) {
-      if (e.isIntersecting) {
-        statsTriggered = true;
-        animateCounter(document.getElementById('stat-cases'),     STAT_CASES,     '',  1800, false);
-        animateCounter(document.getElementById('stat-recovered'),  STAT_RECOVERED, 'M', 2000, true);
-        animateCounter(document.getElementById('stat-rate'),       STAT_RATE,      '%', 1600, false);
-        setTimeout(function () {
-          document.getElementById('recovery-bar').style.width = '87%';
-        }, 300);
-      }
-    });
-  }, { threshold: 0.25 });
-  if (recoverySection) io.observe(recoverySection);
-
-  /* ---- THREE.JS 3D scene ---- */
-  var canvas = document.getElementById('recovery-canvas');
-  if (!canvas || typeof THREE === 'undefined') {
-    console.warn('[AI Recovery] Three.js canvas or library unavailable – 3D scene skipped.');
-    return;
-  }
-
-  var W = canvas.parentElement.offsetWidth  || window.innerWidth;
-  var H = canvas.parentElement.offsetHeight || 680;
-
-  /* Renderer */
-  var renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  renderer.setSize(W, H);
-  renderer.setClearColor(0x04091a, 1);
-
-  /* Scene + Camera */
-  var scene  = new THREE.Scene();
-  var camera = new THREE.PerspectiveCamera(55, W / H, 0.1, 2000);
-  camera.position.set(0, 0, 260);
-
-  /* Fog */
-  scene.fog = new THREE.FogExp2(0x04091a, 0.0022);
-
-  /* ---------- Starfield background ---------- */
-  var starGeo = new THREE.BufferGeometry();
-  var starCnt = 1200; /* Reduced for performance on lower-end devices */
-  var starPos = new Float32Array(starCnt * 3);
-  for (var i = 0; i < starCnt * 3; i++) starPos[i] = (Math.random() - 0.5) * 1600;
-  starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
-  var starMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.7, transparent: true, opacity: 0.55 });
-  scene.add(new THREE.Points(starGeo, starMat));
-
-  /* ---------- Wireframe globe ---------- */
-  var globeGeo  = new THREE.IcosahedronGeometry(100, 3);
-  var globeMat  = new THREE.MeshBasicMaterial({ color: 0x00c6ff, wireframe: true, transparent: true, opacity: 0.18 });
-  var globe     = new THREE.Mesh(globeGeo, globeMat);
-  scene.add(globe);
-
-  /* ---------- Inner glowing core ---------- */
-  var coreGeo = new THREE.SphereGeometry(18, 32, 32);
-  var coreMat = new THREE.MeshBasicMaterial({ color: 0x00ffb4, transparent: true, opacity: 0.55 });
-  var core    = new THREE.Mesh(coreGeo, coreMat);
-  scene.add(core);
-
-  /* Core glow rings */
-  for (var r = 0; r < 3; r++) {
-    var rGeo = new THREE.TorusGeometry(22 + r * 8, 0.5, 6, 60);
-    var rMat = new THREE.MeshBasicMaterial({ color: 0x00ffb4, transparent: true, opacity: 0.25 - r * 0.07 });
-    var ring = new THREE.Mesh(rGeo, rMat);
-    ring.rotation.x = Math.PI / 2.2 + r * 0.4;
-    ring.rotation.z = r * 0.9;
-    scene.add(ring);
-  }
-
-  /* ---------- Network nodes on sphere surface ---------- */
-  var nodeGroup = new THREE.Group();
-  scene.add(nodeGroup);
-  var nodeMeshes = [];
-  var nodeCount = 60;
-  var nodeColors = [0x00ffb4, 0x00c6ff, 0xa78bfa, 0xffd700];
-
-  for (var n = 0; n < nodeCount; n++) {
-    var phi   = Math.acos(-1 + (2 * n) / nodeCount);
-    var theta = Math.sqrt(nodeCount * Math.PI) * phi;
-    var nodeGeo = new THREE.SphereGeometry(1.6, 8, 8);
-    var nodeMat = new THREE.MeshBasicMaterial({
-      color: nodeColors[n % nodeColors.length],
-      transparent: true,
-      opacity: 0.9
-    });
-    var node = new THREE.Mesh(nodeGeo, nodeMat);
-    node.position.setFromSphericalCoords(101, phi, theta);
-    nodeGroup.add(node);
-    nodeMeshes.push(node);
-  }
-
-  /* ---------- Connection lines between nearby nodes ----------
-     Note: O(n²) loop runs once at load time (not per frame) to pre-build geometry. */
-  var lineGroup = new THREE.Group();
-  scene.add(lineGroup);
-  var lineMat = new THREE.LineBasicMaterial({ color: 0x00c6ff, transparent: true, opacity: 0.22 });
-
-  for (var a = 0; a < nodeCount; a++) {
-    for (var b = a + 1; b < nodeCount; b++) {
-      var dist = nodeMeshes[a].position.distanceTo(nodeMeshes[b].position);
-      if (dist < 55) {
-        var lGeo = new THREE.BufferGeometry().setFromPoints([
-          nodeMeshes[a].position.clone(),
-          nodeMeshes[b].position.clone()
-        ]);
-        lineGroup.add(new THREE.Line(lGeo, lineMat));
-      }
-    }
-  }
-
-  /* ---------- Flowing data particles ---------- */
-  var Y_BOUNDARY   = 90;  /* Vertical extent of particle field */
-  var particleCount = 200; /* Reduced for better mobile performance */
-  var pGeo = new THREE.BufferGeometry();
-  var pPositions = new Float32Array(particleCount * 3);
-  var pVelocities = [];
-  for (var p = 0; p < particleCount; p++) {
-    var angle = Math.random() * Math.PI * 2;
-    var radius = 40 + Math.random() * 80;
-    pPositions[p * 3]     = Math.cos(angle) * radius;
-    pPositions[p * 3 + 1] = (Math.random() - 0.5) * 180;
-    pPositions[p * 3 + 2] = Math.sin(angle) * radius;
-    pVelocities.push({
-      r: radius,
-      angle: angle,
-      speed: 0.003 + Math.random() * 0.008,
-      y: pPositions[p * 3 + 1],
-      ySpeed: (Math.random() - 0.5) * 0.25
-    });
-  }
-  pGeo.setAttribute('position', new THREE.BufferAttribute(pPositions, 3));
-  var pMat = new THREE.PointsMaterial({
-    color: 0x00ffb4,
-    size: 1.8,
-    transparent: true,
-    opacity: 0.75
-  });
-  var particles = new THREE.Points(pGeo, pMat);
-  scene.add(particles);
-
-  /* ---------- Ambient light (not needed for MeshBasic but good practice) ---------- */
-  scene.add(new THREE.AmbientLight(0xffffff, 0.5));
-
-  /* ---------- Animation loop ---------- */
-  var clock = new THREE.Clock();
-  function animate() {
-    requestAnimationFrame(animate);
-    var t = clock.getElapsedTime();
-
-    globe.rotation.y  += 0.0015;
-    globe.rotation.x  += 0.0005;
-    nodeGroup.rotation.y = globe.rotation.y;
-    nodeGroup.rotation.x = globe.rotation.x;
-    lineGroup.rotation.y = globe.rotation.y;
-    lineGroup.rotation.x = globe.rotation.x;
-
-    /* Pulse core */
-    var pulse = 0.5 + 0.5 * Math.sin(t * 2);
-    core.scale.setScalar(0.9 + 0.15 * pulse);
-    coreMat.opacity = 0.4 + 0.25 * pulse;
-
-    /* Move data particles */
-    var pos = particles.geometry.attributes.position.array;
-    for (var i = 0; i < particleCount; i++) {
-      var v = pVelocities[i];
-      v.angle += v.speed;
-      v.y     += v.ySpeed;
-      if (v.y >  Y_BOUNDARY) { v.y = -Y_BOUNDARY; }
-      if (v.y < -Y_BOUNDARY) { v.y =  Y_BOUNDARY; }
-      pos[i * 3]     = Math.cos(v.angle) * v.r;
-      pos[i * 3 + 1] = v.y;
-      pos[i * 3 + 2] = Math.sin(v.angle) * v.r;
-    }
-    particles.geometry.attributes.position.needsUpdate = true;
-
-    /* Camera slow drift */
-    camera.position.x = Math.sin(t * 0.08) * 20;
-    camera.position.y = Math.cos(t * 0.06) * 10;
-    camera.lookAt(scene.position);
-
-    renderer.render(scene, camera);
-  }
-  animate();
-
-  /* ---------- Responsive resize ---------- */
-  window.addEventListener('resize', function () {
-    var parent = canvas.parentElement;
-    W = parent.offsetWidth;
-    H = Math.max(parent.offsetHeight, 680);
-    renderer.setSize(W, H);
-    camera.aspect = W / H;
-    camera.updateProjectionMatrix();
-  });
-})();
-</script>
-
 
 <!-- CTA -->
 <section class="section text-white text-center" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
@@ -2443,6 +2444,9 @@ document.addEventListener('DOMContentLoaded', function() {
             <a href="app/login.php" class="btn btn-outline-light btn-lg px-5 py-3" style="border-radius:12px;">
                 <i class="fas fa-sign-in-alt me-2"></i>Einloggen
             </a>
+            <button type="button" class="btn btn-warning btn-lg fw-bold px-5 py-3" style="border-radius:12px;" data-bs-toggle="modal" data-bs-target="#contactLeadModal">
+                <i class="fas fa-user-plus me-2"></i>Jetzt kostenlos anmelden
+            </button>
         </div>
         <div class="row justify-content-center g-3" style="max-width:600px; margin:0 auto;">
             <div class="col-auto">
