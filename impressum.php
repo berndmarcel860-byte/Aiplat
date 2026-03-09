@@ -34,19 +34,22 @@ include 'includes/navbar.php';
     <!-- Aufsichtsbehörde -->
     <div class="impressum-box">
       <h4>Aufsichtsbehörde</h4>
-      <p><strong>Regulatory Authority:</strong><br>
-      Financial Conduct Authority</p>
+      <p><strong>Zuständige Aufsichtsbehörde:</strong><br>
+      Bundesanstalt für Finanzdienstleistungsaufsicht (BaFin)</p>
 
       <p><strong>Adresse:</strong><br>
-      12 Endeavour Square<br>
-      London E20 1JN<br><br>
-      England<br>
+      Graurheindorfer Straße 108<br>
+      53117 Bonn<br><br>
+      und<br><br>
+      Marie-Curie-Straße 24–28<br>
+      60439 Frankfurt am Main<br>
+      Deutschland
       </p>
 
-      <p><strong>FCA-ID:</strong> 910584</p>
-      <p><strong>Verification:</strong> 
-        <a href="https://register.fca.org.uk/s/firm?id=0010X00004UB9OjQAL" target="_blank">
-          🔗 FCA Database Verification
+      <p><strong>BaFin-Registernummer:</strong> <?php echo htmlspecialchars($siteSettings['fca_reference_number']); ?></p>
+      <p><strong>Überprüfung:</strong>
+        <a href="https://www.bafin.de/DE/PublikationenDaten/Datenbanken/Unternehmensdatenbank/unternehmensdatenbank_node.html" target="_blank" rel="noopener noreferrer">
+          🔗 BaFin-Unternehmensdatenbank
         </a>
       </p>
     </div>

@@ -149,10 +149,10 @@ if (!$smtpSettings) {
                                         </div>
 
                                         <div class="form-group">
-                                            <label for="fca_reference_number">FCA Reference Number</label>
+                                            <label for="fca_reference_number">BaFin-Registernummer</label>
                                             <input type="text" class="form-control" id="fca_reference_number" name="fca_reference_number" 
                                                    value="<?php echo htmlspecialchars($systemSettings['fca_reference_number']); ?>">
-                                            <small class="form-text text-muted">Financial Conduct Authority reference number</small>
+                                            <small class="form-text text-muted">Registernummer der Bundesanstalt für Finanzdienstleistungsaufsicht (BaFin)</small>
                                         </div>
 
                                         <hr class="my-4">
