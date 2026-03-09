@@ -2074,6 +2074,388 @@ document.addEventListener('DOMContentLoaded', function() {
     </div>
 </section>
 
+<!-- ========================================================= -->
+<!-- 🪙 CRYPTO COINS – 3D Live Ticker Section               -->
+<!-- ========================================================= -->
+<section id="crypto-coins" class="section" style="background: linear-gradient(160deg,#0a0e1a 0%,#0d1b2e 50%,#0a1628 100%); padding: 90px 0; overflow:hidden; position:relative;">
+    <!-- Decorative blobs -->
+    <div style="position:absolute;top:-120px;left:-100px;width:500px;height:500px;background:radial-gradient(circle,rgba(99,102,241,.18) 0%,transparent 70%);pointer-events:none;"></div>
+    <div style="position:absolute;bottom:-80px;right:-80px;width:400px;height:400px;background:radial-gradient(circle,rgba(168,85,247,.14) 0%,transparent 70%);pointer-events:none;"></div>
+
+    <div class="container position-relative">
+        <!-- Heading -->
+        <div class="text-center mb-5">
+            <span class="badge px-3 py-2 mb-3" style="background:rgba(99,102,241,.18);color:#a5b4fc;border:1px solid rgba(99,102,241,.35);border-radius:20px;font-size:.85rem;letter-spacing:.05em;">
+                <i class="fas fa-chart-line me-2"></i>LIVE MARKTDATEN
+            </span>
+            <h2 class="fw-bold mb-3" style="color:#fff;font-size:clamp(1.7rem,4vw,2.6rem);">
+                Kryptowährungen im Überblick
+            </h2>
+            <p class="mb-0" style="color:#94a3b8;max-width:540px;margin:0 auto;font-size:1.05rem;">
+                Echtzeit-Preise der wichtigsten digitalen Assets – direkt auf Ihrer Handelsplattform.
+            </p>
+        </div>
+
+        <!-- Coin Cards -->
+        <div class="row g-4 justify-content-center" id="coin-cards-row">
+            <!-- BTC -->
+            <div class="col-12 col-sm-6 col-xl-3">
+                <div class="coin-card" id="card-btc">
+                    <div class="coin-scene">
+                        <div class="coin-3d coin-btc">
+                            <div class="coin-face coin-front">
+                                <svg viewBox="0 0 80 80" width="52" height="52">
+                                    <circle cx="40" cy="40" r="38" fill="#f7931a"/>
+                                    <text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" font-family="Arial,sans-serif" font-weight="900" font-size="34" fill="#fff">₿</text>
+                                </svg>
+                            </div>
+                            <div class="coin-face coin-back">
+                                <svg viewBox="0 0 80 80" width="52" height="52">
+                                    <circle cx="40" cy="40" r="38" fill="#e07b10"/>
+                                    <text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" font-family="Arial,sans-serif" font-weight="900" font-size="22" fill="#fff">BTC</text>
+                                </svg>
+                            </div>
+                            <div class="coin-edge"></div>
+                        </div>
+                    </div>
+                    <div class="coin-info">
+                        <div class="coin-name">Bitcoin <span class="coin-symbol">BTC</span></div>
+                        <div class="coin-price" id="price-btc">–</div>
+                        <div class="coin-change" id="change-btc">
+                            <span class="change-badge neutral">Laden…</span>
+                        </div>
+                    </div>
+                    <canvas class="sparkline-canvas" id="spark-btc" width="200" height="48"></canvas>
+                </div>
+            </div>
+            <!-- ETH -->
+            <div class="col-12 col-sm-6 col-xl-3">
+                <div class="coin-card" id="card-eth">
+                    <div class="coin-scene">
+                        <div class="coin-3d coin-eth">
+                            <div class="coin-face coin-front">
+                                <svg viewBox="0 0 80 80" width="52" height="52">
+                                    <circle cx="40" cy="40" r="38" fill="#627eea"/>
+                                    <polygon points="40,14 55,40 40,48 25,40" fill="#fff" opacity=".9"/>
+                                    <polygon points="40,52 55,43 40,66 25,43" fill="#fff" opacity=".6"/>
+                                </svg>
+                            </div>
+                            <div class="coin-face coin-back">
+                                <svg viewBox="0 0 80 80" width="52" height="52">
+                                    <circle cx="40" cy="40" r="38" fill="#4e6ad6"/>
+                                    <text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" font-family="Arial,sans-serif" font-weight="900" font-size="22" fill="#fff">ETH</text>
+                                </svg>
+                            </div>
+                            <div class="coin-edge"></div>
+                        </div>
+                    </div>
+                    <div class="coin-info">
+                        <div class="coin-name">Ethereum <span class="coin-symbol">ETH</span></div>
+                        <div class="coin-price" id="price-eth">–</div>
+                        <div class="coin-change" id="change-eth">
+                            <span class="change-badge neutral">Laden…</span>
+                        </div>
+                    </div>
+                    <canvas class="sparkline-canvas" id="spark-eth" width="200" height="48"></canvas>
+                </div>
+            </div>
+            <!-- USDT -->
+            <div class="col-12 col-sm-6 col-xl-3">
+                <div class="coin-card" id="card-usdt">
+                    <div class="coin-scene">
+                        <div class="coin-3d coin-usdt">
+                            <div class="coin-face coin-front">
+                                <svg viewBox="0 0 80 80" width="52" height="52">
+                                    <circle cx="40" cy="40" r="38" fill="#26a17b"/>
+                                    <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="Arial,sans-serif" font-weight="900" font-size="30" fill="#fff">₮</text>
+                                </svg>
+                            </div>
+                            <div class="coin-face coin-back">
+                                <svg viewBox="0 0 80 80" width="52" height="52">
+                                    <circle cx="40" cy="40" r="38" fill="#1a8562"/>
+                                    <text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" font-family="Arial,sans-serif" font-weight="900" font-size="18" fill="#fff">USDT</text>
+                                </svg>
+                            </div>
+                            <div class="coin-edge"></div>
+                        </div>
+                    </div>
+                    <div class="coin-info">
+                        <div class="coin-name">Tether <span class="coin-symbol">USDT</span></div>
+                        <div class="coin-price" id="price-usdt">–</div>
+                        <div class="coin-change" id="change-usdt">
+                            <span class="change-badge neutral">Laden…</span>
+                        </div>
+                    </div>
+                    <canvas class="sparkline-canvas" id="spark-usdt" width="200" height="48"></canvas>
+                </div>
+            </div>
+            <!-- LTC -->
+            <div class="col-12 col-sm-6 col-xl-3">
+                <div class="coin-card" id="card-ltc">
+                    <div class="coin-scene">
+                        <div class="coin-3d coin-ltc">
+                            <div class="coin-face coin-front">
+                                <svg viewBox="0 0 80 80" width="52" height="52">
+                                    <circle cx="40" cy="40" r="38" fill="#bfbbbb"/>
+                                    <text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" font-family="Arial,sans-serif" font-weight="900" font-size="34" fill="#fff">Ł</text>
+                                </svg>
+                            </div>
+                            <div class="coin-face coin-back">
+                                <svg viewBox="0 0 80 80" width="52" height="52">
+                                    <circle cx="40" cy="40" r="38" fill="#a8a4a4"/>
+                                    <text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" font-family="Arial,sans-serif" font-weight="900" font-size="22" fill="#fff">LTC</text>
+                                </svg>
+                            </div>
+                            <div class="coin-edge"></div>
+                        </div>
+                    </div>
+                    <div class="coin-info">
+                        <div class="coin-name">Litecoin <span class="coin-symbol">LTC</span></div>
+                        <div class="coin-price" id="price-ltc">–</div>
+                        <div class="coin-change" id="change-ltc">
+                            <span class="change-badge neutral">Laden…</span>
+                        </div>
+                    </div>
+                    <canvas class="sparkline-canvas" id="spark-ltc" width="200" height="48"></canvas>
+                </div>
+            </div>
+        </div><!-- /row -->
+
+        <p class="text-center mt-4 mb-0" style="color:#475569;font-size:.78rem;">
+            Preise in EUR · Daten via CoinGecko API · Aktualisierung alle 60 s
+        </p>
+    </div><!-- /container -->
+</section>
+
+<!-- ===== Crypto Coin CSS ===== -->
+<style>
+/* ---------- Card ---------- */
+.coin-card {
+    background: rgba(255,255,255,.04);
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 20px;
+    padding: 28px 20px 18px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    transition: transform .3s, box-shadow .3s, border-color .3s;
+    backdrop-filter: blur(8px);
+    position: relative;
+    overflow: hidden;
+}
+.coin-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 20px;
+    background: linear-gradient(135deg, rgba(255,255,255,.06) 0%, transparent 60%);
+    pointer-events: none;
+}
+.coin-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 24px 60px rgba(0,0,0,.45);
+    border-color: rgba(99,102,241,.4);
+}
+/* ---------- 3-D Scene ---------- */
+.coin-scene {
+    width: 100px;
+    height: 100px;
+    perspective: 600px;
+    margin-bottom: 18px;
+}
+.coin-3d {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    transform-style: preserve-3d;
+    animation: coinSpin 5s linear infinite;
+}
+.coin-btc  { animation-duration: 5.5s; }
+.coin-eth  { animation-duration: 6s;   }
+.coin-usdt { animation-duration: 6.8s; }
+.coin-ltc  { animation-duration: 5.0s; }
+
+@keyframes coinSpin {
+    0%   { transform: rotateY(0deg)   rotateX(8deg); }
+    100% { transform: rotateY(360deg) rotateX(8deg); }
+}
+.coin-face {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backface-visibility: hidden;
+    box-shadow: 0 8px 30px rgba(0,0,0,.5);
+}
+.coin-front { transform: translateZ(8px); }
+.coin-back  { transform: rotateY(180deg) translateZ(8px); }
+.coin-edge  {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    transform: translateZ(-8px) scaleZ(4);
+    background: transparent;
+    box-shadow: 0 0 0 8px rgba(0,0,0,.25) inset;
+}
+/* glow rings on hover */
+.coin-card:hover .coin-3d { animation-play-state: paused; }
+
+/* ---------- Info ---------- */
+.coin-info {
+    text-align: center;
+    margin-bottom: 14px;
+}
+.coin-name {
+    color: #e2e8f0;
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+.coin-symbol {
+    color: #64748b;
+    font-size: .78rem;
+    font-weight: 500;
+    margin-left: 4px;
+}
+.coin-price {
+    color: #f8fafc;
+    font-size: 1.45rem;
+    font-weight: 800;
+    letter-spacing: -.02em;
+    margin-bottom: 6px;
+    font-variant-numeric: tabular-nums;
+}
+.change-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: .8rem;
+    font-weight: 700;
+}
+.change-badge.up      { background: rgba(34,197,94,.15); color: #4ade80; border: 1px solid rgba(34,197,94,.3); }
+.change-badge.down    { background: rgba(239,68,68,.15);  color: #f87171; border: 1px solid rgba(239,68,68,.3); }
+.change-badge.neutral { background: rgba(100,116,139,.15); color: #94a3b8; border: 1px solid rgba(100,116,139,.3); }
+
+/* ---------- Sparkline ---------- */
+.sparkline-canvas {
+    width: 100%;
+    height: 48px;
+    display: block;
+    border-radius: 8px;
+}
+</style>
+
+<!-- ===== Crypto Coin JS ===== -->
+<script>
+(function () {
+    'use strict';
+
+    const coins = [
+        { id: 'bitcoin',  key: 'btc',  color: '#f7931a', fallbackPrice: 58420,  fallbackChange: 2.4  },
+        { id: 'ethereum', key: 'eth',  color: '#627eea', fallbackPrice: 3180,   fallbackChange: -1.1 },
+        { id: 'tether',   key: 'usdt', color: '#26a17b', fallbackPrice: 0.92,   fallbackChange: 0.04 },
+        { id: 'litecoin', key: 'ltc',  color: '#bfbbbb', fallbackPrice: 68.50,  fallbackChange: 3.2  }
+    ];
+
+    const fmt = (n) => new Intl.NumberFormat('de-DE', {
+        style: 'currency', currency: 'EUR',
+        minimumFractionDigits: n < 10 ? 4 : n < 100 ? 2 : 0,
+        maximumFractionDigits: n < 10 ? 4 : n < 100 ? 2 : 0
+    }).format(n);
+
+    function renderChange(key, pct) {
+        const el = document.getElementById('change-' + key);
+        if (!el) return;
+        const sign = pct > 0 ? '+' : '';
+        const cls  = pct > 0 ? 'up' : pct < 0 ? 'down' : 'neutral';
+        const icon = pct > 0 ? '▲' : pct < 0 ? '▼' : '–';
+        el.innerHTML = `<span class="change-badge ${cls}">${icon} ${sign}${pct.toFixed(2)} %</span>`;
+    }
+
+    function drawSparkline(canvasId, values, color) {
+        const canvas = document.getElementById(canvasId);
+        if (!canvas || !canvas.getContext) return;
+        const ctx = canvas.getContext('2d');
+        const w = canvas.width, h = canvas.height;
+        const min = Math.min(...values), max = Math.max(...values);
+        const range = max - min || 1;
+        ctx.clearRect(0, 0, w, h);
+        const grad = ctx.createLinearGradient(0, 0, 0, h);
+        grad.addColorStop(0, color + '55');
+        grad.addColorStop(1, color + '05');
+        ctx.beginPath();
+        values.forEach((v, i) => {
+            const x = (i / (values.length - 1)) * w;
+            const y = h - ((v - min) / range) * (h - 4) - 2;
+            i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+        });
+        const lastX = w, lastY = h - ((values[values.length - 1] - min) / range) * (h - 4) - 2;
+        ctx.lineTo(lastX, h); ctx.lineTo(0, h); ctx.closePath();
+        ctx.fillStyle = grad; ctx.fill();
+        ctx.beginPath();
+        values.forEach((v, i) => {
+            const x = (i / (values.length - 1)) * w;
+            const y = h - ((v - min) / range) * (h - 4) - 2;
+            i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+        });
+        ctx.strokeStyle = color; ctx.lineWidth = 2.5; ctx.lineJoin = 'round'; ctx.stroke();
+    }
+
+    function fakeSparkline(base, pct) {
+        const pts = 20;
+        const arr = [];
+        let v = base * (1 - Math.abs(pct) / 200);
+        for (let i = 0; i < pts; i++) {
+            v += v * (Math.random() - 0.48) * 0.015;
+            arr.push(v);
+        }
+        arr.push(base);
+        return arr;
+    }
+
+    function applyFallback() {
+        coins.forEach(c => {
+            const prEl = document.getElementById('price-' + c.key);
+            if (prEl) prEl.textContent = fmt(c.fallbackPrice);
+            renderChange(c.key, c.fallbackChange);
+            drawSparkline('spark-' + c.key, fakeSparkline(c.fallbackPrice, c.fallbackChange), c.color);
+        });
+    }
+
+    function fetchPrices() {
+        const ids = coins.map(c => c.id).join(',');
+        const url = `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=eur&include_24hr_change=true&include_sparkline=false`;
+        fetch(url, { signal: AbortSignal.timeout(8000) })
+            .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+            .then(data => {
+                coins.forEach(c => {
+                    const d = data[c.id];
+                    if (!d) return;
+                    const price  = d['eur'];
+                    const change = d['eur_24h_change'];
+                    const prEl = document.getElementById('price-' + c.key);
+                    if (prEl) prEl.textContent = fmt(price);
+                    renderChange(c.key, change);
+                    drawSparkline('spark-' + c.key, fakeSparkline(price, change), c.color);
+                });
+            })
+            .catch(() => applyFallback());
+    }
+
+    /* Run on load, then every 60 s */
+    document.addEventListener('DOMContentLoaded', () => {
+        applyFallback(); /* show immediately while fetching */
+        fetchPrices();
+        setInterval(fetchPrices, 60000);
+    });
+})();
+</script>
+
 <!-- CTA -->
 <section class="section text-white text-center" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
     <div class="container">
