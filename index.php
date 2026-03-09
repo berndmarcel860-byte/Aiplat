@@ -14,14 +14,16 @@ include 'includes/navbar.php';
         padding: 120px 0 80px;
         background: linear-gradient(135deg, #f8f9ff 0%, #eef4ff 100%);
     }
-    .section { padding: 80px 0; }
+    .section { padding: 90px 0; }
 
     .feature-card {
-        background:#fff; border-radius:12px; padding:30px;
-        box-shadow:0 5px 15px rgba(0,0,0,.05);
-        transition: transform .3s ease; height:100%;
+        background:#fff; border-radius:16px; padding:32px;
+        box-shadow:0 4px 18px rgba(0,0,0,.07);
+        transition: transform .3s ease, box-shadow .3s ease; height:100%;
+        min-height: 200px;
+        display: flex; flex-direction: column;
     }
-    .feature-card:hover { transform: translateY(-5px); }
+    .feature-card:hover { transform: translateY(-5px); box-shadow:0 8px 28px rgba(0,0,0,.12); }
 
     .logo-grid {
         display:flex; flex-wrap:wrap; justify-content:center; gap:30px; margin:40px 0;
@@ -45,13 +47,14 @@ include 'includes/navbar.php';
     }
     .btn-outline-primary { padding:12px 30px; border-width:2px; }
 
-    .section-title { font-weight:700; margin-bottom:20px; font-size:2rem; }
-    .section-subtitle { color:var(--gray); margin-bottom:40px; font-size:1.05rem; }
+    .section-title { font-weight:800; margin-bottom:16px; font-size:2.15rem; letter-spacing:-0.02em; color:#1a1e2e; }
+    .section-subtitle { color:var(--gray); margin-bottom:44px; font-size:1.07rem; line-height:1.7; max-width:760px; margin-left:auto; margin-right:auto; }
 
     .trusted-by { background:#f8f9fa; padding:60px 0; text-align:center; }
 
-    .feature-list li { margin-bottom:10px; display:flex; align-items:flex-start; }
-    .feature-list li i { color:var(--primary); margin-right:10px; margin-top:4px; }
+    .feature-list { list-style: none; padding: 0; margin: 0; }
+    .feature-list li { margin-bottom:12px; display:flex; align-items:flex-start; font-size:0.97rem; color:#374151; }
+    .feature-list li i { color:var(--primary); margin-right:10px; margin-top:3px; flex-shrink: 0; }
 
     /* AI section */
     .ai-section img {
@@ -1758,8 +1761,11 @@ function toggleFaq(btn) {
 <section id="security-alerts" class="section bg-light">
     <div class="container">
         <div class="text-center mb-5">
-            <h2 class="fw-bold">Aktuelle Sicherheitswarnungen & Betrugswarnungen</h2>
-            <p class="lead text-muted">Bleiben Sie informiert über aktuelle Betrugsmaschen und schützen Sie sich vor Krypto-Betrügern</p>
+            <div class="badge bg-danger bg-gradient mb-3 px-3 py-2">
+                <i class="fas fa-exclamation-triangle me-2"></i>Offizielle Warnung
+            </div>
+            <h2 class="section-title fw-bold">Aktuelle Sicherheitswarnungen &amp; Betrugswarnungen</h2>
+            <p class="section-subtitle lead">Als BaFin-lizenziertes Institut informieren wir Sie regelmäßig über aktuelle Betrugsmaschen im Krypto-Bereich. Schützen Sie Ihr Vermögen mit unserem Expertenwissen.</p>
         </div>
         
         <div class="row g-4">
@@ -2044,38 +2050,41 @@ function toggleFaq(btn) {
 /* Security Alerts Styling */
 .alert-card {
     background: white;
-    border-radius: 12px;
-    padding: 1.5rem;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    border-radius: 16px;
+    padding: 1.75rem;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
     transition: all 0.3s ease;
     height: 100%;
     position: relative;
-    border-left: 4px solid;
+    border-left: 5px solid;
+    min-height: 260px;
+    display: flex;
+    flex-direction: column;
 }
 
 .alert-card:hover {
-    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
-    transform: translateY(-2px);
+    box-shadow: 0 8px 28px rgba(0,0,0,0.13);
+    transform: translateY(-3px);
 }
 
 .alert-danger-custom {
     border-left-color: #dc3545;
-    background: linear-gradient(135deg, #fff 0%, #fff5f5 100%);
+    background: linear-gradient(135deg, #fff 0%, #fff4f5 100%);
 }
 
 .alert-warning-custom {
-    border-left-color: #ffc107;
-    background: linear-gradient(135deg, #fff 0%, #fffef5 100%);
+    border-left-color: #e6a817;
+    background: linear-gradient(135deg, #fff 0%, #fffcf0 100%);
 }
 
 .alert-info-custom {
-    border-left-color: #0dcaf0;
-    background: linear-gradient(135deg, #fff 0%, #f0fcff 100%);
+    border-left-color: #0b8db0;
+    background: linear-gradient(135deg, #fff 0%, #edf8fd 100%);
 }
 
 .alert-success-custom {
     border-left-color: #198754;
-    background: linear-gradient(135deg, #fff 0%, #f0fff5 100%);
+    background: linear-gradient(135deg, #fff 0%, #f0fff7 100%);
 }
 
 .alert-header {
@@ -2123,26 +2132,29 @@ function toggleFaq(btn) {
 }
 
 .alert-title {
-    font-size: 1.1rem;
-    font-weight: 600;
+    font-size: 1.05rem;
+    font-weight: 700;
     margin-bottom: 0.75rem;
-    color: #212529;
+    color: #1a1e2e;
+    line-height: 1.4;
 }
 
 .alert-description {
     color: #495057;
-    line-height: 1.6;
+    line-height: 1.65;
     margin-bottom: 1rem;
-    font-size: 0.95rem;
+    font-size: 0.94rem;
+    flex-grow: 1;
 }
 
 .alert-footer {
     padding-top: 0.75rem;
-    border-top: 1px solid rgba(0,0,0,0.05);
+    border-top: 1px solid rgba(0,0,0,0.07);
     color: #6c757d;
     font-size: 0.875rem;
     display: flex;
     align-items: center;
+    margin-top: auto;
 }
 
 /* Animation for alert dismissal */
@@ -2178,50 +2190,53 @@ function dismissAlert(button) {
     <div class="container">
         <div class="row align-items-center">
             <div class="col-lg-6 mb-5 mb-lg-0">
+                <div class="badge bg-primary bg-gradient mb-3 px-3 py-2">
+                    <i class="fas fa-route me-2"></i>Unser Vorgehen
+                </div>
                 <h2 class="section-title">Unser Wiederherstellungsprozess</h2>
-                <p class="section-subtitle">Transparenz und Sicherheit in jedem Schritt – von der Analyse bis zur Auszahlung</p>
+                <p class="section-subtitle">Transparenz und Sicherheit in jedem Schritt – von der forensischen Analyse bis zur rechtssicheren Rückführung Ihrer Vermögenswerte.</p>
 
                 <div class="row g-4">
                     <div class="col-md-6">
                         <div class="feature-card">
                             <div class="mb-3"><i class="fas fa-search fa-2x text-primary"></i></div>
-                            <h5 class="fw-bold mb-3">1. Blockchain-Analyse</h5>
-                            <p class="text-muted">Unsere KI durchsucht über 15 Blockchains nach betrügerischen Transaktionsmustern und identifiziert gestohlene Vermögenswerte.</p>
+                            <h5 class="fw-bold mb-3">1. Blockchain-Forensik</h5>
+                            <p class="text-muted">Unsere KI durchsucht über 15 Blockchains nach betrügerischen Transaktionsmustern und verfolgt gestohlene Vermögenswerte über Mixer und Bridges hinweg.</p>
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="feature-card">
                             <div class="mb-3"><i class="fas fa-user-check fa-2x text-primary"></i></div>
-                            <h5 class="fw-bold mb-3">2. Identitätsverifizierung</h5>
-                            <p class="text-muted">Zweistufiger KYC-Prozess mit behördlich anerkanntem Ausweisdokument und Video-Identifikation für maximale Sicherheit.</p>
+                            <h5 class="fw-bold mb-3">2. BaFin-konformes KYC</h5>
+                            <p class="text-muted">Zweistufiger Identitätsverifizierungsprozess mit behördlich anerkanntem Ausweisdokument und Video-Ident gemäß GwG §§ 10 ff. für maximale Rechtssicherheit.</p>
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="feature-card">
                             <div class="mb-3"><i class="fas fa-key fa-2x text-primary"></i></div>
-                            <h5 class="fw-bold mb-3">3. Wallet-Besitznachweis</h5>
-                            <p class="text-muted">Kryptografische Signatur zur Verifizierung des Wallet-Besitzes. Ohne gültigen Nachweis erfolgt keine Auszahlung.</p>
+                            <h5 class="fw-bold mb-3">3. Kryptografischer Besitznachweis</h5>
+                            <p class="text-muted">Digitale Signatur zur eindeutigen Verifizierung des Wallet-Eigentums. Ohne validen kryptografischen Nachweis wird keine Auszahlung veranlasst.</p>
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="feature-card">
                             <div class="mb-3"><i class="fas fa-euro-sign fa-2x text-primary"></i></div>
-                            <h5 class="fw-bold mb-3">4. Sichere Auszahlung</h5>
-                            <p class="text-muted">Nach erfolgreicher Verifizierung: Umwandlung in Euro über lizenzierte Börsen und SEPA-Überweisung auf Ihr Bankkonto.</p>
+                            <h5 class="fw-bold mb-3">4. Regulierte Auszahlung</h5>
+                            <p class="text-muted">Nach erfolgreicher Verifizierung: Umwandlung in Euro über BaFin-lizenzierte Handelsplätze und SEPA-Überweisung auf Ihr verifiziertes Bankkonto.</p>
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="feature-card">
                             <div class="mb-3"><i class="fas fa-gavel fa-2x text-primary"></i></div>
-                            <h5 class="fw-bold mb-3">5. Behördenkooperation</h5>
-                            <p class="text-muted">Bei Bedarf koordinieren wir die Zusammenarbeit mit BKA, Europol und internationalen Strafverfolgungsbehörden für eine strafrechtliche Verfolgung der Täter.</p>
+                            <h5 class="fw-bold mb-3">5. Behörden &amp; Strafverfolgung</h5>
+                            <p class="text-muted">Koordinierte Zusammenarbeit mit BKA, Europol und internationalen Strafverfolgungsbehörden in über 30 Ländern für eine konsequente strafrechtliche Verfolgung der Täter.</p>
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="feature-card">
                             <div class="mb-3"><i class="fas fa-tachometer-alt fa-2x text-primary"></i></div>
-                            <h5 class="fw-bold mb-3">6. Echtzeit-Dashboard</h5>
-                            <p class="text-muted">Verfolgen Sie den Fortschritt Ihres Falls in Echtzeit über unser verschlüsseltes Mandanten-Portal – transparent, jederzeit und von überall abrufbar.</p>
+                            <h5 class="fw-bold mb-3">6. Verschlüsseltes Mandanten-Portal</h5>
+                            <p class="text-muted">Verfolgen Sie den Fortschritt Ihres Falls lückenlos über unser AES-256-verschlüsseltes Mandanten-Dashboard – vollständig transparent, jederzeit und von überall erreichbar.</p>
                         </div>
                     </div>
                 </div>
@@ -2235,10 +2250,10 @@ function dismissAlert(button) {
                     <div class="d-flex mb-4">
                         <div class="step-icon me-3"><i class="fas fa-certificate"></i></div>
                         <div>
-                            <h5 class="fw-bold text-white">BaFin-Lizenzierung</h5>
+                            <h5 class="fw-bold text-white">BaFin-Regulierung &amp; Lizenzierung</h5>
                             <p class="text-white-75">
-                                Als offiziell lizenziertes Finanzdienstleistungsinstitut (BaFin-Reg.: <?php echo htmlspecialchars($siteSettings['fca_reference_number']); ?>) 
-                                unterliegen wir strengen regulatorischen Kontrollen und regelmäßigen Audits.
+                                Als offiziell zugelassenes Finanzdienstleistungsinstitut (BaFin-Reg.: <?php echo htmlspecialchars($siteSettings['fca_reference_number']); ?>) 
+                                unterliegen wir strengen regulatorischen Kontrollen, jährlichen Audits und unternehmensweiten Compliance-Standards.
                             </p>
                         </div>
                     </div>
@@ -2246,10 +2261,10 @@ function dismissAlert(button) {
                     <div class="d-flex mb-4">
                         <div class="step-icon me-3"><i class="fas fa-lock"></i></div>
                         <div>
-                            <h5 class="fw-bold text-white">Datenschutz & GDPR</h5>
+                            <h5 class="fw-bold text-white">Datenschutz nach DSGVO</h5>
                             <p class="text-white-75">
-                                Alle personenbezogenen Daten werden nach <strong>GDPR-Standards</strong> verarbeitet. 
-                                Verschlüsselung auf Bankniveau (256-Bit SSL) und Server-Standort in Deutschland.
+                                Alle personenbezogenen Daten werden nach EU-<strong>DSGVO-Standards</strong> verarbeitet. 
+                                256-Bit SSL-Verschlüsselung auf Bankniveau, Server-Standort ausschließlich in Deutschland.
                             </p>
                         </div>
                     </div>
@@ -2257,20 +2272,25 @@ function dismissAlert(button) {
                     <div class="d-flex mb-4">
                         <div class="step-icon me-3"><i class="fas fa-file-contract"></i></div>
                         <div>
-                            <h5 class="fw-bold text-white">Rechtssichere Dokumentation</h5>
+                            <h5 class="fw-bold text-white">Gerichtsverwertbare Dokumentation</h5>
                             <p class="text-white-75">
-                                Jeder Prozessschritt wird lückenlos dokumentiert. Bei Bedarf arbeiten wir mit 
-                                Rechtsanwälten und Sachverständigen zusammen, um rechtliche Absicherung zu gewährleisten.
+                                Jeder Verfahrensschritt wird revisionssicher dokumentiert. In Kooperation mit 
+                                spezialisierten Rechtsanwälten und zertifizierten Sachverständigen – für vollständige rechtliche Absicherung.
                             </p>
                         </div>
                     </div>
 
-                    <div class="mt-4 p-3 bg-white bg-opacity-20 rounded text-center">
-                        <strong class="text-white">Transparenz ist unser Versprechen</strong><br/>
-                        <small class="text-white-75">
-                            Echtzeit-Dashboard zeigt Ihnen jederzeit den aktuellen Status Ihres Falles. 
-                            Keine versteckten Kosten – Gebühr nur bei erfolgreicher Wiederherstellung.
-                        </small>
+                    <div class="mt-4 p-3 bg-white bg-opacity-20 rounded">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-check-circle fa-2x text-white me-3"></i>
+                            <div>
+                                <strong class="text-white d-block">Unser Versprechen: Volle Transparenz</strong>
+                                <small class="text-white-75">
+                                    Echtzeit-Dashboard, persönlicher Fallmanager, keine Vorabgebühren –
+                                    Honorar ausschließlich bei nachweislichem Erfolg.
+                                </small>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -2282,64 +2302,74 @@ function dismissAlert(button) {
 <section id="features" class="section anchor-offset">
     <div class="container">
         <div class="text-center mb-5">
+            <div class="badge bg-primary bg-gradient mb-3 px-3 py-2">
+                <i class="fas fa-layer-group me-2"></i>Funktionsumfang
+            </div>
             <h2 class="section-title">Plattform-Features</h2>
-            <p class="section-subtitle">Fokussiert, verlässlich und konform – entwickelt für maximalen Schutz Ihrer Vermögenswerte</p>
+            <p class="section-subtitle">Fokussiert, verlässlich und regulierungskonform – entwickelt für maximale Transparenz und den wirkungsvollen Schutz Ihrer Vermögenswerte.</p>
         </div>
         <div class="row g-4">
             <div class="col-md-6 col-lg-4">
                 <div class="feature-card text-center h-100">
                     <div class="mb-3"><i class="fas fa-robot fa-3x" style="color:var(--primary);"></i></div>
-                    <h5 class="fw-bold mb-2">KI-Erstanalyse in Sekunden</h5>
-                    <p class="text-muted mb-0">Sobald Sie Ihren Fall einreichen, startet unsere KI automatisch mit der Blockchain-Analyse – keine Wartezeit, keine manuelle Vorprüfung nötig.</p>
+                    <h5 class="fw-bold mb-2">Sofortige KI-Erstanalyse</h5>
+                    <p class="text-muted mb-0">Mit Falleinreichung startet unsere KI umgehend die forensische Blockchain-Analyse – automatisiert, präzise und ohne Wartezeit auf manuelle Vorprüfung.</p>
                 </div>
             </div>
             <div class="col-md-6 col-lg-4">
                 <div class="feature-card text-center h-100">
                     <div class="mb-3"><i class="fas fa-lock fa-3x" style="color:var(--primary);"></i></div>
-                    <h5 class="fw-bold mb-2">Ende-zu-Ende-Verschlüsselung</h5>
-                    <p class="text-muted mb-0">Alle Falldaten werden AES-256-verschlüsselt übertragen und gespeichert. Ihre sensiblen Informationen verlassen niemals unsere gesicherte Infrastruktur.</p>
+                    <h5 class="fw-bold mb-2">AES-256 Ende-zu-Ende-Verschlüsselung</h5>
+                    <p class="text-muted mb-0">Alle Falldaten werden nach Bankenstandard AES-256 verschlüsselt übertragen und gespeichert. Ihre sensiblen Informationen verbleiben ausschließlich in unserer gesicherten deutschen Infrastruktur.</p>
                 </div>
             </div>
             <div class="col-md-6 col-lg-4">
                 <div class="feature-card text-center h-100">
                     <div class="mb-3"><i class="fas fa-balance-scale fa-3x" style="color:var(--primary);"></i></div>
-                    <h5 class="fw-bold mb-2">Rechtskonforme Dokumentation</h5>
-                    <p class="text-muted mb-0">Alle Analyseergebnisse werden gerichtsverwertbar aufbereitet – ideal als Beweissicherung für Strafanzeigen oder zivilrechtliche Verfahren.</p>
+                    <h5 class="fw-bold mb-2">Rechtssichere Dokumentation</h5>
+                    <p class="text-muted mb-0">Alle Analyseergebnisse werden gerichtsverwertbar aufbereitet und in revisionssicheren Berichten dokumentiert – ideal als Beweissicherung für Strafanzeigen oder zivilrechtliche Verfahren.</p>
                 </div>
             </div>
             <div class="col-md-6 col-lg-4">
                 <div class="feature-card text-center h-100">
                     <div class="mb-3"><i class="fas fa-headset fa-3x" style="color:var(--primary);"></i></div>
-                    <h5 class="fw-bold mb-2">Persönlicher Fallmanager</h5>
-                    <p class="text-muted mb-0">Jeder Kunde erhält einen dedizierten Fallmanager, der Sie auf Deutsch durch den gesamten Prozess begleitet – per E-Mail, Telefon oder sicherem Chat.</p>
+                    <h5 class="fw-bold mb-2">Dedizierter Fallmanager</h5>
+                    <p class="text-muted mb-0">Jeder Klient erhält einen persönlichen Fallmanager, der Sie auf Deutsch durch den gesamten Prozess begleitet – erreichbar per E-Mail, Telefon oder über unser verschlüsseltes Chat-System.</p>
                 </div>
             </div>
             <div class="col-md-6 col-lg-4">
                 <div class="feature-card text-center h-100">
                     <div class="mb-3"><i class="fas fa-euro-sign fa-3x" style="color:var(--primary);"></i></div>
-                    <h5 class="fw-bold mb-2">Keine Vorabgebühren</h5>
-                    <p class="text-muted mb-0">Sie zahlen ausschließlich bei Erfolg. Unsere Vergütung basiert auf einer Erfolgsprovision – ohne versteckte Kosten oder Vorleistungen Ihrerseits.</p>
+                    <h5 class="fw-bold mb-2">Keine Vorabgebühren – Erfolgshonorar</h5>
+                    <p class="text-muted mb-0">Sie zahlen ausschließlich im Erfolgsfall. Unser Honorar basiert ausschließlich auf einer transparenten Erfolgsprovision – keinerlei versteckte Kosten, keine Vorleistungen.</p>
                 </div>
             </div>
             <div class="col-md-6 col-lg-4">
                 <div class="feature-card text-center h-100">
                     <div class="mb-3"><i class="fas fa-globe fa-3x" style="color:var(--primary);"></i></div>
-                    <h5 class="fw-bold mb-2">Internationale Reichweite</h5>
-                    <p class="text-muted mb-0">Wir arbeiten mit Strafverfolgungsbehörden, Regulatoren und forensischen Partnern in über 30 Ländern zusammen, um Täter aufzuspüren.</p>
+                    <h5 class="fw-bold mb-2">Globales Partnernetzwerk</h5>
+                    <p class="text-muted mb-0">Kooperationen mit Strafverfolgungsbehörden, Finanzregulatoren und spezialisierten forensischen Partnern in über 30 Ländern ermöglichen grenzüberschreitende Ermittlungen.</p>
                 </div>
             </div>
             <div class="col-md-6 col-lg-4">
                 <div class="feature-card text-center h-100">
                     <div class="mb-3"><i class="fas fa-chart-area fa-3x" style="color:var(--primary);"></i></div>
-                    <h5 class="fw-bold mb-2">Verhaltensanalyse & Mustererkennung</h5>
-                    <p class="text-muted mb-0">Unsere KI erstellt Verhaltensprofile verdächtiger Wallets und erkennt koordinierte Betrugsringe – auch wenn Gelder über Dutzende Zwischenadressen geleitet wurden.</p>
+                    <h5 class="fw-bold mb-2">Verhaltensanalyse &amp; Mustererkennung</h5>
+                    <p class="text-muted mb-0">Unsere KI erstellt detaillierte Verhaltensprofile verdächtiger Wallets und identifiziert koordinierte Betrugsringe – auch bei komplexer Verschleierung über Dutzende Zwischenadressen.</p>
                 </div>
             </div>
             <div class="col-md-6 col-lg-4">
                 <div class="feature-card text-center h-100">
                     <div class="mb-3"><i class="fas fa-phone-alt fa-3x" style="color:var(--primary);"></i></div>
-                    <h5 class="fw-bold mb-2">24/7 Notfall-Hotline</h5>
-                    <p class="text-muted mb-0">Wurde Ihre Wallet soeben kompromittiert? Unsere Notfall-Hotline ist rund um die Uhr erreichbar – schnelles Handeln in den ersten Stunden erhöht die Erfolgsquote deutlich.</p>
+                    <h5 class="fw-bold mb-2">24/7 Notfall-Reaktionsteam</h5>
+                    <p class="text-muted mb-0">Bei akuter Wallet-Kompromittierung ist unser Notfall-Reaktionsteam rund um die Uhr erreichbar. Schnelles Handeln in den ersten Stunden kann die Erfolgsaussichten entscheidend verbessern.</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <div class="feature-card text-center h-100">
+                    <div class="mb-3"><i class="fas fa-tachometer-alt fa-3x" style="color:var(--primary);"></i></div>
+                    <h5 class="fw-bold mb-2">Transparentes Echtzeit-Dashboard</h5>
+                    <p class="text-muted mb-0">Verfolgen Sie den Status Ihres Falls lückenlos über unser verschlüsseltes Mandanten-Portal – mit vollständiger Dokumentation aller Analyseschritte, jederzeit und von überall abrufbar.</p>
                 </div>
             </div>
         </div>
@@ -2350,72 +2380,75 @@ function dismissAlert(button) {
 <section id="services" class="section bg-light anchor-offset">
     <div class="container">
         <div class="text-center mb-5">
+            <div class="badge bg-primary bg-gradient mb-3 px-3 py-2">
+                <i class="fas fa-concierge-bell me-2"></i>Serviceleistungen
+            </div>
             <h2 class="section-title">Unsere Services im Detail</h2>
-            <p class="section-subtitle">Alles, was Sie für professionelle Krypto-Wiederherstellung benötigen</p>
+            <p class="section-subtitle">Das vollständige Leistungsspektrum für professionelle Kryptowährungs-Forensik und rechtssichere Vermögenswiederherstellung.</p>
         </div>
 
         <div class="row g-4">
             <div class="col-lg-6">
                 <div class="feature-card">
-                    <h4 class="fw-bold mb-4"><i class="fas fa-exchange-alt text-primary me-2"></i> Ein- und Auszahlungen</h4>
-                    <p class="text-muted mb-4">Sichere SEPA-Überweisungen mit deutscher IBAN. Alle Transaktionen werden manuell geprüft und innerhalb von 1–2 Werktagen bearbeitet.</p>
+                    <h4 class="fw-bold mb-3"><i class="fas fa-exchange-alt text-primary me-2"></i>Sichere Ein- &amp; Auszahlungen</h4>
+                    <p class="text-muted mb-4">SEPA-Überweisungen mit zertifizierter deutscher IBAN. Alle Transaktionen durchlaufen eine manuelle Compliance-Prüfung und werden innerhalb von 1–2 Werktagen bearbeitet.</p>
                     <ul class="feature-list">
-                        <li><i class="fas fa-check-circle"></i> Deutsche Bankverbindung</li>
-                        <li><i class="fas fa-check-circle"></i> Manuelle Prüfung aller Transaktionen</li>
+                        <li><i class="fas fa-check-circle"></i> Deutsche Bankverbindung (DE-IBAN)</li>
+                        <li><i class="fas fa-check-circle"></i> Compliance-geprüfte Transaktionen</li>
                         <li><i class="fas fa-check-circle"></i> Schnelle Bearbeitung (1–2 Werktage)</li>
-                        <li><i class="fas fa-check-circle"></i> Persönlicher Verwendungszweck</li>
+                        <li><i class="fas fa-check-circle"></i> Vollständige Transaktionsdokumentation</li>
                     </ul>
                 </div>
             </div>
 
             <div class="col-lg-6">
                 <div class="feature-card">
-                    <h4 class="fw-bold mb-4"><i class="fas fa-key text-primary me-2"></i> Wiederherstellungsservice</h4>
-                    <p class="text-muted mb-4">Spezialisierter Service zur Wiederherstellung vergessener Mnemonic-Phrasen. 369 erfolgreich gelöste Fälle mit dokumentierter Erfolgsquote.</p>
+                    <h4 class="fw-bold mb-3"><i class="fas fa-key text-primary me-2"></i>Schlüssel- &amp; Wallet-Wiederherstellung</h4>
+                    <p class="text-muted mb-4">Spezialisierter Service zur kryptografisch sicheren Wiederherstellung vergessener Mnemonic-Phrasen und beschädigter Wallet-Strukturen. Über 369 dokumentierte Erfolgsfälle.</p>
                     <ul class="feature-list">
-                        <li><i class="fas fa-check-circle"></i> 12/24-Wörter Wiederherstellung</li>
-                        <li><i class="fas fa-check-circle"></i> Reihenfolge-Rekonstruktion</li>
-                        <li><i class="fas fa-check-circle"></i> Wallet-Adresse Recovery</li>
-                        <li><i class="fas fa-check-circle"></i> DSGVO-konform & sicher</li>
+                        <li><i class="fas fa-check-circle"></i> 12/24-Wörter Seed-Phrase-Rekonstruktion</li>
+                        <li><i class="fas fa-check-circle"></i> Reihenfolge- und Schreibfehler-Korrektur</li>
+                        <li><i class="fas fa-check-circle"></i> Multi-Wallet-Adress-Recovery</li>
+                        <li><i class="fas fa-check-circle"></i> DSGVO-konform, vollständig verschlüsselt</li>
                     </ul>
                 </div>
             </div>
 
             <div class="col-lg-6">
                 <div class="feature-card">
-                    <h4 class="fw-bold mb-4"><i class="fas fa-balance-scale text-primary me-2"></i> Rechtliche Unterstützung</h4>
-                    <p class="text-muted mb-4">Unsere forensischen Berichte sind gerichtsverwertbar aufbereitet und unterstützen Strafanzeigen sowie zivilrechtliche Verfahren gegen Täter.</p>
+                    <h4 class="fw-bold mb-3"><i class="fas fa-balance-scale text-primary me-2"></i>Rechtliche Begleitung &amp; Strafverfolgung</h4>
+                    <p class="text-muted mb-4">Unsere forensischen Berichte sind gerichtsverwertbar und nach internationalen Beweisstandards aufbereitet. Wir unterstützen Strafanzeigen, Adhäsionsklagen und zivilrechtliche Verfahren gegen Täter.</p>
                     <ul class="feature-list">
-                        <li><i class="fas fa-check-circle"></i> Gerichtsverwertbare Berichte</li>
-                        <li><i class="fas fa-check-circle"></i> Strafanzeige-Vorbereitung</li>
-                        <li><i class="fas fa-check-circle"></i> Kooperation mit Staatsanwaltschaft</li>
-                        <li><i class="fas fa-check-circle"></i> Internationale Rechtshilfe</li>
+                        <li><i class="fas fa-check-circle"></i> Gerichtsverwertbare Forensikberichte</li>
+                        <li><i class="fas fa-check-circle"></i> Strafanzeige-Vorbereitung &amp; Begleitung</li>
+                        <li><i class="fas fa-check-circle"></i> Kooperation mit Staatsanwaltschaft &amp; BKA</li>
+                        <li><i class="fas fa-check-circle"></i> Internationale Rechtshilfe (Europol-Netzwerk)</li>
                     </ul>
                 </div>
             </div>
 
             <div class="col-lg-6">
                 <div class="feature-card">
-                    <h4 class="fw-bold mb-4"><i class="fas fa-search-dollar text-primary me-2"></i> Blockchain-Forensik</h4>
-                    <p class="text-muted mb-4">Professionelle Analyse von Transaktionsketten über 15+ Blockchains hinweg – inklusive De-Anonymisierung von Mixer-Diensten und Cross-Chain-Bridges.</p>
+                    <h4 class="fw-bold mb-3"><i class="fas fa-search-dollar text-primary me-2"></i>Professionelle Blockchain-Forensik</h4>
+                    <p class="text-muted mb-4">Hochspezialisierte Analyse von Transaktionsketten über 15+ Blockchains – inklusive De-Anonymisierung von Mixer-Services, Tornado-Cash-Varianten und Cross-Chain-Bridges. Einsatz von Chainalysis- und Elliptic-kompatiblen Methoden.</p>
                     <ul class="feature-list">
                         <li><i class="fas fa-check-circle"></i> Multi-Chain Transaction Tracing</li>
-                        <li><i class="fas fa-check-circle"></i> Mixer & Tumbler Analyse</li>
-                        <li><i class="fas fa-check-circle"></i> Smart-Contract-Analyse (DeFi)</li>
-                        <li><i class="fas fa-check-circle"></i> Exchange-Identifizierung</li>
+                        <li><i class="fas fa-check-circle"></i> Mixer- &amp; Tumbler-De-Anonymisierung</li>
+                        <li><i class="fas fa-check-circle"></i> Smart-Contract- &amp; DeFi-Analyse</li>
+                        <li><i class="fas fa-check-circle"></i> CEX-Identifizierung &amp; Freeze-Request</li>
                     </ul>
                 </div>
             </div>
 
             <div class="col-lg-6">
                 <div class="feature-card">
-                    <h4 class="fw-bold mb-4"><i class="fas fa-shield-virus text-primary me-2"></i> Prävention & Schutzberatung</h4>
-                    <p class="text-muted mb-4">Schützen Sie sich proaktiv: Unsere Experten prüfen Ihre aktuelle Sicherheitskonfiguration und helfen Ihnen, künftigen Betrug zu erkennen und abzuwehren.</p>
+                    <h4 class="fw-bold mb-3"><i class="fas fa-shield-virus text-primary me-2"></i>Prävention &amp; Sicherheitsberatung</h4>
+                    <p class="text-muted mb-4">Proaktiver Schutz für Ihre digitalen Vermögenswerte: Unsere zertifizierten Sicherheitsexperten analysieren Ihre aktuelle Konfiguration und entwickeln einen individuellen Sicherheitsplan für die Zukunft.</p>
                     <ul class="feature-list">
-                        <li><i class="fas fa-check-circle"></i> Sicherheits-Audit Ihrer Wallets</li>
-                        <li><i class="fas fa-check-circle"></i> Hardware-Wallet-Einrichtung</li>
-                        <li><i class="fas fa-check-circle"></i> Schulung zur Betrugserkennung</li>
-                        <li><i class="fas fa-check-circle"></i> Persönlicher Sicherheitsplan</li>
+                        <li><i class="fas fa-check-circle"></i> Professioneller Sicherheits-Audit Ihrer Wallets</li>
+                        <li><i class="fas fa-check-circle"></i> Hardware-Wallet-Einrichtung &amp; -Beratung</li>
+                        <li><i class="fas fa-check-circle"></i> Zertifizierte Schulung zur Betrugserkennung</li>
+                        <li><i class="fas fa-check-circle"></i> Persönlicher, dokumentierter Sicherheitsplan</li>
                     </ul>
                 </div>
             </div>
@@ -2430,12 +2463,13 @@ function dismissAlert(button) {
   <div class="container position-relative" style="z-index: 2;">
     <div class="text-center mb-5 fade-in-up">
       <div class="badge bg-primary bg-gradient mb-3 px-4 py-2">
-        <i class="fas fa-microchip me-2"></i>Künstliche Intelligenz der nächsten Generation
+        <i class="fas fa-microchip me-2"></i>Fortschrittliche KI-Technologie
       </div>
       <h2 class="section-title display-4 fw-bold">KI-gestützte Vermögenswiederherstellung</h2>
       <p class="section-subtitle lead">
-        Professionelle Blockchain-Forensik mit fortschrittlicher Künstlicher Intelligenz – 
-        BaFin-lizenziert (BaFin-Reg.: <?php echo htmlspecialchars($siteSettings['fca_reference_number']); ?>) und nach höchsten Sicherheitsstandards
+        Forensische Blockchain-Analyse mit zertifizierter Künstlicher Intelligenz –
+        BaFin-reguliert (BaFin-Reg.: <?php echo htmlspecialchars($siteSettings['fca_reference_number']); ?>),
+        DSGVO-konform und nach internationalen Sicherheitsstandards entwickelt.
       </p>
     </div>
 
@@ -2446,15 +2480,15 @@ function dismissAlert(button) {
           <div class="ai-feature-icon">
             <i class="fas fa-brain"></i>
           </div>
-          <h4 class="fw-bold mb-3">Deep Learning Analyse</h4>
+          <h4 class="fw-bold mb-3">Deep Learning &amp; Forensik-KI</h4>
           <p class="text-muted mb-3">
-            Neuronale Netzwerke mit über <strong>100.000 Betrugsfällen</strong> trainiert. 
-            Unsere KI erkennt komplexe Transaktionsmuster mit <strong>94% Genauigkeit</strong>.
+            Spezialisierte neuronale Netzwerke, trainiert auf über <strong>100.000 dokumentierten Betrugsfällen</strong>.
+            Erkennt komplexe Transaktionsmuster und Verschleierungsstrategien mit <strong>94% nachgewiesener Genauigkeit</strong>.
           </p>
           <ul class="feature-list-enhanced">
-            <li><i class="fas fa-check-circle text-success"></i> Multi-Layer Perceptron Architektur</li>
-            <li><i class="fas fa-check-circle text-success"></i> Convolutional Neural Networks</li>
-            <li><i class="fas fa-check-circle text-success"></i> Recurrent Pattern Recognition</li>
+            <li><i class="fas fa-check-circle text-success"></i> Multi-Layer-Perceptron-Architektur</li>
+            <li><i class="fas fa-check-circle text-success"></i> Convolutional Neural Networks (CNN)</li>
+            <li><i class="fas fa-check-circle text-success"></i> Recurrent Pattern Recognition (RNN)</li>
             <li><i class="fas fa-check-circle text-success"></i> Ensemble Learning Methods</li>
           </ul>
         </div>
@@ -2465,16 +2499,16 @@ function dismissAlert(button) {
           <div class="ai-feature-icon">
             <i class="fas fa-network-wired"></i>
           </div>
-          <h4 class="fw-bold mb-3">Multi-Chain-Tracking</h4>
+          <h4 class="fw-bold mb-3">Multi-Chain-Echtzeit-Tracking</h4>
           <p class="text-muted mb-3">
-            Simultane Analyse von <strong>15+ Blockchains</strong> in Echtzeit. 
-            Verfolgung über Mixing-Services und Cross-Chain-Bridges hinweg.
+            Simultane Verfolgung von Transaktionen über <strong>15+ Blockchains</strong> in Echtzeit –
+            nahtlos über Mixing-Services, Privacy-Coins und Cross-Chain-Bridges hinweg.
           </p>
           <ul class="feature-list-enhanced">
-            <li><i class="fas fa-check-circle text-success"></i> Bitcoin & Lightning Network</li>
-            <li><i class="fas fa-check-circle text-success"></i> Ethereum & ERC-20 Tokens</li>
-            <li><i class="fas fa-check-circle text-success"></i> BSC, Polygon, Avalanche</li>
-            <li><i class="fas fa-check-circle text-success"></i> Monero, Zcash Analyse</li>
+            <li><i class="fas fa-check-circle text-success"></i> Bitcoin &amp; Lightning Network</li>
+            <li><i class="fas fa-check-circle text-success"></i> Ethereum, ERC-20 &amp; Layer-2</li>
+            <li><i class="fas fa-check-circle text-success"></i> BSC, Polygon, Avalanche, Solana</li>
+            <li><i class="fas fa-check-circle text-success"></i> Monero- &amp; Zcash-Forensik</li>
           </ul>
         </div>
       </div>
@@ -2484,16 +2518,16 @@ function dismissAlert(button) {
           <div class="ai-feature-icon">
             <i class="fas fa-shield-alt"></i>
           </div>
-          <h4 class="fw-bold mb-3">Rechtskonform & Sicher</h4>
+          <h4 class="fw-bold mb-3">Regulierungskonform &amp; Höchstsicher</h4>
           <p class="text-muted mb-3">
-            <strong>BaFin-lizenziert</strong> mit vollständiger AML/KYC-Compliance. 
-            GDPR-konforme Datenverarbeitung auf deutschen Servern.
+            <strong>BaFin-reguliert</strong> mit vollständiger AML/KYC-Compliance und ISO-27001-Sicherheitsstandards.
+            DSGVO-konforme Datenverarbeitung ausschließlich auf deutschen Servern.
           </p>
           <ul class="feature-list-enhanced">
             <li><i class="fas fa-check-circle text-success"></i> Zweistufige KYC-Verifizierung</li>
-            <li><i class="fas fa-check-circle text-success"></i> Kryptografischer Besitznachweis</li>
-            <li><i class="fas fa-check-circle text-success"></i> Rechtsgutachten verfügbar</li>
-            <li><i class="fas fa-check-circle text-success"></i> 256-Bit Verschlüsselung</li>
+            <li><i class="fas fa-check-circle text-success"></i> Kryptografischer Wallet-Besitznachweis</li>
+            <li><i class="fas fa-check-circle text-success"></i> Zertifizierte Rechtsgutachten</li>
+            <li><i class="fas fa-check-circle text-success"></i> AES-256-Bit-Verschlüsselung</li>
           </ul>
         </div>
       </div>
@@ -2503,7 +2537,8 @@ function dismissAlert(button) {
     <div class="row mb-5">
       <div class="col-12">
         <div class="success-metrics-card">
-          <h3 class="text-center mb-4"><i class="fas fa-chart-line me-2"></i>Nachweisbare Erfolgsbilanz</h3>
+          <h3 class="text-center mb-2"><i class="fas fa-chart-line me-2"></i>Nachgewiesene Erfolgsbilanz</h3>
+          <p class="text-center text-muted mb-4 small">Alle Kennzahlen basieren auf abgeschlossenen, verifizierten Fällen. Stand: Q1 2025.</p>
           <div class="row text-center">
             <div class="col-md-3 col-6 mb-3">
               <div class="metric-item">
@@ -2513,18 +2548,7 @@ function dismissAlert(button) {
                 <h2 class="display-5 fw-bold text-primary mb-0">
                   <span class="counter" data-target="727">0</span>
                 </h2>
-                <p class="text-muted mb-0">Zufriedene Klienten</p>
-              </div>
-            </div>
-            <div class="col-md-3 col-6 mb-3">
-              <div class="metric-item">
-                <div class="metric-icon">
-                  <i class="fas fa-percentage"></i>
-                </div>
-                <h2 class="display-5 fw-bold text-success mb-0">
-                  <span class="counter" data-target="87">0</span>%
-                </h2>
-                <p class="text-muted mb-0">Erfolgsquote</p>
+                <p class="text-muted mb-0 small">Erfolgreich betreute Klienten</p>
               </div>
             </div>
             <div class="col-md-3 col-6 mb-3">
@@ -2535,7 +2559,7 @@ function dismissAlert(button) {
                 <h2 class="display-5 fw-bold text-primary mb-0">
                   €<span class="counter" data-target="47">0</span>M
                 </h2>
-                <p class="text-muted mb-0">Wiederhergestellt</p>
+                <p class="text-muted mb-0 small">Verifiziertes Gesamtvolumen</p>
               </div>
             </div>
             <div class="col-md-3 col-6 mb-3">
@@ -2546,7 +2570,7 @@ function dismissAlert(button) {
                 <h2 class="display-5 fw-bold text-info mb-0">
                   <span class="counter" data-target="14">0</span>
                 </h2>
-                <p class="text-muted mb-0">Tage Durchschnitt</p>
+                <p class="text-muted mb-0 small">Werktage ⌀ Bearbeitungszeit</p>
               </div>
             </div>
           </div>
@@ -2554,8 +2578,8 @@ function dismissAlert(button) {
           <!-- Progress Visualization -->
           <div class="mt-4">
             <div class="d-flex justify-content-between align-items-center mb-2">
-              <span class="fw-bold"><i class="fas fa-chart-line me-2"></i>KI-Analysen erfolgreich</span>
-              <span class="badge bg-success">94% Genauigkeit</span>
+              <span class="fw-bold"><i class="fas fa-chart-line me-2"></i>Forensische KI-Trefferquote bei identifizierten Betrugsfällen</span>
+              <span class="badge bg-success">94% Präzision</span>
             </div>
             <div class="progress progress-enhanced" style="height: 20px;">
               <div class="progress-bar bg-gradient progress-bar-striped progress-bar-animated" 
@@ -2570,37 +2594,37 @@ function dismissAlert(button) {
     <!-- Process Flow Visualization -->
     <div class="row mb-5">
       <div class="col-12">
-        <h3 class="text-center mb-4"><i class="fas fa-project-diagram me-2"></i>Unser KI-gestützter Prozess</h3>
+        <h3 class="text-center mb-4"><i class="fas fa-project-diagram me-2"></i>Unser strukturierter KI-Analyseprozess</h3>
         <div class="process-timeline">
           <div class="process-step">
             <div class="process-number">1</div>
             <div class="process-content">
-              <h5 class="fw-bold">Einreichung & KYC</h5>
-              <p class="text-muted mb-0">Sichere Falleinreichung mit zweistufiger Identitätsverifizierung</p>
+              <h5 class="fw-bold">Einreichung &amp; KYC</h5>
+              <p class="text-muted mb-0">Verschlüsselte Falleinreichung mit zweistufiger BaFin-konformer Identitätsverifizierung</p>
             </div>
             <div class="process-arrow"><i class="fas fa-arrow-right"></i></div>
           </div>
           <div class="process-step">
             <div class="process-number">2</div>
             <div class="process-content">
-              <h5 class="fw-bold">KI-Analyse</h5>
-              <p class="text-muted mb-0">Deep Learning Algorithmen analysieren Blockchain-Transaktionen</p>
+              <h5 class="fw-bold">KI-Forensik-Analyse</h5>
+              <p class="text-muted mb-0">Deep-Learning-Algorithmen analysieren lückenlos alle Blockchain-Transaktionen und Muster</p>
             </div>
             <div class="process-arrow"><i class="fas fa-arrow-right"></i></div>
           </div>
           <div class="process-step">
             <div class="process-number">3</div>
             <div class="process-content">
-              <h5 class="fw-bold">Rechtsprüfung</h5>
-              <p class="text-muted mb-0">Compliance-Check und rechtliche Dokumentation</p>
+              <h5 class="fw-bold">Compliance &amp; Rechtsprüfung</h5>
+              <p class="text-muted mb-0">AML-konformer Compliance-Check, rechtssichere Dokumentation und Koordination mit Behörden</p>
             </div>
             <div class="process-arrow"><i class="fas fa-arrow-right"></i></div>
           </div>
           <div class="process-step">
             <div class="process-number">4</div>
             <div class="process-content">
-              <h5 class="fw-bold">Auszahlung</h5>
-              <p class="text-muted mb-0">Sichere EUR-Konvertierung via lizenzierte Börsen</p>
+              <h5 class="fw-bold">Sichere Rückführung</h5>
+              <p class="text-muted mb-0">Geprüfte EUR-Konvertierung über BaFin-lizenzierte Börsen, SEPA-Überweisung auf Ihr Konto</p>
             </div>
           </div>
         </div>
@@ -2629,8 +2653,8 @@ function dismissAlert(button) {
             <div class="col-md-3 col-6 text-center mb-3">
               <div class="trust-badge">
                 <i class="fas fa-check-circle fa-3x text-info mb-2"></i>
-                <p class="fw-bold mb-0">GDPR Konform</p>
-                <small class="text-muted">EU-Standard</small>
+                <p class="fw-bold mb-0">DSGVO-Konform</p>
+                <small class="text-muted">EU-Standard / Art. 17 DSGVO</small>
               </div>
             </div>
             <div class="col-md-3 col-6 text-center mb-3">
@@ -2648,15 +2672,15 @@ function dismissAlert(button) {
     <!-- CTA -->
     <div class="text-center mt-5">
       <p class="lead mb-4">
-        <i class="fas fa-clock me-2"></i>
-        Keine Vorauszahlung – <strong>3% Gebühr nur bei Erfolg</strong>
+        <i class="fas fa-shield-check me-2 text-success"></i>
+        Keine Vorauszahlung – <strong>transparente Erfolgsprovision, ausschließlich bei nachgewiesenem Ergebnis</strong>
       </p>
       <a href="<?= htmlspecialchars(($siteSettings['site_url'] ?? 'https://novalnet-ai.de') . '/app') ?>" class="btn btn-primary btn-lg px-5 py-3 btn-glow">
-        <i class="fas fa-rocket me-2"></i>Kostenlose KI-Analyse starten
+        <i class="fas fa-search me-2"></i>Kostenlose Erstanalyse anfordern
       </a>
       <p class="text-muted mt-3 small">
         <i class="fas fa-info-circle me-1"></i>
-        Durchschnittliche Bearbeitungszeit: 14 Werktage | Persönlicher Ansprechpartner inklusive
+        Ø Bearbeitungszeit: 14 Werktage &nbsp;|&nbsp; Persönlicher Fallmanager inklusive &nbsp;|&nbsp; BaFin-reguliert
       </p>
     </div>
   </div>
@@ -2669,9 +2693,9 @@ function dismissAlert(button) {
 <!-- ========================================================= -->
 <section id="stats" class="section animated-gradient">
   <div class="container text-center text-white">
-    <h2 class="section-title text-white mb-4">Unsere Erfolge in Zahlen</h2>
+    <h2 class="section-title text-white mb-3">Unsere Erfolgsbilanz in Zahlen</h2>
     <p class="section-subtitle text-white opacity-90 mb-5">
-      Vertrauen durch nachweisbare Ergebnisse – KI-gestützte Wiederherstellung mit messbarem Erfolg
+      Transparenz durch belegbare Ergebnisse – forensische Krypto-Wiederherstellung mit messbarer, dokumentierter Wirkung.
     </p>
 
     <div class="row g-4 mb-5">
@@ -2682,8 +2706,8 @@ function dismissAlert(button) {
             <i class="fas fa-users"></i>
           </div>
           <h2 class="display-3 fw-bold mb-2" data-count="727">0</h2>
-          <p class="h5 mb-0">Zufriedene Klienten</p>
-          <p class="small opacity-75 mt-2">Weltweit vertrauen uns</p>
+          <p class="h5 mb-0">Betreute Klienten</p>
+          <p class="small opacity-75 mt-2">In Deutschland &amp; Europa</p>
         </div>
       </div>
 
@@ -2694,8 +2718,8 @@ function dismissAlert(button) {
             <i class="fas fa-chart-line"></i>
           </div>
           <h2 class="display-3 fw-bold mb-2"><span data-count="87">0</span>%</h2>
-          <p class="h5 mb-0">Erfolgsquote</p>
-          <p class="small opacity-75 mt-2">Bei Identifizierung</p>
+          <p class="h5 mb-0">Dokumentierte Erfolgsquote</p>
+          <p class="small opacity-75 mt-2">Bei rechtzeitiger Fallmeldung</p>
         </div>
       </div>
 
@@ -2706,8 +2730,8 @@ function dismissAlert(button) {
             <i class="fas fa-euro-sign"></i>
           </div>
           <h2 class="display-3 fw-bold mb-2">€<span data-count="47">0</span>M</h2>
-          <p class="h5 mb-0">Wiederhergestellt</p>
-          <p class="small opacity-75 mt-2">Gesamtvolumen</p>
+          <p class="h5 mb-0">Wiederhergestelltes Volumen</p>
+          <p class="small opacity-75 mt-2">Verifiziерtes Gesamtergebnis</p>
         </div>
       </div>
 
@@ -2718,8 +2742,8 @@ function dismissAlert(button) {
             <i class="fas fa-clock"></i>
           </div>
           <h2 class="display-3 fw-bold mb-2"><span data-count="14">0</span></h2>
-          <p class="h5 mb-0">Tage Durchschnitt</p>
-          <p class="small opacity-75 mt-2">Bearbeitungszeit</p>
+          <p class="h5 mb-0">Werktage Ø Bearbeitung</p>
+          <p class="small opacity-75 mt-2">Von Einreichung bis Abschluss</p>
         </div>
       </div>
     </div>
