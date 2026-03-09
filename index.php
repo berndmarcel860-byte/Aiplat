@@ -572,7 +572,8 @@ include 'includes/navbar.php';
             </span>
         </div>
         <h1 class="display-3 fw-bold mb-4 hero-heading">Professionelle Blockchain-Forensik<br>
-            <span class="text-primary">zur Wiederherstellung betrügerisch entwendeter Kryptowährungen</span>
+            <span class="text-primary">zur Wiederherstellung betrügerisch entwendeter Kryptowährungen</span><br>
+            <span style="font-size:0.55em; letter-spacing:0.12em; color:#fff; background:linear-gradient(135deg,#667eea,#764ba2); padding:6px 22px; border-radius:30px; display:inline-block; margin-top:14px;">und KOSTENLOSE ERSTBERATUNG</span>
         </h1>
         <p class="lead mb-4" style="max-width:820px;margin:0 auto;font-size:1.2rem;line-height:1.75;color:#4a5568;">
             <?= htmlspecialchars($siteSettings['brand_name']) ?> nutzt fortschrittliche KI-Algorithmen zur Analyse und Nachverfolgung betrügerischer 
