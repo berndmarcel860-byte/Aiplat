@@ -155,6 +155,13 @@ if (!$smtpSettings) {
                                             <small class="form-text text-muted">Registernummer der Bundesanstalt für Finanzdienstleistungsaufsicht (BaFin)</small>
                                         </div>
 
+                                        <div class="form-group">
+                                            <label for="licens_url">BaFin-Datenbank URL</label>
+                                            <input type="url" class="form-control" id="licens_url" name="licens_url"
+                                                   value="<?php echo htmlspecialchars($systemSettings['licens_url'] ?? ''); ?>">
+                                            <small class="form-text text-muted">Überprüfungslink zur BaFin-Unternehmensdatenbank (wird im Impressum angezeigt)</small>
+                                        </div>
+
                                         <hr class="my-4">
 
                                         <button type="submit" class="btn btn-primary">

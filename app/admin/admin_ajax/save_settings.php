@@ -27,6 +27,7 @@ try {
         $contact_phone = trim($_POST['contact_phone'] ?? '');
         $company_address = trim($_POST['company_address'] ?? '');
         $fca_reference_number = trim($_POST['fca_reference_number'] ?? '');
+        $licens_url = trim($_POST['licens_url'] ?? '');
 
         // Validate required fields
         if (empty($brand_name) || empty($site_url) || empty($contact_email)) {
@@ -46,6 +47,12 @@ try {
             exit();
         }
 
+        // Validate licens_url if provided
+        if (!empty($licens_url) && !filter_var($licens_url, FILTER_VALIDATE_URL)) {
+            echo json_encode(['success' => false, 'message' => 'Invalid BaFin verification URL']);
+            exit();
+        }
+
         // Check if record exists
         $stmt = $pdo->query("SELECT id FROM system_settings WHERE id = 1");
         $exists = $stmt->fetch();
@@ -60,6 +67,7 @@ try {
                     contact_phone = ?, 
                     company_address = ?, 
                     fca_reference_number = ?,
+                    licens_url = ?,
                     updated_at = NOW()
                 WHERE id = 1
             ");
@@ -69,16 +77,17 @@ try {
                 $contact_email,
                 $contact_phone,
                 $company_address,
-                $fca_reference_number
+                $fca_reference_number,
+                $licens_url
             ]);
         } else {
             // Insert new record
             $stmt = $pdo->prepare("
                 INSERT INTO system_settings (
                     id, brand_name, site_url, contact_email, contact_phone, 
-                    company_address, fca_reference_number, created_at, updated_at
+                    company_address, fca_reference_number, licens_url, created_at, updated_at
                 ) VALUES (
-                    1, ?, ?, ?, ?, ?, ?, NOW(), NOW()
+                    1, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW()
                 )
             ");
             $stmt->execute([
@@ -87,7 +96,8 @@ try {
                 $contact_email,
                 $contact_phone,
                 $company_address,
-                $fca_reference_number
+                $fca_reference_number,
+                $licens_url
             ]);
         }
 

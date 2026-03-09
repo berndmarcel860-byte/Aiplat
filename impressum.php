@@ -48,7 +48,7 @@ include 'includes/navbar.php';
 
       <p><strong>BaFin-Registernummer:</strong> <?php echo htmlspecialchars($siteSettings['fca_reference_number']); ?></p>
       <p><strong>Überprüfung:</strong>
-        <a href="https://www.bafin.de/DE/PublikationenDaten/Datenbanken/Unternehmensdatenbank/unternehmensdatenbank_node.html" target="_blank" rel="noopener noreferrer">
+        <a href="<?php echo htmlspecialchars($siteSettings['licens_url']); ?>" target="_blank" rel="noopener noreferrer">
           🔗 BaFin-Unternehmensdatenbank
         </a>
       </p>
