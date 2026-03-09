@@ -2175,9 +2175,55 @@ function dismissAlert(button) {
 
 <!-- Features -->
 <section id="features" class="section anchor-offset">
-    <div class="container text-center">
-        <h2 class="section-title">Plattform-Features</h2>
-        <p class="section-subtitle">Fokussiert, verlässlich und konform</p>
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="section-title">Plattform-Features</h2>
+            <p class="section-subtitle">Fokussiert, verlässlich und konform – entwickelt für maximalen Schutz Ihrer Vermögenswerte</p>
+        </div>
+        <div class="row g-4">
+            <div class="col-md-6 col-lg-4">
+                <div class="feature-card text-center h-100">
+                    <div class="mb-3"><i class="fas fa-robot fa-3x" style="color:var(--primary);"></i></div>
+                    <h5 class="fw-bold mb-2">KI-Erstanalyse in Sekunden</h5>
+                    <p class="text-muted mb-0">Sobald Sie Ihren Fall einreichen, startet unsere KI automatisch mit der Blockchain-Analyse – keine Wartezeit, keine manuelle Vorprüfung nötig.</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <div class="feature-card text-center h-100">
+                    <div class="mb-3"><i class="fas fa-lock fa-3x" style="color:var(--primary);"></i></div>
+                    <h5 class="fw-bold mb-2">Ende-zu-Ende-Verschlüsselung</h5>
+                    <p class="text-muted mb-0">Alle Falldaten werden AES-256-verschlüsselt übertragen und gespeichert. Ihre sensiblen Informationen verlassen niemals unsere gesicherte Infrastruktur.</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <div class="feature-card text-center h-100">
+                    <div class="mb-3"><i class="fas fa-balance-scale fa-3x" style="color:var(--primary);"></i></div>
+                    <h5 class="fw-bold mb-2">Rechtskonforme Dokumentation</h5>
+                    <p class="text-muted mb-0">Alle Analyseergebnisse werden gerichtsverwertbar aufbereitet – ideal als Beweissicherung für Strafanzeigen oder zivilrechtliche Verfahren.</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <div class="feature-card text-center h-100">
+                    <div class="mb-3"><i class="fas fa-headset fa-3x" style="color:var(--primary);"></i></div>
+                    <h5 class="fw-bold mb-2">Persönlicher Fallmanager</h5>
+                    <p class="text-muted mb-0">Jeder Kunde erhält einen dedizierten Fallmanager, der Sie auf Deutsch durch den gesamten Prozess begleitet – per E-Mail, Telefon oder sicherem Chat.</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <div class="feature-card text-center h-100">
+                    <div class="mb-3"><i class="fas fa-euro-sign fa-3x" style="color:var(--primary);"></i></div>
+                    <h5 class="fw-bold mb-2">Keine Vorabgebühren</h5>
+                    <p class="text-muted mb-0">Sie zahlen ausschließlich bei Erfolg. Unsere Vergütung basiert auf einer Erfolgsprovision – ohne versteckte Kosten oder Vorleistungen Ihrerseits.</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <div class="feature-card text-center h-100">
+                    <div class="mb-3"><i class="fas fa-globe fa-3x" style="color:var(--primary);"></i></div>
+                    <h5 class="fw-bold mb-2">Internationale Reichweite</h5>
+                    <p class="text-muted mb-0">Wir arbeiten mit Strafverfolgungsbehörden, Regulatoren und forensischen Partnern in über 30 Ländern zusammen, um Täter aufzuspüren.</p>
+                </div>
+            </div>
+        </div>
     </div>
 </section>
 
@@ -2969,14 +3015,234 @@ document.addEventListener('DOMContentLoaded', function() {
                             </div>
                         </div>
                     </div>
+
+                    <div class="accordion-item mb-3">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button fw-bold collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq4">
+                                Welche Arten von Krypto-Betrug können Sie untersuchen?
+                            </button>
+                        </h2>
+                        <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">
+                                Wir unterstützen Sie bei nahezu allen Formen von Krypto-Betrug: gefälschte Investment-Plattformen (Scam-Exchanges), Pig-Butchering-Betrug, Romance Scams, Phishing-Angriffe, Rug-Pulls, ICO-Betrug, Wallet-Hacks sowie gestohlene Seed-Phrasen. Auch komplexe Fälle mit mehrfacher Geldwäsche über verschiedene Blockchains können wir analysieren.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item mb-3">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button fw-bold collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq5">
+                                Was passiert nach meiner Falleinreichung?
+                            </button>
+                        </h2>
+                        <div id="faq5" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">
+                                Nach Einreichung Ihres Falls erhalten Sie innerhalb von 24 Stunden eine persönliche Ersteinschätzung per E-Mail. Unser Team prüft Ihre Angaben, startet die KI-gestützte Blockchain-Analyse und kontaktiert Sie dann mit einem detaillierten Analyseplan sowie realistischen Erfolgsaussichten – vollständig kostenlos und unverbindlich.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item mb-3">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button fw-bold collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq6">
+                                Wie hoch ist Ihre Erfolgsquote und wovon hängt sie ab?
+                            </button>
+                        </h2>
+                        <div id="faq6" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">
+                                Unsere dokumentierte Erfolgsquote liegt bei 87 %. Sie hängt von mehreren Faktoren ab: wie schnell nach dem Betrug gehandelt wird (je früher, desto besser), ob die Kryptowährungen bereits über Mixer bewegt wurden, und wie kooperativ die beteiligten Exchanges sind. Wir geben Ihnen bereits in der Erstanalyse eine realistische Einschätzung Ihrer individuellen Chancen.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item mb-3">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button fw-bold collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq7">
+                                Sind meine Daten bei Ihnen sicher?
+                            </button>
+                        </h2>
+                        <div id="faq7" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">
+                                Absolut. Alle Ihre Falldaten werden nach DSGVO-Standards verarbeitet und AES-256-verschlüsselt gespeichert. Wir geben keinerlei Informationen an Dritte weiter – außer an kooperierende Behörden mit Ihrer ausdrücklichen Zustimmung im Rahmen eines laufenden Verfahrens. Unsere Server stehen ausschließlich in Deutschland.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item mb-3">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button fw-bold collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq8">
+                                Was kostet der Service und wann muss ich zahlen?
+                            </button>
+                        </h2>
+                        <div id="faq8" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">
+                                Die Erstanalyse und Erstberatung sind vollständig kostenlos. Im Erfolgsfall erheben wir eine Erfolgsprovision, die individuell vereinbart wird und sich nach der Komplexität des Falls sowie der wiederhergestellten Summe richtet. Es entstehen <strong>keinerlei Vorabgebühren</strong>. Sollte keine Rückführung möglich sein, fallen für Sie keine Kosten an.
+                            </div>
+                        </div>
+                    </div>
                 </div><!-- /accordion -->
             </div>
         </div>
     </div>
 </section>
-<!-- ========================================================= -->
-<!-- 🔬 AI RECOVERY – 3D Live Animation Section           -->
-<!-- ========================================================= -->
+
+<!-- Testimonials / Erfahrungsberichte -->
+<section id="testimonials" class="section bg-light anchor-offset">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="section-title">Was unsere Mandanten sagen</h2>
+            <p class="section-subtitle">Echte Erfahrungen – dokumentierte Rückführungen. Namen wurden auf Wunsch anonymisiert.</p>
+        </div>
+        <div class="row g-4">
+            <div class="col-md-6 col-lg-4">
+                <div class="feature-card h-100">
+                    <div class="d-flex align-items-center mb-3">
+                        <div style="width:50px;height:50px;border-radius:50%;background:linear-gradient(135deg,#0d6efd,#37a0ff);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:1.1rem;flex-shrink:0;">M.H.</div>
+                        <div class="ms-3">
+                            <div class="fw-bold">M. H., Frankfurt</div>
+                            <div class="text-muted" style="font-size:.85rem;">Pig-Butchering-Betrug · €38.400 zurück</div>
+                        </div>
+                    </div>
+                    <div class="text-warning mb-2">★★★★★</div>
+                    <p class="text-muted mb-0">„Ich hatte keine Hoffnung mehr. Über eine gefälschte Trading-Plattform verlor ich fast meine gesamten Ersparnisse. Das Team hat innerhalb von 6 Wochen den Großteil meiner Bitcoin zurückgeführt. Professionell, transparent und immer erreichbar."</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <div class="feature-card h-100">
+                    <div class="d-flex align-items-center mb-3">
+                        <div style="width:50px;height:50px;border-radius:50%;background:linear-gradient(135deg,#198754,#20c997);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:1.1rem;flex-shrink:0;">S.K.</div>
+                        <div class="ms-3">
+                            <div class="fw-bold">S. K., München</div>
+                            <div class="text-muted" style="font-size:.85rem;">Romance Scam · €22.100 zurück</div>
+                        </div>
+                    </div>
+                    <div class="text-warning mb-2">★★★★★</div>
+                    <p class="text-muted mb-0">„Die Blockchain-Analyse hat Täter identifiziert, die ich für unaufspürbar hielt. Die vollständige Dokumentation hat uns bei der Strafanzeige enorm geholfen. Ich kann diesen Service jedem empfehlen, der Opfer von Krypto-Betrug wurde."</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <div class="feature-card h-100">
+                    <div class="d-flex align-items-center mb-3">
+                        <div style="width:50px;height:50px;border-radius:50%;background:linear-gradient(135deg,#dc3545,#fd7e14);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:1.1rem;flex-shrink:0;">T.W.</div>
+                        <div class="ms-3">
+                            <div class="fw-bold">T. W., Berlin</div>
+                            <div class="text-muted" style="font-size:.85rem;">Phishing / Wallet-Hack · €15.700 zurück</div>
+                        </div>
+                    </div>
+                    <div class="text-warning mb-2">★★★★★</div>
+                    <p class="text-muted mb-0">„Mein Wallet wurde über einen Phishing-Link kompromittiert. Dank der Echtzeit-Überwachung konnten weitere Transaktionen gestoppt und ein Großteil zurückgeholt werden. Schnelle Reaktion, klare Kommunikation – absolut empfehlenswert."</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <div class="feature-card h-100">
+                    <div class="d-flex align-items-center mb-3">
+                        <div style="width:50px;height:50px;border-radius:50%;background:linear-gradient(135deg,#6f42c1,#0d6efd);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:1.1rem;flex-shrink:0;">A.R.</div>
+                        <div class="ms-3">
+                            <div class="fw-bold">A. R., Hamburg</div>
+                            <div class="text-muted" style="font-size:.85rem;">Fake Investment Platform · €67.000 zurück</div>
+                        </div>
+                    </div>
+                    <div class="text-warning mb-2">★★★★★</div>
+                    <p class="text-muted mb-0">„Ich investierte in eine vermeintlich seriöse KI-Handelsplattform und verlor alles. Das Analyseberichts-System half der Staatsanwaltschaft, die Verantwortlichen zu identifizieren. Die Zusammenarbeit war erstklassig."</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <div class="feature-card h-100">
+                    <div class="d-flex align-items-center mb-3">
+                        <div style="width:50px;height:50px;border-radius:50%;background:linear-gradient(135deg,#0dcaf0,#0d6efd);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:1.1rem;flex-shrink:0;">L.M.</div>
+                        <div class="ms-3">
+                            <div class="fw-bold">L. M., Köln</div>
+                            <div class="text-muted" style="font-size:.85rem;">Rug-Pull / DeFi-Betrug · €9.800 zurück</div>
+                        </div>
+                    </div>
+                    <div class="text-warning mb-2">★★★★★</div>
+                    <p class="text-muted mb-0">„Nach einem DeFi-Rug-Pull dachte ich, das Geld sei für immer weg. Das Team analysierte den Smart Contract und verfolgte die Gelder über drei verschiedene Netzwerke. Das Ergebnis hat mich wirklich überrascht."</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <div class="feature-card h-100">
+                    <div class="d-flex align-items-center mb-3">
+                        <div style="width:50px;height:50px;border-radius:50%;background:linear-gradient(135deg,#20c997,#0d6efd);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:1.1rem;flex-shrink:0;">B.S.</div>
+                        <div class="ms-3">
+                            <div class="fw-bold">B. S., Stuttgart</div>
+                            <div class="text-muted" style="font-size:.85rem;">NFT-Betrug · €11.200 zurück</div>
+                        </div>
+                    </div>
+                    <div class="text-warning mb-2">★★★★★</div>
+                    <p class="text-muted mb-0">„Meinen Kindern zuliebe habe ich auf einen NFT-Marktplatz-Betrug reingefallen. Die Erstberatung war kostenlos und extrem hilfreich. Am Ende haben wir einen substanziellen Teil zurückbekommen – mehr als ich gehofft hatte."</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Warum uns wählen – Vergleichstabelle -->
+<section id="why-us" class="section anchor-offset">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="section-title">Warum <?= htmlspecialchars($siteSettings['brand_name']) ?>?</h2>
+            <p class="section-subtitle">Ein transparenter Vergleich zeigt, was uns von anderen unterscheidet</p>
+        </div>
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <div class="table-responsive">
+                    <table class="table table-bordered align-middle text-center" style="border-radius:12px;overflow:hidden;">
+                        <thead style="background:linear-gradient(135deg,#0d6efd,#0b5ed7);color:#fff;">
+                            <tr>
+                                <th class="text-start py-3 px-4">Merkmal</th>
+                                <th class="py-3"><?= htmlspecialchars($siteSettings['brand_name']) ?></th>
+                                <th class="py-3 text-muted">Typische Konkurrenten</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="text-start px-4 fw-semibold">Kostenlose Erstanalyse</td>
+                                <td><i class="fas fa-check-circle text-success fa-lg"></i></td>
+                                <td><i class="fas fa-times-circle text-danger fa-lg"></i></td>
+                            </tr>
+                            <tr class="table-light">
+                                <td class="text-start px-4 fw-semibold">Keine Vorabgebühren</td>
+                                <td><i class="fas fa-check-circle text-success fa-lg"></i></td>
+                                <td><i class="fas fa-times-circle text-danger fa-lg"></i></td>
+                            </tr>
+                            <tr>
+                                <td class="text-start px-4 fw-semibold">KI-gestützte Blockchain-Analyse</td>
+                                <td><i class="fas fa-check-circle text-success fa-lg"></i></td>
+                                <td><span class="text-muted">Teilweise</span></td>
+                            </tr>
+                            <tr class="table-light">
+                                <td class="text-start px-4 fw-semibold">Dokumentierte 87 % Erfolgsquote</td>
+                                <td><i class="fas fa-check-circle text-success fa-lg"></i></td>
+                                <td><i class="fas fa-times-circle text-danger fa-lg"></i></td>
+                            </tr>
+                            <tr>
+                                <td class="text-start px-4 fw-semibold">DSGVO-konform (Server in Deutschland)</td>
+                                <td><i class="fas fa-check-circle text-success fa-lg"></i></td>
+                                <td><span class="text-muted">Selten</span></td>
+                            </tr>
+                            <tr class="table-light">
+                                <td class="text-start px-4 fw-semibold">Persönlicher Fallmanager (Deutsch)</td>
+                                <td><i class="fas fa-check-circle text-success fa-lg"></i></td>
+                                <td><i class="fas fa-times-circle text-danger fa-lg"></i></td>
+                            </tr>
+                            <tr>
+                                <td class="text-start px-4 fw-semibold">Gerichtsverwertbare Berichte</td>
+                                <td><i class="fas fa-check-circle text-success fa-lg"></i></td>
+                                <td><span class="text-muted">Selten</span></td>
+                            </tr>
+                            <tr class="table-light">
+                                <td class="text-start px-4 fw-semibold">24/7 Echtzeit-Monitoring</td>
+                                <td><i class="fas fa-check-circle text-success fa-lg"></i></td>
+                                <td><i class="fas fa-times-circle text-danger fa-lg"></i></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p class="text-center text-muted mt-3" style="font-size:.9rem;"><i class="fas fa-info-circle me-1"></i>Vergleich basiert auf öffentlich verfügbaren Angaben typischer Recovery-Dienstleister. Stand: 2025.</p>
+            </div>
+        </div>
+    </div>
+</section>
 
 <!-- CTA -->
 <section class="section text-white text-center" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
