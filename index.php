@@ -591,46 +591,58 @@ include 'includes/navbar.php';
         </div>
 
         <!-- Quick Loss Estimator -->
-        <div class="mx-auto" style="max-width:640px;">
-            <div class="card shadow-lg border-0" style="border-radius:16px; background:rgba(255,255,255,0.95);">
+        <div class="mx-auto" style="max-width:660px;">
+            <div class="card shadow-lg border-0" style="border-radius:18px; background:rgba(255,255,255,0.97);">
                 <div class="card-body p-4 text-start">
-                    <h5 class="fw-bold text-center mb-3" style="color:#1a1a2e;">
-                        🔍 Schnellbewertung – Wie hoch ist Ihr Verlust?
-                    </h5>
+                    <!-- Card Header -->
+                    <div class="text-center mb-3">
+                        <span class="badge text-white mb-2 px-3 py-2"
+                              style="background:linear-gradient(135deg,#667eea,#764ba2); border-radius:20px; font-size:.78rem; letter-spacing:.04em;">
+                            <i class="fas fa-calendar-check me-1"></i>KOSTENLOSE ERSTBERATUNG
+                        </span>
+                        <h5 class="fw-bold mb-1" style="color:#1a1a2e; font-size:1.15rem;">
+                            Wie hoch ist Ihr Verlust? Lassen Sie ihn jetzt professionell prüfen.
+                        </h5>
+                        <p class="text-muted mb-0" style="font-size:.88rem; line-height:1.5;">
+                            Schildern Sie uns Ihren Fall – wir melden uns innerhalb von <strong>24 Stunden</strong>
+                            mit einer unverbindlichen Einschätzung unserer zertifizierten Blockchain-Analysten.
+                        </p>
+                    </div>
+                    <hr class="my-3" style="border-color:#e8ecf0;">
                     <div class="row g-3 align-items-end">
                         <div class="col-sm-5">
-                            <label class="form-label fw-semibold text-muted" style="font-size:.85rem;">
-                                Verlorener Betrag (€)
+                            <label class="form-label fw-semibold" style="font-size:.84rem; color:#444;">
+                                <i class="fas fa-euro-sign me-1 text-primary"></i>Geschädigter Betrag
                             </label>
                             <select id="lossAmount" class="form-select form-select-lg"
                                     style="border-radius:10px; border:2px solid #e1e8ed;">
-                                <option value="">Betrag wählen…</option>
-                                <option value="5000">Bis €5.000</option>
-                                <option value="25000">€5.000 – €25.000</option>
-                                <option value="50000">€25.000 – €50.000</option>
-                                <option value="100000">€50.000 – €100.000</option>
-                                <option value="250000">Über €100.000</option>
+                                <option value="">Betrag wählen …</option>
+                                <option value="5000">Bis € 5.000</option>
+                                <option value="25000">€ 5.000 – € 25.000</option>
+                                <option value="50000">€ 25.000 – € 50.000</option>
+                                <option value="100000">€ 50.000 – € 100.000</option>
+                                <option value="250000">Über € 100.000</option>
                             </select>
                         </div>
                         <div class="col-sm-4">
-                            <label class="form-label fw-semibold text-muted" style="font-size:.85rem;">
-                                Art des Verlusts
+                            <label class="form-label fw-semibold" style="font-size:.84rem; color:#444;">
+                                <i class="fas fa-tag me-1 text-primary"></i>Art des Betrugs
                             </label>
                             <select id="lossType" class="form-select form-select-lg"
                                     style="border-radius:10px; border:2px solid #e1e8ed;">
-                                <option value="">Art wählen…</option>
-                                <option value="exchange">Fake Exchange</option>
-                                <option value="investment">Investment-Betrug</option>
+                                <option value="">Kategorie wählen …</option>
+                                <option value="exchange">Gefälschte Handelsplattform</option>
+                                <option value="investment">Betrügerisches Investment</option>
                                 <option value="romance">Romance Scam</option>
                                 <option value="rug">Rug Pull / Token-Betrug</option>
-                                <option value="phishing">Phishing / Wallet-Hack</option>
-                                <option value="other">Sonstiges</option>
+                                <option value="phishing">Phishing / Wallet-Diebstahl</option>
+                                <option value="other">Sonstiger Betrug</option>
                             </select>
                         </div>
                         <div class="col-sm-3">
                             <button id="estimatorBtn" class="btn btn-primary btn-lg w-100 fw-bold"
-                                    style="border-radius:10px; background:linear-gradient(135deg,#667eea,#764ba2); border:none;">
-                                Prüfen
+                                    style="border-radius:10px; background:linear-gradient(135deg,#667eea,#764ba2); border:none; white-space:nowrap;">
+                                <i class="fas fa-arrow-right me-1"></i>Termin buchen
                             </button>
                         </div>
                     </div>
@@ -638,8 +650,15 @@ include 'includes/navbar.php';
                     <div id="estimatorHint" class="mt-3 d-none">
                         <div class="alert alert-warning mb-0 py-2" style="border-radius:10px;">
                             <i class="fas fa-exclamation-circle me-2"></i>
-                            Bitte wählen Sie Betrag und Art des Verlusts aus.
+                            Bitte wählen Sie den geschädigten Betrag und die Betrugsart aus.
                         </div>
+                    </div>
+                    <!-- Trust signals -->
+                    <div class="d-flex flex-wrap justify-content-center gap-3 mt-3 pt-2" style="border-top:1px solid #f0f3f7;">
+                        <span class="text-muted" style="font-size:.78rem;"><i class="fas fa-shield-alt me-1 text-success"></i>BaFin-lizenziert</span>
+                        <span class="text-muted" style="font-size:.78rem;"><i class="fas fa-lock me-1 text-success"></i>100 % vertraulich</span>
+                        <span class="text-muted" style="font-size:.78rem;"><i class="fas fa-clock me-1 text-success"></i>Antwort in 24 Stunden</span>
+                        <span class="text-muted" style="font-size:.78rem;"><i class="fas fa-check-circle me-1 text-success"></i>Unverbindlich &amp; kostenlos</span>
                     </div>
                 </div>
             </div>
@@ -651,19 +670,22 @@ include 'includes/navbar.php';
      CONTACT MODAL – Schnellbewertung / Quick Loss Estimator
      ============================================================ -->
 <div class="modal fade" id="contactLeadModal" tabindex="-1" aria-labelledby="contactLeadModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered" style="max-width:520px;">
-    <div class="modal-content border-0" style="border-radius:16px; overflow:hidden;">
+  <div class="modal-dialog modal-dialog-centered" style="max-width:540px;">
+    <div class="modal-content border-0" style="border-radius:18px; overflow:hidden;">
       <!-- Header -->
-      <div class="modal-header border-0 pb-0" style="background:linear-gradient(135deg,#667eea,#764ba2); padding:24px 28px 16px;">
+      <div class="modal-header border-0 pb-0" style="background:linear-gradient(135deg,#667eea,#764ba2); padding:28px 32px 18px;">
         <div>
-          <h5 class="modal-title fw-bold text-white mb-1" id="contactLeadModalLabel">
-            <i class="fas fa-search me-2"></i>Kostenlose Verlustanalyse
+          <p class="text-white mb-1" style="opacity:.85; font-size:.78rem; letter-spacing:.06em; text-transform:uppercase; font-weight:600;">
+            <i class="fas fa-calendar-check me-1"></i>Kostenlose Erstberatung
+          </p>
+          <h5 class="modal-title fw-bold text-white mb-1" id="contactLeadModalLabel" style="font-size:1.15rem;">
+            Kostenlose Fallprüfung anfragen
           </h5>
-          <p class="text-white mb-0" style="opacity:.85; font-size:.9rem;">
-            Wir melden uns innerhalb von 24 Stunden bei Ihnen.
+          <p class="text-white mb-0" style="opacity:.85; font-size:.88rem; line-height:1.45;">
+            Unsere zertifizierten Analysten melden sich werktags innerhalb von&nbsp;<strong>24&nbsp;Stunden</strong> – unverbindlich und kostenfrei.
           </p>
         </div>
-        <button type="button" class="btn-close btn-close-white ms-auto" data-bs-dismiss="modal" aria-label="Schließen"></button>
+        <button type="button" class="btn-close btn-close-white ms-auto mt-n1" data-bs-dismiss="modal" aria-label="Schließen"></button>
       </div>
       <!-- Body -->
       <div class="modal-body px-4 py-4">
@@ -688,29 +710,30 @@ include 'includes/navbar.php';
                    placeholder="max@beispiel.de" required autocomplete="email">
           </div>
           <div class="mb-3">
-            <label for="clm-phone" class="form-label fw-semibold" style="font-size:.9rem;">Telefonnummer <span class="text-muted fw-normal">(optional)</span></label>
+            <label for="clm-phone" class="form-label fw-semibold" style="font-size:.9rem;">Telefonnummer <span class="text-muted fw-normal">(empfohlen für schnellen Rückruf)</span></label>
             <input type="tel" class="form-control" id="clm-phone" name="phone" maxlength="50"
                    placeholder="+49 123 456789" autocomplete="tel">
           </div>
           <div class="mb-3">
-            <label for="clm-message" class="form-label fw-semibold" style="font-size:.9rem;">Kurze Beschreibung <span class="text-muted fw-normal">(optional)</span></label>
+            <label for="clm-message" class="form-label fw-semibold" style="font-size:.9rem;">Kurze Fallbeschreibung <span class="text-muted fw-normal">(optional)</span></label>
             <textarea class="form-control" id="clm-message" name="message" rows="3" maxlength="2000"
-                      placeholder="Beschreiben Sie kurz, was passiert ist…"></textarea>
+                      placeholder="Beschreiben Sie kurz, wann und wie es zum Verlust kam – je mehr Details, desto präziser unsere Ersteinschätzung."></textarea>
           </div>
 
           <!-- Success / Error feedback -->
           <div id="clm-feedback" class="d-none"></div>
 
           <button type="submit" id="clm-submit" class="btn btn-lg w-100 fw-bold text-white"
-                  style="background:linear-gradient(135deg,#667eea,#764ba2); border:none; border-radius:10px;">
-            <span id="clm-submit-text"><i class="fas fa-paper-plane me-2"></i>Anfrage absenden</span>
+                  style="background:linear-gradient(135deg,#667eea,#764ba2); border:none; border-radius:10px; padding:.85rem;">
+            <span id="clm-submit-text"><i class="fas fa-calendar-check me-2"></i>Kostenlosen Termin vereinbaren</span>
             <span id="clm-submit-spinner" class="d-none">
-              <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Wird gesendet…
+              <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Anfrage wird übermittelt…
             </span>
           </button>
 
           <p class="text-center text-muted mt-3 mb-0" style="font-size:.78rem;">
-            <i class="fas fa-lock me-1"></i>Ihre Daten werden vertraulich behandelt und nicht weitergegeben.
+            <i class="fas fa-lock me-1"></i>Ihre Angaben werden streng vertraulich behandelt und nicht an Dritte weitergegeben.
+            Es entstehen Ihnen keinerlei Kosten oder Verpflichtungen.
           </p>
         </form>
       </div>
