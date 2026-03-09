@@ -634,15 +634,11 @@ include 'includes/navbar.php';
                             </button>
                         </div>
                     </div>
-                    <!-- Result row (hidden until selected) -->
-                    <div id="estimatorResult" class="mt-3 d-none">
-                        <div class="alert alert-success mb-0 py-2" style="border-radius:10px; border-left:4px solid #28a745;">
-                            <i class="fas fa-check-circle me-2"></i>
-                            <span id="estimatorText"></span>
-                            &nbsp;–&nbsp;
-                            <a href="app/register.php" class="alert-link fw-bold">
-                                Jetzt kostenlos registrieren <i class="fas fa-arrow-right ms-1"></i>
-                            </a>
+                    <!-- Validation hint (shown when fields empty) -->
+                    <div id="estimatorHint" class="mt-3 d-none">
+                        <div class="alert alert-warning mb-0 py-2" style="border-radius:10px;">
+                            <i class="fas fa-exclamation-circle me-2"></i>
+                            Bitte wählen Sie Betrag und Art des Verlusts aus.
                         </div>
                     </div>
                 </div>
@@ -651,29 +647,185 @@ include 'includes/navbar.php';
     </div>
 </header>
 
+<!-- ============================================================
+     CONTACT MODAL – Schnellbewertung / Quick Loss Estimator
+     ============================================================ -->
+<div class="modal fade" id="contactLeadModal" tabindex="-1" aria-labelledby="contactLeadModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" style="max-width:520px;">
+    <div class="modal-content border-0" style="border-radius:16px; overflow:hidden;">
+      <!-- Header -->
+      <div class="modal-header border-0 pb-0" style="background:linear-gradient(135deg,#667eea,#764ba2); padding:24px 28px 16px;">
+        <div>
+          <h5 class="modal-title fw-bold text-white mb-1" id="contactLeadModalLabel">
+            <i class="fas fa-search me-2"></i>Kostenlose Verlustanalyse
+          </h5>
+          <p class="text-white mb-0" style="opacity:.85; font-size:.9rem;">
+            Wir melden uns innerhalb von 24 Stunden bei Ihnen.
+          </p>
+        </div>
+        <button type="button" class="btn-close btn-close-white ms-auto" data-bs-dismiss="modal" aria-label="Schließen"></button>
+      </div>
+      <!-- Body -->
+      <div class="modal-body px-4 py-4">
+        <!-- Pre-filled summary badge -->
+        <div id="clm-summary" class="mb-3 d-none">
+          <span class="badge rounded-pill bg-light text-dark border me-1 px-3 py-2" id="clm-badge-amount"></span>
+          <span class="badge rounded-pill bg-light text-dark border px-3 py-2" id="clm-badge-type"></span>
+        </div>
+
+        <form id="contactLeadForm" novalidate>
+          <input type="hidden" id="clm-loss-amount" name="loss_amount">
+          <input type="hidden" id="clm-loss-type"   name="loss_type">
+
+          <div class="mb-3">
+            <label for="clm-name" class="form-label fw-semibold" style="font-size:.9rem;">Vollständiger Name <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="clm-name" name="name" maxlength="255"
+                   placeholder="Max Mustermann" required autocomplete="name">
+          </div>
+          <div class="mb-3">
+            <label for="clm-email" class="form-label fw-semibold" style="font-size:.9rem;">E-Mail-Adresse <span class="text-danger">*</span></label>
+            <input type="email" class="form-control" id="clm-email" name="email" maxlength="255"
+                   placeholder="max@beispiel.de" required autocomplete="email">
+          </div>
+          <div class="mb-3">
+            <label for="clm-phone" class="form-label fw-semibold" style="font-size:.9rem;">Telefonnummer <span class="text-muted fw-normal">(optional)</span></label>
+            <input type="tel" class="form-control" id="clm-phone" name="phone" maxlength="50"
+                   placeholder="+49 123 456789" autocomplete="tel">
+          </div>
+          <div class="mb-3">
+            <label for="clm-message" class="form-label fw-semibold" style="font-size:.9rem;">Kurze Beschreibung <span class="text-muted fw-normal">(optional)</span></label>
+            <textarea class="form-control" id="clm-message" name="message" rows="3" maxlength="2000"
+                      placeholder="Beschreiben Sie kurz, was passiert ist…"></textarea>
+          </div>
+
+          <!-- Success / Error feedback -->
+          <div id="clm-feedback" class="d-none"></div>
+
+          <button type="submit" id="clm-submit" class="btn btn-lg w-100 fw-bold text-white"
+                  style="background:linear-gradient(135deg,#667eea,#764ba2); border:none; border-radius:10px;">
+            <span id="clm-submit-text"><i class="fas fa-paper-plane me-2"></i>Anfrage absenden</span>
+            <span id="clm-submit-spinner" class="d-none">
+              <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Wird gesendet…
+            </span>
+          </button>
+
+          <p class="text-center text-muted mt-3 mb-0" style="font-size:.78rem;">
+            <i class="fas fa-lock me-1"></i>Ihre Daten werden vertraulich behandelt und nicht weitergegeben.
+          </p>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 (function(){
     'use strict';
-    function updateEstimator(){
-        var amount = document.getElementById('lossAmount').value;
-        var type   = document.getElementById('lossType').value;
-        var res    = document.getElementById('estimatorResult');
-        var txt    = document.getElementById('estimatorText');
-        if(!amount || !type){ res.classList.add('d-none'); return; }
-        var labels = {
-            exchange:'Fake-Exchange-Betrug',investment:'Investment-Betrug',
-            romance:'Romance Scam',rug:'Rug Pull',phishing:'Phishing / Wallet-Hack',other:'Betrugsfall'
-        };
-        txt.textContent = 'Ihr ' + labels[type] + ' qualifiziert sich für unsere KI-Analyse.';
-        res.classList.remove('d-none');
-    }
-    document.getElementById('lossAmount').addEventListener('change', updateEstimator);
-    document.getElementById('lossType').addEventListener('change', updateEstimator);
+
+    var amountLabels = {
+        '5000':'Bis €5.000','25000':'€5.000–€25.000',
+        '50000':'€25.000–€50.000','100000':'€50.000–€100.000','250000':'Über €100.000'
+    };
+    var typeLabels = {
+        exchange:'Fake Exchange',investment:'Investment-Betrug',
+        romance:'Romance Scam',rug:'Rug Pull',phishing:'Phishing / Wallet-Hack',other:'Sonstiges'
+    };
+
     document.getElementById('estimatorBtn').addEventListener('click', function(){
         var amount = document.getElementById('lossAmount').value;
         var type   = document.getElementById('lossType').value;
-        if(!amount || !type){ updateEstimator(); return; }
-        window.location.href = 'app/register.php';
+        var hint   = document.getElementById('estimatorHint');
+
+        if (!amount || !type) {
+            hint.classList.remove('d-none');
+            return;
+        }
+        hint.classList.add('d-none');
+
+        // Pre-fill hidden fields + summary badges
+        document.getElementById('clm-loss-amount').value = amount;
+        document.getElementById('clm-loss-type').value   = type;
+
+        var badgeAmount = document.getElementById('clm-badge-amount');
+        var badgeType   = document.getElementById('clm-badge-type');
+        badgeAmount.textContent = amountLabels[amount] || amount;
+        badgeType.textContent   = typeLabels[type]     || type;
+        document.getElementById('clm-summary').classList.remove('d-none');
+
+        // Reset form state (hidden fields are re-applied after reset since reset() clears them)
+        document.getElementById('contactLeadForm').reset();
+        document.getElementById('clm-loss-amount').value = amount;
+        document.getElementById('clm-loss-type').value   = type;
+        var fb = document.getElementById('clm-feedback');
+        fb.className = 'd-none';
+        fb.textContent = '';
+        document.getElementById('clm-submit').disabled = false;
+        document.getElementById('clm-submit-text').classList.remove('d-none');
+        document.getElementById('clm-submit-spinner').classList.add('d-none');
+
+        var modal = new bootstrap.Modal(document.getElementById('contactLeadModal'));
+        modal.show();
+    });
+
+    // Dismiss hint on dropdown change
+    ['lossAmount','lossType'].forEach(function(id){
+        document.getElementById(id).addEventListener('change', function(){
+            document.getElementById('estimatorHint').classList.add('d-none');
+        });
+    });
+
+    // Form submission
+    document.getElementById('contactLeadForm').addEventListener('submit', function(e){
+        e.preventDefault();
+        var form   = this;
+        var btn    = document.getElementById('clm-submit');
+        var txt    = document.getElementById('clm-submit-text');
+        var spin   = document.getElementById('clm-submit-spinner');
+        var fb     = document.getElementById('clm-feedback');
+
+        if (!form.checkValidity()) { form.reportValidity(); return; }
+
+        btn.disabled = true;
+        txt.classList.add('d-none');
+        spin.classList.remove('d-none');
+
+        var payload = {
+            name:        document.getElementById('clm-name').value.trim(),
+            email:       document.getElementById('clm-email').value.trim(),
+            phone:       document.getElementById('clm-phone').value.trim(),
+            message:     document.getElementById('clm-message').value.trim(),
+            loss_amount: document.getElementById('clm-loss-amount').value,
+            loss_type:   document.getElementById('clm-loss-type').value
+        };
+
+        fetch('contact.php', {
+            method:  'POST',
+            headers: {'Content-Type': 'application/json'},
+            body:    JSON.stringify(payload)
+        })
+        .then(function(r){ return r.json(); })
+        .then(function(res){
+            fb.className = 'alert ' + (res.success ? 'alert-success' : 'alert-danger');
+            fb.textContent = res.message;
+            if (res.success) {
+                form.reset();
+                btn.disabled = true;
+                txt.textContent = '✓ Gesendet';
+                txt.classList.remove('d-none');
+                spin.classList.add('d-none');
+            } else {
+                btn.disabled = false;
+                txt.classList.remove('d-none');
+                spin.classList.add('d-none');
+            }
+        })
+        .catch(function(){
+            fb.className = 'alert alert-danger';
+            fb.textContent = 'Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.';
+            btn.disabled = false;
+            txt.classList.remove('d-none');
+            spin.classList.add('d-none');
+        });
     });
 })();
 </script>
