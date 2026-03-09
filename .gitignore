@@ -26,3 +26,4 @@ app/uploads/
 *.env
 env.*
 .environment
+nohup.out
