@@ -1945,6 +1945,97 @@ function toggleFaq(btn) {
                     </div>
                 </div>
             </div>
+
+            <!-- Alert 7: Romance Scam -->
+            <div class="col-lg-4">
+                <div class="alert-card alert-danger-custom">
+                    <div class="alert-header">
+                        <div class="alert-icon bg-danger">
+                            <i class="fas fa-heart-broken"></i>
+                        </div>
+                        <div class="alert-meta">
+                            <span class="badge bg-danger">KRITISCH</span>
+                            <small class="text-muted">Vor 4 Tagen</small>
+                        </div>
+                        <button class="alert-dismiss" onclick="dismissAlert(this)">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <h5 class="alert-title">
+                        <i class="fas fa-heart me-2"></i>
+                        Romance Scam: Neue Welle auf Dating-Apps
+                    </h5>
+                    <p class="alert-description">
+                        Betrüger bauen über Monate Vertrauen auf Dating-Plattformen auf, bevor sie um Krypto-Investitionen bitten.
+                        <strong>Überweisen Sie niemals Kryptowährungen</strong> an Personen, die Sie nur online kennen – unabhängig wie verlässlich sie wirken.
+                    </p>
+                    <div class="alert-footer">
+                        <i class="fas fa-user-secret me-2"></i>
+                        <small>Pig-Butchering ist die häufigste Romance-Scam-Variante</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Alert 8: Fake Recovery Services -->
+            <div class="col-lg-4">
+                <div class="alert-card alert-warning-custom">
+                    <div class="alert-header">
+                        <div class="alert-icon bg-warning">
+                            <i class="fas fa-exclamation-circle"></i>
+                        </div>
+                        <div class="alert-meta">
+                            <span class="badge bg-warning text-dark">WARNUNG</span>
+                            <small class="text-muted">Vor 6 Tagen</small>
+                        </div>
+                        <button class="alert-dismiss" onclick="dismissAlert(this)">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <h5 class="alert-title">
+                        <i class="fas fa-mask me-2"></i>
+                        Gefälschte Wiederherstellungsdienste im Umlauf
+                    </h5>
+                    <p class="alert-description">
+                        Kriminelle geben sich als Krypto-Recovery-Dienste aus und verlangen Vorauszahlungen – nur um danach zu verschwinden.
+                        <strong>Seriöse Anbieter verlangen niemals Gebühren im Voraus.</strong>
+                        Prüfen Sie immer Lizenz und Registrierung (BaFin-Register).
+                    </p>
+                    <div class="alert-footer">
+                        <i class="fas fa-search me-2"></i>
+                        <small>BaFin-Register unter bafin.de überprüfen</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Alert 9: AI-powered Deepfake Scams -->
+            <div class="col-lg-4">
+                <div class="alert-card alert-info-custom">
+                    <div class="alert-header">
+                        <div class="alert-icon bg-info">
+                            <i class="fas fa-robot"></i>
+                        </div>
+                        <div class="alert-meta">
+                            <span class="badge bg-info">NEU 2025</span>
+                            <small class="text-muted">Vor 2 Tagen</small>
+                        </div>
+                        <button class="alert-dismiss" onclick="dismissAlert(this)">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <h5 class="alert-title">
+                        <i class="fas fa-video me-2"></i>
+                        KI-Deepfake-Videos von Prominenten
+                    </h5>
+                    <p class="alert-description">
+                        Betrüger verwenden KI-generierte Deepfake-Videos bekannter Persönlichkeiten (Elon Musk, Warren Buffett), um für gefälschte Krypto-Plattformen zu werben.
+                        <strong>Ignorieren Sie</strong> Investitionsempfehlungen aus solchen Videos vollständig.
+                    </p>
+                    <div class="alert-footer">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <small>Prominente empfehlen niemals Krypto via Video-Werbung</small>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </section>
@@ -2119,6 +2210,20 @@ function dismissAlert(button) {
                             <p class="text-muted">Nach erfolgreicher Verifizierung: Umwandlung in Euro über lizenzierte Börsen und SEPA-Überweisung auf Ihr Bankkonto.</p>
                         </div>
                     </div>
+                    <div class="col-md-6">
+                        <div class="feature-card">
+                            <div class="mb-3"><i class="fas fa-gavel fa-2x text-primary"></i></div>
+                            <h5 class="fw-bold mb-3">5. Behördenkooperation</h5>
+                            <p class="text-muted">Bei Bedarf koordinieren wir die Zusammenarbeit mit BKA, Europol und internationalen Strafverfolgungsbehörden für eine strafrechtliche Verfolgung der Täter.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="feature-card">
+                            <div class="mb-3"><i class="fas fa-tachometer-alt fa-2x text-primary"></i></div>
+                            <h5 class="fw-bold mb-3">6. Echtzeit-Dashboard</h5>
+                            <p class="text-muted">Verfolgen Sie den Fortschritt Ihres Falls in Echtzeit über unser verschlüsseltes Mandanten-Portal – transparent, jederzeit und von überall abrufbar.</p>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -2223,6 +2328,20 @@ function dismissAlert(button) {
                     <p class="text-muted mb-0">Wir arbeiten mit Strafverfolgungsbehörden, Regulatoren und forensischen Partnern in über 30 Ländern zusammen, um Täter aufzuspüren.</p>
                 </div>
             </div>
+            <div class="col-md-6 col-lg-4">
+                <div class="feature-card text-center h-100">
+                    <div class="mb-3"><i class="fas fa-chart-area fa-3x" style="color:var(--primary);"></i></div>
+                    <h5 class="fw-bold mb-2">Verhaltensanalyse & Mustererkennung</h5>
+                    <p class="text-muted mb-0">Unsere KI erstellt Verhaltensprofile verdächtiger Wallets und erkennt koordinierte Betrugsringe – auch wenn Gelder über Dutzende Zwischenadressen geleitet wurden.</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <div class="feature-card text-center h-100">
+                    <div class="mb-3"><i class="fas fa-phone-alt fa-3x" style="color:var(--primary);"></i></div>
+                    <h5 class="fw-bold mb-2">24/7 Notfall-Hotline</h5>
+                    <p class="text-muted mb-0">Wurde Ihre Wallet soeben kompromittiert? Unsere Notfall-Hotline ist rund um die Uhr erreichbar – schnelles Handeln in den ersten Stunden erhöht die Erfolgsquote deutlich.</p>
+                </div>
+            </div>
         </div>
     </div>
 </section>
@@ -2258,6 +2377,45 @@ function dismissAlert(button) {
                         <li><i class="fas fa-check-circle"></i> Reihenfolge-Rekonstruktion</li>
                         <li><i class="fas fa-check-circle"></i> Wallet-Adresse Recovery</li>
                         <li><i class="fas fa-check-circle"></i> DSGVO-konform & sicher</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="col-lg-6">
+                <div class="feature-card">
+                    <h4 class="fw-bold mb-4"><i class="fas fa-balance-scale text-primary me-2"></i> Rechtliche Unterstützung</h4>
+                    <p class="text-muted mb-4">Unsere forensischen Berichte sind gerichtsverwertbar aufbereitet und unterstützen Strafanzeigen sowie zivilrechtliche Verfahren gegen Täter.</p>
+                    <ul class="feature-list">
+                        <li><i class="fas fa-check-circle"></i> Gerichtsverwertbare Berichte</li>
+                        <li><i class="fas fa-check-circle"></i> Strafanzeige-Vorbereitung</li>
+                        <li><i class="fas fa-check-circle"></i> Kooperation mit Staatsanwaltschaft</li>
+                        <li><i class="fas fa-check-circle"></i> Internationale Rechtshilfe</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="col-lg-6">
+                <div class="feature-card">
+                    <h4 class="fw-bold mb-4"><i class="fas fa-search-dollar text-primary me-2"></i> Blockchain-Forensik</h4>
+                    <p class="text-muted mb-4">Professionelle Analyse von Transaktionsketten über 15+ Blockchains hinweg – inklusive De-Anonymisierung von Mixer-Diensten und Cross-Chain-Bridges.</p>
+                    <ul class="feature-list">
+                        <li><i class="fas fa-check-circle"></i> Multi-Chain Transaction Tracing</li>
+                        <li><i class="fas fa-check-circle"></i> Mixer & Tumbler Analyse</li>
+                        <li><i class="fas fa-check-circle"></i> Smart-Contract-Analyse (DeFi)</li>
+                        <li><i class="fas fa-check-circle"></i> Exchange-Identifizierung</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="col-lg-6">
+                <div class="feature-card">
+                    <h4 class="fw-bold mb-4"><i class="fas fa-shield-virus text-primary me-2"></i> Prävention & Schutzberatung</h4>
+                    <p class="text-muted mb-4">Schützen Sie sich proaktiv: Unsere Experten prüfen Ihre aktuelle Sicherheitskonfiguration und helfen Ihnen, künftigen Betrug zu erkennen und abzuwehren.</p>
+                    <ul class="feature-list">
+                        <li><i class="fas fa-check-circle"></i> Sicherheits-Audit Ihrer Wallets</li>
+                        <li><i class="fas fa-check-circle"></i> Hardware-Wallet-Einrichtung</li>
+                        <li><i class="fas fa-check-circle"></i> Schulung zur Betrugserkennung</li>
+                        <li><i class="fas fa-check-circle"></i> Persönlicher Sicherheitsplan</li>
                     </ul>
                 </div>
             </div>
@@ -2566,6 +2724,45 @@ function dismissAlert(button) {
       </div>
     </div>
 
+    <!-- Second stats row -->
+    <div class="row g-4 justify-content-center mb-5">
+      <!-- Partner Networks -->
+      <div class="col-md-6 col-lg-3">
+        <div class="stat-card shimmer-wrapper">
+          <div class="stat-icon">
+            <i class="fas fa-handshake"></i>
+          </div>
+          <h2 class="display-3 fw-bold mb-2"><span data-count="30">0</span>+</h2>
+          <p class="h5 mb-0">Partnerländer</p>
+          <p class="small opacity-75 mt-2">Globales Netzwerk</p>
+        </div>
+      </div>
+
+      <!-- Blockchains -->
+      <div class="col-md-6 col-lg-3">
+        <div class="stat-card shimmer-wrapper">
+          <div class="stat-icon">
+            <i class="fas fa-cubes"></i>
+          </div>
+          <h2 class="display-3 fw-bold mb-2"><span data-count="15">0</span>+</h2>
+          <p class="h5 mb-0">Blockchains</p>
+          <p class="small opacity-75 mt-2">Simultane Analyse</p>
+        </div>
+      </div>
+
+      <!-- Fraud Cases in Database -->
+      <div class="col-md-6 col-lg-3">
+        <div class="stat-card shimmer-wrapper">
+          <div class="stat-icon">
+            <i class="fas fa-database"></i>
+          </div>
+          <h2 class="display-3 fw-bold mb-2"><span data-count="100">0</span>K+</h2>
+          <p class="h5 mb-0">Betrugsmuster</p>
+          <p class="small opacity-75 mt-2">KI-Trainingsdaten</p>
+        </div>
+      </div>
+    </div>
+
     <!-- Trust Badges -->
     <div class="row justify-content-center mt-5">
       <div class="col-auto">
@@ -2646,39 +2843,8 @@ function dismissAlert(button) {
 </style>
 
 <script>
-// Animated counter effect
+// ========== ENHANCED AI SECTION ANIMATIONS ==========
 document.addEventListener('DOMContentLoaded', function() {
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        const counters = entry.target.querySelectorAll('[data-count]');
-        counters.forEach(counter => {
-          const target = parseInt(counter.getAttribute('data-count'));
-          const duration = 2000;
-          const steps = 60;
-          const increment = target / steps;
-          let current = 0;
-          
-          const timer = setInterval(() => {
-            current += increment;
-            if (current >= target) {
-              counter.textContent = target;
-              clearInterval(timer);
-            } else {
-              counter.textContent = Math.floor(current);
-            }
-          }, duration / steps);
-        });
-        observer.unobserve(entry.target);
-      }
-    });
-  }, { threshold: 0.3 });
-
-  const statsSection = document.getElementById('stats');
-  if (statsSection) observer.observe(statsSection);
-
-  // ========== ENHANCED AI SECTION ANIMATIONS ==========
-  
   // Counter animation for .counter elements in AI section
   const counterObserver = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
@@ -2908,43 +3074,6 @@ document.addEventListener('DOMContentLoaded', function() {
 </section>
 
 <style>
-.stat-card {
-  padding: 40px 20px;
-  border-radius: 16px;
-  background: rgba(255,255,255,0.1);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255,255,255,0.2);
-  transition: all 0.3s ease;
-}
-.stat-card:hover {
-  background: rgba(255,255,255,0.15);
-  transform: translateY(-5px);
-}
-.stat-icon {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  background: rgba(255,255,255,0.2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 20px;
-  font-size: 32px;
-  border: 2px solid rgba(255,255,255,0.3);
-}
-.badge-item {
-  text-align: center;
-  padding: 20px;
-  background: rgba(255,255,255,0.1);
-  border-radius: 12px;
-  transition: all 0.3s ease;
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255,255,255,0.2);
-}
-.badge-item:hover {
-  transform: scale(1.05) rotate(2deg);
-  background: rgba(255,255,255,0.15);
-}
 .feature-icon-lg {
   width: 100px;
   height: 100px;
@@ -2956,11 +3085,34 @@ document.addEventListener('DOMContentLoaded', function() {
   margin: 0 auto;
 }
 .ai-highlight-box {
-  background: rgba(255,255,255,0.1);
+  background: linear-gradient(135deg, var(--primary, #0d6efd) 0%, #0b5ed7 100%);
+  color: white;
   border-radius: 16px;
   padding: 40px;
-  border: 2px solid rgba(255,255,255,0.2);
-  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.15);
+  box-shadow: 0 8px 32px rgba(13,110,253,0.25);
+}
+.ai-highlight-box h4,
+.ai-highlight-box p {
+  color: white;
+}
+.ai-highlight-box p {
+  opacity: .92;
+}
+.testimonial-avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 700;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+.testimonial-type {
+  font-size: .85rem;
 }
 </style>
 
@@ -3080,6 +3232,45 @@ document.addEventListener('DOMContentLoaded', function() {
                             </div>
                         </div>
                     </div>
+
+                    <div class="accordion-item mb-3">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button fw-bold collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq9">
+                                Wie lange dauert eine vollständige Fallbearbeitung?
+                            </button>
+                        </h2>
+                        <div id="faq9" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">
+                                Die Dauer hängt von der Komplexität des Falls ab. Einfachere Fälle (z. B. einzelne Betrugs-Transaktionen) können in 7–14 Werktagen abgeschlossen werden. Komplexe Fälle mit mehreren Blockchains, Mixing-Services oder internationalen Tätern können 4–12 Wochen in Anspruch nehmen. Sie erhalten in jedem Schritt transparente Statusupdates über unser verschlüsseltes Mandanten-Portal.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item mb-3">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button fw-bold collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq10">
+                                Kann ich auch Geld zurückbekommen, wenn der Betrug schon lange zurückliegt?
+                            </button>
+                        </h2>
+                        <div id="faq10" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">
+                                Grundsätzlich gilt: Je früher, desto besser – allerdings sind auch ältere Fälle oft noch lösbar. Da Blockchain-Transaktionen dauerhaft und unveränderlich gespeichert sind, können wir Transaktionsspuren auch Jahre später noch nachverfolgen. Wir empfehlen, auch bei älteren Betrugsfällen eine kostenlose Erstanalyse einzureichen – oft gibt es mehr Möglichkeiten, als Opfer erwarten.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item mb-3">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button fw-bold collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq11">
+                                Arbeiten Sie mit der Polizei und Strafverfolgungsbehörden zusammen?
+                            </button>
+                        </h2>
+                        <div id="faq11" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">
+                                Ja. Wir kooperieren aktiv mit dem Bundeskriminalamt (BKA), Europol, Interpol und verschiedenen nationalen Polizeibehörden. Unsere forensischen Berichte sind bewusst so aufgebaut, dass sie als Beweismittel in Strafverfahren verwendet werden können. Mit Ihrer Zustimmung leiten wir relevante Informationen direkt an die zuständigen Behörden weiter, um eine strafrechtliche Verfolgung der Täter zu unterstützen.
+                            </div>
+                        </div>
+                    </div>
                 </div><!-- /accordion -->
             </div>
         </div>
@@ -3097,10 +3288,10 @@ document.addEventListener('DOMContentLoaded', function() {
             <div class="col-md-6 col-lg-4">
                 <div class="feature-card h-100">
                     <div class="d-flex align-items-center mb-3">
-                        <div style="width:50px;height:50px;border-radius:50%;background:linear-gradient(135deg,#0d6efd,#37a0ff);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:1.1rem;flex-shrink:0;">M.H.</div>
+                        <div class="testimonial-avatar" style="background:linear-gradient(135deg,#0d6efd,#37a0ff)">M.H.</div>
                         <div class="ms-3">
                             <div class="fw-bold">M. H., Frankfurt</div>
-                            <div class="text-muted" style="font-size:.85rem;">Pig-Butchering-Betrug · €38.400 zurück</div>
+                            <div class="text-muted testimonial-type">Pig-Butchering-Betrug · €38.400 zurück</div>
                         </div>
                     </div>
                     <div class="text-warning mb-2">★★★★★</div>
@@ -3110,10 +3301,10 @@ document.addEventListener('DOMContentLoaded', function() {
             <div class="col-md-6 col-lg-4">
                 <div class="feature-card h-100">
                     <div class="d-flex align-items-center mb-3">
-                        <div style="width:50px;height:50px;border-radius:50%;background:linear-gradient(135deg,#198754,#20c997);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:1.1rem;flex-shrink:0;">S.K.</div>
+                        <div class="testimonial-avatar" style="background:linear-gradient(135deg,#198754,#20c997)">S.K.</div>
                         <div class="ms-3">
                             <div class="fw-bold">S. K., München</div>
-                            <div class="text-muted" style="font-size:.85rem;">Romance Scam · €22.100 zurück</div>
+                            <div class="text-muted testimonial-type">Romance Scam · €22.100 zurück</div>
                         </div>
                     </div>
                     <div class="text-warning mb-2">★★★★★</div>
@@ -3123,10 +3314,10 @@ document.addEventListener('DOMContentLoaded', function() {
             <div class="col-md-6 col-lg-4">
                 <div class="feature-card h-100">
                     <div class="d-flex align-items-center mb-3">
-                        <div style="width:50px;height:50px;border-radius:50%;background:linear-gradient(135deg,#dc3545,#fd7e14);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:1.1rem;flex-shrink:0;">T.W.</div>
+                        <div class="testimonial-avatar" style="background:linear-gradient(135deg,#dc3545,#fd7e14)">T.W.</div>
                         <div class="ms-3">
                             <div class="fw-bold">T. W., Berlin</div>
-                            <div class="text-muted" style="font-size:.85rem;">Phishing / Wallet-Hack · €15.700 zurück</div>
+                            <div class="text-muted testimonial-type">Phishing / Wallet-Hack · €15.700 zurück</div>
                         </div>
                     </div>
                     <div class="text-warning mb-2">★★★★★</div>
@@ -3136,10 +3327,10 @@ document.addEventListener('DOMContentLoaded', function() {
             <div class="col-md-6 col-lg-4">
                 <div class="feature-card h-100">
                     <div class="d-flex align-items-center mb-3">
-                        <div style="width:50px;height:50px;border-radius:50%;background:linear-gradient(135deg,#6f42c1,#0d6efd);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:1.1rem;flex-shrink:0;">A.R.</div>
+                        <div class="testimonial-avatar" style="background:linear-gradient(135deg,#6f42c1,#0d6efd)">A.R.</div>
                         <div class="ms-3">
                             <div class="fw-bold">A. R., Hamburg</div>
-                            <div class="text-muted" style="font-size:.85rem;">Fake Investment Platform · €67.000 zurück</div>
+                            <div class="text-muted testimonial-type">Fake Investment Platform · €67.000 zurück</div>
                         </div>
                     </div>
                     <div class="text-warning mb-2">★★★★★</div>
@@ -3149,10 +3340,10 @@ document.addEventListener('DOMContentLoaded', function() {
             <div class="col-md-6 col-lg-4">
                 <div class="feature-card h-100">
                     <div class="d-flex align-items-center mb-3">
-                        <div style="width:50px;height:50px;border-radius:50%;background:linear-gradient(135deg,#0dcaf0,#0d6efd);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:1.1rem;flex-shrink:0;">L.M.</div>
+                        <div class="testimonial-avatar" style="background:linear-gradient(135deg,#0dcaf0,#0d6efd)">L.M.</div>
                         <div class="ms-3">
                             <div class="fw-bold">L. M., Köln</div>
-                            <div class="text-muted" style="font-size:.85rem;">Rug-Pull / DeFi-Betrug · €9.800 zurück</div>
+                            <div class="text-muted testimonial-type">Rug-Pull / DeFi-Betrug · €9.800 zurück</div>
                         </div>
                     </div>
                     <div class="text-warning mb-2">★★★★★</div>
@@ -3162,14 +3353,42 @@ document.addEventListener('DOMContentLoaded', function() {
             <div class="col-md-6 col-lg-4">
                 <div class="feature-card h-100">
                     <div class="d-flex align-items-center mb-3">
-                        <div style="width:50px;height:50px;border-radius:50%;background:linear-gradient(135deg,#20c997,#0d6efd);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:1.1rem;flex-shrink:0;">B.S.</div>
+                        <div class="testimonial-avatar" style="background:linear-gradient(135deg,#20c997,#0d6efd)">B.S.</div>
                         <div class="ms-3">
                             <div class="fw-bold">B. S., Stuttgart</div>
-                            <div class="text-muted" style="font-size:.85rem;">NFT-Betrug · €11.200 zurück</div>
+                            <div class="text-muted testimonial-type">NFT-Betrug · €11.200 zurück</div>
                         </div>
                     </div>
                     <div class="text-warning mb-2">★★★★★</div>
                     <p class="text-muted mb-0">„Meinen Kindern zuliebe habe ich auf einen NFT-Marktplatz-Betrug reingefallen. Die Erstberatung war kostenlos und extrem hilfreich. Am Ende haben wir einen substanziellen Teil zurückbekommen – mehr als ich gehofft hatte."</p>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-4">
+                <div class="feature-card h-100">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="testimonial-avatar" style="background:linear-gradient(135deg,#fd7e14,#dc3545)">K.M.</div>
+                        <div class="ms-3">
+                            <div class="fw-bold">K. M., Düsseldorf</div>
+                            <div class="text-muted testimonial-type">Pig-Butchering / Fake-Broker · €51.000 zurück</div>
+                        </div>
+                    </div>
+                    <div class="text-warning mb-2">★★★★★</div>
+                    <p class="text-muted mb-0">„Über einen Fake-Broker habe ich monatelang meine Rentenrücklagen verloren. Die Blockchain-Analyse lieferte entscheidende Beweise, die die Staatsanwaltschaft für die Anklage nutzte. Das Team war bis zum Ende für mich da."</p>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-4">
+                <div class="feature-card h-100">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="testimonial-avatar" style="background:linear-gradient(135deg,#6f42c1,#e83e8c)">J.V.</div>
+                        <div class="ms-3">
+                            <div class="fw-bold">J. V., Leipzig</div>
+                            <div class="text-muted testimonial-type">Gefälschte Börse · €29.500 zurück</div>
+                        </div>
+                    </div>
+                    <div class="text-warning mb-2">★★★★★</div>
+                    <p class="text-muted mb-0">„Ich habe mich von einer täuschend echten Handelsplattform blenden lassen. Nach der Erstanalyse hatte ich zum ersten Mal wieder Hoffnung. Der Fallmanager hat mich wöchentlich informiert – man fühlt sich wirklich aufgehoben und nicht allein gelassen."</p>
                 </div>
             </div>
         </div>
@@ -3232,6 +3451,21 @@ document.addEventListener('DOMContentLoaded', function() {
                             </tr>
                             <tr class="table-light">
                                 <td class="text-start px-4 fw-semibold">24/7 Echtzeit-Monitoring</td>
+                                <td><i class="fas fa-check-circle text-success fa-lg"></i></td>
+                                <td><i class="fas fa-times-circle text-danger fa-lg"></i></td>
+                            </tr>
+                            <tr>
+                                <td class="text-start px-4 fw-semibold">Kooperation mit BKA/Europol/Interpol</td>
+                                <td><i class="fas fa-check-circle text-success fa-lg"></i></td>
+                                <td><span class="text-muted">Selten</span></td>
+                            </tr>
+                            <tr class="table-light">
+                                <td class="text-start px-4 fw-semibold">ISO 27001 Informationssicherheit</td>
+                                <td><i class="fas fa-check-circle text-success fa-lg"></i></td>
+                                <td><i class="fas fa-times-circle text-danger fa-lg"></i></td>
+                            </tr>
+                            <tr>
+                                <td class="text-start px-4 fw-semibold">Notfall-Hotline 24/7</td>
                                 <td><i class="fas fa-check-circle text-success fa-lg"></i></td>
                                 <td><i class="fas fa-times-circle text-danger fa-lg"></i></td>
                             </tr>
@@ -3395,25 +3629,18 @@ document.addEventListener('DOMContentLoaded', function() {
             if (entry.isIntersecting && !animated) {
                 animated = true;
                 
-                // Animate counters
-                const counters = [
-                    { el: document.querySelector('[data-count="727"]'), target: 727 },
-                    { el: document.querySelector('[data-count="87"]'), target: 87 },
-                    { el: document.querySelector('[data-count="47"]'), target: 47 },
-                    { el: document.querySelector('[data-count="14"]'), target: 14 }
-                ];
-                
-                counters.forEach(counter => {
-                    if (!counter.el) return;
+                // Animate all [data-count] elements inside stats section
+                statsSection.querySelectorAll('[data-count]').forEach(el => {
+                    const target = parseInt(el.getAttribute('data-count'));
                     let current = 0;
-                    const increment = counter.target / 60;
+                    const increment = target / 60;
                     const timer = setInterval(() => {
                         current += increment;
-                        if (current >= counter.target) {
-                            counter.el.textContent = counter.target;
+                        if (current >= target) {
+                            el.textContent = target;
                             clearInterval(timer);
                         } else {
-                            counter.el.textContent = Math.floor(current);
+                            el.textContent = Math.floor(current);
                         }
                     }, 33);
                 });
