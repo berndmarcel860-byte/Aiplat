@@ -1,10 +1,10 @@
 <?php
-$page_title = 'Novalnet AI – Sichere Krypto-Rückführung & Wiederherstellung';
+include_once 'includes/site_settings.php';
+$page_title = ($siteSettings['brand_name'] ?? 'Novalnet AI') . ' – Sichere Krypto-Rückführung & Wiederherstellung';
 $page_description = 'KI-gestützte Blockchain-Analyse zur Identifizierung und Wiederherstellung betrügerisch entwendeter Kryptowährungen. BaFin-lizenziert mit 87% Erfolgsquote.';
 $page_keywords = 'Krypto Wiederherstellung, Blockchain Analyse, Betrugsaufklärung, KI Krypto, BaFin lizenziert';
 $page_url = 'https://novalnet-ai.de/index.php';
 
-include_once 'includes/site_settings.php';
 include 'includes/header.php';
 include 'includes/navbar.php';
 ?>
@@ -561,7 +561,7 @@ include 'includes/navbar.php';
             <span class="text-primary">zur Wiederherstellung betrügerisch entwendeter Kryptowährungen</span>
         </h1>
         <p class="lead mb-4" style="max-width:800px;margin:0 auto;">
-            Novalnet AI nutzt fortschrittliche KI-Algorithmen zur Analyse und Nachverfolgung betrügerischer 
+            <?= htmlspecialchars($siteSettings['brand_name']) ?> nutzt fortschrittliche KI-Algorithmen zur Analyse und Nachverfolgung betrügerischer 
             Krypto-Transaktionen. Als <strong>BaFin-lizenziertes Unternehmen</strong> führen wir identifizierte Vermögenswerte 
             rechtskonform an die rechtmäßigen Eigentümer zurück.
         </p>
@@ -2000,7 +2000,7 @@ document.addEventListener('DOMContentLoaded', function() {
     <div class="container">
         <div class="text-center mb-5">
             <h2 class="section-title">Häufige Fragen</h2>
-            <p class="section-subtitle">Antworten auf die wichtigsten Fragen zu Novalnet AI</p>
+            <p class="section-subtitle">Antworten auf die wichtigsten Fragen zu <?= htmlspecialchars($siteSettings['brand_name']) ?></p>
         </div>
 
         <div class="row justify-content-center">
