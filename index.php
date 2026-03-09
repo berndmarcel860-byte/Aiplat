@@ -4,6 +4,7 @@ $page_description = 'KI-gestützte Blockchain-Analyse zur Identifizierung und Wi
 $page_keywords = 'Krypto Wiederherstellung, Blockchain Analyse, Betrugsaufklärung, KI Krypto, BaFin lizenziert';
 $page_url = 'https://novalnet-ai.de/index.php';
 
+include_once 'includes/site_settings.php';
 include 'includes/header.php';
 include 'includes/navbar.php';
 ?>
@@ -553,7 +554,7 @@ include 'includes/navbar.php';
     <div class="container" style="position: relative; z-index: 10;">
         <div class="mb-3">
             <span class="badge bg-primary-subtle text-primary px-3 py-2" style="font-size: 0.9rem;">
-                <i class="fas fa-certificate me-2"></i>BaFin-lizenziert | FCA-Ref.: 122702
+                <i class="fas fa-certificate me-2"></i>BaFin-lizenziert | BaFin-Reg.: <?php echo htmlspecialchars($siteSettings['fca_reference_number']); ?>
             </span>
         </div>
         <h1 class="display-4 fw-bold mb-4">Professionelle Blockchain-Forensik<br>
@@ -1055,7 +1056,7 @@ function dismissAlert(button) {
                         <div>
                             <h5 class="fw-bold text-white">BaFin-Lizenzierung</h5>
                             <p class="text-white-75">
-                                Als offiziell lizenziertes Finanzdienstleistungsinstitut (FCA-Referenznr.: 122702) 
+                                Als offiziell lizenziertes Finanzdienstleistungsinstitut (BaFin-Reg.: <?php echo htmlspecialchars($siteSettings['fca_reference_number']); ?>) 
                                 unterliegen wir strengen regulatorischen Kontrollen und regelmäßigen Audits.
                             </p>
                         </div>
@@ -1154,7 +1155,7 @@ function dismissAlert(button) {
       <h2 class="section-title display-4 fw-bold">KI-gestützte Vermögenswiederherstellung</h2>
       <p class="section-subtitle lead">
         Professionelle Blockchain-Forensik mit fortschrittlicher Künstlicher Intelligenz – 
-        BaFin-lizenziert (FCA Ref.: 122702) und nach höchsten Sicherheitsstandards
+        BaFin-lizenziert (BaFin-Reg.: <?php echo htmlspecialchars($siteSettings['fca_reference_number']); ?>) und nach höchsten Sicherheitsstandards
       </p>
     </div>
 
@@ -1335,7 +1336,7 @@ function dismissAlert(button) {
               <div class="trust-badge pulse-animation">
                 <i class="fas fa-shield-alt fa-3x text-primary mb-2"></i>
                 <p class="fw-bold mb-0">BaFin-Lizenziert</p>
-                <small class="text-muted">FCA Ref.: 122702</small>
+                <small class="text-muted">BaFin-Reg.: <?php echo htmlspecialchars($siteSettings['fca_reference_number']); ?></small>
               </div>
             </div>
             <div class="col-md-3 col-6 text-center mb-3">
@@ -1450,7 +1451,7 @@ function dismissAlert(button) {
           <div class="badge-item">
             <i class="fas fa-shield-alt fa-2x mb-2"></i>
             <p class="small mb-0">BaFin-Lizenziert</p>
-            <p class="small mb-0 opacity-75">FCA Ref: 122702</p>
+            <p class="small mb-0 opacity-75">BaFin-Reg.: <?php echo htmlspecialchars($siteSettings['fca_reference_number']); ?></p>
           </div>
           <div class="badge-item">
             <i class="fas fa-lock fa-2x mb-2"></i>

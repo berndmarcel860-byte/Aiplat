@@ -4,6 +4,7 @@ $page_description = 'Unsere Mission ist es, Opfern von Krypto-Betrug zu helfen, 
 $page_keywords = 'Mission, Krypto Betrug, Wiederherstellung, Blockchain Analyse, Opferhilfe';
 $page_url = 'https://novalnet-ai.de/Frontend/mission.php';
 
+include_once 'includes/site_settings.php';
 include 'includes/header.php';
 include 'includes/navbar.php';
 ?>

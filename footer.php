@@ -22,7 +22,7 @@
                 </div>
                 <div class="mb-2">
                     <i class="fas fa-shield-alt me-2 text-primary"></i>
-                    <small>FCA Referenz: 122702</small>
+                    <small>BaFin-Reg.: <?php echo htmlspecialchars($siteSettings['fca_reference_number']); ?></small>
                 </div>
             </div>
             
@@ -79,7 +79,7 @@
             <div class="col-md-6 text-center text-md-end">
                 <small class="text-muted">
                     <i class="fas fa-shield-alt text-success me-1"></i>
-                    BaFin-lizenziert | FCA Ref: 122702
+                    BaFin-lizenziert | BaFin-Reg.: <?php echo htmlspecialchars($siteSettings['fca_reference_number']); ?>
                 </small>
             </div>
         </div>

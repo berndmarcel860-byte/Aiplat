@@ -26,7 +26,7 @@ if (!isset($siteSettings)) {
             ]
         );
 
-        $stmt = $pdoSite->prepare("SELECT brand_name, company_address, contact_email FROM system_settings WHERE id = 1 LIMIT 1");
+        $stmt = $pdoSite->prepare("SELECT brand_name, company_address, contact_email, fca_reference_number FROM system_settings WHERE id = 1 LIMIT 1");
         $stmt->execute();
         $row = $stmt->fetch();
         if ($row) {
@@ -38,8 +38,9 @@ if (!isset($siteSettings)) {
 
     // Fallback defaults so pages still render if DB is unreachable
     $siteSettings += [
-        'brand_name'      => 'Novalnet AI',
-        'company_address' => 'Davidson House, Forbury Square, Reading, RG1 3EU, United Kingdom',
-        'contact_email'   => 'info@novalnet-ai.de',
+        'brand_name'           => 'Novalnet AI',
+        'company_address'      => 'Davidson House, Forbury Square, Reading, RG1 3EU, United Kingdom',
+        'contact_email'        => 'info@novalnet-ai.de',
+        'fca_reference_number' => '122702',
     ];
 }

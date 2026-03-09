@@ -4,6 +4,7 @@ $page_description = 'Häufig gestellte Fragen zu Krypto-Wiederherstellung, Block
 $page_keywords = 'FAQ, Häufige Fragen, Support, Hilfe, Krypto-Wiederherstellung';
 $page_url = 'https://novalnet-ai.de/Frontend/faq.php';
 
+include_once 'includes/site_settings.php';
 include 'includes/header.php';
 include 'includes/navbar.php';
 ?>
@@ -16,7 +17,7 @@ include 'includes/navbar.php';
   <div class="container">
     <div class="faq-header text-center">
       <h2>Häufige Fragen</h2>
-      <p>Antworten auf die wichtigsten Fragen zu KryptoX</p>
+      <p>Antworten auf die wichtigsten Fragen zu <?php echo htmlspecialchars($siteSettings['brand_name']); ?></p>
     </div>
 
     <div class="faq-card">
@@ -56,7 +57,7 @@ include 'includes/navbar.php';
 
     <div class="faq-card">
       <h5>Wie erhalte ich Support?</h5>
-      <p>Unser deutschsprachiges Support-Team erreichen Sie per E-Mail unter <a href="mailto:support@novalnet-ai.de">support@novalnet-ai.de</a>. Die Antwortzeit beträgt in der Regel 24–48 Stunden. Für dringende Anfragen stehen wir während der Geschäftszeiten zur Verfügung.</p>
+      <p>Unser deutschsprachiges Support-Team erreichen Sie per E-Mail unter <a href="mailto:<?php echo htmlspecialchars($siteSettings['contact_email']); ?>"><?php echo htmlspecialchars($siteSettings['contact_email']); ?></a>. Die Antwortzeit beträgt in der Regel 24–48 Stunden. Für dringende Anfragen stehen wir während der Geschäftszeiten zur Verfügung.</p>
     </div>
 
     <div class="cta-box">

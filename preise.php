@@ -4,6 +4,7 @@ $page_description = 'Transparente Preisgestaltung für Krypto-Wiederherstellung.
 $page_keywords = 'Preise, Gebühren, Kosten, Pricing, Krypto Wiederherstellung';
 $page_url = 'https://novalnet-ai.de/Frontend/preise.php';
 
+include_once 'includes/site_settings.php';
 include 'includes/header.php';
 include 'includes/navbar.php';
 ?>

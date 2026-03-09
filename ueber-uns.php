@@ -4,6 +4,7 @@ $page_description = 'Lernen Sie das Expertenteam von Novalnet AI kennen. Spezial
 $page_keywords = 'Über uns, Team, Experten, Blockchain Analyse, Novalnet AI';
 $page_url = 'https://novalnet-ai.de/Frontend/ueber-uns.php';
 
+include_once 'includes/site_settings.php';
 include 'includes/header.php';
 include 'includes/navbar.php';
 ?>

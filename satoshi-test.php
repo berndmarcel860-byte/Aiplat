@@ -4,6 +4,7 @@ $page_description = 'Testen Sie Ihre Blockchain-Kenntnisse mit unserem Satoshi T
 $page_keywords = 'Satoshi Test, Blockchain Verifizierung, Wallet Test, Krypto Test';
 $page_url = 'https://novalnet-ai.de/Frontend/satoshi-test.php';
 
+include_once 'includes/site_settings.php';
 include 'includes/header.php';
 include 'includes/navbar.php';
 ?>
