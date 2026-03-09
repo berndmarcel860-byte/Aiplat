@@ -854,7 +854,7 @@ include 'includes/navbar.php';
 </script>
 
 <!-- ===== KI-Betrugserkennung – 3D-Animations-Sektion ===== -->
-<section id="ai-recovery-scene" style="position:relative;overflow:hidden;background:#04091a;padding:0;min-height:680px;display:flex;align-items:center;">
+<section id="ai-recovery-scene" style="position:relative;overflow:hidden;background:#04091a;padding:0;min-height:720px;display:flex;align-items:center;">
 
   <!-- THREE.JS CANVAS fills the background -->
   <canvas id="recovery-canvas" style="position:absolute;inset:0;width:100%;height:100%;display:block;"></canvas>
@@ -866,16 +866,25 @@ include 'includes/navbar.php';
   <div style="position:absolute;top:24px;left:32px;z-index:10;display:flex;align-items:center;gap:8px;">
     <span style="width:10px;height:10px;border-radius:50%;background:#ff3c3c;display:inline-block;animation:livePulse 1.2s infinite;box-shadow:0 0 8px #ff3c3c;"></span>
     <span style="color:#fff;font-size:.82rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;opacity:.9;">LIVE</span>
+    <span style="color:#64748b;font-size:.78rem;margin-left:6px;" id="live-clock">–</span>
+  </div>
+
+  <!-- Live transaction ticker (top-right) -->
+  <div id="live-ticker-wrap" style="position:absolute;top:22px;right:24px;z-index:10;max-width:320px;overflow:hidden;">
+    <div id="live-ticker" style="color:#00ffb4;font-size:.78rem;font-weight:600;font-family:monospace;white-space:nowrap;background:rgba(0,255,180,.08);border:1px solid rgba(0,255,180,.2);border-radius:8px;padding:6px 14px;">
+      <i class="fas fa-satellite-dish me-1" style="color:#ff3c3c;animation:livePulse 1.2s infinite;"></i>
+      <span id="ticker-text">Verbinde mit Blockchain-Netzwerk …</span>
+    </div>
   </div>
 
   <!-- Overlay content -->
-  <div class="container position-relative" style="z-index:5;padding:90px 16px;">
+  <div class="container position-relative" style="z-index:5;padding:96px 16px 80px;">
     <div class="row align-items-center gy-5">
 
       <!-- Left: copy -->
       <div class="col-lg-6">
         <span style="display:inline-block;background:rgba(0,255,180,.12);border:1px solid rgba(0,255,180,.35);color:#00ffb4;font-size:.8rem;font-weight:700;letter-spacing:.1em;border-radius:20px;padding:5px 16px;margin-bottom:18px;text-transform:uppercase;">
-          <i class="fas fa-shield-alt me-2"></i>KI-gestützte Betrugserkennung
+          <i class="fas fa-shield-alt me-2"></i>KI-gestützte Krypto-Verlust-Rückgewinnung
         </span>
 
         <h2 style="color:#fff;font-size:clamp(1.9rem,4.5vw,2.9rem);font-weight:800;line-height:1.18;margin-bottom:20px;">
@@ -883,80 +892,121 @@ include 'includes/navbar.php';
           <span style="background:linear-gradient(90deg,#00ffb4,#00c6ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">mit Deep-Chain AI&trade;</span>
         </h2>
 
-        <p style="color:#94a3b8;font-size:1.05rem;max-width:460px;line-height:1.75;margin-bottom:32px;">
-          Unser autonomes KI-System verfolgt betrügerische Transaktionen über 120+ Blockchains,
-          rekonstruiert Wallet-Graphen und leitet regulierte Rückgewinnungsverfahren ein – alles in Echtzeit.
+        <p style="color:#94a3b8;font-size:1.05rem;max-width:470px;line-height:1.8;margin-bottom:28px;">
+          Unser autonomes KI-System verfolgt betrügerische Transaktionen über <strong style="color:#fff;">120+ Blockchains</strong>,
+          rekonstruiert Wallet-Graphen in Millisekunden und leitet BaFin-konforme Rückgewinnungsverfahren ein –
+          vollautomatisch, rund um die Uhr.
         </p>
 
         <!-- Live stats row -->
-        <div style="display:flex;flex-wrap:wrap;gap:18px;margin-bottom:36px;">
-          <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:16px 22px;min-width:130px;">
-            <div style="color:#00ffb4;font-size:1.7rem;font-weight:800;" id="stat-cases">0</div>
-            <div style="color:#64748b;font-size:.82rem;margin-top:4px;">Aktive Fälle</div>
+        <div style="display:flex;flex-wrap:wrap;gap:14px;margin-bottom:32px;">
+          <div style="background:rgba(0,255,180,.07);border:1px solid rgba(0,255,180,.18);border-radius:12px;padding:14px 20px;min-width:120px;">
+            <div style="color:#00ffb4;font-size:1.65rem;font-weight:800;line-height:1;" id="stat-cases">0</div>
+            <div style="color:#64748b;font-size:.78rem;margin-top:5px;">Aktive Fälle</div>
           </div>
-          <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:16px 22px;min-width:130px;">
-            <div style="color:#00c6ff;font-size:1.7rem;font-weight:800;" id="stat-recovered">$0M</div>
-            <div style="color:#64748b;font-size:.82rem;margin-top:4px;">Zurückgeholt</div>
+          <div style="background:rgba(0,198,255,.07);border:1px solid rgba(0,198,255,.18);border-radius:12px;padding:14px 20px;min-width:120px;">
+            <div style="color:#00c6ff;font-size:1.65rem;font-weight:800;line-height:1;" id="stat-recovered">€0M</div>
+            <div style="color:#64748b;font-size:.78rem;margin-top:5px;">Zurückgeholt</div>
           </div>
-          <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:16px 22px;min-width:130px;">
-            <div style="color:#a78bfa;font-size:1.7rem;font-weight:800;" id="stat-rate">0%</div>
-            <div style="color:#64748b;font-size:.82rem;margin-top:4px;">Erfolgsquote</div>
+          <div style="background:rgba(167,139,250,.07);border:1px solid rgba(167,139,250,.18);border-radius:12px;padding:14px 20px;min-width:120px;">
+            <div style="color:#a78bfa;font-size:1.65rem;font-weight:800;line-height:1;" id="stat-rate">0%</div>
+            <div style="color:#64748b;font-size:.78rem;margin-top:5px;">Erfolgsquote</div>
+          </div>
+          <div style="background:rgba(255,215,0,.07);border:1px solid rgba(255,215,0,.18);border-radius:12px;padding:14px 20px;min-width:120px;">
+            <div style="color:#ffd700;font-size:1.65rem;font-weight:800;line-height:1;" id="stat-chains">0+</div>
+            <div style="color:#64748b;font-size:.78rem;margin-top:5px;">Blockchains</div>
           </div>
         </div>
 
-        <a href="#" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#contactLeadModal" style="background:linear-gradient(135deg,#00c6ff,#00ffb4);border:none;color:#04091a;font-weight:700;padding:14px 34px;border-radius:10px;font-size:1rem;box-shadow:0 0 28px rgba(0,198,255,.35);">
-          <i class="fas fa-search-dollar me-2"></i>Wiederherstellung starten
-        </a>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;">
+          <a href="#" class="btn" data-bs-toggle="modal" data-bs-target="#contactLeadModal" style="background:linear-gradient(135deg,#00c6ff,#00ffb4);border:none;color:#04091a;font-weight:700;padding:14px 30px;border-radius:10px;font-size:1rem;box-shadow:0 0 28px rgba(0,198,255,.35);">
+            <i class="fas fa-search-dollar me-2"></i>Wiederherstellung starten
+          </a>
+          <a href="#verluste-info" class="btn" style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.18);color:#fff;font-weight:600;padding:14px 26px;border-radius:10px;font-size:.95rem;">
+            <i class="fas fa-info-circle me-2"></i>Mehr erfahren
+          </a>
+        </div>
       </div>
 
       <!-- Right: info panels -->
       <div class="col-lg-6">
-        <div style="display:flex;flex-direction:column;gap:16px;">
+        <div style="display:flex;flex-direction:column;gap:13px;">
 
-          <div style="background:rgba(255,255,255,.05);border:1px solid rgba(0,255,180,.2);border-radius:14px;padding:20px 24px;backdrop-filter:blur(6px);">
+          <div style="background:rgba(255,255,255,.05);border:1px solid rgba(0,255,180,.2);border-radius:14px;padding:18px 22px;backdrop-filter:blur(8px);">
             <div style="display:flex;align-items:center;gap:14px;">
               <div style="width:44px;height:44px;border-radius:10px;background:rgba(0,255,180,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                <i class="fas fa-network-wired" style="color:#00ffb4;font-size:1.25rem;"></i>
+                <i class="fas fa-network-wired" style="color:#00ffb4;font-size:1.2rem;"></i>
               </div>
               <div>
-                <div style="color:#fff;font-weight:700;font-size:.97rem;">Blockchain-Verfolgungsengine</div>
-                <div style="color:#64748b;font-size:.83rem;margin-top:3px;">Echtzeit-Graphanalyse über BTC, ETH, BSC und 117 weitere Blockchains</div>
+                <div style="color:#fff;font-weight:700;font-size:.95rem;">Blockchain-Verfolgungsengine</div>
+                <div style="color:#64748b;font-size:.82rem;margin-top:3px;">Echtzeit-Graphanalyse: BTC, ETH, BSC, SOL, TRON und 115 weitere Netzwerke</div>
+              </div>
+              <div style="margin-left:auto;flex-shrink:0;">
+                <span style="background:rgba(0,255,180,.15);color:#00ffb4;font-size:.7rem;font-weight:700;border-radius:20px;padding:3px 10px;">AKTIV</span>
               </div>
             </div>
           </div>
 
-          <div style="background:rgba(255,255,255,.05);border:1px solid rgba(0,198,255,.2);border-radius:14px;padding:20px 24px;backdrop-filter:blur(6px);">
+          <div style="background:rgba(255,255,255,.05);border:1px solid rgba(0,198,255,.2);border-radius:14px;padding:18px 22px;backdrop-filter:blur(8px);">
             <div style="display:flex;align-items:center;gap:14px;">
               <div style="width:44px;height:44px;border-radius:10px;background:rgba(0,198,255,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                <i class="fas fa-brain" style="color:#00c6ff;font-size:1.25rem;"></i>
+                <i class="fas fa-brain" style="color:#00c6ff;font-size:1.2rem;"></i>
               </div>
               <div>
-                <div style="color:#fff;font-weight:700;font-size:.97rem;">Deep-Learning Mustererkennung</div>
-                <div style="color:#64748b;font-size:.83rem;margin-top:3px;">Erkennt Mixer-Verschleierung, Exchange-Sprünge und Money-Mule-Netzwerke</div>
+                <div style="color:#fff;font-weight:700;font-size:.95rem;">Deep-Learning Mustererkennung</div>
+                <div style="color:#64748b;font-size:.82rem;margin-top:3px;">Erkennt Mixer-Verschleierung, Exchange-Sprünge und Money-Mule-Netzwerke</div>
+              </div>
+              <div style="margin-left:auto;flex-shrink:0;">
+                <span style="background:rgba(0,198,255,.15);color:#00c6ff;font-size:.7rem;font-weight:700;border-radius:20px;padding:3px 10px;">KI</span>
               </div>
             </div>
           </div>
 
-          <div style="background:rgba(255,255,255,.05);border:1px solid rgba(167,139,250,.2);border-radius:14px;padding:20px 24px;backdrop-filter:blur(6px);">
+          <div style="background:rgba(255,255,255,.05);border:1px solid rgba(167,139,250,.2);border-radius:14px;padding:18px 22px;backdrop-filter:blur(8px);">
             <div style="display:flex;align-items:center;gap:14px;">
               <div style="width:44px;height:44px;border-radius:10px;background:rgba(167,139,250,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                <i class="fas fa-gavel" style="color:#a78bfa;font-size:1.25rem;"></i>
+                <i class="fas fa-gavel" style="color:#a78bfa;font-size:1.2rem;"></i>
               </div>
               <div>
-                <div style="color:#fff;font-weight:700;font-size:.97rem;">Regulierte Rechtseskalation</div>
-                <div style="color:#64748b;font-size:.83rem;margin-top:3px;">Automatisierte Beweispakete an FCA, BaFin und Interpol-Verbindungen übermittelt</div>
+                <div style="color:#fff;font-weight:700;font-size:.95rem;">Regulierte Rechtseskalation</div>
+                <div style="color:#64748b;font-size:.82rem;margin-top:3px;">Automatisierte Beweispakete an BaFin, Europol & Interpol übermittelt</div>
+              </div>
+              <div style="margin-left:auto;flex-shrink:0;">
+                <span style="background:rgba(167,139,250,.15);color:#a78bfa;font-size:.7rem;font-weight:700;border-radius:20px;padding:3px 10px;">BaFin</span>
               </div>
             </div>
           </div>
 
-          <!-- Progress bar -->
-          <div style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:18px 24px;">
-            <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
-              <span style="color:#94a3b8;font-size:.85rem;">KI-Analysefortschritt</span>
-              <span style="color:#00ffb4;font-weight:700;font-size:.85rem;" id="progress-label">87%</span>
+          <div style="background:rgba(255,255,255,.05);border:1px solid rgba(255,215,0,.2);border-radius:14px;padding:18px 22px;backdrop-filter:blur(8px);">
+            <div style="display:flex;align-items:center;gap:14px;">
+              <div style="width:44px;height:44px;border-radius:10px;background:rgba(255,215,0,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <i class="fas fa-fingerprint" style="color:#ffd700;font-size:1.2rem;"></i>
+              </div>
+              <div>
+                <div style="color:#fff;font-weight:700;font-size:.95rem;">Kryptografische Forensik</div>
+                <div style="color:#64748b;font-size:.82rem;margin-top:3px;">Wallet-Fingerabdruck, Signaturanalyse und On-Chain-Beweissicherung</div>
+              </div>
+              <div style="margin-left:auto;flex-shrink:0;">
+                <span style="background:rgba(255,215,0,.12);color:#ffd700;font-size:.7rem;font-weight:700;border-radius:20px;padding:3px 10px;">FORENSIK</span>
+              </div>
             </div>
-            <div style="background:rgba(255,255,255,.08);border-radius:999px;height:8px;overflow:hidden;">
-              <div id="recovery-bar" style="height:100%;width:0%;border-radius:999px;background:linear-gradient(90deg,#00c6ff,#00ffb4);transition:width 2s ease-out;"></div>
+          </div>
+
+          <!-- Progress bars -->
+          <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:16px 22px;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+              <span style="color:#94a3b8;font-size:.82rem;">Gesamterfolgsquote</span>
+              <span style="color:#00ffb4;font-weight:700;font-size:.82rem;" id="progress-label">87%</span>
+            </div>
+            <div style="background:rgba(255,255,255,.07);border-radius:999px;height:6px;overflow:hidden;margin-bottom:10px;">
+              <div id="recovery-bar" style="height:100%;width:0%;border-radius:999px;background:linear-gradient(90deg,#00c6ff,#00ffb4);transition:width 2.2s ease-out;"></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+              <span style="color:#94a3b8;font-size:.82rem;">Kundenzufriedenheit</span>
+              <span style="color:#a78bfa;font-weight:700;font-size:.82rem;">96%</span>
+            </div>
+            <div style="background:rgba(255,255,255,.07);border-radius:999px;height:6px;overflow:hidden;">
+              <div id="satisfaction-bar" style="height:100%;width:0%;border-radius:999px;background:linear-gradient(90deg,#a78bfa,#00c6ff);transition:width 2.5s ease-out;"></div>
             </div>
           </div>
 
@@ -974,6 +1024,13 @@ include 'includes/navbar.php';
   0%,100% { opacity:1; transform:scale(1); }
   50%      { opacity:.5; transform:scale(1.4); }
 }
+@keyframes tickerSlide {
+  0%   { opacity:0; transform:translateY(6px); }
+  10%  { opacity:1; transform:translateY(0); }
+  85%  { opacity:1; transform:translateY(0); }
+  100% { opacity:0; transform:translateY(-6px); }
+}
+.ticker-animate { animation: tickerSlide 4s ease forwards; }
 </style>
 
 <!-- ===== Three.js 3D Recovery Canvas ===== -->
@@ -982,9 +1039,49 @@ include 'includes/navbar.php';
 (function () {
   'use strict';
 
+  /* ---- Live clock ---- */
+  function updateClock() {
+    var el = document.getElementById('live-clock');
+    if (!el) return;
+    /* Display time in Europe/Berlin timezone (CET/CEST) regardless of user locale */
+    var now = new Date();
+    var timeStr = now.toLocaleTimeString('de-DE', { timeZone: 'Europe/Berlin', hour12: false });
+    el.textContent = timeStr + ' MEZ';
+  }
+  updateClock();
+  setInterval(updateClock, 1000);
+
+  /* ---- Live transaction ticker ---- */
+  var tickerMessages = [
+    '✅ Transaktion gesichert: +€ 34.820 — München',
+    '🔍 Wallet-Cluster identifiziert: Binance Smart Chain',
+    '✅ Rückgewinnung abgeschlossen: +€ 12.450 — Hamburg',
+    '⚡ KI-Analyse läuft: 4.217 Transaktionen geprüft',
+    '✅ SEPA-Überweisung erfolgreich: +€ 89.000 — Berlin',
+    '🔍 Betrüger-Adresse gesperrt: 0x4f3a…9c2e',
+    '✅ Fall abgeschlossen: +€ 156.300 — Frankfurt',
+    '⚡ Neue Spur entdeckt: Tornado Cash Bypass erkannt',
+    '✅ Gelder freigegeben: +€ 22.700 — Düsseldorf',
+    '🔍 Blockchain-Forensik: 7 Wallet-Hops zurückverfolgt',
+    '✅ Interpol-Kooperation: Täter identifiziert — Wien',
+    '⚡ Echtzeit-Scan: 14 Blockchains überwacht',
+  ];
+  var tickerIdx = 0;
+  function rotateTicker() {
+    var el = document.getElementById('ticker-text');
+    if (!el) return;
+    el.textContent = tickerMessages[tickerIdx % tickerMessages.length];
+    el.classList.remove('ticker-animate');
+    void el.offsetWidth; /* Force reflow to restart CSS animation */
+    el.classList.add('ticker-animate');
+    tickerIdx++;
+  }
+  setTimeout(function () { rotateTicker(); setInterval(rotateTicker, 4200); }, 1800);
+
   /* ---- Counter animation helper ---- */
   function animateCounter(el, target, suffix, duration, isFloat) {
-    var start = 0, startTime = null;
+    if (!el) return;
+    var startTime = null;
     function step(ts) {
       if (!startTime) startTime = ts;
       var progress = Math.min((ts - startTime) / duration, 1);
@@ -997,9 +1094,10 @@ include 'includes/navbar.php';
   }
 
   /* Trigger counters + progress bar once section enters viewport */
-  var STAT_CASES     = 1847;
-  var STAT_RECOVERED = 23.7;  /* millions */
+  var STAT_CASES     = 2134;
+  var STAT_RECOVERED = 47.3;  /* millions EUR */
   var STAT_RATE      = 87;    /* percent */
+  var STAT_CHAINS    = 120;
   var statsTriggered = false;
   var recoverySection = document.getElementById('ai-recovery-scene');
   var io = new IntersectionObserver(function (entries) {
@@ -1007,15 +1105,17 @@ include 'includes/navbar.php';
     entries.forEach(function (e) {
       if (e.isIntersecting) {
         statsTriggered = true;
-        animateCounter(document.getElementById('stat-cases'),     STAT_CASES,     '',  1800, false);
-        animateCounter(document.getElementById('stat-recovered'),  STAT_RECOVERED, 'M', 2000, true);
-        animateCounter(document.getElementById('stat-rate'),       STAT_RATE,      '%', 1600, false);
+        animateCounter(document.getElementById('stat-cases'),     STAT_CASES,     '',   1800, false);
+        animateCounter(document.getElementById('stat-recovered'),  STAT_RECOVERED, 'M',  2000, true);
+        animateCounter(document.getElementById('stat-rate'),       STAT_RATE,      '%',  1600, false);
+        animateCounter(document.getElementById('stat-chains'),     STAT_CHAINS,    '+',  1400, false);
         setTimeout(function () {
           document.getElementById('recovery-bar').style.width = '87%';
+          document.getElementById('satisfaction-bar').style.width = '96%';
         }, 300);
       }
     });
-  }, { threshold: 0.25 });
+  }, { threshold: 0.2 });
   if (recoverySection) io.observe(recoverySection);
 
   /* ---- THREE.JS 3D scene ---- */
@@ -1026,7 +1126,7 @@ include 'includes/navbar.php';
   }
 
   var W = canvas.parentElement.offsetWidth  || window.innerWidth;
-  var H = canvas.parentElement.offsetHeight || 680;
+  var H = canvas.parentElement.offsetHeight || 720;
 
   /* Renderer */
   var renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
@@ -1036,58 +1136,72 @@ include 'includes/navbar.php';
 
   /* Scene + Camera */
   var scene  = new THREE.Scene();
-  var camera = new THREE.PerspectiveCamera(55, W / H, 0.1, 2000);
-  camera.position.set(0, 0, 260);
+  var camera = new THREE.PerspectiveCamera(52, W / H, 0.1, 2000);
+  camera.position.set(0, 30, 270);
 
   /* Fog */
-  scene.fog = new THREE.FogExp2(0x04091a, 0.0022);
+  scene.fog = new THREE.FogExp2(0x04091a, 0.002);
 
   /* ---------- Starfield background ---------- */
   var starGeo = new THREE.BufferGeometry();
-  var starCnt = 1200; /* Reduced for performance on lower-end devices */
+  var starCnt = 1800;
   var starPos = new Float32Array(starCnt * 3);
-  for (var i = 0; i < starCnt * 3; i++) starPos[i] = (Math.random() - 0.5) * 1600;
+  for (var i = 0; i < starCnt * 3; i++) starPos[i] = (Math.random() - 0.5) * 1800;
   starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
-  var starMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.7, transparent: true, opacity: 0.55 });
+  var starMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.65, transparent: true, opacity: 0.6 });
   scene.add(new THREE.Points(starGeo, starMat));
 
   /* ---------- Wireframe globe ---------- */
-  var globeGeo  = new THREE.IcosahedronGeometry(100, 3);
-  var globeMat  = new THREE.MeshBasicMaterial({ color: 0x00c6ff, wireframe: true, transparent: true, opacity: 0.18 });
+  var globeGeo  = new THREE.IcosahedronGeometry(100, 4);
+  var globeMat  = new THREE.MeshBasicMaterial({ color: 0x00c6ff, wireframe: true, transparent: true, opacity: 0.14 });
   var globe     = new THREE.Mesh(globeGeo, globeMat);
   scene.add(globe);
 
+  /* ---------- Outer shell (semi-transparent) ---------- */
+  var shellGeo = new THREE.SphereGeometry(103, 32, 32);
+  var shellMat = new THREE.MeshBasicMaterial({ color: 0x001a33, transparent: true, opacity: 0.15, side: THREE.BackSide });
+  scene.add(new THREE.Mesh(shellGeo, shellMat));
+
   /* ---------- Inner glowing core ---------- */
-  var coreGeo = new THREE.SphereGeometry(18, 32, 32);
-  var coreMat = new THREE.MeshBasicMaterial({ color: 0x00ffb4, transparent: true, opacity: 0.55 });
+  var coreGeo = new THREE.SphereGeometry(16, 32, 32);
+  var coreMat = new THREE.MeshBasicMaterial({ color: 0x00ffb4, transparent: true, opacity: 0.6 });
   var core    = new THREE.Mesh(coreGeo, coreMat);
   scene.add(core);
 
-  /* Core glow rings */
-  for (var r = 0; r < 3; r++) {
-    var rGeo = new THREE.TorusGeometry(22 + r * 8, 0.5, 6, 60);
-    var rMat = new THREE.MeshBasicMaterial({ color: 0x00ffb4, transparent: true, opacity: 0.25 - r * 0.07 });
+  /* ---------- Core glow rings (orbital planes) ---------- */
+  var rings = [];
+  var ringColors = [0x00ffb4, 0x00c6ff, 0xa78bfa];
+  for (var r = 0; r < 4; r++) {
+    var rGeo = new THREE.TorusGeometry(22 + r * 9, 0.45, 6, 80);
+    var rMat = new THREE.MeshBasicMaterial({
+      color: ringColors[r % ringColors.length],
+      transparent: true,
+      opacity: 0.28 - r * 0.05
+    });
     var ring = new THREE.Mesh(rGeo, rMat);
-    ring.rotation.x = Math.PI / 2.2 + r * 0.4;
-    ring.rotation.z = r * 0.9;
+    ring.rotation.x = Math.PI / 2.2 + r * 0.45;
+    ring.rotation.z = r * 0.8;
     scene.add(ring);
+    rings.push({ mesh: ring, speedX: 0.003 + r * 0.001, speedZ: 0.002 + r * 0.0008 });
   }
 
   /* ---------- Network nodes on sphere surface ---------- */
   var nodeGroup = new THREE.Group();
   scene.add(nodeGroup);
   var nodeMeshes = [];
-  var nodeCount = 60;
-  var nodeColors = [0x00ffb4, 0x00c6ff, 0xa78bfa, 0xffd700];
+  var nodeCount  = 80;
+  /* Color coding: green=recovered, cyan=tracked, purple=analyzing, yellow=flagged */
+  var nodeColors = [0x00ffb4, 0x00c6ff, 0xa78bfa, 0xffd700, 0xff6b6b];
 
   for (var n = 0; n < nodeCount; n++) {
     var phi   = Math.acos(-1 + (2 * n) / nodeCount);
     var theta = Math.sqrt(nodeCount * Math.PI) * phi;
-    var nodeGeo = new THREE.SphereGeometry(1.6, 8, 8);
+    var nSize = 1.2 + Math.random() * 1.4;
+    var nodeGeo = new THREE.SphereGeometry(nSize, 8, 8);
     var nodeMat = new THREE.MeshBasicMaterial({
       color: nodeColors[n % nodeColors.length],
       transparent: true,
-      opacity: 0.9
+      opacity: 0.85 + Math.random() * 0.15
     });
     var node = new THREE.Mesh(nodeGeo, nodeMat);
     node.position.setFromSphericalCoords(101, phi, theta);
@@ -1095,56 +1209,80 @@ include 'includes/navbar.php';
     nodeMeshes.push(node);
   }
 
-  /* ---------- Connection lines between nearby nodes ----------
-     Note: O(n²) loop runs once at load time (not per frame) to pre-build geometry. */
+  /* ---------- Connection lines ---------- */
   var lineGroup = new THREE.Group();
   scene.add(lineGroup);
-  var lineMat = new THREE.LineBasicMaterial({ color: 0x00c6ff, transparent: true, opacity: 0.22 });
+
+  /* Two line styles: main cyan + secondary purple */
+  var lineMats = [
+    new THREE.LineBasicMaterial({ color: 0x00c6ff, transparent: true, opacity: 0.18 }),
+    new THREE.LineBasicMaterial({ color: 0xa78bfa, transparent: true, opacity: 0.12 }),
+  ];
 
   for (var a = 0; a < nodeCount; a++) {
     for (var b = a + 1; b < nodeCount; b++) {
       var dist = nodeMeshes[a].position.distanceTo(nodeMeshes[b].position);
-      if (dist < 55) {
+      if (dist < 50) {
         var lGeo = new THREE.BufferGeometry().setFromPoints([
           nodeMeshes[a].position.clone(),
           nodeMeshes[b].position.clone()
         ]);
-        lineGroup.add(new THREE.Line(lGeo, lineMat));
+        lineGroup.add(new THREE.Line(lGeo, lineMats[b % 2]));
       }
     }
   }
 
-  /* ---------- Flowing data particles ---------- */
-  var Y_BOUNDARY   = 90;  /* Vertical extent of particle field */
-  var particleCount = 200; /* Reduced for better mobile performance */
+  /* ---------- Flowing data particles (green – recovered funds) ---------- */
+  var Y_BOUNDARY   = 95;
+  var particleCount = 280;
   var pGeo = new THREE.BufferGeometry();
-  var pPositions = new Float32Array(particleCount * 3);
+  var pPositions  = new Float32Array(particleCount * 3);
   var pVelocities = [];
   for (var p = 0; p < particleCount; p++) {
-    var angle = Math.random() * Math.PI * 2;
-    var radius = 40 + Math.random() * 80;
+    var angle  = Math.random() * Math.PI * 2;
+    var radius = 38 + Math.random() * 85;
     pPositions[p * 3]     = Math.cos(angle) * radius;
-    pPositions[p * 3 + 1] = (Math.random() - 0.5) * 180;
+    pPositions[p * 3 + 1] = (Math.random() - 0.5) * 190;
     pPositions[p * 3 + 2] = Math.sin(angle) * radius;
     pVelocities.push({
-      r: radius,
-      angle: angle,
-      speed: 0.003 + Math.random() * 0.008,
-      y: pPositions[p * 3 + 1],
-      ySpeed: (Math.random() - 0.5) * 0.25
+      r: radius, angle: angle,
+      speed:  0.004 + Math.random() * 0.010,
+      y:      pPositions[p * 3 + 1],
+      ySpeed: (Math.random() - 0.5) * 0.3
     });
   }
   pGeo.setAttribute('position', new THREE.BufferAttribute(pPositions, 3));
-  var pMat = new THREE.PointsMaterial({
-    color: 0x00ffb4,
-    size: 1.8,
-    transparent: true,
-    opacity: 0.75
-  });
+  var pMat = new THREE.PointsMaterial({ color: 0x00ffb4, size: 1.9, transparent: true, opacity: 0.78 });
   var particles = new THREE.Points(pGeo, pMat);
   scene.add(particles);
 
-  /* ---------- Ambient light (not needed for MeshBasic but good practice) ---------- */
+  /* ---------- Shooting comets (fast bright traces) ---------- */
+  var cometCount = 12;
+  var cometGeo   = new THREE.BufferGeometry();
+  var cometPos   = new Float32Array(cometCount * 3);
+  var cometData  = [];
+  function resetComet(i) {
+    var startAngle = Math.random() * Math.PI * 2;
+    var startPhi   = Math.random() * Math.PI;
+    var r = 110 + Math.random() * 80;
+    cometData[i] = {
+      x: Math.sin(startPhi) * Math.cos(startAngle) * r,
+      y: Math.cos(startPhi) * r,
+      z: Math.sin(startPhi) * Math.sin(startAngle) * r,
+      vx: (Math.random() - 0.5) * 5,
+      vy: (Math.random() - 0.5) * 5,
+      vz: (Math.random() - 0.5) * 5,
+      life: 0,
+      maxLife: 60 + Math.random() * 60
+    };
+  }
+  for (var c = 0; c < cometCount; c++) { resetComet(c); cometData[c].life = Math.random() * 60; }
+  cometGeo.setAttribute('position', new THREE.BufferAttribute(cometPos, 3));
+  var cometMat  = new THREE.PointsMaterial({ color: 0xffffff, size: 3.5, transparent: true, opacity: 0.95 });
+  var comets    = new THREE.Points(cometGeo, cometMat);
+  scene.add(comets);
+
+  /* ---------- Ambient light ---------- */
   scene.add(new THREE.AmbientLight(0xffffff, 0.5));
 
   /* ---------- Animation loop ---------- */
@@ -1153,17 +1291,25 @@ include 'includes/navbar.php';
     requestAnimationFrame(animate);
     var t = clock.getElapsedTime();
 
-    globe.rotation.y  += 0.0015;
-    globe.rotation.x  += 0.0005;
+    /* Rotate globe + attached groups */
+    globe.rotation.y  += 0.0018;
+    globe.rotation.x  += 0.0004;
     nodeGroup.rotation.y = globe.rotation.y;
     nodeGroup.rotation.x = globe.rotation.x;
     lineGroup.rotation.y = globe.rotation.y;
     lineGroup.rotation.x = globe.rotation.x;
 
-    /* Pulse core */
-    var pulse = 0.5 + 0.5 * Math.sin(t * 2);
-    core.scale.setScalar(0.9 + 0.15 * pulse);
-    coreMat.opacity = 0.4 + 0.25 * pulse;
+    /* Animate orbital rings independently */
+    rings.forEach(function (rObj) {
+      rObj.mesh.rotation.x += rObj.speedX;
+      rObj.mesh.rotation.z += rObj.speedZ;
+    });
+
+    /* Pulse core with multi-frequency oscillation */
+    var pulse = 0.5 + 0.5 * Math.sin(t * 2.2 + 0.5);
+    var pulse2= 0.5 + 0.5 * Math.sin(t * 3.7);
+    core.scale.setScalar(0.85 + 0.2 * pulse + 0.05 * pulse2);
+    coreMat.opacity = 0.38 + 0.28 * pulse;
 
     /* Move data particles */
     var pos = particles.geometry.attributes.position.array;
@@ -1179,9 +1325,25 @@ include 'includes/navbar.php';
     }
     particles.geometry.attributes.position.needsUpdate = true;
 
-    /* Camera slow drift */
-    camera.position.x = Math.sin(t * 0.08) * 20;
-    camera.position.y = Math.cos(t * 0.06) * 10;
+    /* Shoot comets */
+    var cPos = comets.geometry.attributes.position.array;
+    for (var j = 0; j < cometCount; j++) {
+      var cd = cometData[j];
+      cd.life++;
+      if (cd.life > cd.maxLife) { resetComet(j); }
+      cd.x += cd.vx; cd.y += cd.vy; cd.z += cd.vz;
+      cPos[j * 3]     = cd.x;
+      cPos[j * 3 + 1] = cd.y;
+      cPos[j * 3 + 2] = cd.z;
+    }
+    comets.geometry.attributes.position.needsUpdate = true;
+    /* Fade comets opacity with time */
+    cometMat.opacity = 0.7 + 0.3 * Math.sin(t * 4);
+
+    /* Camera dramatic orbit */
+    camera.position.x = Math.sin(t * 0.09) * 28;
+    camera.position.y = 30 + Math.cos(t * 0.07) * 18;
+    camera.position.z = 260 + Math.sin(t * 0.05) * 15;
     camera.lookAt(scene.position);
 
     renderer.render(scene, camera);
@@ -1192,12 +1354,404 @@ include 'includes/navbar.php';
   window.addEventListener('resize', function () {
     var parent = canvas.parentElement;
     W = parent.offsetWidth;
-    H = Math.max(parent.offsetHeight, 680);
+    H = Math.max(parent.offsetHeight, 720);
     renderer.setSize(W, H);
     camera.aspect = W / H;
     camera.updateProjectionMatrix();
   });
 })();
+</script>
+
+<!-- ===== Verluste Zurückgewinnen – Informationssektion ===== -->
+<section id="verluste-info" style="background:#060d1f;padding:100px 0;border-top:1px solid rgba(0,198,255,.1);">
+  <div class="container">
+
+    <!-- Section header -->
+    <div class="text-center mb-5">
+      <span style="display:inline-block;background:rgba(0,198,255,.1);border:1px solid rgba(0,198,255,.25);color:#00c6ff;font-size:.78rem;font-weight:700;letter-spacing:.12em;border-radius:20px;padding:5px 18px;margin-bottom:16px;text-transform:uppercase;">
+        <i class="fas fa-coins me-2"></i>Krypto-Verlust-Rückgewinnung
+      </span>
+      <h2 style="color:#fff;font-size:clamp(1.8rem,4vw,2.7rem);font-weight:800;margin-bottom:16px;">
+        Welche Verluste können wir zurückgewinnen?
+      </h2>
+      <p style="color:#64748b;font-size:1.05rem;max-width:680px;margin:0 auto;line-height:1.8;">
+        Unsere KI-gestützte Forensik deckt ein breites Spektrum an Kryptowährungsbetrug auf –
+        von einfachem Wallet-Diebstahl bis hin zu komplexen internationalen Betrugsnetzwerken.
+        Im Folgenden finden Sie die häufigsten Kategorien, bei denen wir erfolgreich helfen konnten.
+      </p>
+    </div>
+
+    <!-- Loss types grid -->
+    <div class="row g-4 mb-5">
+
+      <div class="col-md-6 col-lg-4">
+        <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,107,107,.2);border-radius:16px;padding:28px;height:100%;transition:border-color .3s,transform .3s;" onmouseover="this.style.borderColor='rgba(255,107,107,.5)';this.style.transform='translateY(-4px)';" onmouseout="this.style.borderColor='rgba(255,107,107,.2)';this.style.transform='translateY(0)';">
+          <div style="width:52px;height:52px;border-radius:14px;background:rgba(255,107,107,.15);display:flex;align-items:center;justify-content:center;margin-bottom:18px;">
+            <i class="fas fa-heart-broken" style="color:#ff6b6b;font-size:1.4rem;"></i>
+          </div>
+          <h5 style="color:#fff;font-weight:700;margin-bottom:10px;">Romance Scam</h5>
+          <p style="color:#64748b;font-size:.9rem;line-height:1.7;margin-bottom:14px;">
+            Betrüger bauen über Monate emotionale Bindungen auf und fordern dann „Investitionen" oder
+            „Notfallzahlungen" in Kryptowährungen. Durchschnittlicher Schaden: <strong style="color:#ff6b6b;">€ 38.000 – € 180.000</strong>.
+          </p>
+          <div style="background:rgba(255,107,107,.08);border-radius:8px;padding:10px 14px;font-size:.82rem;color:#94a3b8;">
+            <i class="fas fa-check-circle me-2" style="color:#00ffb4;"></i>Häufig vollständig rückgewinnbar bei früher Meldung
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-lg-4">
+        <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,215,0,.2);border-radius:16px;padding:28px;height:100%;transition:border-color .3s,transform .3s;" onmouseover="this.style.borderColor='rgba(255,215,0,.5)';this.style.transform='translateY(-4px)';" onmouseout="this.style.borderColor='rgba(255,215,0,.2)';this.style.transform='translateY(0)';">
+          <div style="width:52px;height:52px;border-radius:14px;background:rgba(255,215,0,.12);display:flex;align-items:center;justify-content:center;margin-bottom:18px;">
+            <i class="fas fa-exchange-alt" style="color:#ffd700;font-size:1.4rem;"></i>
+          </div>
+          <h5 style="color:#fff;font-weight:700;margin-bottom:10px;">Gefälschte Handelsplattformen</h5>
+          <p style="color:#64748b;font-size:.9rem;line-height:1.7;margin-bottom:14px;">
+            Professionell gestaltete Fake-Exchanges ermöglichen zunächst kleine Gewinne, frieren dann
+            Konten ein oder verlangen unzählige „Verifizierungsgebühren". Schaden: <strong style="color:#ffd700;">bis zu € 500.000</strong>.
+          </p>
+          <div style="background:rgba(255,215,0,.07);border-radius:8px;padding:10px 14px;font-size:.82rem;color:#94a3b8;">
+            <i class="fas fa-check-circle me-2" style="color:#00ffb4;"></i>On-Chain-Verfolgung möglich – auch über mehrere Exchanges
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-lg-4">
+        <div style="background:rgba(255,255,255,.04);border:1px solid rgba(167,139,250,.2);border-radius:16px;padding:28px;height:100%;transition:border-color .3s,transform .3s;" onmouseover="this.style.borderColor='rgba(167,139,250,.5)';this.style.transform='translateY(-4px)';" onmouseout="this.style.borderColor='rgba(167,139,250,.2)';this.style.transform='translateY(0)';">
+          <div style="width:52px;height:52px;border-radius:14px;background:rgba(167,139,250,.15);display:flex;align-items:center;justify-content:center;margin-bottom:18px;">
+            <i class="fas fa-chart-line" style="color:#a78bfa;font-size:1.4rem;"></i>
+          </div>
+          <h5 style="color:#fff;font-weight:700;margin-bottom:10px;">Pig Butchering (SHA ZHU PAN)</h5>
+          <p style="color:#64748b;font-size:.9rem;line-height:1.7;margin-bottom:14px;">
+            Eine der gefährlichsten Betrugsmaschen: Opfer werden über Monate „gemästet" –
+            kleine Gewinne auszahlen, dann alles auf einmal abziehen. Schaden: <strong style="color:#a78bfa;">€ 50.000 – € 1 Mio+</strong>.
+          </p>
+          <div style="background:rgba(167,139,250,.08);border-radius:8px;padding:10px 14px;font-size:.82rem;color:#94a3b8;">
+            <i class="fas fa-check-circle me-2" style="color:#00ffb4;"></i>Spezialisiertes KI-Modell für SHA ZHU PAN-Muster
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-lg-4">
+        <div style="background:rgba(255,255,255,.04);border:1px solid rgba(0,198,255,.2);border-radius:16px;padding:28px;height:100%;transition:border-color .3s,transform .3s;" onmouseover="this.style.borderColor='rgba(0,198,255,.5)';this.style.transform='translateY(-4px)';" onmouseout="this.style.borderColor='rgba(0,198,255,.2)';this.style.transform='translateY(0)';">
+          <div style="width:52px;height:52px;border-radius:14px;background:rgba(0,198,255,.12);display:flex;align-items:center;justify-content:center;margin-bottom:18px;">
+            <i class="fas fa-fish" style="color:#00c6ff;font-size:1.4rem;"></i>
+          </div>
+          <h5 style="color:#fff;font-weight:700;margin-bottom:10px;">Phishing & Wallet-Diebstahl</h5>
+          <p style="color:#64748b;font-size:.9rem;line-height:1.7;margin-bottom:14px;">
+            Gefälschte Websites, Seed-Phrase-Diebstahl und Drainer-Smart-Contracts leeren Wallets
+            in Sekunden. Schaden variiert: <strong style="color:#00c6ff;">€ 1.000 – mehrere Millionen</strong>.
+          </p>
+          <div style="background:rgba(0,198,255,.07);border-radius:8px;padding:10px 14px;font-size:.82rem;color:#94a3b8;">
+            <i class="fas fa-check-circle me-2" style="color:#00ffb4;"></i>Schnelles Einfrieren gestohlener Gelder möglich
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-lg-4">
+        <div style="background:rgba(255,255,255,.04);border:1px solid rgba(0,255,180,.2);border-radius:16px;padding:28px;height:100%;transition:border-color .3s,transform .3s;" onmouseover="this.style.borderColor='rgba(0,255,180,.5)';this.style.transform='translateY(-4px)';" onmouseout="this.style.borderColor='rgba(0,255,180,.2)';this.style.transform='translateY(0)';">
+          <div style="width:52px;height:52px;border-radius:14px;background:rgba(0,255,180,.12);display:flex;align-items:center;justify-content:center;margin-bottom:18px;">
+            <i class="fas fa-rug" style="color:#00ffb4;font-size:1.4rem;"></i>
+          </div>
+          <h5 style="color:#fff;font-weight:700;margin-bottom:10px;">Rug Pull & Token-Betrug</h5>
+          <p style="color:#64748b;font-size:.9rem;line-height:1.7;margin-bottom:14px;">
+            Entwickler ziehen nach Token-Launch abrupt alle Liquidität ab. Projektbetrug,
+            Honeypots und Exit-Scams vernichten oft <strong style="color:#00ffb4;">Millionen innerhalb von Minuten</strong>.
+          </p>
+          <div style="background:rgba(0,255,180,.07);border-radius:8px;padding:10px 14px;font-size:.82rem;color:#94a3b8;">
+            <i class="fas fa-check-circle me-2" style="color:#00ffb4;"></i>Smart-Contract-Analyse & Entwickler-Deanonymisierung
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-lg-4">
+        <div style="background:rgba(255,255,255,.04);border:1px solid rgba(251,146,60,.2);border-radius:16px;padding:28px;height:100%;transition:border-color .3s,transform .3s;" onmouseover="this.style.borderColor='rgba(251,146,60,.5)';this.style.transform='translateY(-4px)';" onmouseout="this.style.borderColor='rgba(251,146,60,.2)';this.style.transform='translateY(0)';">
+          <div style="width:52px;height:52px;border-radius:14px;background:rgba(251,146,60,.12);display:flex;align-items:center;justify-content:center;margin-bottom:18px;">
+            <i class="fas fa-user-secret" style="color:#fb923c;font-size:1.4rem;"></i>
+          </div>
+          <h5 style="color:#fff;font-weight:700;margin-bottom:10px;">Investitionsbetrüger & Falsche Berater</h5>
+          <p style="color:#64748b;font-size:.9rem;line-height:1.7;margin-bottom:14px;">
+            Lizenzlose „Trader" versprechen garantierte Renditen und verwalten Gelder eigenständig –
+            bis sie verschwinden. Schaden: <strong style="color:#fb923c;">€ 10.000 – € 800.000</strong>.
+          </p>
+          <div style="background:rgba(251,146,60,.07);border-radius:8px;padding:10px 14px;font-size:.82rem;color:#94a3b8;">
+            <i class="fas fa-check-circle me-2" style="color:#00ffb4;"></i>Behördliche Strafanzeige und Zivilklage unterstützt
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /row loss types -->
+
+    <!-- Recovery process timeline -->
+    <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:20px;padding:48px;margin-bottom:60px;">
+      <div class="text-center mb-5">
+        <h3 style="color:#fff;font-weight:800;font-size:1.8rem;margin-bottom:10px;">
+          <i class="fas fa-route me-3" style="color:#00c6ff;"></i>So läuft die Rückgewinnung ab
+        </h3>
+        <p style="color:#64748b;max-width:560px;margin:0 auto;font-size:.95rem;">
+          Ein strukturierter, transparenter Prozess – von der ersten Kontaktaufnahme bis zur Auszahlung auf Ihr Bankkonto.
+        </p>
+      </div>
+
+      <div class="row g-0" style="position:relative;">
+        <!-- Timeline connector line -->
+        <div class="d-none d-lg-block" style="position:absolute;top:36px;left:calc(8.33% + 36px);right:calc(8.33% + 36px);height:2px;background:linear-gradient(90deg,#00ffb4,#00c6ff,#a78bfa,#ffd700,#00ffb4);z-index:0;"></div>
+
+        <div class="col-lg col-md-6 col-12 mb-4 mb-lg-0 text-center px-3" style="position:relative;z-index:1;">
+          <div style="width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,#00ffb4,#00c6ff);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;box-shadow:0 0 24px rgba(0,255,180,.4);">
+            <i class="fas fa-comment-dots" style="color:#04091a;font-size:1.5rem;"></i>
+          </div>
+          <div style="background:rgba(0,255,180,.07);border:1px solid rgba(0,255,180,.2);border-radius:12px;padding:16px 12px;">
+            <div style="color:#00ffb4;font-weight:800;font-size:.78rem;letter-spacing:.08em;margin-bottom:6px;">SCHRITT 1</div>
+            <div style="color:#fff;font-weight:700;margin-bottom:6px;font-size:.95rem;">Kostenlose Erstberatung</div>
+            <div style="color:#64748b;font-size:.82rem;line-height:1.6;">Schildern Sie uns Ihren Fall. Innerhalb von 24 h erhalten Sie eine Ersteinschätzung.</div>
+          </div>
+        </div>
+
+        <div class="col-lg col-md-6 col-12 mb-4 mb-lg-0 text-center px-3" style="position:relative;z-index:1;">
+          <div style="width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,#00c6ff,#a78bfa);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;box-shadow:0 0 24px rgba(0,198,255,.4);">
+            <i class="fas fa-search" style="color:#fff;font-size:1.5rem;"></i>
+          </div>
+          <div style="background:rgba(0,198,255,.07);border:1px solid rgba(0,198,255,.2);border-radius:12px;padding:16px 12px;">
+            <div style="color:#00c6ff;font-weight:800;font-size:.78rem;letter-spacing:.08em;margin-bottom:6px;">SCHRITT 2</div>
+            <div style="color:#fff;font-weight:700;margin-bottom:6px;font-size:.95rem;">KI-Forensik-Analyse</div>
+            <div style="color:#64748b;font-size:.82rem;line-height:1.6;">Unser System verfolgt alle Transaktionen und erstellt einen lückenlosen Beweisbericht.</div>
+          </div>
+        </div>
+
+        <div class="col-lg col-md-6 col-12 mb-4 mb-lg-0 text-center px-3" style="position:relative;z-index:1;">
+          <div style="width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,#a78bfa,#ffd700);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;box-shadow:0 0 24px rgba(167,139,250,.4);">
+            <i class="fas fa-balance-scale" style="color:#fff;font-size:1.5rem;"></i>
+          </div>
+          <div style="background:rgba(167,139,250,.07);border:1px solid rgba(167,139,250,.2);border-radius:12px;padding:16px 12px;">
+            <div style="color:#a78bfa;font-weight:800;font-size:.78rem;letter-spacing:.08em;margin-bottom:6px;">SCHRITT 3</div>
+            <div style="color:#fff;font-weight:700;margin-bottom:6px;font-size:.95rem;">Rechtliche Eskalation</div>
+            <div style="color:#64748b;font-size:.82rem;line-height:1.6;">Beweispakete gehen an BaFin, Europol und wenn nötig internationale Strafverfolgungsbehörden.</div>
+          </div>
+        </div>
+
+        <div class="col-lg col-md-6 col-12 mb-4 mb-lg-0 text-center px-3" style="position:relative;z-index:1;">
+          <div style="width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,#ffd700,#fb923c);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;box-shadow:0 0 24px rgba(255,215,0,.4);">
+            <i class="fas fa-lock-open" style="color:#04091a;font-size:1.5rem;"></i>
+          </div>
+          <div style="background:rgba(255,215,0,.07);border:1px solid rgba(255,215,0,.2);border-radius:12px;padding:16px 12px;">
+            <div style="color:#ffd700;font-weight:800;font-size:.78rem;letter-spacing:.08em;margin-bottom:6px;">SCHRITT 4</div>
+            <div style="color:#fff;font-weight:700;margin-bottom:6px;font-size:.95rem;">Gelder einfrieren & sichern</div>
+            <div style="color:#64748b;font-size:.82rem;line-height:1.6;">Identifizierte Wallets werden via Exchange-Kooperationen gesperrt und Gelder gesichert.</div>
+          </div>
+        </div>
+
+        <div class="col-lg col-md-6 col-12 text-center px-3" style="position:relative;z-index:1;">
+          <div style="width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,#00ffb4,#fb923c);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;box-shadow:0 0 24px rgba(0,255,180,.4);">
+            <i class="fas fa-euro-sign" style="color:#04091a;font-size:1.5rem;"></i>
+          </div>
+          <div style="background:rgba(0,255,180,.07);border:1px solid rgba(0,255,180,.2);border-radius:12px;padding:16px 12px;">
+            <div style="color:#00ffb4;font-weight:800;font-size:.78rem;letter-spacing:.08em;margin-bottom:6px;">SCHRITT 5</div>
+            <div style="color:#fff;font-weight:700;margin-bottom:6px;font-size:.95rem;">Auszahlung in Euro</div>
+            <div style="color:#64748b;font-size:.82rem;line-height:1.6;">Nach Abschluss: SEPA-Überweisung auf Ihr Konto. Keine Vorleistungen, erfolgsbasierte Vergütung.</div>
+          </div>
+        </div>
+
+      </div>
+    </div><!-- /timeline -->
+
+    <!-- Two-column: FAQ + Trustmarks -->
+    <div class="row g-4">
+
+      <!-- FAQ accordion -->
+      <div class="col-lg-7">
+        <h3 style="color:#fff;font-weight:800;font-size:1.4rem;margin-bottom:24px;">
+          <i class="fas fa-question-circle me-2" style="color:#00c6ff;"></i>Häufige Fragen zur Rückgewinnung
+        </h3>
+        <div style="display:flex;flex-direction:column;gap:10px;" id="recovery-faq">
+
+          <div style="border:1px solid rgba(255,255,255,.1);border-radius:12px;overflow:hidden;">
+            <button onclick="toggleFaq(this)" style="width:100%;background:rgba(255,255,255,.04);border:none;padding:18px 22px;text-align:left;color:#fff;font-weight:600;font-size:.95rem;cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
+              Kann ich wirklich gestohlene Kryptowährungen zurückbekommen?
+              <i class="fas fa-chevron-down" style="color:#00c6ff;transition:transform .3s;"></i>
+            </button>
+            <div style="display:none;padding:0 22px 18px;color:#94a3b8;font-size:.9rem;line-height:1.7;background:rgba(0,0,0,.15);">
+              Ja – in vielen Fällen ist es möglich, da Blockchain-Transaktionen dauerhaft und öffentlich nachvollziehbar sind.
+              Der Schlüssel ist das schnelle Handeln: Je früher Sie uns kontaktieren, desto größer ist die Chance,
+              die Gelder zu sichern, bevor sie über Mixer oder dezentralisierte Börsen verschleiert werden.
+              Unsere Erfolgsquote liegt bei <strong style="color:#00ffb4;">87 %</strong> bei Fällen, die innerhalb von 30 Tagen gemeldet werden.
+            </div>
+          </div>
+
+          <div style="border:1px solid rgba(255,255,255,.1);border-radius:12px;overflow:hidden;">
+            <button onclick="toggleFaq(this)" style="width:100%;background:rgba(255,255,255,.04);border:none;padding:18px 22px;text-align:left;color:#fff;font-weight:600;font-size:.95rem;cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
+              Was kostet die Rückgewinnung?
+              <i class="fas fa-chevron-down" style="color:#00c6ff;transition:transform .3s;"></i>
+            </button>
+            <div style="display:none;padding:0 22px 18px;color:#94a3b8;font-size:.9rem;line-height:1.7;background:rgba(0,0,0,.15);">
+              Die <strong style="color:#fff;">Erstberatung und KI-Analyse sind vollständig kostenlos und unverbindlich</strong>.
+              Wir arbeiten erfolgsbasiert: Unsere Vergütung richtet sich nach dem tatsächlich zurückgewonnenen Betrag –
+              ohne Vorabzahlungen. So tragen Sie kein Risiko. Die genaue Gebührenstruktur besprechen wir transparent
+              in Ihrem persönlichen Beratungsgespräch.
+            </div>
+          </div>
+
+          <div style="border:1px solid rgba(255,255,255,.1);border-radius:12px;overflow:hidden;">
+            <button onclick="toggleFaq(this)" style="width:100%;background:rgba(255,255,255,.04);border:none;padding:18px 22px;text-align:left;color:#fff;font-weight:600;font-size:.95rem;cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
+              Wie lange dauert ein Rückgewinnungsverfahren?
+              <i class="fas fa-chevron-down" style="color:#00c6ff;transition:transform .3s;"></i>
+            </button>
+            <div style="display:none;padding:0 22px 18px;color:#94a3b8;font-size:.9rem;line-height:1.7;background:rgba(0,0,0,.15);">
+              Die Dauer hängt von der Komplexität des Falls ab. Einfache Wallet-Diebstähle können innerhalb von
+              <strong style="color:#fff;">2–4 Wochen</strong> abgeschlossen werden. Komplexe internationale Betrugsfälle mit
+              mehreren Mixer-Ebenen können <strong style="color:#fff;">3–6 Monate</strong> in Anspruch nehmen.
+              Sie werden transparent über jeden Fortschritt informiert.
+            </div>
+          </div>
+
+          <div style="border:1px solid rgba(255,255,255,.1);border-radius:12px;overflow:hidden;">
+            <button onclick="toggleFaq(this)" style="width:100%;background:rgba(255,255,255,.04);border:none;padding:18px 22px;text-align:left;color:#fff;font-weight:600;font-size:.95rem;cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
+              Welche Informationen benötige ich für den Start?
+              <i class="fas fa-chevron-down" style="color:#00c6ff;transition:transform .3s;"></i>
+            </button>
+            <div style="display:none;padding:0 22px 18px;color:#94a3b8;font-size:.9rem;line-height:1.7;background:rgba(0,0,0,.15);">
+              Je mehr Informationen Sie haben, desto besser – aber selbst mit wenig Angaben können wir starten.
+              Hilfreich sind: Wallet-Adressen, Transaktions-Hashes (TxIDs), Kommunikationsprotokolle mit dem Betrüger,
+              Screenshots und der ungefähre Zeitraum der Transaktionen. Auch ohne diese Daten lässt sich oft
+              eine Erstspur finden.
+            </div>
+          </div>
+
+          <div style="border:1px solid rgba(255,255,255,.1);border-radius:12px;overflow:hidden;">
+            <button onclick="toggleFaq(this)" style="width:100%;background:rgba(255,255,255,.04);border:none;padding:18px 22px;text-align:left;color:#fff;font-weight:600;font-size:.95rem;cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
+              Sind meine Daten bei Ihnen sicher?
+              <i class="fas fa-chevron-down" style="color:#00c6ff;transition:transform .3s;"></i>
+            </button>
+            <div style="display:none;padding:0 22px 18px;color:#94a3b8;font-size:.9rem;line-height:1.7;background:rgba(0,0,0,.15);">
+              Absolut. Wir unterliegen als BaFin-lizenziertes Unternehmen strengen Datenschutzvorschriften
+              (DSGVO/GDPR). Alle Daten werden ausschließlich auf deutschen Servern mit
+              <strong style="color:#fff;">256-Bit AES-Verschlüsselung</strong> gespeichert und niemals an Dritte weitergegeben –
+              ausgenommen behördlich angeordnete Offenlegungen im Rahmen des Strafverfahrens.
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Trustmarks + stats -->
+      <div class="col-lg-5">
+        <h3 style="color:#fff;font-weight:800;font-size:1.4rem;margin-bottom:24px;">
+          <i class="fas fa-award me-2" style="color:#ffd700;"></i>Warum uns vertrauen?
+        </h3>
+
+        <div style="display:flex;flex-direction:column;gap:14px;">
+
+          <div style="background:rgba(255,255,255,.04);border:1px solid rgba(0,255,180,.15);border-radius:14px;padding:20px 22px;display:flex;align-items:flex-start;gap:16px;">
+            <div style="width:44px;height:44px;border-radius:10px;background:rgba(0,255,180,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <i class="fas fa-certificate" style="color:#00ffb4;font-size:1.2rem;"></i>
+            </div>
+            <div>
+              <div style="color:#fff;font-weight:700;margin-bottom:4px;">BaFin-lizenziert & reguliert</div>
+              <div style="color:#64748b;font-size:.85rem;line-height:1.6;">
+                Wir sind offiziell lizenziert und unterliegen den strengsten deutschen Finanzaufsichtsstandards –
+                keine graue Zone, nur geprüfte Seriosität.
+              </div>
+            </div>
+          </div>
+
+          <div style="background:rgba(255,255,255,.04);border:1px solid rgba(0,198,255,.15);border-radius:14px;padding:20px 22px;display:flex;align-items:flex-start;gap:16px;">
+            <div style="width:44px;height:44px;border-radius:10px;background:rgba(0,198,255,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <i class="fas fa-handshake" style="color:#00c6ff;font-size:1.2rem;"></i>
+            </div>
+            <div>
+              <div style="color:#fff;font-weight:700;margin-bottom:4px;">Kein Erfolg – keine Kosten</div>
+              <div style="color:#64748b;font-size:.85rem;line-height:1.6;">
+                Unser Honorar ist vollständig erfolgsbasiert. Sie zahlen ausschließlich dann,
+                wenn wir Ihre Gelder tatsächlich zurückholen.
+              </div>
+            </div>
+          </div>
+
+          <div style="background:rgba(255,255,255,.04);border:1px solid rgba(167,139,250,.15);border-radius:14px;padding:20px 22px;display:flex;align-items:flex-start;gap:16px;">
+            <div style="width:44px;height:44px;border-radius:10px;background:rgba(167,139,250,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <i class="fas fa-globe-europe" style="color:#a78bfa;font-size:1.2rem;"></i>
+            </div>
+            <div>
+              <div style="color:#fff;font-weight:700;margin-bottom:4px;">Internationale Netzwerke</div>
+              <div style="color:#64748b;font-size:.85rem;line-height:1.6;">
+                Kooperationen mit Europol, Interpol, FCA, BaFin und über 200 regulierten
+                Kryptowährungsbörsen weltweit ermöglichen grenzüberschreitende Rückgewinnungen.
+              </div>
+            </div>
+          </div>
+
+          <!-- Mini stat grid -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:4px;">
+            <div style="background:rgba(0,255,180,.07);border:1px solid rgba(0,255,180,.15);border-radius:12px;padding:16px;text-align:center;">
+              <div style="color:#00ffb4;font-size:1.5rem;font-weight:800;">€ 47M+</div>
+              <div style="color:#64748b;font-size:.78rem;margin-top:4px;">Zurückgewonnen</div>
+            </div>
+            <div style="background:rgba(0,198,255,.07);border:1px solid rgba(0,198,255,.15);border-radius:12px;padding:16px;text-align:center;">
+              <div style="color:#00c6ff;font-size:1.5rem;font-weight:800;">2.134</div>
+              <div style="color:#64748b;font-size:.78rem;margin-top:4px;">Fälle abgeschlossen</div>
+            </div>
+            <div style="background:rgba(167,139,250,.07);border:1px solid rgba(167,139,250,.15);border-radius:12px;padding:16px;text-align:center;">
+              <div style="color:#a78bfa;font-size:1.5rem;font-weight:800;">87 %</div>
+              <div style="color:#64748b;font-size:.78rem;margin-top:4px;">Erfolgsquote</div>
+            </div>
+            <div style="background:rgba(255,215,0,.07);border:1px solid rgba(255,215,0,.15);border-radius:12px;padding:16px;text-align:center;">
+              <div style="color:#ffd700;font-size:1.5rem;font-weight:800;">24 h</div>
+              <div style="color:#64748b;font-size:.78rem;margin-top:4px;">Erste Rückmeldung</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div><!-- /row faq + trust -->
+
+    <!-- Final CTA -->
+    <div class="text-center mt-5 pt-2">
+      <div style="background:linear-gradient(135deg,rgba(0,198,255,.1),rgba(0,255,180,.08));border:1px solid rgba(0,255,180,.2);border-radius:20px;padding:48px 32px;max-width:700px;margin:0 auto;">
+        <h3 style="color:#fff;font-weight:800;font-size:1.6rem;margin-bottom:12px;">
+          Bereit, Ihre Gelder zurückzuholen?
+        </h3>
+        <p style="color:#94a3b8;margin-bottom:28px;line-height:1.7;">
+          Jede Stunde zählt – betrügerische Transaktionen werden schnell verschleiert.
+          Kontaktieren Sie uns jetzt für eine <strong style="color:#fff;">kostenlose, unverbindliche Ersteinschätzung</strong>.
+        </p>
+        <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;">
+          <a href="#" data-bs-toggle="modal" data-bs-target="#contactLeadModal"
+             style="background:linear-gradient(135deg,#00c6ff,#00ffb4);border:none;color:#04091a;font-weight:700;padding:16px 36px;border-radius:12px;font-size:1.05rem;text-decoration:none;display:inline-flex;align-items:center;gap:8px;box-shadow:0 0 30px rgba(0,198,255,.35);">
+            <i class="fas fa-rocket"></i>Kostenlose Beratung starten
+          </a>
+          <a href="tel:+4930123456789"
+             style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.2);color:#fff;font-weight:600;padding:16px 30px;border-radius:12px;font-size:1rem;text-decoration:none;display:inline-flex;align-items:center;gap:8px;">
+            <i class="fas fa-phone"></i>Direkt anrufen
+          </a>
+        </div>
+        <p style="color:#475569;font-size:.8rem;margin-top:16px;margin-bottom:0;">
+          <i class="fas fa-lock me-1"></i>DSGVO-konform &nbsp;·&nbsp;
+          <i class="fas fa-shield-alt me-1"></i>BaFin-lizenziert &nbsp;·&nbsp;
+          <i class="fas fa-star me-1" style="color:#ffd700;"></i>4,9 / 5 Kundenbewertung
+        </p>
+      </div>
+    </div>
+
+  </div><!-- /container -->
+</section>
+
+<script>
+function toggleFaq(btn) {
+  var content = btn.nextElementSibling;
+  var icon    = btn.querySelector('.fa-chevron-down');
+  var isOpen  = content.style.display === 'block';
+  /* Close all panels and reset icons in a single DOM pass */
+  var faq = document.getElementById('recovery-faq');
+  faq.querySelectorAll('button').forEach(function (b) {
+    b.nextElementSibling.style.display = 'none';
+    b.querySelector('.fa-chevron-down').style.transform = '';
+  });
+  if (!isOpen) {
+    content.style.display = 'block';
+    icon.style.transform  = 'rotate(180deg)';
+  }
+}
 </script>
 
 <!-- Security Alerts & Fraud Warnings -->
