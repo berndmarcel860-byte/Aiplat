@@ -2654,7 +2654,7 @@ function dismissAlert(button) {
               <div class="trust-badge">
                 <i class="fas fa-check-circle fa-3x text-info mb-2"></i>
                 <p class="fw-bold mb-0">DSGVO-Konform</p>
-                <small class="text-muted">EU-Standard / Art. 17 DSGVO</small>
+                <small class="text-muted">EU-Standard / Art. 5 DSGVO</small>
               </div>
             </div>
             <div class="col-md-3 col-6 text-center mb-3">
@@ -2731,7 +2731,7 @@ function dismissAlert(button) {
           </div>
           <h2 class="display-3 fw-bold mb-2">€<span data-count="47">0</span>M</h2>
           <p class="h5 mb-0">Wiederhergestelltes Volumen</p>
-          <p class="small opacity-75 mt-2">Verifiziерtes Gesamtergebnis</p>
+          <p class="small opacity-75 mt-2">Verifiziertes Gesamtergebnis</p>
         </div>
       </div>
 
