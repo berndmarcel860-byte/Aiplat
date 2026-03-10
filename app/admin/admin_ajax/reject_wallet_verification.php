@@ -20,13 +20,14 @@ try {
     
     $wallet_id = intval($_POST['wallet_id']);
     $reason = isset($_POST['reason']) ? trim($_POST['reason']) : '';
-    $notes = isset($_POST['notes']) ? trim($_POST['notes']) : $reason;
+    $notes = isset($_POST['notes']) ? trim($_POST['notes']) : '';
     
     if (empty($reason)) {
         throw new Exception('Rejection reason is required');
     }
     
-    $rejection_text = $notes ?: $reason;
+    // Use notes if provided, otherwise fall back to the reason code
+    $rejection_text = $notes !== '' ? $notes : $reason;
 
     // Get wallet details
     $stmt = $pdo->prepare("SELECT upm.id, upm.user_id, upm.cryptocurrency, upm.network, upm.wallet_address, upm.verification_status

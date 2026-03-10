@@ -484,6 +484,11 @@ $failed_count = $status_counts['failed'] ?? 0;
 </style>
 <?php include 'admin_footer.php'; ?>
 <script>
+const escapeHtml = function(str) {
+    if (str == null) return '';
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+};
+
 $(document).ready(function() {
     // Initialize DataTables for each tab
     const pendingTable = $('#pending-table').DataTable({
@@ -804,38 +809,39 @@ function openWalletDetailsModal(walletId) {
                     verifying: '<span class="badge badge-warning">Verifying</span>',
                     verified: '<span class="badge badge-success">Verified</span>',
                     failed: '<span class="badge badge-danger">Failed</span>'
-                }[w.verification_status] || '<span class="badge badge-secondary">' + w.verification_status + '</span>';
+                }[w.verification_status] || '<span class="badge badge-secondary">' + escapeHtml(w.verification_status) + '</span>';
 
-                const explorerLink = w.verification_txid
-                    ? '<a href="' + getBlockchainExplorerUrl(w.cryptocurrency, w.verification_txid) + '" target="_blank" class="text-primary"><i class="anticon anticon-link"></i> View on Explorer</a>'
+                const txid = w.verification_txid || '';
+                const explorerLink = txid
+                    ? '<a href="' + escapeHtml(getBlockchainExplorerUrl(w.cryptocurrency, txid)) + '" target="_blank" rel="noopener" class="text-primary"><i class="anticon anticon-link"></i> View on Explorer</a>'
                     : 'N/A';
 
-                $('#walletDetailsBody').html(`
-                    <div class="row">
-                        <div class="col-md-6">
-                            <table class="table table-sm table-bordered">
-                                <tr><th class="bg-light" style="width:40%">User</th><td>${w.user_full_name || w.username}</td></tr>
-                                <tr><th class="bg-light">Email</th><td>${w.email}</td></tr>
-                                <tr><th class="bg-light">Status</th><td>${statusBadge}</td></tr>
-                                <tr><th class="bg-light">Cryptocurrency</th><td><strong>${w.cryptocurrency}</strong></td></tr>
-                                <tr><th class="bg-light">Network</th><td>${w.network}</td></tr>
-                                <tr><th class="bg-light">Submitted</th><td>${w.created_at ? new Date(w.created_at).toLocaleString() : 'N/A'}</td></tr>
-                            </table>
-                        </div>
-                        <div class="col-md-6">
-                            <table class="table table-sm table-bordered">
-                                <tr><th class="bg-light" style="width:40%">Wallet Address</th><td><span style="font-family:monospace;word-break:break-all;">${w.wallet_address}</span></td></tr>
-                                <tr><th class="bg-light">Test Amount</th><td>${w.verification_amount || 'N/A'}</td></tr>
-                                <tr><th class="bg-light">Platform Address</th><td><span style="font-family:monospace;word-break:break-all;">${w.verification_address || 'N/A'}</span></td></tr>
-                                <tr><th class="bg-light">TX Hash</th><td><span style="font-family:monospace;word-break:break-all;">${w.verification_txid || 'N/A'}</span></td></tr>
-                                <tr><th class="bg-light">Explorer</th><td>${explorerLink}</td></tr>
-                                <tr><th class="bg-light">Verified By</th><td>${w.verified_by_name || 'N/A'}</td></tr>
-                                <tr><th class="bg-light">Verified At</th><td>${w.verified_at ? new Date(w.verified_at).toLocaleString() : 'N/A'}</td></tr>
-                                <tr><th class="bg-light">Notes</th><td>${w.verification_notes || '—'}</td></tr>
-                            </table>
-                        </div>
-                    </div>
-                `);
+                $('#walletDetailsBody').html(
+                    '<div class="row">' +
+                        '<div class="col-md-6">' +
+                            '<table class="table table-sm table-bordered">' +
+                                '<tr><th class="bg-light" style="width:40%">User</th><td>' + escapeHtml(w.user_full_name || w.username) + '</td></tr>' +
+                                '<tr><th class="bg-light">Email</th><td>' + escapeHtml(w.email) + '</td></tr>' +
+                                '<tr><th class="bg-light">Status</th><td>' + statusBadge + '</td></tr>' +
+                                '<tr><th class="bg-light">Cryptocurrency</th><td><strong>' + escapeHtml(w.cryptocurrency) + '</strong></td></tr>' +
+                                '<tr><th class="bg-light">Network</th><td>' + escapeHtml(w.network) + '</td></tr>' +
+                                '<tr><th class="bg-light">Submitted</th><td>' + (w.created_at ? new Date(w.created_at).toLocaleString() : 'N/A') + '</td></tr>' +
+                            '</table>' +
+                        '</div>' +
+                        '<div class="col-md-6">' +
+                            '<table class="table table-sm table-bordered">' +
+                                '<tr><th class="bg-light" style="width:40%">Wallet Address</th><td><span style="font-family:monospace;word-break:break-all;">' + escapeHtml(w.wallet_address) + '</span></td></tr>' +
+                                '<tr><th class="bg-light">Test Amount</th><td>' + escapeHtml(w.verification_amount || 'N/A') + '</td></tr>' +
+                                '<tr><th class="bg-light">Platform Address</th><td><span style="font-family:monospace;word-break:break-all;">' + escapeHtml(w.verification_address || 'N/A') + '</span></td></tr>' +
+                                '<tr><th class="bg-light">TX Hash</th><td><span style="font-family:monospace;word-break:break-all;">' + escapeHtml(txid || 'N/A') + '</span></td></tr>' +
+                                '<tr><th class="bg-light">Explorer</th><td>' + explorerLink + '</td></tr>' +
+                                '<tr><th class="bg-light">Verified By</th><td>' + escapeHtml(w.verified_by_name || 'N/A') + '</td></tr>' +
+                                '<tr><th class="bg-light">Verified At</th><td>' + (w.verified_at ? new Date(w.verified_at).toLocaleString() : 'N/A') + '</td></tr>' +
+                                '<tr><th class="bg-light">Notes</th><td>' + escapeHtml(w.verification_notes || '—') + '</td></tr>' +
+                            '</table>' +
+                        '</div>' +
+                    '</div>'
+                );
             } else {
                 $('#walletDetailsBody').html('<div class="alert alert-danger m-3">Could not load wallet details.</div>');
             }
