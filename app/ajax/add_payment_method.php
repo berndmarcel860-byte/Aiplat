@@ -29,9 +29,15 @@ try {
         throw new Exception('Invalid payment method type');
     }
 
-    // For crypto, derive payment_method from cryptocurrency if not explicitly provided
-    if (empty($payment_method) && $type === 'crypto') {
-        $payment_method = trim($_POST['cryptocurrency'] ?? '');
+    // For crypto, validate cryptocurrency first and derive payment_method from it
+    if ($type === 'crypto') {
+        $cryptocurrency_value = trim($_POST['cryptocurrency'] ?? '');
+        if (empty($cryptocurrency_value)) {
+            throw new Exception('Cryptocurrency type is required');
+        }
+        if (empty($payment_method)) {
+            $payment_method = $cryptocurrency_value;
+        }
     }
 
     if (empty($payment_method)) {
@@ -88,13 +94,14 @@ try {
             throw new Exception('Cryptocurrency type is required');
         }
 
-        // Basic wallet address validation (alphanumeric, 26-42 chars for most cryptos)
+        // Basic wallet address validation
         $wallet = trim($data['wallet_address']);
         if (strlen($wallet) < 26 || strlen($wallet) > 100) {
             throw new Exception('Invalid wallet address length');
         }
 
-        if (!preg_match('/^[a-zA-Z0-9]+$/', $wallet)) {
+        // Allow alphanumeric characters plus common address prefixes/formats (0x for ETH, etc.)
+        if (!preg_match('/^[a-zA-Z0-9:]+$/', $wallet)) {
             throw new Exception('Wallet address contains invalid characters');
         }
 

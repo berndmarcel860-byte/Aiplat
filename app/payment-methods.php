@@ -494,6 +494,7 @@ include 'header.php';
             <form id="addCryptoForm">
                 <div class="modal-body">
                     <input type="hidden" name="type" value="crypto">
+                    <input type="hidden" name="payment_method" id="cryptoPaymentMethodHidden">
                     
                     <div class="alert alert-warning">
                         <i class="fas fa-exclamation-triangle"></i>
@@ -1156,9 +1157,22 @@ $('#addFiatForm').submit(function(e) {
     });
 });
 
+// Sync hidden payment_method field whenever cryptocurrency selection changes
+$('#addCryptoForm [name="cryptocurrency"]').on('change', function() {
+    $('#cryptoPaymentMethodHidden').val($(this).val());
+});
+
 $('#addCryptoForm').submit(function(e) {
     e.preventDefault();
-    
+
+    const cryptocurrency = $(this).find('[name="cryptocurrency"]').val();
+    if (!cryptocurrency) {
+        showError('Bitte wählen Sie eine Kryptowährung');
+        return;
+    }
+    // Keep hidden payment_method in sync before serializing (handles edge cases where change event did not fire)
+    $('#cryptoPaymentMethodHidden').val(cryptocurrency);
+
     $.ajax({
         url: 'ajax/add_payment_method.php',
         method: 'POST',
