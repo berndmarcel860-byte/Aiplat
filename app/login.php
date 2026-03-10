@@ -21,7 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     // Validate inputs
     if (empty($email) || empty($password)) {
-        $error = "Please enter both email and password";
+        $error = "Bitte geben Sie Ihre E-Mail-Adresse und Ihr Passwort ein.";
     } else {
         // Check if user exists
         $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
@@ -31,7 +31,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($user && password_verify($password, $user['password_hash'])) {
             // Check if account is active
             if ($user['status'] !== 'active') {
-                $error = "Your account is currently " . ucfirst($user['status']);
+                $statusLabels = [
+                    'suspended' => 'gesperrt',
+                    'banned'    => 'gesperrt',
+                    'inactive'  => 'inaktiv',
+                    'pending'   => 'ausstehend',
+                ];
+                $statusLabel = $statusLabels[strtolower($user['status'])] ?? strtolower($user['status']);
+                $error = "Ihr Konto ist derzeit " . $statusLabel . ". Bitte kontaktieren Sie den Support.";
             } else {
                 // Password verified - Check if OTP verification is still valid
                 // Session already initialized by session.php include (line 3)
@@ -108,7 +115,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
         } else {
-            $error = "Invalid email or password";
+            $error = "Ungültige E-Mail-Adresse oder Passwort.";
             
             // Log failed login attempt
             $ip = $_SERVER['REMOTE_ADDR'];
@@ -120,11 +127,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Client Portal Login | Fund Recovery Services</title>
+    <title>Kundenportal Anmeldung | Fund Recovery Services</title>
     <link href="assets/css/app.min.css" rel="stylesheet">
     <style>
         body {
@@ -243,8 +250,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="login-card">
             <div class="login-header">
                 <img src="assets/images/logo/logo.png" alt="Fund Recovery Services">
-                <p class="header-title">Client Portal</p>
-                <p class="header-subtitle">Secure access to your recovery case</p>
+                <p class="header-title">Kundenportal</p>
+                <p class="header-subtitle">Sicherer Zugang zu Ihrem Rückforderungsfall</p>
             </div>
             <div class="login-body">
                 <?php if ($error): ?>
@@ -255,14 +262,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 <form method="POST" action="login.php">
                     <div class="form-group mb-3">
-                        <label for="email">Email Address</label>
+                        <label for="email">E-Mail-Adresse</label>
                         <input type="email" class="form-control" id="email" name="email"
                                value="<?php echo htmlspecialchars($email); ?>" required autofocus
-                               placeholder="you@example.com">
+                               placeholder="ihre@email.de">
                     </div>
 
                     <div class="form-group mb-2">
-                        <label for="password">Password</label>
+                        <label for="password">Passwort</label>
                         <input type="password" class="form-control" id="password" name="password"
                                required placeholder="••••••••">
                     </div>
@@ -270,22 +277,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div class="d-flex justify-content-between align-items-center mb-3" style="font-size:0.83rem;">
                         <label class="d-flex align-items-center gap-1 mb-0" style="cursor:pointer; color:#374151;">
                             <input type="checkbox" name="remember" id="remember" style="margin-right:5px;">
-                            Keep me signed in
+                            Angemeldet bleiben
                         </label>
-                        <a href="forgot-password.php" class="forgot-link">Forgot password?</a>
+                        <a href="forgot-password.php" class="forgot-link">Passwort vergessen?</a>
                     </div>
 
-                    <button type="submit" class="btn-signin">Sign In to My Account</button>
+                    <button type="submit" class="btn-signin">Anmelden</button>
                 </form>
 
                 <div class="security-badge">
                     <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
-                    256-bit SSL encrypted &amp; secure connection
+                    256-Bit SSL-verschlüsselt &amp; sichere Verbindung
                 </div>
             </div>
             <div class="login-footer">
-                Not yet a client? &nbsp;<a href="register.php" style="color:#1a3a5c; font-weight:600; text-decoration:none;">Request Access</a>
-                &nbsp;&middot;&nbsp; <a href="../contact.php" style="color:#9ca3af; text-decoration:none;">Contact Support</a>
+                Noch kein Konto? &nbsp;<a href="register.php" style="color:#1a3a5c; font-weight:600; text-decoration:none;">Zugang anfragen</a>
+                &nbsp;&middot;&nbsp; <a href="../contact.php" style="color:#9ca3af; text-decoration:none;">Support kontaktieren</a>
             </div>
         </div>
     </div>
