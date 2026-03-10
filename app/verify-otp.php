@@ -254,6 +254,12 @@ if (isset($_GET['resend']) && $_GET['resend'] === '1') {
             font-size: 0.8rem;
             color: #9ca3af;
         }
+        .otp-footer a {
+            font-size: 0.8rem;
+        }
+        .resend-hint {
+            font-size: 0.85rem;
+        }
     </style>
 </head>
 <body>
@@ -316,7 +322,7 @@ if (isset($_GET['resend']) && $_GET['resend'] === '1') {
                 </form>
 
                 <div class="text-center mt-4">
-                    <p class="text-muted mb-2" style="font-size:0.85rem;">Code nicht erhalten?</p>
+                    <p class="text-muted mb-2 resend-hint">Code nicht erhalten?</p>
                     <a href="?resend=1" class="resend-link">Neuen Code senden</a>
                     <p class="timer-text mt-2">
                         <?php if (isset($_SESSION['last_otp_sent'])): ?>
@@ -327,7 +333,7 @@ if (isset($_GET['resend']) && $_GET['resend'] === '1') {
             </div>
 
             <div class="otp-footer">
-                <a href="logout.php" class="text-muted" style="font-size:0.8rem;">&#8592; Zurück zur Anmeldung</a>
+                <a href="logout.php" class="text-muted">&#8592; Zurück zur Anmeldung</a>
             </div>
         </div>
     </div>
