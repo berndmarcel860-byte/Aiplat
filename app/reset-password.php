@@ -62,20 +62,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             padding: 28px 32px 22px;
             text-align: center;
         }
-        .lock-icon {
-            width: 60px;
-            height: 60px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 14px;
-        }
-        .lock-icon svg {
-            width: 30px;
-            height: 30px;
-            fill: #ffffff;
+        .reset-header img {
+            height: 56px;
+            margin-bottom: 14px;
         }
         .reset-header .header-title {
             color: #ffffff;
@@ -162,9 +151,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="reset-container">
         <div class="reset-card">
             <div class="reset-header">
-                <div class="lock-icon">
-                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
-                </div>
+                <img src="assets/images/logo/logo.png" alt="Fund Recovery Services">
                 <p class="header-title">Neues Passwort festlegen</p>
                 <p class="header-subtitle">Bitte wählen Sie ein sicheres neues Passwort</p>
             </div>

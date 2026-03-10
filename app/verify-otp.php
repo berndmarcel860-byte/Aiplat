@@ -121,7 +121,7 @@ if (isset($_GET['resend']) && $_GET['resend'] === '1') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OTP-Verifizierung | Crypto Finanz</title>
+    <title>OTP-Verifizierung | Fund Recovery Services</title>
     <link href="assets/css/app.min.css" rel="stylesheet">
     <style>
         body {
@@ -150,20 +150,9 @@ if (isset($_GET['resend']) && $_GET['resend'] === '1') {
             padding: 28px 32px 22px;
             text-align: center;
         }
-        .otp-icon {
-            width: 60px;
-            height: 60px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 14px;
-        }
-        .otp-icon svg {
-            width: 30px;
-            height: 30px;
-            fill: #ffffff;
+        .otp-header img {
+            height: 56px;
+            margin-bottom: 14px;
         }
         .otp-header .header-title {
             color: #ffffff;
@@ -266,11 +255,7 @@ if (isset($_GET['resend']) && $_GET['resend'] === '1') {
     <div class="otp-container">
         <div class="otp-card">
             <div class="otp-header">
-                <div class="otp-icon">
-                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
-                    </svg>
-                </div>
+                <img src="assets/images/logo/logo.png" alt="Fund Recovery Services">
                 <p class="header-title">E-Mail-Verifizierung</p>
                 <p class="header-subtitle">Geben Sie den 6-stelligen Code ein, den wir an Ihre E-Mail gesendet haben</p>
             </div>
