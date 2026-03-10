@@ -690,6 +690,7 @@ include 'includes/navbar.php';
 <!-- ============================================================
      TERMINVEREINBARUNG MODAL – Kundenanfrageformular
      ============================================================ -->
+<style>
 /* ── Custom overlay modal (matches register.php) ── */
 .modal-overlay {
     display: none;
@@ -1083,17 +1084,16 @@ include 'includes/navbar.php';
         txt.textContent = 'Wird gesendet …';
 
         fetch('contact.php', { method: 'POST', body: fd })
-            .then(function(resp) {
-                if (resp.ok) {
+            .then(function(resp) { return resp.json(); })
+            .then(function(r) {
+                if (r.success) {
                     document.getElementById('clm-form-wrap').style.display = 'none';
                     document.getElementById('clm-success').style.display = 'block';
                 } else {
-                    return resp.json().then(function(r) {
-                        errEl.textContent = r.message || 'Fehler beim Senden. Bitte versuchen Sie es erneut.';
-                        errEl.style.display = 'block';
-                        btn.disabled = false;
-                        txt.textContent = 'Anfrage absenden \u2192';
-                    });
+                    errEl.textContent = r.message || 'Fehler beim Senden. Bitte versuchen Sie es erneut.';
+                    errEl.style.display = 'block';
+                    btn.disabled = false;
+                    txt.textContent = 'Anfrage absenden \u2192';
                 }
             })
             .catch(function() {

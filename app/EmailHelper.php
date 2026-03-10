@@ -861,6 +861,47 @@ class EmailHelper {
     }
 
     /**
+     * Send a KYC pending notification email to a user.
+     * Uses the 'kyc_pending' template from the email_templates table when it
+     * exists; otherwise falls back to an inline German template.
+     *
+     * @param int   $userId     User ID
+     * @param array $customVars Must include: document_type, kyc_id
+     * @return bool
+     */
+    public function sendKycPendingEmail($userId, $customVars = []) {
+        if ($this->templateExistsInDb('kyc_pending')) {
+            return $this->sendEmail('kyc_pending', $userId, $customVars);
+        }
+
+        $documentType = htmlspecialchars($customVars['document_type'] ?? '');
+        $kycId        = htmlspecialchars((string)($customVars['kyc_id'] ?? ''));
+
+        $subject = 'KYC-Verifizierung ausstehend – ' . $kycId;
+
+        $body = '
+<p>Sehr geehrte/r {first_name} {last_name},</p>
+
+<p>vielen Dank für die Einreichung Ihrer KYC-Dokumente. Wir haben Ihre Unterlagen erfolgreich erhalten.</p>
+
+<div class="highlight-box">
+  <h3>&#128203; Einreichungsdetails</h3>
+  <p><strong>KYC-ID:</strong> ' . $kycId . '</p>
+  <p><strong>Dokumenttyp:</strong> ' . $documentType . '</p>
+  <p><strong>Status:</strong> In Bearbeitung</p>
+</div>
+
+<p>Unser Team wird Ihre Dokumente innerhalb von 1–3 Werktagen überprüfen. Nach erfolgreicher Verifizierung wird Ihr Konto vollständig freigeschaltet.</p>
+
+<p>Sie können den Status Ihrer KYC-Verifizierung jederzeit in Ihrem <strong>Kundenportal</strong> einsehen.</p>
+
+<p><a href="{site_url}/app/profile.php" class="btn">Zum Kundenportal</a></p>
+';
+
+        return $this->sendDirectEmail($userId, $subject, $body, $customVars);
+    }
+
+    /**
      * Send an admin notification email about a newly created support ticket.
      * Reads the admin contact address from system_settings.contact_email.
      *
@@ -887,7 +928,7 @@ class EmailHelper {
 
             $subject = "Neues Support-Ticket: $ticketNumber";
 
-            $htmlBody = '
+            $bodyContent = '
 <p>Ein neues Support-Ticket wurde erstellt.</p>
 
 <div class="highlight-box">
@@ -900,6 +941,19 @@ class EmailHelper {
 
 <p><a href="' . htmlspecialchars($this->siteUrl) . '/app/admin/admin_support_tickets.php" class="btn">Ticket ansehen</a></p>
 ';
+
+            $variables = [
+                'brand_name'           => htmlspecialchars($brandName),
+                'site_url'             => htmlspecialchars($this->siteUrl),
+                'contact_email'        => '',
+                'company_address'      => '',
+                'fca_reference_number' => '',
+                'logo_url'             => '',
+                'first_name'           => 'Admin',
+                'last_name'            => '',
+            ];
+
+            $htmlBody = $this->wrapInTemplate($subject, $bodyContent, $variables);
 
             $trackingToken = bin2hex(random_bytes(16));
             $htmlBody = $this->injectTrackingPixel($htmlBody, $trackingToken);
