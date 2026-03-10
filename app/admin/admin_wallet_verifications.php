@@ -518,12 +518,18 @@ $(document).ready(function() {
                 data: null,
                 render: function(data, type, row) {
                     return `<div class="btn-group">
-                        <button class="btn btn-sm btn-info" onclick="openWalletDetailsModal(${row.id})" title="View Details">
+                        <button class="btn btn-sm btn-info btn-wallet-details"
+                                data-id="${row.id}" title="View Details">
                             <i class="anticon anticon-eye"></i>
                         </button>
-                        <button class="btn btn-sm btn-primary" onclick="openSetVerificationModal(${row.id}, '${escapeHtml(row.username)}', '${escapeHtml(row.cryptocurrency)}', '${escapeHtml(row.network)}', '${escapeHtml(row.wallet_address)}')">
-                        <i class="anticon anticon-setting"></i> Set Details
-                    </button>
+                        <button class="btn btn-sm btn-primary btn-set-verification"
+                                data-id="${row.id}"
+                                data-username="${escapeHtml(String(row.username || ''))}"
+                                data-crypto="${escapeHtml(String(row.cryptocurrency || ''))}"
+                                data-network="${escapeHtml(String(row.network || ''))}"
+                                data-address="${escapeHtml(String(row.wallet_address || ''))}">
+                            <i class="anticon anticon-setting"></i> Set Details
+                        </button>
                     </div>`;
                 }
             }
@@ -565,13 +571,23 @@ $(document).ready(function() {
                 data: null,
                 render: function(data, type, row) {
                     return `<div class="btn-group">
-                        <button class="btn btn-sm btn-info" onclick="openWalletDetailsModal(${row.id})" title="View Details">
+                        <button class="btn btn-sm btn-info btn-wallet-details"
+                                data-id="${row.id}" title="View Details">
                             <i class="anticon anticon-eye"></i>
                         </button>
-                        <button class="btn btn-sm btn-success" onclick="openApproveModal(${row.id}, '${escapeHtml(row.username)}', '${escapeHtml(row.cryptocurrency)}', '${escapeHtml(row.network)}', '${escapeHtml(row.verification_txid || '')}')">
+                        <button class="btn btn-sm btn-success btn-approve-verification"
+                                data-id="${row.id}"
+                                data-username="${escapeHtml(String(row.username || ''))}"
+                                data-crypto="${escapeHtml(String(row.cryptocurrency || ''))}"
+                                data-network="${escapeHtml(String(row.network || ''))}"
+                                data-txid="${escapeHtml(String(row.verification_txid || ''))}">
                             <i class="anticon anticon-check"></i> Approve
                         </button>
-                        <button class="btn btn-sm btn-danger" onclick="openRejectModal(${row.id}, '${escapeHtml(row.username)}', '${escapeHtml(row.cryptocurrency)}', '${escapeHtml(row.network)}')">
+                        <button class="btn btn-sm btn-danger btn-reject-verification"
+                                data-id="${row.id}"
+                                data-username="${escapeHtml(String(row.username || ''))}"
+                                data-crypto="${escapeHtml(String(row.cryptocurrency || ''))}"
+                                data-network="${escapeHtml(String(row.network || ''))}">
                             <i class="anticon anticon-close"></i> Reject
                         </button>
                     </div>`;
@@ -609,7 +625,8 @@ $(document).ready(function() {
                 data: null,
                 orderable: false,
                 render: function(data, type, row) {
-                    return `<button class="btn btn-sm btn-info" onclick="openWalletDetailsModal(${row.id})" title="View Details">
+                    return `<button class="btn btn-sm btn-info btn-wallet-details"
+                            data-id="${row.id}" title="View Details">
                         <i class="anticon anticon-eye"></i> Details
                     </button>`;
                 }
@@ -646,10 +663,16 @@ $(document).ready(function() {
                 data: null,
                 render: function(data, type, row) {
                     return `<div class="btn-group">
-                        <button class="btn btn-sm btn-info" onclick="openWalletDetailsModal(${row.id})" title="View Details">
+                        <button class="btn btn-sm btn-info btn-wallet-details"
+                                data-id="${row.id}" title="View Details">
                             <i class="anticon anticon-eye"></i>
                         </button>
-                        <button class="btn btn-sm btn-warning" onclick="openSetVerificationModal(${row.id}, '${escapeHtml(row.username)}', '${escapeHtml(row.cryptocurrency)}', '${escapeHtml(row.network)}', '${escapeHtml(row.wallet_address)}')">
+                        <button class="btn btn-sm btn-warning btn-set-verification"
+                                data-id="${row.id}"
+                                data-username="${escapeHtml(String(row.username || ''))}"
+                                data-crypto="${escapeHtml(String(row.cryptocurrency || ''))}"
+                                data-network="${escapeHtml(String(row.network || ''))}"
+                                data-address="${escapeHtml(String(row.wallet_address || ''))}">
                             <i class="anticon anticon-reload"></i> Reset
                         </button>
                     </div>`;
@@ -666,6 +689,43 @@ $(document).ready(function() {
         if (target === '#verifying-tab') verifyingTable.ajax.reload();
         if (target === '#verified-tab') verifiedTable.ajax.reload();
         if (target === '#failed-tab') failedTable.ajax.reload();
+    });
+
+    // Event delegation for dynamically rendered DataTable buttons
+    $(document).on('click', '.btn-wallet-details', function() {
+        openWalletDetailsModal(parseInt($(this).data('id')));
+    });
+
+    $(document).on('click', '.btn-set-verification', function() {
+        const $btn = $(this);
+        openSetVerificationModal(
+            parseInt($btn.data('id')),
+            $btn.data('username'),
+            $btn.data('crypto'),
+            $btn.data('network'),
+            $btn.data('address')
+        );
+    });
+
+    $(document).on('click', '.btn-approve-verification', function() {
+        const $btn = $(this);
+        openApproveModal(
+            parseInt($btn.data('id')),
+            $btn.data('username'),
+            $btn.data('crypto'),
+            $btn.data('network'),
+            $btn.data('txid')
+        );
+    });
+
+    $(document).on('click', '.btn-reject-verification', function() {
+        const $btn = $(this);
+        openRejectModal(
+            parseInt($btn.data('id')),
+            $btn.data('username'),
+            $btn.data('crypto'),
+            $btn.data('network')
+        );
     });
 });
 
