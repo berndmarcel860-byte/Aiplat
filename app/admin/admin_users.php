@@ -435,59 +435,65 @@ $(document).ready(function() {
                 data: null,
                 orderable: false,
                 render: function(data, type, row) {
-                    const email = escapeHtml(data.email);
-                    const name  = escapeHtml(data.first_name + ' ' + data.last_name);
+                    const email = escapeHtml(row.email);
+                    const name  = escapeHtml(row.first_name + ' ' + row.last_name);
                     return `
-                    <div class="dropdown">
-                      <button class="btn btn-sm btn-light border dropdown-toggle" type="button"
-                              data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"
-                              style="min-width:90px;">
-                        <i class="anticon anticon-setting mr-1"></i> Actions
+                    <div class="d-flex align-items-center" style="gap:4px;">
+                      <button class="btn btn-sm btn-info open-tab" title="View Details"
+                              data-id="${row.id}" data-tab="basicInfo">
+                        <i class="anticon anticon-eye"></i>
                       </button>
-                      <div class="dropdown-menu dropdown-menu-right shadow-sm" style="min-width:210px;">
-                        <h6 class="dropdown-header text-truncate" style="max-width:200px;">${name}</h6>
-                        <div class="dropdown-divider"></div>
-                        <a href="admin_view_users.php?id=${data.id}" class="dropdown-item">
-                          <i class="anticon anticon-profile text-primary mr-2"></i> View Full Profile
-                        </a>
-                        <div class="dropdown-divider"></div>
-                        <a href="#" class="dropdown-item open-tab" data-id="${data.id}" data-tab="basicInfo">
-                          <i class="anticon anticon-idcard text-secondary mr-2"></i> Overview
-                        </a>
-                        <a href="#" class="dropdown-item open-tab" data-id="${data.id}" data-tab="onboarding">
-                          <i class="anticon anticon-solution mr-2" style="color:#6f42c1;"></i> Onboarding
-                        </a>
-                        <a href="#" class="dropdown-item open-tab" data-id="${data.id}" data-tab="kyc">
-                          <i class="anticon anticon-safety text-warning mr-2"></i> KYC
-                        </a>
-                        <a href="#" class="dropdown-item open-tab" data-id="${data.id}" data-tab="cases">
-                          <i class="anticon anticon-folder text-primary mr-2"></i> Cases
-                          ${parseInt(data.cases_count) > 0 ? `<span class="badge badge-primary float-right">${data.cases_count}</span>` : ''}
-                        </a>
-                        <a href="#" class="dropdown-item open-tab" data-id="${data.id}" data-tab="tickets">
-                          <i class="anticon anticon-customer-service text-info mr-2"></i> Tickets
-                          ${parseInt(data.tickets_count) > 0 ? `<span class="badge badge-info float-right">${data.tickets_count}</span>` : ''}
-                        </a>
-                        <a href="#" class="dropdown-item open-tab" data-id="${data.id}" data-tab="transactions">
-                          <i class="anticon anticon-swap text-success mr-2"></i> Transactions
-                        </a>
-                        <a href="#" class="dropdown-item open-tab" data-id="${data.id}" data-tab="sendNotifTab">
-                          <i class="anticon anticon-notification text-danger mr-2"></i> Notifications
-                        </a>
-                        <a href="#" class="dropdown-item open-tab" data-id="${data.id}" data-tab="payments">
-                          <i class="anticon anticon-wallet text-secondary mr-2"></i> Wallet / Payments
-                        </a>
-                        <div class="dropdown-divider"></div>
-                        <a href="#" class="dropdown-item edit-user" data-id="${data.id}">
-                          <i class="anticon anticon-edit text-primary mr-2"></i> Edit User
-                        </a>
-                        <a href="#" class="dropdown-item send-mail-user" data-id="${data.id}" data-email="${email}" data-name="${name}">
-                          <i class="anticon anticon-mail text-success mr-2"></i> Send Email
-                        </a>
-                        <div class="dropdown-divider"></div>
-                        <a href="#" class="dropdown-item text-danger delete-user" data-id="${data.id}" data-name="${name}" data-email="${email}">
-                          <i class="anticon anticon-stop mr-2"></i> Suspend User
-                        </a>
+                      <div class="dropdown">
+                        <button class="btn btn-sm btn-light border dropdown-toggle" type="button"
+                                data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"
+                                style="min-width:90px;">
+                          <i class="anticon anticon-setting mr-1"></i> Actions
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-right shadow-sm" style="min-width:210px;">
+                          <h6 class="dropdown-header text-truncate" style="max-width:200px;">${name}</h6>
+                          <div class="dropdown-divider"></div>
+                          <a href="admin_view_users.php?id=${row.id}" class="dropdown-item">
+                            <i class="anticon anticon-profile text-primary mr-2"></i> View Full Profile
+                          </a>
+                          <div class="dropdown-divider"></div>
+                          <a href="#" class="dropdown-item open-tab" data-id="${row.id}" data-tab="basicInfo">
+                            <i class="anticon anticon-idcard text-secondary mr-2"></i> Overview
+                          </a>
+                          <a href="#" class="dropdown-item open-tab" data-id="${row.id}" data-tab="onboarding">
+                            <i class="anticon anticon-solution mr-2" style="color:#6f42c1;"></i> Onboarding
+                          </a>
+                          <a href="#" class="dropdown-item open-tab" data-id="${row.id}" data-tab="kyc">
+                            <i class="anticon anticon-safety text-warning mr-2"></i> KYC
+                          </a>
+                          <a href="#" class="dropdown-item open-tab" data-id="${row.id}" data-tab="cases">
+                            <i class="anticon anticon-folder text-primary mr-2"></i> Cases
+                            ${parseInt(row.cases_count) > 0 ? `<span class="badge badge-primary float-right">${row.cases_count}</span>` : ''}
+                          </a>
+                          <a href="#" class="dropdown-item open-tab" data-id="${row.id}" data-tab="tickets">
+                            <i class="anticon anticon-customer-service text-info mr-2"></i> Tickets
+                            ${parseInt(row.tickets_count) > 0 ? `<span class="badge badge-info float-right">${row.tickets_count}</span>` : ''}
+                          </a>
+                          <a href="#" class="dropdown-item open-tab" data-id="${row.id}" data-tab="transactions">
+                            <i class="anticon anticon-swap text-success mr-2"></i> Transactions
+                          </a>
+                          <a href="#" class="dropdown-item open-tab" data-id="${row.id}" data-tab="sendNotifTab">
+                            <i class="anticon anticon-notification text-danger mr-2"></i> Notifications
+                          </a>
+                          <a href="#" class="dropdown-item open-tab" data-id="${row.id}" data-tab="payments">
+                            <i class="anticon anticon-wallet text-secondary mr-2"></i> Wallet / Payments
+                          </a>
+                          <div class="dropdown-divider"></div>
+                          <a href="#" class="dropdown-item edit-user" data-id="${row.id}">
+                            <i class="anticon anticon-edit text-primary mr-2"></i> Edit User
+                          </a>
+                          <a href="#" class="dropdown-item send-mail-user" data-id="${row.id}" data-email="${email}" data-name="${name}">
+                            <i class="anticon anticon-mail text-success mr-2"></i> Send Email
+                          </a>
+                          <div class="dropdown-divider"></div>
+                          <a href="#" class="dropdown-item text-danger delete-user" data-id="${row.id}" data-name="${name}" data-email="${email}">
+                            <i class="anticon anticon-stop mr-2"></i> Suspend User
+                          </a>
+                        </div>
                       </div>
                     </div>`;
                 }
