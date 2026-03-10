@@ -1383,7 +1383,7 @@ $('#verifyWalletForm').on('submit', function(e) {
     
     const formData = {
         wallet_id: $('#verify_wallet_id').val(),
-        transaction_id: $('#verify_transaction_id').val(),
+        verification_txid: $('#verify_transaction_id').val(),
         notes: $('#verify_notes').val()
     };
     
