@@ -793,7 +793,7 @@ include 'header.php';
                     <div class="row mt-4">
                         <div class="col-md-12 mb-3">
                             <label for="verify_transaction_id">Transaktions-ID (TxID) *</label>
-                            <input type="text" class="form-control" id="verify_transaction_id" name="transaction_id" required placeholder="Geben Sie die Transaktions-ID ein">
+                            <input type="text" class="form-control" id="verify_transaction_id" name="verification_txid" required placeholder="Geben Sie die Transaktions-ID ein">
                             <small class="form-text text-muted">
                                 Die Transaktions-ID finden Sie in Ihrer Wallet nach dem Senden
                             </small>
@@ -1377,13 +1377,24 @@ function showVerifyWalletModal(wallet) {
     $('#verifyWalletModal').modal('show');
 }
 
+// Reset verify wallet form when modal is closed
+$('#verifyWalletModal').on('hidden.bs.modal', function() {
+    $('#verifyWalletForm')[0].reset();
+});
+
 // Handle verify wallet form submission
 $('#verifyWalletForm').on('submit', function(e) {
     e.preventDefault();
     
+    const txid = $('#verify_transaction_id').val().trim();
+    if (!txid) {
+        showError('Bitte geben Sie die Transaktions-ID ein');
+        return;
+    }
+    
     const formData = {
         wallet_id: $('#verify_wallet_id').val(),
-        verification_txid: $('#verify_transaction_id').val(),
+        verification_txid: txid,
         notes: $('#verify_notes').val()
     };
     
