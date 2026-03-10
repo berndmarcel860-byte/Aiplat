@@ -12,6 +12,31 @@ require_once 'admin_header.php';
             </nav>
         </div>
     </div>
+
+    <!-- Platform Distribution Map -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Cases per Platform</h5>
+                    <small class="text-muted">Number of open cases by scam platform</small>
+                </div>
+                <div class="card-body p-2">
+                    <div id="txnPlatformChart" style="width:100%;height:280px;"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Refund Difficulty Mix</h5>
+                </div>
+                <div class="card-body p-2">
+                    <div id="txnDifficultyChart" style="width:100%;height:280px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
     
     <div class="card">
         <div class="card-body">
@@ -118,9 +143,50 @@ require_once 'admin_header.php';
 
 <?php require_once 'admin_footer.php'; ?>
 
+<!-- ApexCharts for transaction maps -->
+<script src="https://cdn.jsdelivr.net/npm/apexcharts@3/dist/apexcharts.min.js"></script>
+
 <script>
 $(document).ready(function() {
-    // Initialize DataTable
+
+    /* ------------------------------------------------------------------ */
+    /*  Platform distribution bar chart                                    */
+    /* ------------------------------------------------------------------ */
+    $.getJSON('admin_ajax/get_platform_case_stats.php', function(stats) {
+        if (!stats || !stats.labels || !stats.labels.length) return;
+        new ApexCharts(document.querySelector('#txnPlatformChart'), {
+            chart: { type: 'bar', height: 260, toolbar: { show: false } },
+            plotOptions: { bar: { horizontal: true, borderRadius: 3 } },
+            colors: ['#4e73df'],
+            dataLabels: { enabled: false },
+            series: [{ name: 'Cases', data: stats.values }],
+            xaxis: { categories: stats.labels, labels: { style: { fontSize: '11px' } } },
+            tooltip: {
+                y: { formatter: function(val, opts) {
+                    return val + ' case(s) — €' + (stats.amounts[opts.dataPointIndex] || 0).toLocaleString('de-DE');
+                }}
+            }
+        }).render();
+    });
+
+    /* ------------------------------------------------------------------ */
+    /*  Refund difficulty donut chart                                      */
+    /* ------------------------------------------------------------------ */
+    $.getJSON('admin_ajax/get_case_difficulty_stats.php', function(ds) {
+        if (!ds) return;
+        new ApexCharts(document.querySelector('#txnDifficultyChart'), {
+            chart: { type: 'donut', height: 260 },
+            labels: ['Einfach', 'Mittel', 'Schwierig'],
+            series: [ds.easy || 0, ds.medium || 0, ds.hard || 0],
+            colors: ['#1cc88a', '#f6c23e', '#e74a3b'],
+            legend: { position: 'bottom' },
+            plotOptions: { pie: { donut: { size: '60%' } } }
+        }).render();
+    });
+
+    /* ------------------------------------------------------------------ */
+    /*  Initialize DataTable                                               */
+    /* ------------------------------------------------------------------ */
     const transactionsTable = $('#transactionsTable').DataTable({
         processing: true,
         serverSide: true,

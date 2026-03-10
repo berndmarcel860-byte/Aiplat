@@ -38,14 +38,30 @@ if ($currentAdminRole === 'superadmin') {
             </nav>
         </div>
     </div>
-    
+
+    <!-- Platform Distribution Map -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Platform Distribution Map</h5>
+            <small class="text-muted">Cases per scam platform</small>
+        </div>
+        <div class="card-body">
+            <div id="platformMapChart" style="width:100%;height:340px;"></div>
+        </div>
+    </div>
+
     <div class="card">
         <div class="card-body">
             <div class="d-flex justify-content-between align-items-center">
                 <h5>Case List</h5>
-                <button class="btn btn-primary" data-toggle="modal" data-target="#addCaseModal">
-                    <i class="anticon anticon-plus"></i> Add Case
-                </button>
+                <div>
+                    <button class="btn btn-success mr-2" id="autoCreateCasesBtn" title="Auto-create cases from user onboarding data">
+                        <i class="anticon anticon-robot"></i> Auto-Create from Onboarding
+                    </button>
+                    <button class="btn btn-primary" data-toggle="modal" data-target="#addCaseModal">
+                        <i class="anticon anticon-plus"></i> Add Case
+                    </button>
+                </div>
             </div>
             
             <div class="m-t-15">
@@ -58,6 +74,7 @@ if ($currentAdminRole === 'superadmin') {
                             <th>Reported</th>
                             <th>Recovered</th>
                             <th>Status</th>
+                            <th>Difficulty</th>
                             <th>Assigned To</th>
                             <th>Created</th>
                             <th>Actions</th>
@@ -66,6 +83,44 @@ if ($currentAdminRole === 'superadmin') {
                     <tbody></tbody>
                 </table>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Auto-Create Cases Modal -->
+<div class="modal fade" id="autoCreateCasesModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Auto-Create Cases from Onboarding</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <i class="anticon anticon-close"></i>
+                </button>
+            </div>
+            <form id="autoCreateCasesForm">
+                <div class="modal-body">
+                    <p class="text-muted">
+                        Creates cases automatically based on the user's onboarding platform data.
+                        If the user has no completed onboarding, up to <strong>30 000 EUR</strong> will be
+                        split across random platforms (once per day).
+                    </p>
+                    <div class="form-group">
+                        <label>Select User</label>
+                        <select class="form-control" name="user_id" required>
+                            <option value="">-- Select User --</option>
+                            <?php foreach ($users as $user): ?>
+                                <option value="<?= $user['id'] ?>"><?= htmlspecialchars($user['name']) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="anticon anticon-thunderbolt"></i> Generate Cases
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -122,6 +177,20 @@ if ($currentAdminRole === 'superadmin') {
                                         <option value="<?= $admin['id'] ?>"><?= htmlspecialchars($admin['name']) ?></option>
                                     <?php endforeach; ?>
                                 </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Refund Difficulty</label>
+                                <select class="form-control" name="refund_difficulty">
+                                    <option value="">Auto (based on amount)</option>
+                                    <option value="easy">Easy</option>
+                                    <option value="medium">Medium</option>
+                                    <option value="hard">Hard</option>
+                                </select>
+                                <small class="form-text text-muted">Auto: easy &lt;5k, medium 5k–50k, hard &gt;50k EUR</small>
                             </div>
                         </div>
                     </div>
@@ -363,9 +432,75 @@ if ($currentAdminRole === 'superadmin') {
 
 <?php require_once 'admin_footer.php'; ?>
 
+<!-- ApexCharts for platform map -->
+<script src="https://cdn.jsdelivr.net/npm/apexcharts@3/dist/apexcharts.min.js"></script>
+
 <script>
 $(document).ready(function() {
-    // Initialize DataTable
+
+    /* ------------------------------------------------------------------ */
+    /*  Platform Distribution Map (bar chart)                              */
+    /* ------------------------------------------------------------------ */
+    $.getJSON('admin_ajax/get_platform_case_stats.php', function(stats) {
+        if (!stats || !stats.labels) return;
+        const options = {
+            chart: { type: 'bar', height: 320, toolbar: { show: false } },
+            plotOptions: { bar: { horizontal: true, borderRadius: 4 } },
+            colors: ['#4e73df'],
+            dataLabels: { enabled: false },
+            series: [{ name: 'Cases', data: stats.values }],
+            xaxis: { categories: stats.labels, labels: { style: { fontSize: '12px' } } },
+            tooltip: {
+                y: {
+                    formatter: function(val, opts) {
+                        return val + ' case(s) — €' + (stats.amounts[opts.dataPointIndex] || 0).toLocaleString('de-DE');
+                    }
+                }
+            }
+        };
+        const chart = new ApexCharts(document.querySelector('#platformMapChart'), options);
+        chart.render();
+    });
+
+    /* ------------------------------------------------------------------ */
+    /*  Auto-Create Cases button → modal                                   */
+    /* ------------------------------------------------------------------ */
+    $('#autoCreateCasesBtn').on('click', function() {
+        $('#autoCreateCasesModal').modal('show');
+    });
+
+    $('#autoCreateCasesForm').submit(function(e) {
+        e.preventDefault();
+        const userId = $(this).find('[name=user_id]').val();
+        if (!userId) { toastr.warning('Please select a user'); return; }
+
+        const btn = $(this).find('[type=submit]').prop('disabled', true)
+                           .html('<i class="anticon anticon-loading anticon-spin"></i> Generating…');
+
+        $.ajax({
+            url: 'admin_ajax/auto_create_cases_from_onboarding.php',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ user_id: parseInt(userId) }),
+            success: function(res) {
+                if (res.success) {
+                    toastr.success(res.message);
+                    $('#autoCreateCasesModal').modal('hide');
+                    casesTable.ajax.reload();
+                } else {
+                    toastr.error(res.message || 'Failed to generate cases');
+                }
+            },
+            error: function() { toastr.error('Request failed'); },
+            complete: function() {
+                btn.prop('disabled', false).html('<i class="anticon anticon-thunderbolt"></i> Generate Cases');
+            }
+        });
+    });
+
+    /* ------------------------------------------------------------------ */
+    /*  Initialize DataTable                                               */
+    /* ------------------------------------------------------------------ */
     const casesTable = $('#casesTable').DataTable({
         processing: true,
         serverSide: true,
@@ -390,7 +525,7 @@ $(document).ready(function() {
             { 
                 data: 'reported_amount',
                 render: function(data) {
-                    return '$' + parseFloat(data).toFixed(2);
+                    return '€' + parseFloat(data).toFixed(2);
                 }
             },
             { 
@@ -402,14 +537,14 @@ $(document).ready(function() {
                     
                     return `
                         <div>
-                            <strong>$${recovered.toFixed(2)}</strong>
+                            <strong>€${recovered.toFixed(2)}</strong>
                             <div class="progress" style="height: 5px;">
                                 <div class="progress-bar" 
                                      role="progressbar" 
                                      style="width: ${percentage}%">
                                 </div>
                             </div>
-                            <small>${percentage.toFixed(1)}% of $${reported.toFixed(2)}</small>
+                            <small>${percentage.toFixed(1)}% of €${reported.toFixed(2)}</small>
                         </div>
                     `;
                 }
@@ -426,6 +561,18 @@ $(document).ready(function() {
                         closed: 'dark'
                     }[data];
                     return `<span class="badge badge-${statusClass}">${data.replace(/_/g, ' ')}</span>`;
+                }
+            },
+            {
+                data: 'refund_difficulty',
+                render: function(data) {
+                    const cfg = {
+                        easy:   { cls: 'success', icon: 'check-circle',   label: 'Easy' },
+                        medium: { cls: 'warning', icon: 'exclamation-circle', label: 'Medium' },
+                        hard:   { cls: 'danger',  icon: 'close-circle',   label: 'Hard' }
+                    };
+                    const d = cfg[data] || cfg['medium'];
+                    return `<span class="badge badge-${d.cls}"><i class="anticon anticon-${d.icon}"></i> ${d.label}</span>`;
                 }
             },
             { 

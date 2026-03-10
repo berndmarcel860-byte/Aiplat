@@ -33,6 +33,7 @@ try {
     $baseQuery = "
         SELECT 
             c.*, 
+            c.refund_difficulty,
             u.first_name AS user_first_name, 
             u.last_name AS user_last_name,
             u.email AS user_email,

@@ -41,6 +41,7 @@
                                         <th>Gemeldeter Betrag</th>
                                         <th>Wiederbeschaffter Betrag</th>
                                         <th>Status</th>
+                                        <th>Schwierigkeit</th>
                                         <th>Erstellt am</th>
                                         <th>Zuletzt aktualisiert</th>
                                         <th class="text-center">Aktionen</th>
@@ -221,14 +222,14 @@ $(document).ready(function() {
         serverSide: true,
         responsive: true,
         pageLength: 10,
-        order: [[5, 'desc']],
+        order: [[6, 'desc']],
         ajax: {
-            url: 'user_ajax/get_my_cases.php',
+            url: 'ajax/cases.php',
             type: 'POST'
         },
         columns: [
             { data: 'case_number' },
-            { data: null, render: d => d.platform_name || 'N/A' },
+            { data: 'platform_name', render: d => d || 'N/A' },
             { data: 'reported_amount', render: d => '€' + parseFloat(d).toFixed(2) },
             { 
                 data: null, 
@@ -267,19 +268,31 @@ $(document).ready(function() {
                     return `<span class="badge bg-${s.cls}">${s.label}</span>`;
                 }
             },
+            {
+                data: 'refund_difficulty',
+                render: function(data) {
+                    const cfg = {
+                        easy:   { cls: 'success', label: 'Einfach' },
+                        medium: { cls: 'warning', label: 'Mittel' },
+                        hard:   { cls: 'danger',  label: 'Schwierig' }
+                    };
+                    const d = cfg[data] || cfg['medium'];
+                    return `<span class="badge bg-${d.cls}">${d.label}</span>`;
+                }
+            },
             { data: 'created_at', render: d => new Date(d).toLocaleDateString('de-DE') },
             { data: 'updated_at', render: d => new Date(d).toLocaleDateString('de-DE') },
             {
-                data: 'id',
+                data: null,
                 render: function(data, type, row) {
                     let buttons = `
-                        <button class="btn btn-sm btn-info view-case" data-id="${data}" title="Details anzeigen">
+                        <button class="btn btn-sm btn-info view-case" data-id="${row.id}" title="Details anzeigen">
                             <i class="anticon anticon-eye"></i>
                         </button>`;
                     if (row.status === 'documents_required') {
                         buttons += `
                             <button class="btn btn-sm btn-warning upload-docs" 
-                                    data-id="${data}" data-case-number="${row.case_number}" 
+                                    data-id="${row.id}" data-case-number="${row.case_number}" 
                                     title="Dokumente hochladen">
                                 <i class="anticon anticon-upload"></i>
                             </button>`;
