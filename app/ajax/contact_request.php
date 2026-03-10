@@ -75,6 +75,20 @@ try {
         $ipAddress,
     ]);
 
+    // Send a professional German confirmation email to the applicant
+    require_once __DIR__ . '/../EmailHelper.php';
+    $emailHelper = new EmailHelper($pdo);
+    $emailHelper->sendRegisterRequestEmail([
+        'first_name' => $firstName,
+        'last_name'  => $lastName,
+        'email'      => $email,
+        'phone'      => $phone,
+        'amount'     => $amount,
+        'year'       => $year,
+        'platforms'  => $platforms,
+        'details'    => $details,
+    ]);
+
     echo json_encode(['success' => true]);
 } catch (PDOException $e) {
     error_log('contact_request.php DB error: ' . $e->getMessage());

@@ -717,6 +717,150 @@ class EmailHelper {
     }
 
     /**
+     * Send a confirmation email to someone who submitted the public
+     * register-request form (no user account required).
+     *
+     * The email is written in professional German and confirms receipt of the
+     * request.  When the 'register_request' template exists in email_templates
+     * it is used; otherwise a built-in inline template is used as fallback.
+     *
+     * @param array $requestData Must include: first_name, last_name, email,
+     *                           phone, amount, year.
+     *                           Optional: platforms, details.
+     * @return bool
+     */
+    public function sendRegisterRequestEmail(array $requestData) {
+        try {
+            $stmt = $this->pdo->query("SELECT * FROM system_settings WHERE id = 1");
+            $settings = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
+
+            $brandName      = htmlspecialchars($settings['brand_name']      ?? $this->brandName);
+            $contactEmail   = htmlspecialchars($settings['contact_email']   ?? '');
+            $siteUrl        = htmlspecialchars($settings['site_url']        ?? $this->siteUrl);
+            $companyAddress = htmlspecialchars($settings['company_address'] ?? '');
+            $fcaReference   = htmlspecialchars($settings['fca_reference_number'] ?? '');
+            $logoUrl        = htmlspecialchars($settings['logo_url']        ?? '');
+
+            $firstName = htmlspecialchars($requestData['first_name'] ?? '');
+            $lastName  = htmlspecialchars($requestData['last_name']  ?? '');
+            $email     = trim($requestData['email'] ?? '');
+            $phone     = htmlspecialchars($requestData['phone']     ?? '');
+            $amount    = htmlspecialchars($requestData['amount']    ?? '');
+            $year      = htmlspecialchars((string)($requestData['year'] ?? ''));
+            $platforms = htmlspecialchars($requestData['platforms'] ?? '');
+            $details   = htmlspecialchars($requestData['details']   ?? '');
+
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                error_log("EmailHelper::sendRegisterRequestEmail — invalid email address: $email");
+                return false;
+            }
+
+            $variables = [
+                'first_name'     => $firstName,
+                'last_name'      => $lastName,
+                'request_email'  => htmlspecialchars($email),
+                'phone'          => $phone,
+                'amount'         => $amount,
+                'year'           => $year,
+                'platforms'      => $platforms,
+                'details'        => $details,
+                'brand_name'     => $brandName,
+                'contact_email'  => $contactEmail,
+                'site_url'       => $siteUrl,
+                'company_address' => $companyAddress,
+                'fca_reference_number' => $fcaReference,
+                'logo_url'       => $logoUrl,
+                'current_date'   => date('d.m.Y'),
+                'current_year'   => date('Y'),
+            ];
+
+            // Try to fetch a DB template first
+            $dbTemplate = null;
+            $stmt2 = $this->pdo->prepare("SELECT * FROM email_templates WHERE template_key = 'register_request' LIMIT 1");
+            $stmt2->execute();
+            $dbTemplate = $stmt2->fetch(PDO::FETCH_ASSOC);
+
+            if ($dbTemplate) {
+                $subject = $this->replaceVariables($dbTemplate['subject'], $variables);
+                $body    = $this->replaceVariables($dbTemplate['content'], $variables);
+            } else {
+                // Inline fallback template (professional German)
+                $subject = "Vielen Dank für Ihre Anfrage – {brand_name}";
+                $subject = $this->replaceVariables($subject, $variables);
+
+                $body = '
+<p>Sehr geehrte/r {first_name} {last_name},</p>
+
+<p>
+  vielen Dank für Ihre Kontaktaufnahme und das entgegengebrachte Vertrauen.
+  Wir haben Ihre Anfrage erfolgreich erhalten und bestätigen den Eingang
+  Ihrer Informationen.
+</p>
+
+<div class="highlight-box">
+  <h3>&#10003; Ihre Anfrage ist bei uns eingegangen</h3>
+  <p>
+    Unser Expertenteam wird Ihre Angaben sorgfältig prüfen und sich
+    <strong>so schnell wie möglich</strong> bei Ihnen melden, um die
+    nächsten Schritte zu besprechen.
+  </p>
+</div>
+
+<p><strong>Zusammenfassung Ihrer übermittelten Angaben:</strong></p>
+<ul>
+  <li><strong>Name:</strong> {first_name} {last_name}</li>
+  <li><strong>E-Mail:</strong> {request_email}</li>
+  <li><strong>Telefon:</strong> {phone}</li>
+  <li><strong>Geschätzter Verlustbetrag:</strong> {amount} €</li>
+  <li><strong>Jahr des Verlusts:</strong> {year}</li>
+  <li><strong>Betroffene Plattformen:</strong> {platforms}</li>
+</ul>
+
+<div class="highlight-box">
+  <h3>&#128221; Ihre Schilderung</h3>
+  <p>{details}</p>
+</div>
+
+<p>
+  Falls Sie in der Zwischenzeit Fragen haben oder weitere Informationen
+  bereitstellen möchten, stehen wir Ihnen jederzeit unter
+  <a href="mailto:{contact_email}">{contact_email}</a> zur Verfügung.
+</p>
+
+<p>
+  Wir danken Ihnen für Ihr Vertrauen und freuen uns darauf, Ihnen bei der
+  Rückforderung Ihrer verlorenen Gelder behilflich zu sein.
+</p>
+
+<p>
+  Mit freundlichen Grüßen,<br>
+  <strong>Das Beratungsteam von {brand_name}</strong>
+</p>';
+                $body = $this->replaceVariables($body, $variables);
+            }
+
+            // Wrap in the standard professional HTML email template
+            $htmlBody = $this->wrapInTemplate($subject, $body, $variables);
+
+            $trackingToken = bin2hex(random_bytes(16));
+            $htmlBody = $this->injectTrackingPixel($htmlBody, $trackingToken);
+            $sent = $this->sendWithPHPMailer($email, $subject, $htmlBody);
+
+            $logStmt = $this->pdo->prepare(
+                "INSERT INTO email_logs (recipient, subject, content, tracking_token, sent_at, status)
+                 VALUES (?, ?, ?, ?, NOW(), ?)"
+            );
+            $logStmt->execute([$email, $subject, $htmlBody, $trackingToken, $sent ? 'sent' : 'failed']);
+
+            return $sent;
+
+        } catch (Exception $e) {
+            error_log("EmailHelper::sendRegisterRequestEmail error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
      * Send an admin notification email about a newly created support ticket.
      * Reads the admin contact address from system_settings.contact_email.
      *
