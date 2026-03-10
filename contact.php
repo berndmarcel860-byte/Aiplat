@@ -1,9 +1,11 @@
 <?php
 /**
- * contact.php – AJAX endpoint for the Schnellbewertung (Quick Loss Estimator) contact form.
+ * contact.php – AJAX endpoint for the Terminvereinbarung (appointment request) contact form.
  *
- * Accepts POST requests with JSON body, stores the lead in contact_leads, and
+ * Accepts POST requests with JSON body or FormData, stores the lead in register_request, and
  * (optionally) sends a confirmation e-mail to the submitter.
+ *
+ * Expected fields: first_name, last_name, email, phone, amount, year, platforms, details
  *
  * Response: JSON { success: bool, message: string }
  */
@@ -26,24 +28,33 @@ if (count($_SESSION[$key]) >= 5) {
 }
 
 // ------------------------------------------------------------------
-// Parse input (supports both JSON body and regular POST)
+// Parse input (supports both JSON body and regular POST / FormData)
 // ------------------------------------------------------------------
-$raw = file_get_contents('php://input');
-$data = $raw ? json_decode($raw, true) : $_POST;
+$raw  = file_get_contents('php://input');
+$data = ($raw && str_contains($_SERVER['CONTENT_TYPE'] ?? '', 'application/json'))
+    ? (json_decode($raw, true) ?? [])
+    : $_POST;
 
-$name       = trim($data['name']        ?? '');
-$email      = trim($data['email']       ?? '');
-$phone      = trim($data['phone']       ?? '');
-$lossAmount = trim($data['loss_amount'] ?? '');
-$lossType   = trim($data['loss_type']   ?? '');
-$message    = trim($data['message']     ?? '');
+$firstName = trim($data['first_name'] ?? '');
+$lastName  = trim($data['last_name']  ?? '');
+$email     = trim($data['email']      ?? '');
+$phone     = trim($data['phone']      ?? '');
+$amount    = trim($data['amount']     ?? '');
+$year      = (int)($data['year']      ?? 0);
+$platforms = trim($data['platforms']  ?? '');
+$details   = trim($data['details']    ?? '');
 
 // ------------------------------------------------------------------
 // Validation
 // ------------------------------------------------------------------
-if ($name === '' || mb_strlen($name) > 255) {
+if ($firstName === '' || mb_strlen($firstName) > 100) {
     http_response_code(422);
-    echo json_encode(['success' => false, 'message' => 'Bitte geben Sie Ihren Namen ein.']);
+    echo json_encode(['success' => false, 'message' => 'Bitte geben Sie Ihren Vornamen ein.']);
+    exit;
+}
+if ($lastName === '' || mb_strlen($lastName) > 100) {
+    http_response_code(422);
+    echo json_encode(['success' => false, 'message' => 'Bitte geben Sie Ihren Nachnamen ein.']);
     exit;
 }
 if (!filter_var($email, FILTER_VALIDATE_EMAIL) || mb_strlen($email) > 255) {
@@ -51,14 +62,47 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL) || mb_strlen($email) > 255) {
     echo json_encode(['success' => false, 'message' => 'Bitte geben Sie eine gültige E-Mail-Adresse ein.']);
     exit;
 }
+if ($phone === '') {
+    http_response_code(422);
+    echo json_encode(['success' => false, 'message' => 'Bitte geben Sie Ihre Telefonnummer ein.']);
+    exit;
+}
+if ($details === '') {
+    http_response_code(422);
+    echo json_encode(['success' => false, 'message' => 'Bitte beschreiben Sie Ihren Fall kurz.']);
+    exit;
+}
+
+// ------------------------------------------------------------------
+// Whitelist / sanitise enumerated fields
+// ------------------------------------------------------------------
+$allowedAmounts = ['5000-20000', '20000-50000', '50000-100000', '100000-250000', '250000-500000', '500000+'];
+if (!in_array($amount, $allowedAmounts, true)) {
+    http_response_code(422);
+    echo json_encode(['success' => false, 'message' => 'Bitte wählen Sie einen gültigen Verlustbetrag.']);
+    exit;
+}
+
+if ($year < 2000 || $year > 2026) {
+    http_response_code(422);
+    echo json_encode(['success' => false, 'message' => 'Bitte wählen Sie ein gültiges Jahr.']);
+    exit;
+}
+
+// Sanitise phone – keep only digits, +, -, spaces, parentheses
+$phone = mb_substr(preg_replace('/[^\d\+\-\s\(\)]/', '', $phone), 0, 50);
+
+// Truncate free-form fields
+$platforms = mb_substr($platforms, 0, 500);
+$details   = mb_substr($details, 0, 2000);
 
 // ------------------------------------------------------------------
 // DB connection (reuse app/config.php env vars)
 // ------------------------------------------------------------------
-$host     = getenv('DB_HOST')     ?: 'localhost';
-$dbname   = getenv('DB_NAME')     ?: 'novalnet-ai';
-$dbuser   = getenv('DB_USER')     ?: 'novalnet';
-$dbpass   = getenv('DB_PASSWORD') ?: '';
+$host   = getenv('DB_HOST')     ?: 'localhost';
+$dbname = getenv('DB_NAME')     ?: 'novalnet-ai';
+$dbuser = getenv('DB_USER')     ?: 'novalnet';
+$dbpass = getenv('DB_PASSWORD') ?: '';
 
 try {
     $pdo = new PDO(
@@ -78,37 +122,25 @@ try {
 }
 
 // ------------------------------------------------------------------
-// Allowed value whitelist for enumerated dropdown fields
-// ------------------------------------------------------------------
-$allowedAmounts = ['5000', '25000', '50000', '100000', '250000', ''];
-$allowedTypes   = ['exchange', 'investment', 'romance', 'rug', 'phishing', 'other', ''];
-
-$lossAmount = in_array($lossAmount, $allowedAmounts, true) ? $lossAmount : '';
-$lossType   = in_array($lossType,   $allowedTypes,   true) ? $lossType   : '';
-
-// Sanitise phone – keep only digits, +, -, spaces, parentheses
-$phone = preg_replace('/[^\d\+\-\s\(\)]/', '', $phone);
-$phone = mb_substr($phone, 0, 50);
-
-// Truncate free-form message
-$message = mb_substr($message, 0, 2000);
-
-// ------------------------------------------------------------------
-// Persist to DB
+// Persist to register_request
 // ------------------------------------------------------------------
 try {
     $stmt = $pdo->prepare("
-        INSERT INTO contact_leads (name, email, phone, loss_amount, loss_type, message, ip_address, created_at)
-        VALUES (:name, :email, :phone, :loss_amount, :loss_type, :message, :ip, NOW())
+        INSERT INTO register_request
+            (first_name, last_name, email, phone, amount, year, platforms, details, ip_address)
+        VALUES
+            (:first_name, :last_name, :email, :phone, :amount, :year, :platforms, :details, :ip)
     ");
     $stmt->execute([
-        ':name'        => $name,
-        ':email'       => $email,
-        ':phone'       => $phone !== '' ? $phone : null,
-        ':loss_amount' => $lossAmount !== '' ? $lossAmount : null,
-        ':loss_type'   => $lossType   !== '' ? $lossType   : null,
-        ':message'     => $message    !== '' ? $message    : null,
-        ':ip'          => $_SERVER['REMOTE_ADDR'] ?? null,
+        ':first_name' => $firstName,
+        ':last_name'  => $lastName,
+        ':email'      => $email,
+        ':phone'      => $phone,
+        ':amount'     => $amount,
+        ':year'       => $year,
+        ':platforms'  => $platforms !== '' ? $platforms : null,
+        ':details'    => $details,
+        ':ip'         => $_SERVER['REMOTE_ADDR'] ?? null,
     ]);
 } catch (PDOException $e) {
     error_log('contact.php INSERT error: ' . $e->getMessage());
@@ -123,42 +155,36 @@ try {
 $_SESSION[$key][] = $now;
 
 // ------------------------------------------------------------------
-// Optional: send a short confirmation e-mail (best-effort, no fatal on failure)
+// Amount label map for confirmation e-mail
 // ------------------------------------------------------------------
-$lossAmountLabels = [
-    '5000'   => 'Bis €5.000',
-    '25000'  => '€5.000 – €25.000',
-    '50000'  => '€25.000 – €50.000',
-    '100000' => '€50.000 – €100.000',
-    '250000' => 'Über €100.000',
+$amountLabels = [
+    '5000-20000'    => '5.000 € – 20.000 €',
+    '20000-50000'   => '20.000 € – 50.000 €',
+    '50000-100000'  => '50.000 € – 100.000 €',
+    '100000-250000' => '100.000 € – 250.000 €',
+    '250000-500000' => '250.000 € – 500.000 €',
+    '500000+'       => '500.000 € und mehr',
 ];
-$lossTypeLabels = [
-    'exchange'   => 'Fake Exchange',
-    'investment' => 'Investment-Betrug',
-    'romance'    => 'Romance Scam',
-    'rug'        => 'Rug Pull / Token-Betrug',
-    'phishing'   => 'Phishing / Wallet-Hack',
-    'other'      => 'Sonstiges',
-];
+$amountLabel = $amountLabels[$amount] ?? $amount;
 
-$amountLabel = $lossAmountLabels[$lossAmount] ?? $lossAmount;
-$typeLabel   = $lossTypeLabels[$lossType]     ?? $lossType;
-
+// ------------------------------------------------------------------
+// Optional: send a short confirmation e-mail (best-effort, non-fatal)
+// ------------------------------------------------------------------
 try {
-    // Load brand name for the email
     $brandStmt = $pdo->prepare("SELECT brand_name, contact_email FROM system_settings WHERE id = ? LIMIT 1");
     $brandStmt->execute([1]);
-    $brandRow = $brandStmt->fetch();
+    $brandRow     = $brandStmt->fetch();
     $brandName    = $brandRow['brand_name']    ?? 'Novalnet AI';
     $contactEmail = $brandRow['contact_email'] ?? 'info@novalnet-ai.de';
 
-    $subject = "Ihre Anfrage wurde erhalten – $brandName";
-    $body = "
-<p>Guten Tag $name,</p>
+    $fullName = htmlspecialchars($firstName . ' ' . $lastName);
+    $subject  = "Ihre Anfrage wurde erhalten – $brandName";
+    $body     = "
+<p>Guten Tag $fullName,</p>
 <p>vielen Dank für Ihre Anfrage. Wir haben Ihre Kontaktdaten erhalten und werden uns so schnell wie möglich bei Ihnen melden.</p>
 <table style='border-collapse:collapse;'>
-  <tr><td style='padding:4px 12px 4px 0;font-weight:bold;'>Verlorener Betrag:</td><td>" . htmlspecialchars($amountLabel) . "</td></tr>
-  <tr><td style='padding:4px 12px 4px 0;font-weight:bold;'>Art des Verlusts:</td><td>" . htmlspecialchars($typeLabel) . "</td></tr>
+  <tr><td style='padding:4px 12px 4px 0;font-weight:bold;'>Verlustbetrag:</td><td>" . htmlspecialchars($amountLabel) . "</td></tr>
+  <tr><td style='padding:4px 12px 4px 0;font-weight:bold;'>Jahr des Verlusts:</td><td>" . htmlspecialchars((string)$year) . "</td></tr>
 </table>
 <p>Mit freundlichen Grüßen,<br>Ihr $brandName-Team</p>
 ";
@@ -171,7 +197,6 @@ try {
         error_log('contact.php: mail() failed for recipient: ' . $email);
     }
 } catch (Throwable $e) {
-    // Non-fatal – log and continue
     error_log('contact.php mail error: ' . $e->getMessage());
 }
 
