@@ -863,7 +863,16 @@ include 'includes/navbar.php';
         clmPlatforms.forEach(function(p, i) {
             var tag = document.createElement('span');
             tag.className = 'clm-platform-tag';
-            tag.innerHTML = p + '<span class="rm" onclick="clmRemovePlatform(' + i + ')">&times;</span>';
+            tag.appendChild(document.createTextNode(p));
+            var rm = document.createElement('span');
+            rm.className = 'rm';
+            rm.textContent = '\u00d7';
+            rm.setAttribute('data-idx', i);
+            rm.addEventListener('click', function() {
+                clmPlatforms.splice(parseInt(this.getAttribute('data-idx'), 10), 1);
+                clmRenderPlatforms();
+            });
+            tag.appendChild(rm);
             list.appendChild(tag);
         });
         document.getElementById('clm-platforms').value = clmPlatforms.join(', ');
