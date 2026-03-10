@@ -1,7 +1,7 @@
 <?php
 include_once 'includes/site_settings.php';
 $page_title = 'Datenschutzerklärung – ' . ($siteSettings['brand_name'] ?? 'Novalnet AI');
-$page_description = 'Datenschutzerklärung von Novalnet AI. Erfahren Sie, wie wir Ihre Daten schützen und verarbeiten.';
+$page_description = 'Datenschutzerklärung von ' . ($siteSettings['brand_name'] ?? 'Novalnet AI') . '. Erfahren Sie, wie wir Ihre Daten schützen und verarbeiten.';
 $page_keywords = 'Datenschutz, DSGVO, Datenschutzerklärung, Privatsphäre';
 $page_url = ($siteSettings['site_url'] ?? 'https://novalnet-ai.de') . '/Frontend/datenschutz.php';
 include 'includes/header.php';

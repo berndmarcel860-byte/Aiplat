@@ -1,8 +1,8 @@
 <?php
 include_once 'includes/site_settings.php';
 $page_title = 'AGB – Allgemeine Geschäftsbedingungen | ' . ($siteSettings['brand_name'] ?? 'Novalnet AI');
-$page_description = 'Allgemeine Geschäftsbedingungen für die Nutzung von Novalnet AI. Transparente Bedingungen für Krypto-Wiederherstellungsservices.';
-$page_keywords = 'AGB, Geschäftsbedingungen, Nutzungsbedingungen, Novalnet AI';
+$page_description = 'Allgemeine Geschäftsbedingungen für die Nutzung von ' . ($siteSettings['brand_name'] ?? 'Novalnet AI') . '. Transparente Bedingungen für Krypto-Wiederherstellungsservices.';
+$page_keywords = 'AGB, Geschäftsbedingungen, Nutzungsbedingungen, ' . ($siteSettings['brand_name'] ?? 'Novalnet AI');
 $page_url = ($siteSettings['site_url'] ?? 'https://novalnet-ai.de') . '/Frontend/agb.php';
 include 'includes/header.php';
 include 'includes/navbar.php';

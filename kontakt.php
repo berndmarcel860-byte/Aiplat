@@ -9,7 +9,7 @@ include 'includes/navbar.php';
 ?>
 
 <!-- SEO H1 -->
-<h1 class="visually-hidden">Kontakt – Novalnet AI Support</h1>
+<h1 class="visually-hidden">Kontakt – <?php echo htmlspecialchars($siteSettings['brand_name'] ?? 'Novalnet AI'); ?> Support</h1>
 
 <style>
   .section {
