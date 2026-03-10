@@ -690,137 +690,252 @@ include 'includes/navbar.php';
 <!-- ============================================================
      TERMINVEREINBARUNG MODAL – Kundenanfrageformular
      ============================================================ -->
-<style>
+/* ── Custom overlay modal (matches register.php) ── */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(10, 20, 35, 0.72);
+    z-index: 1000;
+    overflow-y: auto;
+    padding: 30px 15px;
+}
+.modal-overlay.active {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+}
+.modal-box {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 12px 50px rgba(0,0,0,0.45);
+    width: 100%;
+    max-width: 560px;
+    overflow: hidden;
+    animation: clmSlideIn 0.25s ease;
+}
+@keyframes clmSlideIn {
+    from { transform: translateY(-18px); opacity: 0; }
+    to   { transform: translateY(0);     opacity: 1; }
+}
+.modal-box .modal-header {
+    background: linear-gradient(135deg, #1a3a5c 0%, #0d2137 100%);
+    padding: 20px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.modal-box .modal-header h5 {
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 700;
+    margin: 0;
+}
+.modal-box .modal-close {
+    background: none;
+    border: none;
+    color: rgba(255,255,255,0.7);
+    font-size: 1.4rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 2px;
+    transition: color 0.15s;
+}
+.modal-box .modal-close:hover { color: #fff; }
+.modal-box .modal-body {
+    padding: 26px 28px 20px;
+}
+.modal-box .modal-body .form-group label {
+    font-size: 0.84rem;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 5px;
+    display: block;
+}
+.modal-box .modal-body .form-control,
+.modal-box .modal-body select.form-control {
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    padding: 9px 13px;
+    font-size: 0.88rem;
+    color: #111827;
+    width: 100%;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    margin-bottom: 14px;
+    background: #fff;
+}
+.modal-box .modal-body .form-control:focus,
+.modal-box .modal-body select.form-control:focus {
+    border-color: #1a3a5c;
+    box-shadow: 0 0 0 3px rgba(26,58,92,0.13);
+    outline: none;
+}
+.modal-box .modal-body textarea.form-control {
+    resize: vertical;
+    min-height: 100px;
+}
+.modal-box .modal-body .row-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+}
+.modal-box .modal-body .row-2 .form-control { margin-bottom: 0; }
+.modal-box .modal-body .row-2-wrap { margin-bottom: 14px; }
 .clm-platform-list { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:6px; min-height:28px; }
-.clm-platform-tag  { background:#667eea; color:#fff; border-radius:20px; padding:3px 10px 3px 12px; font-size:.8rem; display:flex; align-items:center; gap:5px; }
+.clm-platform-tag  { background:#1a3a5c; color:#fff; border-radius:20px; padding:3px 10px 3px 12px; font-size:.8rem; display:flex; align-items:center; gap:5px; }
 .clm-platform-tag .rm { cursor:pointer; font-size:1rem; line-height:1; opacity:.75; }
 .clm-platform-tag .rm:hover { opacity:1; }
-.clm-platform-input-wrap { display:flex; gap:8px; }
+.clm-platform-input-wrap { display:flex; gap:8px; margin-bottom:14px; }
 .clm-platform-input-wrap .form-control { margin-bottom:0; flex:1; }
-.btn-clm-add-platform { background:#667eea; border:none; color:#fff; border-radius:8px; padding:0 14px; font-size:1.1rem; cursor:pointer; flex-shrink:0; transition:opacity .2s; }
+.btn-clm-add-platform { background:#1a3a5c; border:none; color:#fff; border-radius:8px; padding:0 14px; font-size:1.1rem; cursor:pointer; flex-shrink:0; transition:opacity .2s; }
 .btn-clm-add-platform:hover { opacity:.8; }
+.modal-box .modal-footer-btns {
+    padding: 16px 28px 22px;
+    display: flex;
+    gap: 10px;
+    border-top: 1px solid #f0f0f0;
+}
+.btn-clm-cancel {
+    flex: 1;
+    background: #f3f4f6;
+    border: 1px solid #d1d5db;
+    color: #374151;
+    font-weight: 600;
+    font-size: 0.9rem;
+    padding: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.btn-clm-cancel:hover { background: #e5e7eb; }
+.btn-clm-submit {
+    flex: 2;
+    background: linear-gradient(135deg, #1a3a5c 0%, #0d2137 100%);
+    border: none;
+    color: #fff;
+    font-weight: 700;
+    font-size: 0.92rem;
+    padding: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    letter-spacing: 0.3px;
+}
+.btn-clm-submit:hover { opacity: 0.87; }
+.clm-success-msg {
+    display: none;
+    text-align: center;
+    padding: 28px 24px;
+}
+.clm-success-msg .s-icon {
+    width: 56px; height: 56px;
+    background: #ecfdf5;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 14px;
+}
+.clm-success-msg .s-icon svg { width: 28px; height: 28px; fill: #059669; }
+.clm-success-msg h5 { color: #1a3a5c; font-weight: 700; margin-bottom: 8px; }
+.clm-success-msg p  { color: #6b7280; font-size: 0.9rem; }
 </style>
 
-<div class="modal fade" id="contactLeadModal" tabindex="-1" aria-labelledby="contactLeadModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width:580px;">
-    <div class="modal-content border-0" style="border-radius:14px; overflow:hidden;">
+<div class="modal-overlay" id="contactLeadModal">
+  <div class="modal-box">
 
-      <!-- Header -->
-      <div class="modal-header border-0" style="background:linear-gradient(135deg,#1a3a5c,#0d2137); padding:22px 28px;">
-        <h5 class="modal-title fw-bold text-white mb-0" id="contactLeadModalLabel" style="font-size:1rem;">
-          &#128196; Kundenanfrageformular
-        </h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Schließen"></button>
-      </div>
+    <!-- Header -->
+    <div class="modal-header">
+      <h5>&#128196; Kundenanfrageformular</h5>
+      <button class="modal-close" onclick="clmClose()" aria-label="Schließen">&times;</button>
+    </div>
 
-      <!-- Form content -->
-      <div class="modal-body p-0" id="clm-form-wrap">
-        <div style="padding:26px 28px 10px;">
+    <!-- Form content -->
+    <div id="clm-form-wrap">
+      <div class="modal-body">
 
-          <!-- Name row -->
-          <div class="row g-3 mb-3">
-            <div class="col-6">
-              <label for="clm-first-name" class="form-label fw-semibold" style="font-size:.84rem; color:#374151;">Vorname <span class="text-danger">*</span></label>
+        <!-- Name row -->
+        <div class="row-2-wrap">
+          <div class="row-2">
+            <div>
+              <label for="clm-first-name">Vorname <span style="color:#e02020">*</span></label>
               <input type="text" class="form-control" id="clm-first-name" placeholder="Max" maxlength="100" required>
             </div>
-            <div class="col-6">
-              <label for="clm-last-name" class="form-label fw-semibold" style="font-size:.84rem; color:#374151;">Nachname <span class="text-danger">*</span></label>
+            <div>
+              <label for="clm-last-name">Nachname <span style="color:#e02020">*</span></label>
               <input type="text" class="form-control" id="clm-last-name" placeholder="Mustermann" maxlength="100" required>
             </div>
           </div>
-
-          <!-- Email -->
-          <div class="mb-3">
-            <label for="clm-email" class="form-label fw-semibold" style="font-size:.84rem; color:#374151;">E-Mail-Adresse <span class="text-danger">*</span></label>
-            <input type="email" class="form-control" id="clm-email" placeholder="ihre@email.de" maxlength="255" required autocomplete="email">
-          </div>
-
-          <!-- Phone -->
-          <div class="mb-3">
-            <label for="clm-phone" class="form-label fw-semibold" style="font-size:.84rem; color:#374151;">Telefonnummer <span class="text-danger">*</span></label>
-            <input type="tel" class="form-control" id="clm-phone" placeholder="+49 123 456789" maxlength="50" required autocomplete="tel">
-          </div>
-
-          <!-- Loss amount range -->
-          <div class="mb-3">
-            <label for="clm-amount" class="form-label fw-semibold" style="font-size:.84rem; color:#374151;">Geschätzter Verlustbetrag <span class="text-danger">*</span></label>
-            <select class="form-select" id="clm-amount" required>
-              <option value="" disabled selected>Bitte auswählen …</option>
-              <option value="5000-20000">5.000 € – 20.000 €</option>
-              <option value="20000-50000">20.000 € – 50.000 €</option>
-              <option value="50000-100000">50.000 € – 100.000 €</option>
-              <option value="100000-250000">100.000 € – 250.000 €</option>
-              <option value="250000-500000">250.000 € – 500.000 €</option>
-              <option value="500000+">500.000 € und mehr</option>
-            </select>
-          </div>
-
-          <!-- Year of loss -->
-          <div class="mb-3">
-            <label for="clm-year" class="form-label fw-semibold" style="font-size:.84rem; color:#374151;">Jahr des Verlusts <span class="text-danger">*</span></label>
-            <select class="form-select" id="clm-year" required>
-              <option value="" disabled selected>Jahr auswählen …</option>
-              <?php for ($y = 2026; $y >= 2000; $y--): ?>
-              <option value="<?php echo $y; ?>"><?php echo $y; ?></option>
-              <?php endfor; ?>
-            </select>
-          </div>
-
-          <!-- Platforms -->
-          <div class="mb-3">
-            <label class="form-label fw-semibold" style="font-size:.84rem; color:#374151;">Plattformen / Anbieter <span class="text-danger">*</span></label>
-            <div class="clm-platform-list" id="clm-platform-list"></div>
-            <div class="clm-platform-input-wrap">
-              <input type="text" class="form-control" id="clm-platform-input"
-                     placeholder="z.B. Binance, eToro, MetaTrader …"
-                     onkeydown="if(event.key==='Enter'){event.preventDefault();clmAddPlatform();}">
-              <button type="button" class="btn-clm-add-platform" onclick="clmAddPlatform()" title="Hinzufügen">+</button>
-            </div>
-            <input type="hidden" id="clm-platforms">
-          </div>
-
-          <!-- Details -->
-          <div class="mb-3">
-            <label for="clm-details" class="form-label fw-semibold" style="font-size:.84rem; color:#374151;">Fallbeschreibung / Details <span class="text-danger">*</span></label>
-            <textarea class="form-control" id="clm-details" rows="4" maxlength="2000"
-                      placeholder="Bitte beschreiben Sie kurz, wie es zu dem Verlust gekommen ist, welche Schritte Sie bereits unternommen haben und alle weiteren relevanten Informationen …"></textarea>
-          </div>
-
-          <p id="clm-error" style="color:#dc2626; font-size:.82rem; margin-top:-6px; display:none;">
-            Bitte füllen Sie alle Pflichtfelder aus.
-          </p>
         </div>
 
-        <!-- Footer buttons -->
-        <div style="padding:14px 28px 22px; display:flex; gap:10px; border-top:1px solid #f0f0f0;">
-          <button type="button" class="btn btn-secondary flex-fill"
-                  style="background:#f3f4f6; border:1px solid #d1d5db; color:#374151; font-weight:600; border-radius:8px;"
-                  data-bs-dismiss="modal">Abbrechen</button>
-          <button type="button" class="btn flex-fill fw-bold text-white"
-                  id="clm-submit"
-                  style="background:linear-gradient(135deg,#1a3a5c,#0d2137); border:none; border-radius:8px; flex:2;"
-                  onclick="clmSubmit()">
-            <span id="clm-submit-text">Anfrage absenden &rarr;</span>
-            <span id="clm-submit-spinner" class="d-none">
-              <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Wird gesendet …
-            </span>
-          </button>
+        <!-- Email -->
+        <label for="clm-email">E-Mail-Adresse <span style="color:#e02020">*</span></label>
+        <input type="email" class="form-control" id="clm-email" placeholder="ihre@email.de" maxlength="255" required autocomplete="email">
+
+        <!-- Phone -->
+        <label for="clm-phone">Telefonnummer <span style="color:#e02020">*</span></label>
+        <input type="tel" class="form-control" id="clm-phone" placeholder="+49 123 456789" maxlength="50" required autocomplete="tel">
+
+        <!-- Loss amount range -->
+        <label for="clm-amount">Geschätzter Verlustbetrag <span style="color:#e02020">*</span></label>
+        <select class="form-control" id="clm-amount" required>
+          <option value="" disabled selected>Bitte auswählen …</option>
+          <option value="5000-20000">5.000 € – 20.000 €</option>
+          <option value="20000-50000">20.000 € – 50.000 €</option>
+          <option value="50000-100000">50.000 € – 100.000 €</option>
+          <option value="100000-250000">100.000 € – 250.000 €</option>
+          <option value="250000-500000">250.000 € – 500.000 €</option>
+          <option value="500000+">500.000 € und mehr</option>
+        </select>
+
+        <!-- Year of loss -->
+        <label for="clm-year">Jahr des Verlusts <span style="color:#e02020">*</span></label>
+        <select class="form-control" id="clm-year" required>
+          <option value="" disabled selected>Jahr auswählen …</option>
+          <?php for ($y = 2026; $y >= 2000; $y--): ?>
+          <option value="<?php echo $y; ?>"><?php echo $y; ?></option>
+          <?php endfor; ?>
+        </select>
+
+        <!-- Platforms -->
+        <label>Plattformen / Anbieter <span style="color:#e02020">*</span></label>
+        <div class="clm-platform-list" id="clm-platform-list"></div>
+        <div class="clm-platform-input-wrap">
+          <input type="text" class="form-control" id="clm-platform-input"
+                 placeholder="z.B. Binance, eToro, MetaTrader …"
+                 onkeydown="if(event.key==='Enter'){event.preventDefault();clmAddPlatform();}">
+          <button type="button" class="btn-clm-add-platform" onclick="clmAddPlatform()" title="Hinzufügen">+</button>
         </div>
+        <input type="hidden" id="clm-platforms">
+
+        <!-- Details -->
+        <label for="clm-details">Fallbeschreibung / Details <span style="color:#e02020">*</span></label>
+        <textarea class="form-control" id="clm-details" rows="4" maxlength="2000"
+                  placeholder="Bitte beschreiben Sie kurz, wie es zu dem Verlust gekommen ist, welche Schritte Sie bereits unternommen haben und alle weiteren relevanten Informationen …"></textarea>
+
+        <p id="clm-error" style="color:#dc2626; font-size:.82rem; margin-top:-8px; display:none;">
+          Bitte füllen Sie alle Pflichtfelder aus.
+        </p>
       </div>
 
-      <!-- Success message -->
-      <div class="modal-body text-center py-5 d-none" id="clm-success">
-        <div style="width:56px;height:56px;background:#ecfdf5;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
-          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width:28px;height:28px;fill:#059669;">
-            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
-          </svg>
-        </div>
-        <h5 class="fw-bold mb-2" style="color:#1a3a5c;">Anfrage erfolgreich gesendet!</h5>
-        <p class="text-muted" style="font-size:.9rem;">Vielen Dank für Ihre Anfrage. Eines unserer Teammitglieder wird sich innerhalb von <strong>24 Stunden</strong> bei Ihnen melden.</p>
-        <button type="button" class="btn btn-primary mt-2" data-bs-dismiss="modal" style="background:#1a3a5c; border:none; border-radius:8px;">Schließen</button>
+      <div class="modal-footer-btns">
+        <button type="button" class="btn-clm-cancel" onclick="clmClose()">Abbrechen</button>
+        <button type="button" class="btn-clm-submit" id="clm-submit" onclick="clmSubmit()">
+          <span id="clm-submit-text">Anfrage absenden &rarr;</span>
+        </button>
       </div>
-
     </div>
+
+    <!-- Success message -->
+    <div class="clm-success-msg" id="clm-success">
+      <div class="s-icon">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+        </svg>
+      </div>
+      <h5>Anfrage erfolgreich gesendet!</h5>
+      <p>Vielen Dank für Ihre Anfrage. Eines unserer Teammitglieder wird sich innerhalb von <strong>24 Stunden</strong> bei Ihnen melden.</p>
+      <button type="button" class="btn-clm-submit" style="max-width:220px; margin: 18px auto 0; display:block;" onclick="clmClose()">Schließen</button>
+    </div>
+
   </div>
 </div>
 
@@ -839,6 +954,22 @@ include 'includes/navbar.php';
 
     var clmPlatforms = [];
 
+    window.clmOpen = function(presetAmount) {
+        clmReset(presetAmount || '');
+        document.getElementById('contactLeadModal').classList.add('active');
+        document.body.style.overflow = 'hidden';
+    };
+
+    window.clmClose = function() {
+        document.getElementById('contactLeadModal').classList.remove('active');
+        document.body.style.overflow = '';
+    };
+
+    // Close on backdrop click
+    document.getElementById('contactLeadModal').addEventListener('click', function(e) {
+        if (e.target === this) clmClose();
+    });
+
     window.clmAddPlatform = function() {
         var inp = document.getElementById('clm-platform-input');
         var val = inp.value.trim();
@@ -850,11 +981,6 @@ include 'includes/navbar.php';
         clmPlatforms.push(val);
         clmRenderPlatforms();
         inp.value = '';
-    };
-
-    window.clmRemovePlatform = function(idx) {
-        clmPlatforms.splice(idx, 1);
-        clmRenderPlatforms();
     };
 
     function clmRenderPlatforms() {
@@ -890,21 +1016,12 @@ include 'includes/navbar.php';
         clmPlatforms = [];
         clmRenderPlatforms();
         document.getElementById('clm-error').style.display = 'none';
-        document.getElementById('clm-form-wrap').classList.remove('d-none');
-        document.getElementById('clm-success').classList.add('d-none');
+        document.getElementById('clm-form-wrap').style.display = '';
+        document.getElementById('clm-success').style.display = 'none';
         var btn = document.getElementById('clm-submit');
         btn.disabled = false;
-        document.getElementById('clm-submit-text').classList.remove('d-none');
-        document.getElementById('clm-submit-spinner').classList.add('d-none');
+        document.getElementById('clm-submit-text').textContent = 'Anfrage absenden \u2192';
     }
-
-    // When modal is shown via data-bs-toggle or JS, reset the form
-    document.getElementById('contactLeadModal').addEventListener('show.bs.modal', function(e) {
-        // Only reset if not triggered by estimatorBtn (it will set amount itself)
-        if (!e.relatedTarget || e.relatedTarget.id !== 'estimatorBtn') {
-            clmReset('');
-        }
-    });
 
     // Estimator button
     var estimatorBtn = document.getElementById('estimatorBtn');
@@ -921,10 +1038,7 @@ include 'includes/navbar.php';
             hint.classList.add('d-none');
 
             var rangeAmount = amountMap[amount] || '';
-            clmReset(rangeAmount);
-
-            var modal = new bootstrap.Modal(document.getElementById('contactLeadModal'));
-            modal.show();
+            clmOpen(rangeAmount);
         });
     }
 
@@ -947,6 +1061,7 @@ include 'includes/navbar.php';
         var errEl     = document.getElementById('clm-error');
 
         if (!firstName || !lastName || !email || !phone || !amount || !year || clmPlatforms.length === 0 || !details) {
+            errEl.textContent = 'Bitte füllen Sie alle Pflichtfelder aus.';
             errEl.style.display = 'block';
             return;
         }
@@ -964,23 +1079,20 @@ include 'includes/navbar.php';
 
         var btn  = document.getElementById('clm-submit');
         var txt  = document.getElementById('clm-submit-text');
-        var spin = document.getElementById('clm-submit-spinner');
         btn.disabled = true;
-        txt.classList.add('d-none');
-        spin.classList.remove('d-none');
+        txt.textContent = 'Wird gesendet …';
 
         fetch('contact.php', { method: 'POST', body: fd })
             .then(function(resp) {
                 if (resp.ok) {
-                    document.getElementById('clm-form-wrap').classList.add('d-none');
-                    document.getElementById('clm-success').classList.remove('d-none');
+                    document.getElementById('clm-form-wrap').style.display = 'none';
+                    document.getElementById('clm-success').style.display = 'block';
                 } else {
                     return resp.json().then(function(r) {
                         errEl.textContent = r.message || 'Fehler beim Senden. Bitte versuchen Sie es erneut.';
                         errEl.style.display = 'block';
                         btn.disabled = false;
-                        txt.classList.remove('d-none');
-                        spin.classList.add('d-none');
+                        txt.textContent = 'Anfrage absenden \u2192';
                     });
                 }
             })
@@ -988,8 +1100,7 @@ include 'includes/navbar.php';
                 errEl.textContent = 'Netzwerkfehler. Bitte prüfen Sie Ihre Verbindung und versuchen Sie es erneut.';
                 errEl.style.display = 'block';
                 btn.disabled = false;
-                txt.classList.remove('d-none');
-                spin.classList.add('d-none');
+                txt.textContent = 'Anfrage absenden \u2192';
             });
     };
 })();
@@ -1061,7 +1172,7 @@ include 'includes/navbar.php';
         </div>
 
         <div style="display:flex;gap:12px;flex-wrap:wrap;">
-          <a href="#" class="btn" data-bs-toggle="modal" data-bs-target="#contactLeadModal" style="background:linear-gradient(135deg,#00c6ff,#00ffb4);border:none;color:#04091a;font-weight:700;padding:14px 30px;border-radius:10px;font-size:1rem;box-shadow:0 0 28px rgba(0,198,255,.35);">
+          <a href="#" class="btn" onclick="clmOpen(); return false;" style="background:linear-gradient(135deg,#00c6ff,#00ffb4);border:none;color:#04091a;font-weight:700;padding:14px 30px;border-radius:10px;font-size:1rem;box-shadow:0 0 28px rgba(0,198,255,.35);">
             <i class="fas fa-search-dollar me-2"></i>Wiederherstellung starten
           </a>
           <a href="#verluste-info" class="btn" style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.18);color:#fff;font-weight:600;padding:14px 26px;border-radius:10px;font-size:.95rem;">
@@ -1858,7 +1969,7 @@ include 'includes/navbar.php';
           Kontaktieren Sie uns jetzt für eine <strong style="color:#fff;">kostenlose, unverbindliche Ersteinschätzung</strong>.
         </p>
         <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;">
-          <a href="#" data-bs-toggle="modal" data-bs-target="#contactLeadModal"
+          <a href="#" onclick="clmOpen(); return false;"
              style="background:linear-gradient(135deg,#00c6ff,#00ffb4);border:none;color:#04091a;font-weight:700;padding:16px 36px;border-radius:12px;font-size:1.05rem;text-decoration:none;display:inline-flex;align-items:center;gap:8px;box-shadow:0 0 30px rgba(0,198,255,.35);">
             <i class="fas fa-rocket"></i>Kostenlose Beratung starten
           </a>

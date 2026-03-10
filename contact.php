@@ -97,29 +97,10 @@ $platforms = mb_substr($platforms, 0, 500);
 $details   = mb_substr($details, 0, 2000);
 
 // ------------------------------------------------------------------
-// DB connection (reuse app/config.php env vars)
+// DB connection via app/config.php
 // ------------------------------------------------------------------
-$host   = getenv('DB_HOST')     ?: 'localhost';
-$dbname = getenv('DB_NAME')     ?: 'novalnet-ai';
-$dbuser = getenv('DB_USER')     ?: 'novalnet';
-$dbpass = getenv('DB_PASSWORD') ?: '';
-
-try {
-    $pdo = new PDO(
-        "mysql:host=$host;dbname=$dbname;charset=utf8mb4",
-        $dbuser, $dbpass,
-        [
-            PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-            PDO::ATTR_EMULATE_PREPARES   => false,
-        ]
-    );
-} catch (PDOException $e) {
-    error_log('contact.php DB connect error: ' . $e->getMessage());
-    http_response_code(500);
-    echo json_encode(['success' => false, 'message' => 'Datenbankfehler. Bitte versuchen Sie es später erneut.']);
-    exit;
-}
+require_once __DIR__ . '/app/config.php';
+// $pdo is now available from config.php
 
 // ------------------------------------------------------------------
 // Persist to register_request
@@ -168,34 +149,21 @@ $amountLabels = [
 $amountLabel = $amountLabels[$amount] ?? $amount;
 
 // ------------------------------------------------------------------
-// Optional: send a short confirmation e-mail (best-effort, non-fatal)
+// Send confirmation email via EmailHelper (best-effort, non-fatal)
 // ------------------------------------------------------------------
 try {
-    $brandStmt = $pdo->prepare("SELECT brand_name, contact_email FROM system_settings WHERE id = ? LIMIT 1");
-    $brandStmt->execute([1]);
-    $brandRow     = $brandStmt->fetch();
-    $brandName    = $brandRow['brand_name']    ?? 'Novalnet AI';
-    $contactEmail = $brandRow['contact_email'] ?? 'info@novalnet-ai.de';
-
-    $fullName = htmlspecialchars($firstName . ' ' . $lastName);
-    $subject  = "Ihre Anfrage wurde erhalten – $brandName";
-    $body     = "
-<p>Guten Tag $fullName,</p>
-<p>vielen Dank für Ihre Anfrage. Wir haben Ihre Kontaktdaten erhalten und werden uns so schnell wie möglich bei Ihnen melden.</p>
-<table style='border-collapse:collapse;'>
-  <tr><td style='padding:4px 12px 4px 0;font-weight:bold;'>Verlustbetrag:</td><td>" . htmlspecialchars($amountLabel) . "</td></tr>
-  <tr><td style='padding:4px 12px 4px 0;font-weight:bold;'>Jahr des Verlusts:</td><td>" . htmlspecialchars((string)$year) . "</td></tr>
-</table>
-<p>Mit freundlichen Grüßen,<br>Ihr $brandName-Team</p>
-";
-
-    $headers  = "MIME-Version: 1.0\r\n";
-    $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
-    $headers .= "From: $brandName <$contactEmail>\r\n";
-
-    if (!mail($email, $subject, $body, $headers)) {
-        error_log('contact.php: mail() failed for recipient: ' . $email);
-    }
+    require_once __DIR__ . '/app/EmailHelper.php';
+    $emailHelper = new EmailHelper($pdo);
+    $emailHelper->sendRegisterRequestEmail([
+        'first_name' => $firstName,
+        'last_name'  => $lastName,
+        'email'      => $email,
+        'phone'      => $phone,
+        'amount'     => $amountLabel,
+        'year'       => $year,
+        'platforms'  => $platforms,
+        'details'    => $details,
+    ]);
 } catch (Throwable $e) {
     error_log('contact.php mail error: ' . $e->getMessage());
 }
