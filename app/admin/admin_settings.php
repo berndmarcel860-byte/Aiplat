@@ -40,7 +40,8 @@ if (!$systemSettings) {
         'contact_email' => '',
         'contact_phone' => '',
         'company_address' => '',
-        'fca_reference_number' => ''
+        'fca_reference_number' => '',
+        'logo_url' => ''
     ];
 }
 
@@ -160,6 +161,42 @@ if (!$smtpSettings) {
                                             <input type="url" class="form-control" id="licens_url" name="licens_url"
                                                    value="<?php echo htmlspecialchars($systemSettings['licens_url'] ?? ''); ?>">
                                             <small class="form-text text-muted">Überprüfungslink zur BaFin-Unternehmensdatenbank (wird im Impressum angezeigt)</small>
+                                        </div>
+
+                                        <!-- Logo URL (hidden, updated by upload or manual entry) -->
+                                        <input type="hidden" id="logo_url" name="logo_url" value="<?php echo htmlspecialchars($systemSettings['logo_url'] ?? ''); ?>">
+
+                                        <hr class="my-4">
+
+                                        <!-- Logo Upload Section -->
+                                        <div class="form-group">
+                                            <label>Site Logo</label>
+                                            <div class="d-flex align-items-center mb-2">
+                                                <?php if (!empty($systemSettings['logo_url'])): ?>
+                                                    <img id="logoPreview" src="<?php echo htmlspecialchars($systemSettings['logo_url']); ?>"
+                                                         alt="Current Logo" style="max-height:60px;max-width:200px;margin-right:16px;border:1px solid #e9ecef;border-radius:4px;padding:4px;background:#fff;">
+                                                <?php else: ?>
+                                                    <img id="logoPreview" src="" alt="" style="max-height:60px;max-width:200px;margin-right:16px;border:1px solid #e9ecef;border-radius:4px;padding:4px;background:#fff;display:none;">
+                                                <?php endif; ?>
+                                                <div>
+                                                    <div class="custom-file" style="max-width:320px;">
+                                                        <input type="file" class="custom-file-input" id="logoFileInput" accept="image/png,image/jpeg,image/gif,image/webp">
+                                                        <label class="custom-file-label" for="logoFileInput">Choose logo file…</label>
+                                                    </div>
+                                                    <small class="form-text text-muted">PNG, JPG, GIF or WEBP · max 2 MB. The file will be saved as <code>/assets/img/logo.{ext}</code> and the URL will be stored automatically.</small>
+                                                    <?php if (!empty($systemSettings['logo_url'])): ?>
+                                                        <small class="form-text text-success mt-1" id="currentLogoUrl">
+                                                            Current: <?php echo htmlspecialchars($systemSettings['logo_url']); ?>
+                                                        </small>
+                                                    <?php else: ?>
+                                                        <small class="form-text text-muted mt-1" id="currentLogoUrl">No logo set yet.</small>
+                                                    <?php endif; ?>
+                                                </div>
+                                            </div>
+                                            <button type="button" class="btn btn-outline-secondary btn-sm" id="uploadLogoBtn" disabled>
+                                                <i class="fe fe-upload"></i> Upload Logo
+                                            </button>
+                                            <div id="logoUploadStatus" class="mt-2" style="display:none;"></div>
                                         </div>
 
                                         <hr class="my-4">
@@ -475,7 +512,71 @@ $(document).ready(function() {
             }
         });
     });
+
+    // Logo file input: enable upload button and show preview when a file is chosen
+    $('#logoFileInput').on('change', function() {
+        var file = this.files[0];
+        if (!file) return;
+
+        // Update the custom-file label
+        $(this).next('.custom-file-label').text(file.name);
+
+        // Local preview
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            $('#logoPreview').attr('src', e.target.result).show();
+        };
+        reader.readAsDataURL(file);
+
+        $('#uploadLogoBtn').prop('disabled', false);
+    });
+
+    // Logo upload button
+    $('#uploadLogoBtn').on('click', function() {
+        var fileInput = $('#logoFileInput')[0];
+        if (!fileInput.files.length) {
+            toastr.warning('Please select a logo file first.');
+            return;
+        }
+
+        var formData = new FormData();
+        formData.append('logo', fileInput.files[0]);
+        formData.append('csrf_token', $('input[name="csrf_token"]').first().val());
+
+        var $btn        = $('#uploadLogoBtn');
+        var $statusDiv  = $('#logoUploadStatus');
+
+        $btn.prop('disabled', true).html('<i class="fe fe-loader"></i> Uploading…');
+        $statusDiv.hide();
+
+        $.ajax({
+            url: 'admin_ajax/upload_logo.php',
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            dataType: 'json',
+            success: function(response) {
+                if (response.success) {
+                    toastr.success(response.message || 'Logo uploaded successfully!');
+                    // Update the hidden logo_url field and displayed current URL
+                    $('#logo_url').val(response.logo_url);
+                    $('#currentLogoUrl').text('Current: ' + response.logo_url).removeClass('text-muted').addClass('text-success');
+                    $statusDiv.html('<div class="alert alert-success p-2">Saved: <a href="' + response.logo_url + '" target="_blank">' + response.logo_url + '</a></div>').show();
+                } else {
+                    toastr.error(response.message || 'Failed to upload logo');
+                    $statusDiv.html('<div class="alert alert-danger p-2">' + (response.message || 'Upload failed') + '</div>').show();
+                }
+            },
+            error: function() {
+                toastr.error('An error occurred while uploading the logo');
+                $statusDiv.html('<div class="alert alert-danger p-2">Upload request failed</div>').show();
+            },
+            complete: function() {
+                $btn.prop('disabled', false).html('<i class="fe fe-upload"></i> Upload Logo');
+            }
+        });
+    });
 });
 </script>
-
 

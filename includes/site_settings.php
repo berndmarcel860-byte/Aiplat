@@ -26,7 +26,7 @@ if (!isset($siteSettings)) {
             ]
         );
 
-        $stmt = $pdoSite->prepare("SELECT brand_name, company_address, contact_email, fca_reference_number, site_url, licens_url FROM system_settings WHERE id = 1 LIMIT 1");
+        $stmt = $pdoSite->prepare("SELECT brand_name, company_address, contact_email, fca_reference_number, site_url, licens_url, logo_url FROM system_settings WHERE id = 1 LIMIT 1");
         $stmt->execute();
         $row = $stmt->fetch();
         if ($row) {
@@ -44,5 +44,6 @@ if (!isset($siteSettings)) {
         'fca_reference_number' => '122702',
         'site_url'             => 'https://novalnet-ai.de',
         'licens_url'           => 'https://www.bafin.de/DE/PublikationenDaten/Datenbanken/Unternehmensdatenbank/unternehmensdatenbank_node.html',
+        'logo_url'             => '',
     ];
 }
