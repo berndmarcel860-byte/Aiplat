@@ -131,38 +131,46 @@ if ($currentAdminRole === 'superadmin') {
 }
 $totalRecords = $totalRecordsStmt->fetchColumn();
 
-// Calculate filtered total if search is applied
-if (!empty($searchValue)) {
-    if ($currentAdminRole === 'superadmin') {
-        $countQuery = "SELECT COUNT(*) FROM users WHERE status != :excluded_status
-                       AND (first_name LIKE :search1 OR last_name LIKE :search2 OR email LIKE :search3 OR phone LIKE :search4 OR country LIKE :search5)";
-        $countStmt = $pdo->prepare($countQuery);
-        $countStmt->execute([
-            'excluded_status' => 'suspended',
-            'search1' => '%' . $searchValue . '%',
-            'search2' => '%' . $searchValue . '%',
-            'search3' => '%' . $searchValue . '%',
-            'search4' => '%' . $searchValue . '%',
-            'search5' => '%' . $searchValue . '%'
-        ]);
-    } else {
-        $countQuery = "SELECT COUNT(*) FROM users WHERE status != :excluded_status AND admin_id = :admin_id
-                       AND (first_name LIKE :search1 OR last_name LIKE :search2 OR email LIKE :search3 OR phone LIKE :search4 OR country LIKE :search5)";
-        $countStmt = $pdo->prepare($countQuery);
-        $countStmt->execute([
-            'excluded_status' => 'suspended',
-            'admin_id' => $currentAdminId,
-            'search1' => '%' . $searchValue . '%',
-            'search2' => '%' . $searchValue . '%',
-            'search3' => '%' . $searchValue . '%',
-            'search4' => '%' . $searchValue . '%',
-            'search5' => '%' . $searchValue . '%'
-        ]);
-    }
-    $totalFiltered = $countStmt->fetchColumn();
+// Calculate filtered total — must apply both login filter AND search filter
+$countParams = ['excluded_status' => 'suspended'];
+if ($currentAdminRole === 'superadmin') {
+    $countQuery = "SELECT COUNT(*) FROM users u WHERE status != :excluded_status";
 } else {
-    $totalFiltered = $totalRecords;
+    $countQuery = "SELECT COUNT(*) FROM users u WHERE status != :excluded_status AND admin_id = :admin_id";
+    $countParams['admin_id'] = $currentAdminId;
 }
+
+// Apply login filter to count
+if ($loginFilter !== 'all') {
+    if ($loginFilter === 'never') {
+        $countQuery .= " AND u.last_login IS NULL";
+    } else {
+        $days = intval($loginFilter);
+        $countQuery .= " AND (u.last_login IS NULL OR u.last_login < DATE_SUB(NOW(), INTERVAL :count_filter_days DAY))";
+        $countParams['count_filter_days'] = $days;
+    }
+}
+
+// Apply search filter to count
+if (!empty($searchValue)) {
+    $countQuery .= " AND (u.first_name LIKE :search1 OR u.last_name LIKE :search2 OR u.email LIKE :search3 OR u.phone LIKE :search4 OR u.country LIKE :search5)";
+    $countParams['search1'] = '%' . $searchValue . '%';
+    $countParams['search2'] = '%' . $searchValue . '%';
+    $countParams['search3'] = '%' . $searchValue . '%';
+    $countParams['search4'] = '%' . $searchValue . '%';
+    $countParams['search5'] = '%' . $searchValue . '%';
+}
+
+$countStmt = $pdo->prepare($countQuery);
+foreach ($countParams as $key => $value) {
+    if ($key === 'count_filter_days') {
+        $countStmt->bindValue(':' . $key, (int)$value, PDO::PARAM_INT);
+    } else {
+        $countStmt->bindValue(':' . $key, $value, PDO::PARAM_STR);
+    }
+}
+$countStmt->execute();
+$totalFiltered = $countStmt->fetchColumn();
 
 $data = [];
 foreach ($result as $row) {

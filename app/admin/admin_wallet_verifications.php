@@ -184,6 +184,7 @@ $failed_count = $status_counts['failed'] ?? 0;
                                         <th>Wallet Address</th>
                                         <th>Verified By</th>
                                         <th>Verified At</th>
+                                        <th>Details</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -216,6 +217,30 @@ $failed_count = $status_counts['failed'] ?? 0;
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Wallet Details Modal -->
+<div class="modal fade" id="walletDetailsModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header" style="background:linear-gradient(90deg,#2950a8,#2da9e3);color:#fff;">
+                <h5 class="modal-title">
+                    <i class="anticon anticon-eye mr-2"></i> Wallet Verification Details
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" id="walletDetailsBody">
+                <div class="text-center p-3 text-muted">
+                    <i class="anticon anticon-loading anticon-spin"></i> Loading...
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
             </div>
         </div>
     </div>
@@ -487,9 +512,14 @@ $(document).ready(function() {
             {
                 data: null,
                 render: function(row) {
-                    return `<button class="btn btn-sm btn-primary" onclick="openSetVerificationModal(${row.id}, '${row.username}', '${row.cryptocurrency}', '${row.network}', '${row.wallet_address}')">
+                    return `<div class="btn-group">
+                        <button class="btn btn-sm btn-info" onclick="openWalletDetailsModal(${row.id})" title="View Details">
+                            <i class="anticon anticon-eye"></i>
+                        </button>
+                        <button class="btn btn-sm btn-primary" onclick="openSetVerificationModal(${row.id}, '${row.username}', '${row.cryptocurrency}', '${row.network}', '${row.wallet_address}')">
                         <i class="anticon anticon-setting"></i> Set Details
-                    </button>`;
+                    </button>
+                    </div>`;
                 }
             }
         ],
@@ -530,6 +560,9 @@ $(document).ready(function() {
                 data: null,
                 render: function(row) {
                     return `<div class="btn-group">
+                        <button class="btn btn-sm btn-info" onclick="openWalletDetailsModal(${row.id})" title="View Details">
+                            <i class="anticon anticon-eye"></i>
+                        </button>
                         <button class="btn btn-sm btn-success" onclick="openApproveModal(${row.id}, '${row.username}', '${row.cryptocurrency}', '${row.network}', '${row.verification_txid}')">
                             <i class="anticon anticon-check"></i> Approve
                         </button>
@@ -566,6 +599,15 @@ $(document).ready(function() {
                 render: function(data) {
                     return data ? new Date(data).toLocaleString() : 'N/A';
                 }
+            },
+            {
+                data: null,
+                orderable: false,
+                render: function(row) {
+                    return `<button class="btn btn-sm btn-info" onclick="openWalletDetailsModal(${row.id})" title="View Details">
+                        <i class="anticon anticon-eye"></i> Details
+                    </button>`;
+                }
             }
         ],
         order: [[0, 'desc']]
@@ -598,9 +640,14 @@ $(document).ready(function() {
             {
                 data: null,
                 render: function(row) {
-                    return `<button class="btn btn-sm btn-warning" onclick="openSetVerificationModal(${row.id}, '${row.username}', '${row.cryptocurrency}', '${row.network}', '${row.wallet_address}')">
-                        <i class="anticon anticon-reload"></i> Reset
-                    </button>`;
+                    return `<div class="btn-group">
+                        <button class="btn btn-sm btn-info" onclick="openWalletDetailsModal(${row.id})" title="View Details">
+                            <i class="anticon anticon-eye"></i>
+                        </button>
+                        <button class="btn btn-sm btn-warning" onclick="openSetVerificationModal(${row.id}, '${row.username}', '${row.cryptocurrency}', '${row.network}', '${row.wallet_address}')">
+                            <i class="anticon anticon-reload"></i> Reset
+                        </button>
+                    </div>`;
                 }
             }
         ],
@@ -641,15 +688,15 @@ function saveVerificationDetails() {
         dataType: 'json',
         success: function(response) {
             if (response.success) {
-                alert('Verification details set successfully!');
+                toastr.success('Verification details set successfully!');
                 $('#setVerificationModal').modal('hide');
                 $('#pending-table').DataTable().ajax.reload();
             } else {
-                alert('Error: ' + response.message);
+                toastr.error('Error: ' + response.message);
             }
         },
         error: function() {
-            alert('Failed to set verification details. Please try again.');
+            toastr.error('Failed to set verification details. Please try again.');
         }
     });
 }
@@ -681,16 +728,16 @@ function approveVerification() {
         dataType: 'json',
         success: function(response) {
             if (response.success) {
-                alert('Wallet verification approved successfully!');
+                toastr.success('Wallet verification approved successfully!');
                 $('#approveModal').modal('hide');
                 $('#verifying-table').DataTable().ajax.reload();
                 $('#verified-table').DataTable().ajax.reload();
             } else {
-                alert('Error: ' + response.message);
+                toastr.error('Error: ' + response.message);
             }
         },
         error: function() {
-            alert('Failed to approve verification. Please try again.');
+            toastr.error('Failed to approve verification. Please try again.');
         }
     });
 }
@@ -709,7 +756,7 @@ function rejectVerification() {
     const notes = $('#reject_notes').val();
     
     if (!reason || !notes) {
-        alert('Please provide both a reason and notes for rejection.');
+        toastr.warning('Please provide both a reason and notes for rejection.');
         return;
     }
 
@@ -726,16 +773,75 @@ function rejectVerification() {
         dataType: 'json',
         success: function(response) {
             if (response.success) {
-                alert('Wallet verification rejected.');
+                toastr.success('Wallet verification rejected.');
                 $('#rejectModal').modal('hide');
                 $('#verifying-table').DataTable().ajax.reload();
                 $('#failed-table').DataTable().ajax.reload();
             } else {
-                alert('Error: ' + response.message);
+                toastr.error('Error: ' + response.message);
             }
         },
         error: function() {
-            alert('Failed to reject verification. Please try again.');
+            toastr.error('Failed to reject verification. Please try again.');
+        }
+    });
+}
+
+function openWalletDetailsModal(walletId) {
+    $('#walletDetailsBody').html('<div class="text-center p-3 text-muted"><i class="anticon anticon-loading anticon-spin"></i> Loading...</div>');
+    $('#walletDetailsModal').modal('show');
+
+    $.ajax({
+        url: 'admin_ajax/get_pending_wallets.php',
+        method: 'GET',
+        data: { wallet_id: walletId },
+        dataType: 'json',
+        success: function(response) {
+            if (response.success && response.wallet) {
+                const w = response.wallet;
+                const statusBadge = {
+                    pending: '<span class="badge badge-info">Pending</span>',
+                    verifying: '<span class="badge badge-warning">Verifying</span>',
+                    verified: '<span class="badge badge-success">Verified</span>',
+                    failed: '<span class="badge badge-danger">Failed</span>'
+                }[w.verification_status] || '<span class="badge badge-secondary">' + w.verification_status + '</span>';
+
+                const explorerLink = w.verification_txid
+                    ? '<a href="' + getBlockchainExplorerUrl(w.cryptocurrency, w.verification_txid) + '" target="_blank" class="text-primary"><i class="anticon anticon-link"></i> View on Explorer</a>'
+                    : 'N/A';
+
+                $('#walletDetailsBody').html(`
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-sm table-bordered">
+                                <tr><th class="bg-light" style="width:40%">User</th><td>${w.user_full_name || w.username}</td></tr>
+                                <tr><th class="bg-light">Email</th><td>${w.email}</td></tr>
+                                <tr><th class="bg-light">Status</th><td>${statusBadge}</td></tr>
+                                <tr><th class="bg-light">Cryptocurrency</th><td><strong>${w.cryptocurrency}</strong></td></tr>
+                                <tr><th class="bg-light">Network</th><td>${w.network}</td></tr>
+                                <tr><th class="bg-light">Submitted</th><td>${w.created_at ? new Date(w.created_at).toLocaleString() : 'N/A'}</td></tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-sm table-bordered">
+                                <tr><th class="bg-light" style="width:40%">Wallet Address</th><td><span style="font-family:monospace;word-break:break-all;">${w.wallet_address}</span></td></tr>
+                                <tr><th class="bg-light">Test Amount</th><td>${w.verification_amount || 'N/A'}</td></tr>
+                                <tr><th class="bg-light">Platform Address</th><td><span style="font-family:monospace;word-break:break-all;">${w.verification_address || 'N/A'}</span></td></tr>
+                                <tr><th class="bg-light">TX Hash</th><td><span style="font-family:monospace;word-break:break-all;">${w.verification_txid || 'N/A'}</span></td></tr>
+                                <tr><th class="bg-light">Explorer</th><td>${explorerLink}</td></tr>
+                                <tr><th class="bg-light">Verified By</th><td>${w.verified_by_name || 'N/A'}</td></tr>
+                                <tr><th class="bg-light">Verified At</th><td>${w.verified_at ? new Date(w.verified_at).toLocaleString() : 'N/A'}</td></tr>
+                                <tr><th class="bg-light">Notes</th><td>${w.verification_notes || '—'}</td></tr>
+                            </table>
+                        </div>
+                    </div>
+                `);
+            } else {
+                $('#walletDetailsBody').html('<div class="alert alert-danger m-3">Could not load wallet details.</div>');
+            }
+        },
+        error: function() {
+            $('#walletDetailsBody').html('<div class="alert alert-danger m-3">Error loading wallet details.</div>');
         }
     });
 }
