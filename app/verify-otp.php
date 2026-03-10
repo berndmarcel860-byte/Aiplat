@@ -124,94 +124,135 @@ if (isset($_GET['resend']) && $_GET['resend'] === '1') {
     <title>OTP-Verifizierung | Crypto Finanz</title>
     <link href="assets/css/app.min.css" rel="stylesheet">
     <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0d1b2a 0%, #1b2a3b 60%, #102030 100%);
+            min-height: 100vh;
+        }
         .otp-container {
             min-height: 100vh;
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 20px;
+            padding: 30px 15px;
         }
         .otp-card {
-            max-width: 500px;
+            border-radius: 12px;
+            box-shadow: 0 8px 40px rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255,255,255,0.07);
+            background: #ffffff;
+            max-width: 460px;
             width: 100%;
-            border-radius: 15px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
-            border: none;
-            overflow: hidden;
         }
         .otp-header {
-            background: linear-gradient(135deg, #2950a8, #2da9e3);
-            color: white;
-            padding: 40px 30px;
+            background: linear-gradient(135deg, #1a3a5c 0%, #0d2137 100%);
+            border-radius: 12px 12px 0 0;
+            padding: 28px 32px 22px;
             text-align: center;
         }
-        .otp-header h2 {
-            margin: 0 0 10px 0;
-            font-size: 28px;
-            font-weight: 600;
+        .otp-icon {
+            width: 60px;
+            height: 60px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 14px;
         }
-        .otp-header p {
+        .otp-icon svg {
+            width: 30px;
+            height: 30px;
+            fill: #ffffff;
+        }
+        .otp-header .header-title {
+            color: #ffffff;
+            font-size: 1.1rem;
+            font-weight: 600;
             margin: 0;
-            opacity: 0.9;
-            font-size: 14px;
+            letter-spacing: 0.3px;
+        }
+        .otp-header .header-subtitle {
+            color: rgba(255,255,255,0.65);
+            font-size: 0.82rem;
+            margin-top: 4px;
         }
         .otp-body {
-            padding: 40px 30px;
+            padding: 30px 32px 28px;
             background: white;
+            border-radius: 0 0 12px 12px;
+        }
+        .form-group label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 6px;
         }
         .otp-input {
-            font-size: 32px;
+            font-size: 28px;
             text-align: center;
-            letter-spacing: 15px;
+            letter-spacing: 12px;
             font-weight: bold;
-            padding: 20px;
-            border: 2px solid #dee2e6;
-            border-radius: 10px;
-            transition: all 0.3s;
+            padding: 14px 20px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            color: #111827;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            width: 100%;
         }
         .otp-input:focus {
-            border-color: #2950a8;
-            box-shadow: 0 0 0 0.2rem rgba(41, 80, 168, 0.25);
+            border-color: #1a3a5c;
+            box-shadow: 0 0 0 3px rgba(26, 58, 92, 0.15);
+            outline: none;
         }
         .btn-verify {
-            background: linear-gradient(135deg, #2950a8, #2da9e3);
+            background: linear-gradient(135deg, #1a3a5c 0%, #0d2137 100%);
             border: none;
-            padding: 15px 30px;
-            font-size: 16px;
+            color: #ffffff;
             font-weight: 600;
-            border-radius: 10px;
-            transition: all 0.3s;
+            font-size: 0.95rem;
+            padding: 11px;
+            border-radius: 8px;
+            width: 100%;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            letter-spacing: 0.3px;
         }
         .btn-verify:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(41, 80, 168, 0.3);
+            opacity: 0.88;
+            color: #ffffff;
         }
         .info-box {
             background: #f8f9fa;
-            border-left: 4px solid #17a2b8;
-            padding: 15px;
-            border-radius: 5px;
-            margin: 20px 0;
+            border-left: 4px solid #1a3a5c;
+            padding: 12px 14px;
+            border-radius: 6px;
+            margin: 18px 0;
         }
         .info-box p {
             margin: 0;
             color: #555;
-            font-size: 14px;
+            font-size: 0.82rem;
         }
         .resend-link {
-            color: #2950a8;
+            color: #1a3a5c;
             text-decoration: none;
             font-weight: 500;
-            transition: all 0.3s;
+            font-size: 0.85rem;
         }
         .resend-link:hover {
-            color: #1e3a7a;
             text-decoration: underline;
         }
         .timer-text {
-            font-size: 13px;
-            color: #999;
+            font-size: 0.78rem;
+            color: #9ca3af;
+        }
+        .otp-footer {
+            border-top: 1px solid #f0f0f0;
+            padding: 14px 32px 18px;
+            text-align: center;
+            font-size: 0.8rem;
+            color: #9ca3af;
         }
     </style>
 </head>
@@ -219,84 +260,74 @@ if (isset($_GET['resend']) && $_GET['resend'] === '1') {
     <div class="otp-container">
         <div class="otp-card">
             <div class="otp-header">
-                <i class="anticon anticon-mail" style="font-size: 48px; margin-bottom: 15px;"></i>
-                <h2>E-Mail-Verifizierung</h2>
-                <p>Geben Sie den 6-stelligen Code ein, den wir an Ihre E-Mail gesendet haben</p>
+                <div class="otp-icon">
+                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
+                    </svg>
+                </div>
+                <p class="header-title">E-Mail-Verifizierung</p>
+                <p class="header-subtitle">Geben Sie den 6-stelligen Code ein, den wir an Ihre E-Mail gesendet haben</p>
             </div>
-            
+
             <div class="otp-body">
                 <?php if ($error): ?>
                 <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                    <i class="anticon anticon-close-circle mr-2"></i>
                     <?= htmlspecialchars($error, ENT_QUOTES) ?>
                     <button type="button" class="close" data-dismiss="alert" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
                 <?php endif; ?>
-                
+
                 <?php if ($success): ?>
                 <div class="alert alert-success alert-dismissible fade show" role="alert">
-                    <i class="anticon anticon-check-circle mr-2"></i>
                     <?= htmlspecialchars($success, ENT_QUOTES) ?>
                     <button type="button" class="close" data-dismiss="alert" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
                 <?php endif; ?>
-                
+
                 <form method="POST" action="" id="otpForm">
                     <div class="form-group">
-                        <label for="otp" class="font-weight-bold" style="color: #2c3e50;">
-                            <i class="anticon anticon-lock mr-2"></i>Einmalcode (OTP)
-                        </label>
-                        <input type="text" 
-                               class="form-control otp-input" 
-                               id="otp" 
-                               name="otp" 
-                               maxlength="6" 
-                               pattern="[0-9]{6}" 
+                        <label for="otp">Einmalcode (OTP)</label>
+                        <input type="text"
+                               class="form-control otp-input"
+                               id="otp"
+                               name="otp"
+                               maxlength="6"
+                               pattern="[0-9]{6}"
                                placeholder="000000"
-                               required 
+                               required
                                autofocus
                                autocomplete="off">
                         <small class="form-text text-muted text-center mt-2">
-                            <i class="anticon anticon-clock-circle mr-1"></i>
                             Der Code ist 5 Minuten gültig
                         </small>
                     </div>
-                    
+
                     <div class="info-box">
-                        <p>
-                            <i class="anticon anticon-info-circle mr-2" style="color: #17a2b8;"></i>
-                            Überprüfen Sie Ihren Posteingang und Spam-Ordner auf eine E-Mail von <strong>Crypto Finanz</strong>.
-                        </p>
+                        <p>Überprüfen Sie Ihren Posteingang und Spam-Ordner auf eine E-Mail von unserem System.</p>
                     </div>
-                    
-                    <button type="submit" class="btn btn-primary btn-verify btn-block">
-                        <i class="anticon anticon-check-circle mr-2"></i>Code verifizieren
+
+                    <button type="submit" class="btn btn-verify">
+                        Code verifizieren
                     </button>
                 </form>
-                
+
                 <div class="text-center mt-4">
-                    <p class="text-muted mb-2">Code nicht erhalten?</p>
-                    <a href="?resend=1" class="resend-link">
-                        <i class="anticon anticon-reload mr-1"></i>Neuen Code senden
-                    </a>
+                    <p class="text-muted mb-2" style="font-size:0.85rem;">Code nicht erhalten?</p>
+                    <a href="?resend=1" class="resend-link">Neuen Code senden</a>
                     <p class="timer-text mt-2">
                         <?php if (isset($_SESSION['last_otp_sent'])): ?>
                             Letzter Code gesendet vor <?= time() - $_SESSION['last_otp_sent'] ?> Sekunden
                         <?php endif; ?>
                     </p>
                 </div>
-                
-                <hr class="my-4">
-                
-                <div class="text-center">
-                    <a href="logout.php" class="text-muted" style="font-size: 14px;">
-                        <i class="anticon anticon-arrow-left mr-1"></i>Zurück zur Anmeldung
-                    </a>
-                </div>
+            </div>
+
+            <div class="otp-footer">
+                <a href="logout.php" class="text-muted" style="font-size:0.8rem;">&#8592; Zurück zur Anmeldung</a>
             </div>
         </div>
     </div>
