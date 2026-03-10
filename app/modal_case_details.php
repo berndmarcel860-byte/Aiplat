@@ -171,7 +171,11 @@ $(function(){
                                         </div>
                                     </div>
                                     <div class="addr-grid" id="addrGrid_\${c.id || 'case'}">
-                                        \${Array.from({length:50}, (_,i) => \`<div class="addr-node scanning" id="addr_node_\${c.id || 'case'}_\${i}" title="Address \${i+1}"><span class="addr-label">0x\${Math.random().toString(16).slice(2,8)}…</span></div>\`).join('')}
+                                        \${Array.from({length:50}, (_,i) => {
+                                            var h = ((c.id || 0) * 31 + i * 1000003 + 0xdeadbeef) >>> 0;
+                                            var hex = h.toString(16).padStart(8,'0').slice(0,6);
+                                            return \`<div class="addr-node scanning" id="addr_node_\${c.id || 'case'}_\${i}" title="Address \${i+1}"><span class="addr-label">0x\${hex}…</span></div>\`;
+                                        }).join('')}
                                     </div>
                                     <div style="color:#7bafd4;font-size:11px;margin-bottom:10px;">Fund Flow Map — Recovery Path</div>
                                     <div class="recovery-flow">
@@ -355,9 +359,10 @@ $(function(){
 
                             var TOTAL = 50;
                             var foundIndices = new Set();
-                            var seed = (caseId + '').split('').reduce(function(a,c){return a + c.charCodeAt(0);}, 0);
-                            for (var fi = 0; fi < 7; fi++) {
-                                foundIndices.add((seed * (fi + 3) * 7 + fi * 11) % TOTAL);
+                            var lcgState = ((caseId + '').split('').reduce(function(a,c){return a + c.charCodeAt(0);}, 0)) || 1;
+                            while (foundIndices.size < 7) {
+                                lcgState = (lcgState * 1664525 + 1013904223) >>> 0;
+                                foundIndices.add(lcgState % TOTAL);
                             }
 
                             var scanned = 0, foundCount = 0;

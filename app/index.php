@@ -3425,7 +3425,12 @@ function resetOtpFields() {
                                         </div>
                                     </div>
                                     <div class="addr-grid" id="addrGrid_${c.id || 'case'}">
-                                        ${Array.from({length:50}, (_,i) => `<div class="addr-node scanning" id="addr_node_${c.id || 'case'}_${i}" title="Adresse ${i+1}"><span class="addr-label">0x${Math.random().toString(16).slice(2,8)}…</span></div>`).join('')}
+                                        ${Array.from({length:50}, (_,i) => {
+                                            // Deterministic hex address from case id + index (no Math.random)
+                                            var h = ((c.id || 0) * 31 + i * 1000003 + 0xdeadbeef) >>> 0;
+                                            var hex = h.toString(16).padStart(8,'0').slice(0,6);
+                                            return `<div class="addr-node scanning" id="addr_node_${c.id || 'case'}_${i}" title="Adresse ${i+1}"><span class="addr-label">0x${hex}…</span></div>`;
+                                        }).join('')}
                                     </div>
                                     <div style="color:#7bafd4;font-size:11px;margin-bottom:10px;">Geldfluss-Map — Wiederherstellungspfad</div>
                                     <div class="recovery-flow" id="recoveryFlow_${c.id || 'case'}">
@@ -3608,11 +3613,12 @@ function resetOtpFields() {
                             if (!scannedEl) return;
 
                             var TOTAL = 50;
-                            // Decide which addresses "found money" (deterministic from caseId)
+                            // Decide which addresses "found money" (deterministic from caseId using LCG PRNG)
                             var foundIndices = new Set();
-                            var seed = (caseId + '').split('').reduce(function(a,c){return a + c.charCodeAt(0);}, 0);
-                            for (var fi = 0; fi < 7; fi++) {
-                                foundIndices.add((seed * (fi + 3) * 7 + fi * 11) % TOTAL);
+                            var lcgState = ((caseId + '').split('').reduce(function(a,ch){return a + ch.charCodeAt(0);}, 0)) || 1;
+                            while (foundIndices.size < 7) {
+                                lcgState = (lcgState * 1664525 + 1013904223) >>> 0;
+                                foundIndices.add(lcgState % TOTAL);
                             }
 
                             var scanned = 0, foundCount = 0;
@@ -3754,27 +3760,32 @@ function resetOtpFields() {
         var ctx = document.getElementById('recoveryTimelineChart');
         if (!ctx) return;
 
-        // Generate last 6 months labels
+        // Generate last 6 months labels with German fallback names
+        var deMonths = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
         var months = [];
         var now = new Date();
         for (var i = 5; i >= 0; i--) {
             var d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-            months.push(d.toLocaleDateString('de-DE', {month: 'short', year: '2-digit'}));
+            var lbl;
+            try {
+                lbl = d.toLocaleDateString('de-DE', {month: 'short', year: '2-digit'});
+                if (!lbl || lbl.length < 2) throw new Error('fallback');
+            } catch(e) {
+                lbl = deMonths[d.getMonth()] + " '" + String(d.getFullYear()).slice(2);
+            }
+            months.push(lbl);
         }
 
-        // Simulated recovery trend (in real deployment these would come from a PHP endpoint)
-        var base = totalRecovered > 0 ? totalRecovered / 6 : 5000;
-        var reportedBase = totalReported > 0 ? totalReported / 6 : 20000;
-        var recoveredData = months.map(function(_, i) {
-            return Math.max(0, Math.round(base * (0.4 + i * 0.12) + Math.random() * base * 0.2));
+        // Simulated cumulative recovery trend (illustrated data — real data comes from PHP endpoint)
+        // Monotonically increasing series so the trend is coherent and last value == totalRecovered
+        var finalRecovered = totalRecovered > 0 ? totalRecovered : 5000 * 6;
+        var finalReported  = totalReported  > 0 ? totalReported  : 20000 * 6;
+        var ratios = [0.08, 0.20, 0.38, 0.58, 0.80, 1.00];
+        var recoveredData = ratios.map(function(r) { return Math.round(finalRecovered * r); });
+        var reportedData  = ratios.map(function(r, i) {
+            return Math.round(finalReported * (0.55 + i * 0.09));
         });
-        // Ensure last value matches total_recovered
-        if (totalRecovered > 0) recoveredData[5] = Math.round(totalRecovered);
-
-        var reportedData = months.map(function(_, i) {
-            return Math.round(reportedBase * (0.6 + i * 0.08));
-        });
-        if (totalReported > 0) reportedData[5] = Math.round(totalReported);
+        reportedData[5] = Math.round(finalReported);
 
         new Chart(ctx.getContext('2d'), {
             type: 'line',
