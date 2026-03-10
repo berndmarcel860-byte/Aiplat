@@ -29,6 +29,11 @@ try {
         throw new Exception('Invalid payment method type');
     }
 
+    // For crypto, derive payment_method from cryptocurrency if not explicitly provided
+    if (empty($payment_method) && $type === 'crypto') {
+        $payment_method = trim($_POST['cryptocurrency'] ?? '');
+    }
+
     if (empty($payment_method)) {
         throw new Exception('Payment method name is required');
     }
