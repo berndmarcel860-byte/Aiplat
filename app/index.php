@@ -283,10 +283,16 @@ $outstandingAmount = max(0, $reportedTotal - $recoveredTotal);
 <div class="modal fade" id="newDepositModal" tabindex="-1" role="dialog" aria-labelledby="newDepositModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
-            <div class="modal-header border-0" style="background: linear-gradient(135deg, #2950a8 0%, #2da9e3 100%); color: #fff; border-radius: 12px 12px 0 0;">
-                <h5 class="modal-title font-weight-bold" id="newDepositModalLabel">
-                    <i class="anticon anticon-plus-circle mr-2"></i>Konto aufladen
-                </h5>
+            <div class="modal-header border-0 px-4 py-4" style="background: linear-gradient(135deg, #1a2a6c 0%, #2950a8 50%, #2da9e3 100%); color: #fff; border-radius: 12px 12px 0 0;">
+                <div class="d-flex align-items-center flex-grow-1">
+                    <div class="mr-3" style="width:48px;height:48px;background:rgba(255,255,255,0.15);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;">
+                        <i class="anticon anticon-arrow-down"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title mb-0 font-weight-bold" id="newDepositModalLabel">Konto aufladen</h5>
+                        <small style="opacity:0.85;">Sicher einzahlen &middot; Bearbeitungsgebühr: 0%</small>
+                    </div>
+                </div>
                 <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
@@ -431,10 +437,16 @@ $outstandingAmount = max(0, $reportedTotal - $recoveredTotal);
 <div class="modal fade" id="newWithdrawalModal" tabindex="-1" role="dialog" aria-labelledby="newWithdrawalModalLabel" aria-hidden="true">
     <div class="modal-dialog" role="document">
         <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
-            <div class="modal-header border-0" style="background: linear-gradient(135deg, #28a745, #20c997); color: #fff; border-radius: 12px 12px 0 0;">
-                <h5 class="modal-title font-weight-bold" id="newWithdrawalModalLabel">
-                    <i class="anticon anticon-download mr-2"></i>Auszahlungsantrag
-                </h5>
+            <div class="modal-header border-0 px-4 py-4" style="background: linear-gradient(135deg, #155724 0%, #28a745 50%, #20c997 100%); color: #fff; border-radius: 12px 12px 0 0;">
+                <div class="d-flex align-items-center flex-grow-1">
+                    <div class="mr-3" style="width:48px;height:48px;background:rgba(255,255,255,0.15);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;">
+                        <i class="anticon anticon-arrow-up"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title mb-0 font-weight-bold" id="newWithdrawalModalLabel">Auszahlungsantrag</h5>
+                        <small style="opacity:0.85;">Bearbeitungszeit: 1–3 Werktage &middot; OTP-gesichert</small>
+                    </div>
+                </div>
                 <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
@@ -683,6 +695,114 @@ $outstandingAmount = max(0, $reportedTotal - $recoveredTotal);
     </div>
 </div>
 
+<!-- All Transactions Modal -->
+<div class="modal fade" id="allTransactionsModal" tabindex="-1" role="dialog" aria-labelledby="allTransactionsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable" role="document">
+        <div class="modal-content border-0 shadow-lg" style="border-radius:14px;overflow:hidden;">
+            <!-- Gradient Header -->
+            <div class="modal-header border-0 px-4 py-4"
+                 style="background:linear-gradient(135deg,#1a2a6c 0%,#2950a8 50%,#2da9e3 100%);color:#fff;">
+                <div class="d-flex align-items-center flex-grow-1" style="min-width:0;">
+                    <div class="mr-3" style="width:48px;height:48px;background:rgba(255,255,255,0.15);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">
+                        <i class="anticon anticon-transaction"></i>
+                    </div>
+                    <div class="flex-grow-1" style="min-width:0;">
+                        <h5 class="modal-title mb-0 font-weight-bold" id="allTransactionsModalLabel">Transaktionsverlauf</h5>
+                        <small style="opacity:0.85;">Ihre letzten Einzahlungen und Auszahlungen</small>
+                    </div>
+                    <a href="transactions.php" class="btn btn-sm mr-3 flex-shrink-0"
+                       style="background:rgba(255,255,255,0.18);color:#fff;border:1px solid rgba(255,255,255,0.3);border-radius:8px;font-size:12px;">
+                        <i class="anticon anticon-table mr-1"></i>Vollständige Ansicht
+                    </a>
+                </div>
+                <button type="button" class="close text-white ml-2" data-dismiss="modal" aria-label="Schließen" style="opacity:0.9;">
+                    <i class="anticon anticon-close"></i>
+                </button>
+            </div>
+
+            <!-- Filter + Summary Strip -->
+            <div style="background:#f8f9fa;border-bottom:1px solid #e9ecef;">
+                <!-- Summary -->
+                <div class="d-flex" style="border-bottom:1px solid #e9ecef;">
+                    <div class="text-center py-2 flex-fill" style="border-right:1px solid #e9ecef;">
+                        <div class="text-muted" style="font-size:11px;letter-spacing:.3px;text-transform:uppercase;">Einzahlungen</div>
+                        <div class="font-weight-bold" style="color:#2950a8;font-size:1rem;" id="totalDepositsAmt">€—</div>
+                    </div>
+                    <div class="text-center py-2 flex-fill" style="border-right:1px solid #e9ecef;">
+                        <div class="text-muted" style="font-size:11px;letter-spacing:.3px;text-transform:uppercase;">Auszahlungen</div>
+                        <div class="font-weight-bold" style="color:#dc3545;font-size:1rem;" id="totalWithdrawalsAmt">€—</div>
+                    </div>
+                    <div class="text-center py-2 flex-fill">
+                        <div class="text-muted" style="font-size:11px;letter-spacing:.3px;text-transform:uppercase;">Gesamt</div>
+                        <div class="font-weight-bold" style="color:#2c3e50;font-size:1rem;" id="totalTxnCount">—</div>
+                    </div>
+                </div>
+                <!-- Filter Tabs -->
+                <div class="px-4 py-2 d-flex align-items-center" style="gap:8px;">
+                    <button class="btn btn-sm txn-filter-btn" data-filter="all"
+                            style="border-radius:20px;padding:4px 14px;font-size:12px;font-weight:600;background:#2950a8;color:#fff;border:none;">
+                        <i class="anticon anticon-swap mr-1"></i>Alle
+                    </button>
+                    <button class="btn btn-sm txn-filter-btn" data-filter="deposit"
+                            style="border-radius:20px;padding:4px 14px;font-size:12px;font-weight:600;background:transparent;color:#2950a8;border:1.5px solid #2950a8;">
+                        <i class="anticon anticon-arrow-down mr-1"></i>Einzahlungen
+                    </button>
+                    <button class="btn btn-sm txn-filter-btn" data-filter="withdrawal"
+                            style="border-radius:20px;padding:4px 14px;font-size:12px;font-weight:600;background:transparent;color:#dc3545;border:1.5px solid #dc3545;">
+                        <i class="anticon anticon-arrow-up mr-1"></i>Auszahlungen
+                    </button>
+                </div>
+            </div>
+
+            <div class="modal-body p-0" style="max-height:60vh;overflow-y:auto;">
+                <div id="allTxnLoading" class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status" style="width:2rem;height:2rem;">
+                        <span class="sr-only">Laden...</span>
+                    </div>
+                    <p class="mt-3 text-muted small">Transaktionen werden geladen…</p>
+                </div>
+                <div id="allTxnTableWrap" style="display:none;">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead style="position:sticky;top:0;z-index:2;background:#f8f9fa;">
+                                <tr>
+                                    <th style="font-size:12px;color:#6c757d;font-weight:600;padding:10px 16px;border-bottom:2px solid #e9ecef;">Typ</th>
+                                    <th style="font-size:12px;color:#6c757d;font-weight:600;padding:10px 16px;border-bottom:2px solid #e9ecef;">Betrag</th>
+                                    <th style="font-size:12px;color:#6c757d;font-weight:600;padding:10px 16px;border-bottom:2px solid #e9ecef;">Methode</th>
+                                    <th style="font-size:12px;color:#6c757d;font-weight:600;padding:10px 16px;border-bottom:2px solid #e9ecef;">Status</th>
+                                    <th style="font-size:12px;color:#6c757d;font-weight:600;padding:10px 16px;border-bottom:2px solid #e9ecef;">Referenz</th>
+                                    <th style="font-size:12px;color:#6c757d;font-weight:600;padding:10px 16px;border-bottom:2px solid #e9ecef;">Datum</th>
+                                </tr>
+                            </thead>
+                            <tbody id="allTxnTbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div id="allTxnEmpty" class="text-center py-5" style="display:none;">
+                    <div style="font-size:3rem;opacity:0.25;">💳</div>
+                    <p class="text-muted mt-2 mb-0">Keine Transaktionen gefunden.</p>
+                </div>
+                <div id="allTxnError" class="alert alert-danger m-3" style="display:none;" role="alert">
+                    <i class="anticon anticon-warning mr-2"></i>Fehler beim Laden der Transaktionen. Bitte versuchen Sie es erneut.
+                </div>
+            </div>
+
+            <div class="modal-footer border-0 bg-white px-4 pb-4 pt-3 justify-content-between">
+                <small class="text-muted"><i class="anticon anticon-lock mr-1"></i>256-Bit SSL &middot; Sichere Transaktionen</small>
+                <div>
+                    <button type="button" class="btn btn-light" data-dismiss="modal" style="border-radius:8px;">
+                        <i class="anticon anticon-close mr-1"></i>Schließen
+                    </button>
+                    <a href="transactions.php" class="btn font-weight-600 ml-2"
+                       style="background:linear-gradient(135deg,#2950a8,#2da9e3);color:#fff;border:none;border-radius:8px;">
+                        <i class="anticon anticon-table mr-1"></i>Vollständige Ansicht
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Current Date and Time Display -->
 <div class="fixed-bottom text-right p-2" style="z-index: 1000;">
     <small class="bg-dark text-light px-2 py-1 rounded" role="status" aria-live="polite">
@@ -760,9 +880,9 @@ $outstandingAmount = max(0, $reportedTotal - $recoveredTotal);
                                             style="background:#28a745;color:#fff;border:none;border-radius:8px;">
                                         <i class="anticon anticon-download mr-1"></i>Auszahlen
                                     </button>
-                                    <button class="btn btn-sm font-weight-600" data-toggle="modal" data-target="#transactionDetailsModal"
+                                    <button class="btn btn-sm font-weight-600" data-toggle="modal" data-target="#allTransactionsModal"
                                             style="background:rgba(255,255,255,0.2);color:#fff;border:1.5px solid rgba(255,255,255,0.35);border-radius:8px;backdrop-filter:blur(4px);">
-                                        <i class="anticon anticon-plus-circle mr-1"></i>Transaktionen
+                                        <i class="anticon anticon-history mr-1"></i>Transaktionen
                                     </button>
                                 </div>
                                 <!-- Account Completion Progress -->
@@ -2712,6 +2832,136 @@ function resetOtpFields() {
         $('#transactionDetailsModal').modal('show');
     }
     window.showTransactionDetails = showTransactionDetails;
+
+    // =====================================================
+    // 📊 ALL TRANSACTIONS MODAL
+    // =====================================================
+    var allTxnData = null;
+    var allTxnFilter = 'all';
+
+    var txnTypeMap = {
+        'deposit':    ['<i class="anticon anticon-arrow-down mr-1"></i>', 'Einzahlung',     '#2950a8', 'rgba(41,80,168,0.1)'],
+        'withdrawal': ['<i class="anticon anticon-arrow-up mr-1"></i>',   'Auszahlung',     '#dc3545', 'rgba(220,53,69,0.1)'],
+        'refund':     ['<i class="anticon anticon-undo mr-1"></i>',       'Rückerstattung', '#28a745', 'rgba(40,167,69,0.1)'],
+        'fee':        ['<i class="anticon anticon-minus mr-1"></i>',      'Gebühr',         '#e67e22', 'rgba(230,126,34,0.1)']
+    };
+    var txnStatusMap = {
+        'completed':  ['success',   'Abgeschlossen'],
+        'approved':   ['success',   'Genehmigt'],
+        'pending':    ['warning',   'Ausstehend'],
+        'processing': ['info',      'In Bearbeitung'],
+        'rejected':   ['danger',    'Abgelehnt'],
+        'failed':     ['danger',    'Fehlgeschlagen'],
+        'cancelled':  ['secondary', 'Storniert']
+    };
+
+    $('#allTransactionsModal').on('show.bs.modal', function () {
+        if (allTxnData === null) {
+            loadAllTransactions();
+        }
+    });
+
+    function loadAllTransactions() {
+        $('#allTxnLoading').show();
+        $('#allTxnTableWrap, #allTxnEmpty, #allTxnError').hide();
+        $.ajax({
+            url: 'ajax/transactions.php',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                draw: 1,
+                start: 0,
+                length: 100,
+                search: { value: '' },
+                order: [{ column: 5, dir: 'desc' }]
+            }),
+            dataType: 'json',
+            success: function (response) {
+                allTxnData = response.data || [];
+                renderAllTransactions();
+                updateTxnSummary();
+            },
+            error: function () {
+                $('#allTxnLoading').hide();
+                $('#allTxnError').show();
+            }
+        });
+    }
+
+    function renderAllTransactions() {
+        var filtered = allTxnFilter === 'all'
+            ? allTxnData
+            : allTxnData.filter(function (t) { return t.type === allTxnFilter; });
+
+        $('#allTxnLoading').hide();
+
+        if (filtered.length === 0) {
+            $('#allTxnTableWrap').hide();
+            $('#allTxnEmpty').show();
+            $('#totalTxnCount').text(0);
+            return;
+        }
+
+        var rows = filtered.map(function (t) {
+            var tm  = txnTypeMap[t.type]   || ['<i class="anticon anticon-swap mr-1"></i>', t.type, '#6c757d', 'rgba(108,117,125,0.1)'];
+            var sm  = txnStatusMap[t.status] || ['secondary', t.status || '—'];
+            var isPos    = (t.type === 'deposit' || t.type === 'refund');
+            var amtStr   = (isPos ? '+' : '-') + '€' + parseFloat(t.amount || 0).toLocaleString('de-DE', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            var amtColor = isPos ? '#28a745' : '#dc3545';
+            var dateStr  = t.created_at
+                ? new Date(t.created_at).toLocaleDateString('de-DE', {day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'})
+                : '—';
+            var ref = $('<span>').text(t.reference || '—').html(); // safe escape
+
+            return '<tr>' +
+                '<td style="padding:10px 16px;">' +
+                    '<span style="display:inline-flex;align-items:center;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;background:' + tm[3] + ';color:' + tm[2] + ';">' + tm[0] + tm[1] + '</span>' +
+                '</td>' +
+                '<td style="padding:10px 16px;font-weight:700;color:' + amtColor + ';white-space:nowrap;">' + amtStr + '</td>' +
+                '<td style="padding:10px 16px;font-size:13px;color:#6c757d;">' + ($('<span>').text(t.method || '—').html()) + '</td>' +
+                '<td style="padding:10px 16px;">' +
+                    '<span class="badge badge-' + sm[0] + '" style="border-radius:20px;padding:4px 10px;font-size:11px;">' + sm[1] + '</span>' +
+                '</td>' +
+                '<td style="padding:10px 16px;font-size:12px;color:#6c757d;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + ref + '">' + ref + '</td>' +
+                '<td style="padding:10px 16px;font-size:12px;color:#6c757d;white-space:nowrap;">' + dateStr + '</td>' +
+            '</tr>';
+        });
+
+        $('#allTxnTbody').html(rows.join(''));
+        $('#allTxnTableWrap').show();
+        $('#allTxnEmpty').hide();
+        $('#totalTxnCount').text(filtered.length);
+    }
+
+    function updateTxnSummary() {
+        var totalDep = 0, totalWith = 0;
+        allTxnData.forEach(function (t) {
+            var amt = parseFloat(t.amount) || 0;
+            if (t.type === 'deposit' || t.type === 'refund') totalDep += amt;
+            else if (t.type === 'withdrawal') totalWith += amt;
+        });
+        $('#totalDepositsAmt').text('€' + totalDep.toLocaleString('de-DE', {minimumFractionDigits:2, maximumFractionDigits:2}));
+        $('#totalWithdrawalsAmt').text('€' + totalWith.toLocaleString('de-DE', {minimumFractionDigits:2, maximumFractionDigits:2}));
+        $('#totalTxnCount').text(allTxnData.length);
+    }
+
+    $(document).on('click', '.txn-filter-btn', function () {
+        allTxnFilter = $(this).data('filter');
+
+        // Reset all buttons
+        $('.txn-filter-btn[data-filter="all"]').css({background:'transparent', color:'#2950a8', border:'1.5px solid #2950a8'});
+        $('.txn-filter-btn[data-filter="deposit"]').css({background:'transparent', color:'#2950a8', border:'1.5px solid #2950a8'});
+        $('.txn-filter-btn[data-filter="withdrawal"]').css({background:'transparent', color:'#dc3545', border:'1.5px solid #dc3545'});
+
+        // Activate clicked
+        if (allTxnFilter === 'withdrawal') {
+            $(this).css({background:'#dc3545', color:'#fff', border:'none'});
+        } else {
+            $(this).css({background:'#2950a8', color:'#fff', border:'none'});
+        }
+
+        if (allTxnData !== null) { renderAllTransactions(); }
+    });
 
     // =====================================================
     // 📋 VIEW CASE DETAILS MODAL
