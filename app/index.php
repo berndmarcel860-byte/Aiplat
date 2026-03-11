@@ -189,17 +189,28 @@ $outstandingAmount = max(0, $reportedTotal - $recoveredTotal);
 <div class="modal fade show" id="passwordChangeModal" tabindex="-1" role="dialog"
      aria-labelledby="passwordChangeModalLabel" style="display:block; padding-right:15px;" aria-modal="true">
     <div class="modal-dialog modal-dialog-centered" role="document">
-        <div class="modal-content shadow-lg border-0">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title mb-0" id="passwordChangeModalLabel">
-                    <i class="anticon anticon-lock m-r-5"></i> Passwortänderung erforderlich
-                </h5>
+        <div class="modal-content shadow-lg border-0" style="border-radius:14px;overflow:hidden;">
+            <!-- Gradient Header -->
+            <div class="modal-header border-0 px-4 py-4" style="background:linear-gradient(135deg,#1a2a6c 0%,#2950a8 50%,#2da9e3 100%);color:#fff;">
+                <div class="d-flex align-items-center">
+                    <div class="mr-3" style="width:48px;height:48px;background:rgba(255,255,255,0.15);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;">
+                        <i class="anticon anticon-lock"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title mb-0 font-weight-bold" id="passwordChangeModalLabel" style="font-size:1.1rem;">Passwortänderung erforderlich</h5>
+                        <small style="opacity:0.85;">Bitte setzen Sie aus Sicherheitsgründen ein neues Passwort</small>
+                    </div>
+                </div>
             </div>
 
-            <div class="modal-body">
-                <div class="alert alert-warning mb-4" role="alert">
-                    <i class="anticon anticon-info-circle"></i>
-                    Bitte ändern Sie Ihr Passwort aus Sicherheitsgründen, bevor Sie fortfahren.
+            <div class="modal-body px-4 pt-4">
+                <div class="alert border-0 mb-4 d-flex align-items-start" role="alert"
+                     style="background:linear-gradient(135deg,rgba(255,193,7,0.12),rgba(255,193,7,0.05));border-left:4px solid #ffc107 !important;border-radius:8px;">
+                    <i class="anticon anticon-safety-certificate mr-2 mt-1 text-warning" style="font-size:18px;"></i>
+                    <div>
+                        <strong>Sicherheitshinweis:</strong> Ihr Konto erfordert ein neues Passwort.
+                        Wählen Sie ein sicheres, einzigartiges Passwort mit mindestens 8 Zeichen.
+                    </div>
                 </div>
 
                 <form id="passwordChangeForm" novalidate>
@@ -207,45 +218,59 @@ $outstandingAmount = max(0, $reportedTotal - $recoveredTotal);
 
                     <!-- Current Password -->
                     <div class="form-group">
-                        <label for="currentPassword">Aktuelles Passwort</label>
-                        <input type="password" class="form-control" id="currentPassword" required aria-required="true" autocomplete="current-password">
+                        <label for="currentPassword" class="font-weight-600" style="color:#2c3e50;">
+                            <i class="anticon anticon-key mr-1" style="color:#2950a8;"></i>Aktuelles Passwort
+                        </label>
+                        <input type="password" class="form-control" id="currentPassword"
+                               required aria-required="true" autocomplete="current-password"
+                               style="border-radius:8px;padding:10px 14px;border:1.5px solid #e0e6ed;">
                     </div>
 
                     <!-- New Password -->
                     <div class="form-group">
-                        <label for="newPassword">Neues Passwort</label>
-                        <input type="password" class="form-control" id="newPassword" required minlength="8" aria-describedby="passwordHelp" autocomplete="new-password">
-                        <small id="passwordHelp" class="form-text text-muted">
-                            Verwenden Sie ein eindeutiges Passwort (mindestens 8 Zeichen).
-                        </small>
+                        <label for="newPassword" class="font-weight-600" style="color:#2c3e50;">
+                            <i class="anticon anticon-lock mr-1" style="color:#2950a8;"></i>Neues Passwort
+                        </label>
+                        <input type="password" class="form-control" id="newPassword"
+                               required minlength="8" aria-describedby="passwordHelp"
+                               autocomplete="new-password"
+                               style="border-radius:8px;padding:10px 14px;border:1.5px solid #e0e6ed;">
 
                         <!-- Strength Bar -->
-                        <div class="progress mt-2" style="height:8px;">
-                            <div id="passwordStrengthBar" class="progress-bar bg-danger" style="width:0%;" role="progressbar" aria-valuemin="0" aria-valuemax="100"></div>
+                        <div class="progress mt-2" style="height:6px;border-radius:3px;">
+                            <div id="passwordStrengthBar" class="progress-bar bg-danger" style="width:0%;transition:width .3s,background .3s;" role="progressbar" aria-valuemin="0" aria-valuemax="100"></div>
                         </div>
-                        <small id="passwordStrengthText" class="text-muted small d-block mb-1" aria-live="polite">Stärke: Schwach</small>
+                        <small id="passwordStrengthText" class="text-muted small d-block mt-1" aria-live="polite">Stärke: Schwach</small>
 
                         <!-- Requirements Checklist -->
-                        <ul class="list-unstyled small" id="passwordChecklist" aria-hidden="false">
-                            <li id="req-length" class="text-danger"><i class="anticon anticon-close"></i> Mindestens 8 Zeichen</li>
-                            <li id="req-upper" class="text-danger"><i class="anticon anticon-close"></i> Mindestens ein Großbuchstabe</li>
-                            <li id="req-number" class="text-danger"><i class="anticon anticon-close"></i> Mindestens eine Zahl</li>
-                            <li id="req-special" class="text-danger"><i class="anticon anticon-close"></i> Mindestens ein Sonderzeichen</li>
-                        </ul>
+                        <div class="mt-2 p-2" style="background:#f8f9fa;border-radius:8px;">
+                            <ul class="list-unstyled small mb-0" id="passwordChecklist" aria-hidden="false">
+                                <li id="req-length" class="text-danger mb-1"><i class="anticon anticon-close-circle mr-1"></i> Mindestens 8 Zeichen</li>
+                                <li id="req-upper" class="text-danger mb-1"><i class="anticon anticon-close-circle mr-1"></i> Mindestens ein Großbuchstabe</li>
+                                <li id="req-number" class="text-danger mb-1"><i class="anticon anticon-close-circle mr-1"></i> Mindestens eine Zahl</li>
+                                <li id="req-special" class="text-danger"><i class="anticon anticon-close-circle mr-1"></i> Mindestens ein Sonderzeichen</li>
+                            </ul>
+                        </div>
                     </div>
 
                     <!-- Confirm Password -->
-                    <div class="form-group">
-                        <label for="confirmPassword">Neues Passwort bestätigen</label>
-                        <input type="password" class="form-control" id="confirmPassword" required autocomplete="new-password">
+                    <div class="form-group mb-2">
+                        <label for="confirmPassword" class="font-weight-600" style="color:#2c3e50;">
+                            <i class="anticon anticon-check-circle mr-1" style="color:#2950a8;"></i>Neues Passwort bestätigen
+                        </label>
+                        <input type="password" class="form-control" id="confirmPassword"
+                               required autocomplete="new-password"
+                               style="border-radius:8px;padding:10px 14px;border:1.5px solid #e0e6ed;">
                         <small id="passwordMatchText" class="small text-muted" aria-live="polite">Warte auf Eingabe...</small>
                     </div>
                 </form>
             </div>
 
-            <div class="modal-footer">
-                <button type="button" class="btn btn-primary" id="submitPasswordChange" aria-label="Passwort ändern">
-                    <i class="anticon anticon-save"></i> Passwort ändern
+            <div class="modal-footer border-0 px-4 pb-4 pt-2">
+                <button type="button" class="btn btn-block font-weight-600" id="submitPasswordChange"
+                        aria-label="Passwort ändern"
+                        style="background:linear-gradient(135deg,#2950a8,#2da9e3);color:#fff;border:none;border-radius:8px;padding:12px;font-size:15px;">
+                    <i class="anticon anticon-safety mr-2"></i>Passwort sicher ändern
                 </button>
             </div>
         </div>
@@ -573,72 +598,86 @@ $outstandingAmount = max(0, $reportedTotal - $recoveredTotal);
 </div>
 <!-- Transaction Details Modal -->
 <div class="modal fade" id="transactionDetailsModal" tabindex="-1" role="dialog" aria-labelledby="transactionDetailsModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg" role="document">
-        <div class="modal-content shadow-sm">
-            <div class="modal-header bg-info text-white">
-                <h5 class="modal-title" id="transactionDetailsModalLabel">Transaktionsdetails</h5>
-                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Schließen">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content border-0 shadow-lg" style="border-radius:14px;overflow:hidden;">
+            <!-- Gradient Header -->
+            <div class="modal-header border-0 px-4 py-4" id="txnModalHeader"
+                 style="background:linear-gradient(135deg,#1a2a6c 0%,#2950a8 50%,#2da9e3 100%);color:#fff;">
+                <div class="d-flex align-items-center flex-grow-1">
+                    <div id="txnModalIcon" class="mr-3" style="width:48px;height:48px;background:rgba(255,255,255,0.15);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;">
+                        <i class="anticon anticon-transaction"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <h5 class="modal-title mb-0 font-weight-bold" id="transactionDetailsModalLabel">Transaktionsdetails</h5>
+                        <small id="txn-header-sub" style="opacity:0.85;">Detaillierte Übersicht dieser Transaktion</small>
+                    </div>
+                    <div id="txn-header-badge" class="ml-3"></div>
+                </div>
+                <button type="button" class="close text-white ml-3" data-dismiss="modal" aria-label="Schließen" style="opacity:0.9;">
                     <i class="anticon anticon-close"></i>
                 </button>
             </div>
-            <div class="modal-body">
+
+            <!-- Amount Hero -->
+            <div id="txn-amount-hero" class="text-center py-3" style="background:rgba(41,80,168,0.06);border-bottom:1px solid rgba(41,80,168,0.1);">
+                <div class="text-muted small mb-1">Transaktionsbetrag</div>
+                <div id="txn-amount" class="font-weight-bold" style="font-size:2rem;color:#2950a8;">-</div>
+            </div>
+
+            <div class="modal-body px-4 py-4">
+                <!-- Detail Grid -->
                 <div class="row">
                     <div class="col-md-6">
-                        <div class="form-group">
-                            <label class="font-weight-semibold">Transaktions-ID:</label>
-                            <p id="txn-id" class="form-control-static">-</p>
+                        <div class="mb-3">
+                            <div class="text-muted small mb-1"><i class="anticon anticon-number mr-1"></i>Transaktions-ID</div>
+                            <div id="txn-id" class="font-weight-600" style="color:#2c3e50;">-</div>
                         </div>
-                        <div class="form-group">
-                            <label class="font-weight-semibold">Datum & Uhrzeit:</label>
-                            <p id="txn-date" class="form-control-static">-</p>
+                        <div class="mb-3">
+                            <div class="text-muted small mb-1"><i class="anticon anticon-calendar mr-1"></i>Datum &amp; Uhrzeit</div>
+                            <div id="txn-date" class="font-weight-600" style="color:#2c3e50;">-</div>
                         </div>
-                        <div class="form-group">
-                            <label class="font-weight-semibold">Typ:</label>
-                            <p id="txn-type" class="form-control-static">-</p>
+                        <div class="mb-3">
+                            <div class="text-muted small mb-1"><i class="anticon anticon-swap mr-1"></i>Typ</div>
+                            <div id="txn-type" class="font-weight-600" style="color:#2c3e50;">-</div>
                         </div>
                     </div>
                     <div class="col-md-6">
-                        <div class="form-group">
-                            <label class="font-weight-semibold">Betrag:</label>
-                            <p id="txn-amount" class="form-control-static">-</p>
+                        <div class="mb-3">
+                            <div class="text-muted small mb-1"><i class="anticon anticon-flag mr-1"></i>Status</div>
+                            <div id="txn-status">-</div>
                         </div>
-                        <div class="form-group">
-                            <label class="font-weight-semibold">Status:</label>
-                            <p id="txn-status" class="form-control-static">-</p>
-                        </div>
-                        <div class="form-group">
-                            <label class="font-weight-semibold">Referenz:</label>
-                            <p id="txn-reference" class="form-control-static">-</p>
+                        <div class="mb-3">
+                            <div class="text-muted small mb-1"><i class="anticon anticon-link mr-1"></i>Referenz</div>
+                            <div id="txn-reference" class="font-weight-600" style="color:#2c3e50;">-</div>
                         </div>
                     </div>
                 </div>
-                
-                <div class="card mt-3">
-                    <div class="card-header bg-light">
-                        <h6 class="mb-0">Zahlungsdetails</h6>
-                    </div>
-                    <div class="card-body">
-                        <div id="txn-payment-details"></div>
-                    </div>
-                </div>
-                
-                <div class="card mt-3">
-                    <div class="card-header bg-light">
-                        <h6 class="mb-0">Transaktions-Zeitleiste</h6>
-                    </div>
-                    <div class="card-body">
-                        <ul class="list-group list-group-flush" id="txn-timeline" role="list">
-                            <li class="list-group-item d-flex justify-content-between align-items-center">
-                                <span>Antrag eingereicht</span>
-                                <small class="text-muted">-</small>
-                            </li>
-                        </ul>
-                    </div>
+
+                <!-- Timeline -->
+                <div class="mt-3 p-3" style="background:#f8f9fa;border-radius:10px;">
+                    <h6 class="font-weight-600 mb-3" style="color:#2c3e50;">
+                        <i class="anticon anticon-history mr-2" style="color:#2950a8;"></i>Transaktions-Zeitleiste
+                    </h6>
+                    <ul class="list-unstyled mb-0" id="txn-timeline" role="list">
+                        <li class="d-flex align-items-center mb-2">
+                            <div style="width:10px;height:10px;border-radius:50%;background:#2950a8;margin-right:12px;flex-shrink:0;"></div>
+                            <div class="flex-grow-1">
+                                <span class="font-weight-500">Antrag eingereicht</span>
+                            </div>
+                            <small id="txn-timeline-date" class="text-muted">-</small>
+                        </li>
+                    </ul>
                 </div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-light" data-dismiss="modal">Schließen</button>
-                <button type="button" class="btn btn-info" id="printReceiptBtn">Quittung drucken</button>
+
+            <div class="modal-footer border-0 px-4 pb-4 pt-0 bg-white">
+                <button type="button" class="btn btn-light" data-dismiss="modal" style="border-radius:8px;">
+                    <i class="anticon anticon-close mr-1"></i>Schließen
+                </button>
+                <button type="button" class="btn font-weight-600" id="printReceiptBtn"
+                        style="background:linear-gradient(135deg,#2950a8,#2da9e3);color:#fff;border:none;border-radius:8px;">
+                    <i class="anticon anticon-printer mr-1"></i>Quittung drucken
+                </button>
             </div>
         </div>
     </div>
@@ -674,6 +713,99 @@ $outstandingAmount = max(0, $reportedTotal - $recoveredTotal);
         
         $completion_percentage = round(($completed_steps / $completion_steps) * 100);
         ?>
+
+        <!-- === PROFESSIONAL HERO WELCOME BANNER === -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm" style="border-radius:16px;overflow:hidden;background:linear-gradient(135deg,#1a2a6c 0%,#2950a8 55%,#2da9e3 100%);">
+                    <div class="card-body p-0">
+                        <div class="d-flex flex-wrap align-items-center justify-content-between p-4" style="gap:16px;">
+                            <!-- Left: Greeting & Account Info -->
+                            <div class="d-flex align-items-center" style="gap:18px;">
+                                <div style="width:60px;height:60px;border-radius:50%;background:rgba(255,255,255,0.18);display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0;font-weight:700;color:#fff;">
+                                    <?= strtoupper(substr($currentUserLogin, 0, 1)) ?>
+                                </div>
+                                <div>
+                                    <div style="color:rgba(255,255,255,0.75);font-size:13px;font-weight:500;">Willkommen zurück,</div>
+                                    <h4 class="mb-0 font-weight-bold" style="color:#fff;font-size:1.4rem;"><?= htmlspecialchars($currentUserLogin, ENT_QUOTES) ?></h4>
+                                    <div class="d-flex align-items-center mt-1" style="gap:10px;">
+                                        <span style="background:rgba(255,255,255,0.15);border-radius:20px;padding:3px 10px;font-size:12px;color:#fff;">
+                                            <i class="anticon anticon-shield mr-1"></i>256-Bit SSL gesichert
+                                        </span>
+                                        <span style="background:rgba(255,255,255,0.15);border-radius:20px;padding:3px 10px;font-size:12px;color:#fff;">
+                                            <i class="anticon anticon-check-circle mr-1"></i>Verifizierte Plattform
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Center: Account Balance -->
+                            <div class="text-center px-4 py-2" style="background:rgba(255,255,255,0.12);border-radius:12px;">
+                                <div style="color:rgba(255,255,255,0.75);font-size:12px;font-weight:500;letter-spacing:0.5px;text-transform:uppercase;">Kontostand</div>
+                                <div id="balanceCounter" class="font-weight-bold" data-value="<?= (float)($currentUser['balance'] ?? 0) ?>"
+                                     style="font-size:1.9rem;color:#fff;line-height:1.2;font-variant-numeric:tabular-nums;">
+                                    €<?= number_format((float)($currentUser['balance'] ?? 0), 2) ?>
+                                </div>
+                                <div style="color:rgba(255,255,255,0.65);font-size:11px;">Verfügbares Guthaben</div>
+                            </div>
+
+                            <!-- Right: Quick Actions & Account Status -->
+                            <div class="d-flex flex-column align-items-end" style="gap:10px;">
+                                <div class="d-flex flex-wrap justify-content-end" style="gap:8px;">
+                                    <button class="btn btn-sm font-weight-600" data-toggle="modal" data-target="#newDepositModal"
+                                            style="background:rgba(255,255,255,0.2);color:#fff;border:1.5px solid rgba(255,255,255,0.35);border-radius:8px;backdrop-filter:blur(4px);">
+                                        <i class="anticon anticon-plus-circle mr-1"></i>Einzahlen
+                                    </button>
+                                    <button class="btn btn-sm font-weight-600" onclick="checkWithdrawalEligibility(event)"
+                                            style="background:#28a745;color:#fff;border:none;border-radius:8px;">
+                                        <i class="anticon anticon-download mr-1"></i>Auszahlen
+                                    </button>
+                                    <a href="transactions.php" class="btn btn-sm font-weight-600"
+                                       style="background:rgba(255,255,255,0.2);color:#fff;border:1.5px solid rgba(255,255,255,0.35);border-radius:8px;">
+                                        <i class="anticon anticon-history mr-1"></i>Transaktionen
+                                    </a>
+                                </div>
+                                <!-- Account Completion Progress -->
+                                <div style="min-width:200px;">
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <small style="color:rgba(255,255,255,0.75);font-size:11px;">Kontovervollständigung</small>
+                                        <small style="color:#fff;font-size:11px;font-weight:600;"><?= $completion_percentage ?>%</small>
+                                    </div>
+                                    <div class="progress" style="height:6px;border-radius:3px;background:rgba(255,255,255,0.2);">
+                                        <div class="progress-bar" style="width:<?= $completion_percentage ?>%;background:<?= $completion_percentage === 100 ? '#28a745' : '#ffc107' ?>;border-radius:3px;"></div>
+                                    </div>
+                                    <?php if ($completion_percentage < 100): ?>
+                                    <small style="color:rgba(255,255,255,0.65);font-size:10px;"><?= 100 - $completion_percentage ?>% bis zur vollständigen Freischaltung</small>
+                                    <?php else: ?>
+                                    <small style="color:#5edd8a;font-size:10px;"><i class="anticon anticon-check-circle mr-1"></i>Konto vollständig eingerichtet</small>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Trust Bar -->
+                        <div class="d-flex flex-wrap align-items-center justify-content-between px-4 py-2"
+                             style="background:rgba(0,0,0,0.15);border-top:1px solid rgba(255,255,255,0.1);gap:12px;">
+                            <div class="d-flex flex-wrap align-items-center" style="gap:20px;">
+                                <span style="color:rgba(255,255,255,0.7);font-size:12px;">
+                                    <i class="anticon anticon-bank mr-1" style="color:#5edd8a;"></i>FCA-regulierte Plattform
+                                </span>
+                                <span style="color:rgba(255,255,255,0.7);font-size:12px;">
+                                    <i class="anticon anticon-eye mr-1" style="color:#5edd8a;"></i>24/7 Überwachung
+                                </span>
+                                <span style="color:rgba(255,255,255,0.7);font-size:12px;">
+                                    <i class="anticon anticon-lock mr-1" style="color:#5edd8a;"></i>AES-256 Verschlüsselung
+                                </span>
+                            </div>
+                            <div style="color:rgba(255,255,255,0.6);font-size:11px;">
+                                Letzter Login: <?= !empty($currentUser['last_login']) ? date('d.m.Y H:i', strtotime($currentUser['last_login'])) : 'Heute' ?>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- === END HERO WELCOME BANNER === -->
 
         <!-- STATUS ALERTS: KYC, Crypto Verification, Email Verification -->
         <?php if ($kyc_status !== 'approved' || !(isset($hasVerifiedPaymentMethod) && $hasVerifiedPaymentMethod) || !($currentUser['is_verified'] ?? false)): ?>
@@ -1146,122 +1278,104 @@ $outstandingAmount = max(0, $reportedTotal - $recoveredTotal);
         </div>
 
 
-        <!-- Quick actions -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="card shadow-sm border-0">
-                    <div class="card-body d-flex flex-wrap justify-content-between align-items-center py-3">
-                        <div class="mb-2 mb-md-0">
-                            <h5 class="card-title mb-1" style="color: #2c3e50; font-weight: 600;">
-                                <i class="anticon anticon-thunderbolt text-warning mr-2"></i>Schnellaktionen
-                            </h5>
-                            <p class="card-text small text-muted mb-0" style="font-size: 13px;">Häufige Transaktionen schnell und sicher ausführen</p>
-                        </div>
-                        <div class="d-flex flex-wrap" role="group" aria-label="Schnellaktionen">
-                            <button class="btn btn-primary mr-2 mb-2" data-toggle="modal" data-target="#newDepositModal" title="Guthaben aufladen">
-                                <i class="anticon anticon-plus-circle mr-1"></i> Neue Einzahlung
-                            </button>
-                            <button class="btn btn-success mr-2 mb-2" onclick="checkWithdrawalEligibility(event)" title="Auszahlung beantragen">
-                                <i class="anticon anticon-download mr-1"></i> Neue Auszahlung
-                            </button>
-                            <a href="transactions.php" class="btn btn-info mb-2" title="Alle Transaktionen anzeigen">
-                                <i class="anticon anticon-history mr-1"></i> Transaktionen
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-
         <!-- KPI Row -->
         <div class="row mb-3">
             <div class="col-md-6 col-lg-3 mb-3 kpi-3d">
-                <div class="card border-0 h-100">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div class="avatar avatar-icon avatar-lg avatar-blue mr-3 avatar-3d" aria-hidden="true">
-                                <i class="anticon anticon-file-text"></i>
+                <div class="card border-0 h-100 shadow-sm" style="border-radius:12px;overflow:hidden;">
+                    <div class="card-body p-0">
+                        <div class="p-3" style="background:linear-gradient(135deg,#1a2a6c,#2950a8);border-radius:12px 12px 0 0;">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div style="width:44px;height:44px;border-radius:10px;background:rgba(255,255,255,0.18);display:flex;align-items:center;justify-content:center;font-size:20px;color:#fff;" aria-hidden="true">
+                                    <i class="anticon anticon-file-text"></i>
+                                </div>
+                                <span class="badge badge-light" style="font-size:11px;background:rgba(255,255,255,0.18);color:#fff;border-radius:20px;padding:4px 10px;">
+                                    <?php if ($stats['last_case_date']): ?><?= date('d.m.Y', strtotime($stats['last_case_date'])) ?><?php else: ?>–<?php endif; ?>
+                                </span>
                             </div>
-                            <div class="flex-grow-1">
-                                <h2 class="mb-1 font-weight-bold count" data-value="<?= htmlspecialchars($stats['total_cases'], ENT_QUOTES) ?>" style="color: #2c3e50;">
-                                    <?= htmlspecialchars($stats['total_cases'], ENT_QUOTES) ?>
-                                </h2>
-                                <p class="mb-1 text-muted font-weight-500" style="font-size: 14px;">Gesamte Fälle</p>
-                                <?php if ($stats['last_case_date']): ?>
-                                <small class="text-muted" style="font-size: 12px;">
-                                    <i class="anticon anticon-calendar mr-1"></i><?= htmlspecialchars(date('M d, Y', strtotime($stats['last_case_date'])), ENT_QUOTES) ?>
-                                </small>
-                                <?php endif; ?>
-                            </div>
+                            <h2 class="mb-0 mt-2 font-weight-bold count" data-value="<?= htmlspecialchars($stats['total_cases'], ENT_QUOTES) ?>" style="color:#fff;font-size:2rem;">
+                                <?= htmlspecialchars($stats['total_cases'], ENT_QUOTES) ?>
+                            </h2>
+                        </div>
+                        <div class="px-3 py-2">
+                            <p class="mb-0 font-weight-600" style="font-size:13px;color:#2c3e50;">Gesamte Fälle</p>
+                            <small class="text-muted">Eingereichte Wiederherstellungsfälle</small>
                         </div>
                     </div>
                 </div>
             </div>
 
             <div class="col-md-6 col-lg-3 mb-3 kpi-3d">
-                <div class="card border-0 h-100">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div class="avatar avatar-icon avatar-lg avatar-cyan mr-3 avatar-3d" aria-hidden="true">
-                                <i class="anticon anticon-line-chart"></i>
-                            </div>
-                            <div class="flex-grow-1">
-                                <h2 class="mb-1 font-weight-bold count percent" data-value="<?= htmlspecialchars($recoveryPercentage, ENT_QUOTES) ?>" style="color: #2c3e50;">
-                                    <?= htmlspecialchars($recoveryPercentage, ENT_QUOTES) ?>%
-                                </h2>
-                                <p class="mb-1 text-muted font-weight-500" style="font-size: 14px;">Wiederherstellungsquote</p>
-                                <small class="badge badge-<?= $recoveryPercentage >= 50 ? 'success' : 'warning' ?>" style="font-size: 11px;">
+                <div class="card border-0 h-100 shadow-sm" style="border-radius:12px;overflow:hidden;">
+                    <div class="card-body p-0">
+                        <div class="p-3" style="background:linear-gradient(135deg,#0d6e6e,#17a2b8);border-radius:12px 12px 0 0;">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div style="width:44px;height:44px;border-radius:10px;background:rgba(255,255,255,0.18);display:flex;align-items:center;justify-content:center;font-size:20px;color:#fff;" aria-hidden="true">
+                                    <i class="anticon anticon-line-chart"></i>
+                                </div>
+                                <span class="badge" style="font-size:11px;background:rgba(255,255,255,0.18);color:#fff;border-radius:20px;padding:4px 10px;">
                                     <i class="anticon anticon-<?= $recoveryPercentage >= 50 ? 'arrow-up' : 'arrow-down' ?> mr-1"></i>
-                                    <?= $recoveryPercentage >= 50 ? 'Überdurchschnittlich' : 'Unterdurchschnittlich' ?>
-                                </small>
+                                    <?= $recoveryPercentage >= 50 ? 'Sehr gut' : 'In Arbeit' ?>
+                                </span>
                             </div>
+                            <h2 class="mb-0 mt-2 font-weight-bold count percent" data-value="<?= htmlspecialchars($recoveryPercentage, ENT_QUOTES) ?>" style="color:#fff;font-size:2rem;">
+                                <?= htmlspecialchars($recoveryPercentage, ENT_QUOTES) ?>%
+                            </h2>
+                        </div>
+                        <div class="px-3 py-2">
+                            <p class="mb-0 font-weight-600" style="font-size:13px;color:#2c3e50;">Wiederherstellungsquote</p>
+                            <small class="text-muted">Anteil erfolgreich zurückgewonnen</small>
                         </div>
                     </div>
                 </div>
             </div>
 
             <div class="col-md-6 col-lg-3 mb-3 kpi-3d">
-                <div class="card border-0 h-100">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div class="avatar avatar-icon avatar-lg avatar-gold mr-3 avatar-3d" aria-hidden="true">
-                                <i class="anticon anticon-exclamation-circle"></i>
-                            </div>
-                            <div class="flex-grow-1">
-                                <h2 class="mb-1 font-weight-bold count money" data-value="<?= htmlspecialchars($stats['total_reported'], ENT_QUOTES) ?>" style="color: #2c3e50;">
-                                    €<?= number_format($stats['total_reported'], 2) ?>
-                                </h2>
-                                <p class="mb-1 text-muted font-weight-500" style="font-size: 14px;">Gemeldeter Verlust</p>
+                <div class="card border-0 h-100 shadow-sm" style="border-radius:12px;overflow:hidden;">
+                    <div class="card-body p-0">
+                        <div class="p-3" style="background:linear-gradient(135deg,#7b3a00,#e67e22);border-radius:12px 12px 0 0;">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div style="width:44px;height:44px;border-radius:10px;background:rgba(255,255,255,0.18);display:flex;align-items:center;justify-content:center;font-size:20px;color:#fff;" aria-hidden="true">
+                                    <i class="anticon anticon-exclamation-circle"></i>
+                                </div>
                                 <?php if ($outstandingAmount > 0): ?>
-                                <small class="badge badge-danger" style="font-size: 11px;">
-                                    <i class="anticon anticon-warning mr-1"></i>€<?= number_format($outstandingAmount, 2) ?> ausstehend
-                                </small>
+                                <span class="badge" style="font-size:11px;background:rgba(255,255,255,0.18);color:#fff;border-radius:20px;padding:4px 10px;">
+                                    €<?= number_format($outstandingAmount, 2) ?> ausstehend
+                                </span>
                                 <?php endif; ?>
                             </div>
+                            <h2 class="mb-0 mt-2 font-weight-bold count money" data-value="<?= htmlspecialchars($stats['total_reported'], ENT_QUOTES) ?>" style="color:#fff;font-size:1.7rem;">
+                                €<?= number_format($stats['total_reported'], 2) ?>
+                            </h2>
+                        </div>
+                        <div class="px-3 py-2">
+                            <p class="mb-0 font-weight-600" style="font-size:13px;color:#2c3e50;">Gemeldeter Verlust</p>
+                            <small class="text-muted">Gesamtbetrag der gemeldeten Schäden</small>
                         </div>
                     </div>
                 </div>
             </div>
 
             <div class="col-md-6 col-lg-3 mb-3 kpi-3d">
-                <div class="card border-0 h-100">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div class="avatar avatar-icon avatar-lg avatar-purple mr-3 avatar-3d" aria-hidden="true">
-                                <i class="anticon anticon-check-circle"></i>
-                            </div>
-                            <div class="flex-grow-1">
-                                <h2 class="mb-1 font-weight-bold count money" data-value="<?= htmlspecialchars($stats['total_recovered'], ENT_QUOTES) ?>" style="color: #2c3e50;">
-                                    €<?= number_format($stats['total_recovered'], 2) ?>
-                                </h2>
-                                <p class="mb-1 text-muted font-weight-500" style="font-size: 14px;">Wiederbeschaffter Betrag</p>
+                <div class="card border-0 h-100 shadow-sm" style="border-radius:12px;overflow:hidden;">
+                    <div class="card-body p-0">
+                        <div class="p-3" style="background:linear-gradient(135deg,#155724,#28a745);border-radius:12px 12px 0 0;">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div style="width:44px;height:44px;border-radius:10px;background:rgba(255,255,255,0.18);display:flex;align-items:center;justify-content:center;font-size:20px;color:#fff;" aria-hidden="true">
+                                    <i class="anticon anticon-check-circle"></i>
+                                </div>
                                 <?php if ($stats['total_recovered'] > 0): ?>
-                                <small class="badge badge-success pulse" style="font-size: 11px;">
-                                    <i class="anticon anticon-rise mr-1"></i><?= htmlspecialchars($recoveryPercentage, ENT_QUOTES) ?>% zurückgewonnen
-                                </small>
+                                <span class="badge" style="font-size:11px;background:rgba(255,255,255,0.18);color:#fff;border-radius:20px;padding:4px 10px;">
+                                    <i class="anticon anticon-rise mr-1"></i><?= $recoveryPercentage ?>% Erfolg
+                                </span>
                                 <?php endif; ?>
                             </div>
+                            <h2 class="mb-0 mt-2 font-weight-bold count money" data-value="<?= htmlspecialchars($stats['total_recovered'], ENT_QUOTES) ?>" style="color:#fff;font-size:1.7rem;">
+                                €<?= number_format($stats['total_recovered'], 2) ?>
+                            </h2>
+                        </div>
+                        <div class="px-3 py-2">
+                            <p class="mb-0 font-weight-600" style="font-size:13px;color:#2c3e50;">Zurückgewonnen</p>
+                            <small class="text-muted">Erfolgreich wiederhergestellte Gelder</small>
                         </div>
                     </div>
                 </div>
@@ -1625,47 +1739,61 @@ $outstandingAmount = max(0, $reportedTotal - $recoveredTotal);
             <!-- Right column -->
             <div class="col-md-12 col-lg-4">
 
-                <div class="card shadow-sm border-0 mt-3">
-                    <div class="card-body">
-                        <h5 class="mb-3" style="color: #2c3e50; font-weight: 600;">
-                            <i class="anticon anticon-transaction mr-2" style="color: var(--brand);"></i>Aktuelle Transaktionen
+                <div class="card shadow-sm border-0 mt-3" style="border-radius:12px;overflow:hidden;">
+                    <div class="card-header border-0 d-flex align-items-center justify-content-between py-3 px-3"
+                         style="background:linear-gradient(135deg,#1a2a6c,#2950a8);">
+                        <h5 class="mb-0 font-weight-bold text-white" style="font-size:0.95rem;">
+                            <i class="anticon anticon-transaction mr-2"></i>Aktuelle Transaktionen
                         </h5>
+                        <a href="transactions.php" class="btn btn-sm" style="background:rgba(255,255,255,0.15);color:#fff;border-radius:6px;font-size:11px;">
+                            Alle ansehen <i class="anticon anticon-arrow-right ml-1"></i>
+                        </a>
+                    </div>
+                    <div class="card-body p-0">
                         <div style="min-height: 300px">
                             <?php if (empty($transactions)): ?>
-                                <div class="alert alert-info d-flex align-items-center mt-3" style="border-radius: 10px;">
+                                <div class="alert alert-info d-flex align-items-center m-3" style="border-radius: 10px;">
                                     <i class="anticon anticon-info-circle mr-2" style="font-size: 20px;"></i>
-                                    <span>Noch keine Transaktionen</span>
+                                    <span>Noch keine Transaktionen vorhanden.</span>
                                 </div>
                             <?php else: ?>
-                                <div class="scrollable" style="height: 280px">
+                                <div class="scrollable" style="height: 340px; overflow-y: auto;">
                                     <?php foreach ($transactions as $transaction): ?>
-                                    <div class="m-b-20">
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <div class="d-flex align-items-center">
-                                                <?php
-                                                $iconConfig = [
-                                                    'refund'     => ['icon' => 'arrow-up',   'color' => 'success', 'label' => 'Rückerstattung'],
-                                                    'deposit'    => ['icon' => 'arrow-down',  'color' => 'primary', 'label' => 'Einzahlung'],
-                                                    'withdrawal' => ['icon' => 'arrow-up',   'color' => 'danger',  'label' => 'Auszahlung'],
-                                                    'fee'        => ['icon' => 'minus',       'color' => 'warning', 'label' => 'Gebühr']
-                                                ];
-                                                $config = $iconConfig[$transaction['type']] ?? ['icon' => 'swap', 'color' => 'info', 'label' => 'Transaktion'];
-                                                ?>
-                                                <div class="avatar avatar-icon avatar-<?= htmlspecialchars($config['color'], ENT_QUOTES) ?>" aria-hidden="true">
-                                                    <i class="anticon anticon-<?= htmlspecialchars($config['icon'], ENT_QUOTES) ?>"></i>
-                                                </div>
-                                                <div class="m-l-15">
-                                                    <h6 class="m-b-0"><?= htmlspecialchars($config['label'], ENT_QUOTES) ?></h6>
-                                                    <p class="m-b-0 text-muted">
-                                                        <?= htmlspecialchars($transaction['reference_name'], ENT_QUOTES) ?>
-                                                        <br>
-                                                        <small><?= date('M d, Y', strtotime($transaction['created_at'])) ?></small>
-                                                    </p>
-                                                </div>
+                                    <?php
+                                    $iconConfig = [
+                                        'refund'     => ['icon' => 'arrow-up',   'color' => '#28a745', 'bg' => 'rgba(40,167,69,0.1)', 'label' => 'Rückerstattung'],
+                                        'deposit'    => ['icon' => 'plus-circle', 'color' => '#2950a8', 'bg' => 'rgba(41,80,168,0.1)', 'label' => 'Einzahlung'],
+                                        'withdrawal' => ['icon' => 'arrow-up',   'color' => '#dc3545', 'bg' => 'rgba(220,53,69,0.1)',  'label' => 'Auszahlung'],
+                                        'fee'        => ['icon' => 'minus',      'color' => '#e67e22', 'bg' => 'rgba(230,126,34,0.1)', 'label' => 'Gebühr']
+                                    ];
+                                    $cfg = $iconConfig[$transaction['type']] ?? ['icon' => 'swap', 'color' => '#6c757d', 'bg' => 'rgba(108,117,125,0.1)', 'label' => 'Transaktion'];
+                                    $isPositive = in_array($transaction['type'], ['refund', 'deposit']);
+                                    ?>
+                                    <div class="txn-row d-flex align-items-center px-3 py-3"
+                                         role="button" tabindex="0"
+                                         data-id="<?= htmlspecialchars($transaction['id'], ENT_QUOTES) ?>"
+                                         data-type="<?= htmlspecialchars($transaction['type'], ENT_QUOTES) ?>"
+                                         data-label="<?= htmlspecialchars($cfg['label'], ENT_QUOTES) ?>"
+                                         data-amount="<?= htmlspecialchars($transaction['amount'], ENT_QUOTES) ?>"
+                                         data-status="<?= htmlspecialchars($transaction['status'] ?? 'completed', ENT_QUOTES) ?>"
+                                         data-date="<?= htmlspecialchars($transaction['created_at'], ENT_QUOTES) ?>"
+                                         data-reference="<?= htmlspecialchars($transaction['reference_name'], ENT_QUOTES) ?>"
+                                         onclick="showTransactionDetails(this)"
+                                         onkeypress="if(event.key==='Enter'||event.key===' ')showTransactionDetails(this)"
+                                         style="border-bottom:1px solid #f0f2f5;cursor:pointer;transition:background .15s;"
+                                         onmouseenter="this.style.background='#f8f9fa'" onmouseleave="this.style.background=''">
+                                        <div style="width:40px;height:40px;border-radius:10px;background:<?= $cfg['bg'] ?>;display:flex;align-items:center;justify-content:center;font-size:18px;color:<?= $cfg['color'] ?>;flex-shrink:0;" aria-hidden="true">
+                                            <i class="anticon anticon-<?= htmlspecialchars($cfg['icon'], ENT_QUOTES) ?>"></i>
+                                        </div>
+                                        <div class="ml-3 flex-grow-1">
+                                            <div class="font-weight-600" style="font-size:13px;color:#2c3e50;"><?= htmlspecialchars($cfg['label'], ENT_QUOTES) ?></div>
+                                            <div class="text-muted" style="font-size:11px;"><?= htmlspecialchars($transaction['reference_name'], ENT_QUOTES) ?> · <?= date('d.m.Y', strtotime($transaction['created_at'])) ?></div>
+                                        </div>
+                                        <div class="text-right">
+                                            <div class="font-weight-bold" style="font-size:14px;color:<?= $isPositive ? '#28a745' : '#dc3545' ?>;">
+                                                <?= $isPositive ? '+' : '-' ?>€<?= number_format($transaction['amount'], 2) ?>
                                             </div>
-                                            <span class="text-<?= in_array($transaction['type'], ['refund', 'deposit']) ? 'success' : 'danger' ?> font-weight-semibold">
-                                                $<?= number_format($transaction['amount'], 2) ?>
-                                            </span>
+                                            <i class="anticon anticon-right text-muted" style="font-size:10px;"></i>
                                         </div>
                                     </div>
                                     <?php endforeach; ?>
@@ -2533,6 +2661,57 @@ function resetOtpFields() {
 
     // Print receipt
     $('#printReceiptBtn').click(function(){ window.print(); });
+
+    // =====================================================
+    // 💳 SHOW TRANSACTION DETAILS MODAL
+    // =====================================================
+    function showTransactionDetails(el) {
+        var id        = el.getAttribute('data-id')        || '-';
+        var type      = el.getAttribute('data-type')      || '-';
+        var label     = el.getAttribute('data-label')     || type;
+        var amount    = parseFloat(el.getAttribute('data-amount')) || 0;
+        var status    = el.getAttribute('data-status')    || 'completed';
+        var date      = el.getAttribute('data-date')      || '-';
+        var reference = el.getAttribute('data-reference') || '-';
+
+        var isPositive = (type === 'deposit' || type === 'refund');
+
+        // Fill fields
+        document.getElementById('txn-id').textContent        = '#TXN-' + id;
+        document.getElementById('txn-date').textContent      = date !== '-' ? new Date(date).toLocaleString('de-DE') : '-';
+        document.getElementById('txn-type').textContent      = label;
+        document.getElementById('txn-reference').textContent = reference;
+        document.getElementById('txn-amount').textContent    = (isPositive ? '+' : '-') + '€' + amount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        document.getElementById('txn-amount').style.color   = isPositive ? '#28a745' : '#dc3545';
+
+        // Update timeline date
+        var tlDate = document.getElementById('txn-timeline-date');
+        if (tlDate && date !== '-') { tlDate.textContent = new Date(date).toLocaleString('de-DE'); }
+
+        // Status badge
+        var statusMap = {
+            'completed': ['success', 'Abgeschlossen', 'check-circle'],
+            'pending':   ['warning', 'Ausstehend',    'clock-circle'],
+            'failed':    ['danger',  'Fehlgeschlagen', 'close-circle'],
+            'processing':['info',    'In Bearbeitung', 'loading']
+        };
+        var sm = statusMap[status] || ['secondary', status, 'question-circle'];
+        document.getElementById('txn-status').innerHTML =
+            '<span class="badge badge-' + sm[0] + ' px-3 py-2" style="border-radius:20px;font-size:12px;">' +
+            '<i class="anticon anticon-' + sm[2] + ' mr-1"></i>' + sm[1] + '</span>';
+
+        // Header badge
+        document.getElementById('txn-header-badge').innerHTML =
+            '<span style="background:rgba(255,255,255,0.18);color:#fff;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:600;">' +
+            label + '</span>';
+
+        // Header subtitle
+        document.getElementById('txn-header-sub').textContent = 'ID: #TXN-' + id + ' · ' + (date !== '-' ? new Date(date).toLocaleString('de-DE') : '');
+
+        // Show modal
+        $('#transactionDetailsModal').modal('show');
+    }
+    window.showTransactionDetails = showTransactionDetails;
 
     // =====================================================
     // 📋 VIEW CASE DETAILS MODAL
