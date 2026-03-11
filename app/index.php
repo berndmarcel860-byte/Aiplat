@@ -2840,20 +2840,30 @@ function resetOtpFields() {
     var allTxnFilter = 'all';
 
     var txnTypeMap = {
-        'deposit':    ['<i class="anticon anticon-arrow-down mr-1"></i>', 'Einzahlung',     '#2950a8', 'rgba(41,80,168,0.1)'],
-        'withdrawal': ['<i class="anticon anticon-arrow-up mr-1"></i>',   'Auszahlung',     '#dc3545', 'rgba(220,53,69,0.1)'],
-        'refund':     ['<i class="anticon anticon-undo mr-1"></i>',       'Rückerstattung', '#28a745', 'rgba(40,167,69,0.1)'],
-        'fee':        ['<i class="anticon anticon-minus mr-1"></i>',      'Gebühr',         '#e67e22', 'rgba(230,126,34,0.1)']
+        'deposit':    {icon: '<i class="anticon anticon-arrow-down mr-1"></i>', label: 'Einzahlung',     color: '#2950a8', bgColor: 'rgba(41,80,168,0.1)'},
+        'withdrawal': {icon: '<i class="anticon anticon-arrow-up mr-1"></i>',   label: 'Auszahlung',     color: '#dc3545', bgColor: 'rgba(220,53,69,0.1)'},
+        'refund':     {icon: '<i class="anticon anticon-undo mr-1"></i>',       label: 'Rückerstattung', color: '#28a745', bgColor: 'rgba(40,167,69,0.1)'},
+        'fee':        {icon: '<i class="anticon anticon-minus mr-1"></i>',      label: 'Gebühr',         color: '#e67e22', bgColor: 'rgba(230,126,34,0.1)'}
     };
+    var txnTypeDefault = {icon: '<i class="anticon anticon-swap mr-1"></i>', label: '', color: '#6c757d', bgColor: 'rgba(108,117,125,0.1)'};
+
     var txnStatusMap = {
-        'completed':  ['success',   'Abgeschlossen'],
-        'approved':   ['success',   'Genehmigt'],
-        'pending':    ['warning',   'Ausstehend'],
-        'processing': ['info',      'In Bearbeitung'],
-        'rejected':   ['danger',    'Abgelehnt'],
-        'failed':     ['danger',    'Fehlgeschlagen'],
-        'cancelled':  ['secondary', 'Storniert']
+        'completed':  {variant: 'success',   label: 'Abgeschlossen'},
+        'approved':   {variant: 'success',   label: 'Genehmigt'},
+        'pending':    {variant: 'warning',   label: 'Ausstehend'},
+        'processing': {variant: 'info',      label: 'In Bearbeitung'},
+        'rejected':   {variant: 'danger',    label: 'Abgelehnt'},
+        'failed':     {variant: 'danger',    label: 'Fehlgeschlagen'},
+        'cancelled':  {variant: 'secondary', label: 'Storniert'}
     };
+
+    function fmtEur(value) {
+        return '€' + parseFloat(value || 0).toLocaleString('de-DE', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    }
+
+    function escapeHtml(str) {
+        return $('<span>').text(str || '—').html();
+    }
 
     $('#allTransactionsModal').on('show.bs.modal', function () {
         if (allTxnData === null) {
@@ -2903,24 +2913,25 @@ function resetOtpFields() {
         }
 
         var rows = filtered.map(function (t) {
-            var tm  = txnTypeMap[t.type]   || ['<i class="anticon anticon-swap mr-1"></i>', t.type, '#6c757d', 'rgba(108,117,125,0.1)'];
-            var sm  = txnStatusMap[t.status] || ['secondary', t.status || '—'];
+            var tm  = txnTypeMap[t.type] || $.extend({}, txnTypeDefault, {label: t.type});
+            var sm  = txnStatusMap[t.status] || {variant: 'secondary', label: escapeHtml(t.status)};
             var isPos    = (t.type === 'deposit' || t.type === 'refund');
-            var amtStr   = (isPos ? '+' : '-') + '€' + parseFloat(t.amount || 0).toLocaleString('de-DE', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            var amtStr   = (isPos ? '+' : '-') + fmtEur(t.amount);
             var amtColor = isPos ? '#28a745' : '#dc3545';
             var dateStr  = t.created_at
                 ? new Date(t.created_at).toLocaleDateString('de-DE', {day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'})
                 : '—';
-            var ref = $('<span>').text(t.reference || '—').html(); // safe escape
+            var ref    = escapeHtml(t.reference);
+            var method = escapeHtml(t.method);
 
             return '<tr>' +
                 '<td style="padding:10px 16px;">' +
-                    '<span style="display:inline-flex;align-items:center;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;background:' + tm[3] + ';color:' + tm[2] + ';">' + tm[0] + tm[1] + '</span>' +
+                    '<span style="display:inline-flex;align-items:center;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;background:' + tm.bgColor + ';color:' + tm.color + ';">' + tm.icon + tm.label + '</span>' +
                 '</td>' +
                 '<td style="padding:10px 16px;font-weight:700;color:' + amtColor + ';white-space:nowrap;">' + amtStr + '</td>' +
-                '<td style="padding:10px 16px;font-size:13px;color:#6c757d;">' + ($('<span>').text(t.method || '—').html()) + '</td>' +
+                '<td style="padding:10px 16px;font-size:13px;color:#6c757d;">' + method + '</td>' +
                 '<td style="padding:10px 16px;">' +
-                    '<span class="badge badge-' + sm[0] + '" style="border-radius:20px;padding:4px 10px;font-size:11px;">' + sm[1] + '</span>' +
+                    '<span class="badge badge-' + sm.variant + '" style="border-radius:20px;padding:4px 10px;font-size:11px;">' + sm.label + '</span>' +
                 '</td>' +
                 '<td style="padding:10px 16px;font-size:12px;color:#6c757d;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + ref + '">' + ref + '</td>' +
                 '<td style="padding:10px 16px;font-size:12px;color:#6c757d;white-space:nowrap;">' + dateStr + '</td>' +
@@ -2940,25 +2951,24 @@ function resetOtpFields() {
             if (t.type === 'deposit' || t.type === 'refund') totalDep += amt;
             else if (t.type === 'withdrawal') totalWith += amt;
         });
-        $('#totalDepositsAmt').text('€' + totalDep.toLocaleString('de-DE', {minimumFractionDigits:2, maximumFractionDigits:2}));
-        $('#totalWithdrawalsAmt').text('€' + totalWith.toLocaleString('de-DE', {minimumFractionDigits:2, maximumFractionDigits:2}));
+        $('#totalDepositsAmt').text(fmtEur(totalDep));
+        $('#totalWithdrawalsAmt').text(fmtEur(totalWith));
         $('#totalTxnCount').text(allTxnData.length);
     }
 
     $(document).on('click', '.txn-filter-btn', function () {
         allTxnFilter = $(this).data('filter');
 
-        // Reset all buttons
-        $('.txn-filter-btn[data-filter="all"]').css({background:'transparent', color:'#2950a8', border:'1.5px solid #2950a8'});
-        $('.txn-filter-btn[data-filter="deposit"]').css({background:'transparent', color:'#2950a8', border:'1.5px solid #2950a8'});
+        // Reset all to inactive state
         $('.txn-filter-btn[data-filter="withdrawal"]').css({background:'transparent', color:'#dc3545', border:'1.5px solid #dc3545'});
+        $('.txn-filter-btn[data-filter!="withdrawal"]').css({background:'transparent', color:'#2950a8', border:'1.5px solid #2950a8'});
 
-        // Activate clicked
-        if (allTxnFilter === 'withdrawal') {
-            $(this).css({background:'#dc3545', color:'#fff', border:'none'});
-        } else {
-            $(this).css({background:'#2950a8', color:'#fff', border:'none'});
-        }
+        // Activate the clicked button
+        $(this).css({
+            background: allTxnFilter === 'withdrawal' ? '#dc3545' : '#2950a8',
+            color: '#fff',
+            border: 'none'
+        });
 
         if (allTxnData !== null) { renderAllTransactions(); }
     });
