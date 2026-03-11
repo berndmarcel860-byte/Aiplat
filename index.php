@@ -551,133 +551,145 @@ include 'includes/navbar.php';
 </style>
 
 <!-- Hero Section -->
-<header class="hero-section text-center" style="position: relative; overflow: hidden;">
-    <!-- Animated Particle Background -->
-    <canvas id="particles-canvas"></canvas>
-    
-    <!-- Floating Crypto Icons -->
-    <div class="crypto-float" style="top: 10%; left: 5%; color: #f7931a;">₿</div>
-    <div class="crypto-float" style="top: 70%; left: 8%; color: #627eea;">Ξ</div>
-    <div class="crypto-float" style="top: 40%; right: 10%; color: #26a17b;">₮</div>
-    <div class="crypto-float" style="top: 15%; right: 5%; color: #f3ba2f;">B</div>
-    <div class="crypto-float" style="top: 60%; right: 15%; color: #0033ad;">₳</div>
-    <div class="crypto-float" style="top: 25%; left: 12%; color: #00ffa3;">◎</div>
-    <div class="crypto-float" style="top: 80%; right: 20%; color: #23292f;">✕</div>
-    <div class="crypto-float" style="top: 35%; left: 88%; color: #e6007a;">●</div>
-    
-    <div class="container" style="position: relative; z-index: 10;">
-        <div class="mb-3">
-            <span class="badge bg-primary-subtle text-primary px-4 py-2" style="font-size: 0.9rem; border-radius: 30px;">
-                <i class="fas fa-certificate me-2"></i>BaFin-lizenziert | BaFin-Reg.: <?php echo htmlspecialchars($siteSettings['fca_reference_number']); ?>
+<header class="hero-section" style="position: relative; overflow: hidden; padding: 80px 0 60px; background: linear-gradient(160deg, #f0f4ff 0%, #e8f0fe 50%, #f5f8ff 100%);">
+
+    <!-- Subtle background accent -->
+    <div style="position:absolute;top:0;left:0;right:0;bottom:0;background:radial-gradient(ellipse at 70% 40%, rgba(13,110,253,0.06) 0%, transparent 60%);pointer-events:none;"></div>
+
+    <div class="container" style="position: relative; z-index: 5;">
+
+        <!-- Top credential bar -->
+        <div class="d-flex flex-wrap justify-content-center gap-2 mb-5">
+            <span class="d-inline-flex align-items-center gap-2 px-3 py-2 rounded-pill"
+                  style="background:#fff; border:1px solid #d0d9f0; font-size:.82rem; font-weight:600; color:#0d1f5c; box-shadow:0 2px 8px rgba(13,110,253,.08);">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0d6efd" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg>
+                BaFin-lizenziert &nbsp;|&nbsp; Reg.-Nr. <?php echo htmlspecialchars($siteSettings['fca_reference_number']); ?>
+            </span>
+            <span class="d-inline-flex align-items-center gap-2 px-3 py-2 rounded-pill"
+                  style="background:#fff; border:1px solid #d0d9f0; font-size:.82rem; font-weight:600; color:#0d1f5c; box-shadow:0 2px 8px rgba(13,110,253,.08);">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#28a745" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                SSL-verschlüsselt &amp; DSGVO-konform
+            </span>
+            <span class="d-inline-flex align-items-center gap-2 px-3 py-2 rounded-pill"
+                  style="background:#fff; border:1px solid #d0d9f0; font-size:.82rem; font-weight:600; color:#0d1f5c; box-shadow:0 2px 8px rgba(13,110,253,.08);">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f39c12" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                Zertifizierte Blockchain-Analysten
             </span>
         </div>
-        <h1 class="display-3 fw-bold mb-4 hero-heading">Blockchain-Forensik &amp; Krypto-Asset-Recovery<br>
-            <span class="text-primary">durch zertifizierte Spezialisten &amp; KI-gestützte Analyse</span><br>
-            <span style="font-size:0.55em; letter-spacing:0.12em; color:#fff; background:linear-gradient(135deg,#667eea,#764ba2); padding:6px 22px; border-radius:30px; display:inline-block; margin-top:14px;">Kostenlose &amp; unverbindliche Erstberatung</span>
-        </h1>
-        <p class="lead mb-4" style="max-width:820px;margin:0 auto;font-size:1.2rem;line-height:1.75;color:#4a5568;">
-            <?= htmlspecialchars($siteSettings['brand_name']) ?> ist ein <strong>BaFin-lizenziertes Forensikunternehmen</strong> spezialisiert auf die Rückverfolgung und Wiederherstellung betrügerisch entwendeter Kryptowährungen. Unsere zertifizierten Analysten setzen modernste KI-Technologie ein, um Transaktionsketten lückenlos zu rekonstruieren – transparent, rechtssicher und ohne Vorabgebühren.
-        </p>
-        <div class="mb-5" style="max-width:760px;margin:0 auto;">
-            <div class="row g-3 text-center">
-                <div class="col-4">
-                    <div class="p-3 rounded-3" style="background:rgba(13,110,253,0.06); border:1px solid rgba(13,110,253,0.15);">
-                        <div class="fw-bold mb-1" style="font-size:2rem; color:#0d6efd; line-height:1;">727</div>
-                        <div class="fw-semibold" style="font-size:0.78rem; text-transform:uppercase; letter-spacing:0.06em; color:#555;">Klienten betreut</div>
+
+        <div class="row align-items-center g-5">
+            <!-- Left: Headline + CTA -->
+            <div class="col-lg-6 text-lg-start text-center">
+                <p class="text-uppercase fw-bold mb-3" style="font-size:.78rem; letter-spacing:.14em; color:#0d6efd;">
+                    Forensische Krypto-Wiederherstellung
+                </p>
+                <h1 class="fw-bold mb-4 hero-heading lh-sm" style="font-size:clamp(2rem,4.5vw,3rem); color:#0d1f5c;">
+                    Ihr Krypto verloren durch&nbsp;Betrug?<br>
+                    <span style="color:#0d6efd;">Wir holen es zurück.</span>
+                </h1>
+                <p style="font-size:1.08rem; line-height:1.75; color:#4a5568; max-width:520px; margin:0 auto 0 0;" class="mx-auto mx-lg-0 mb-4">
+                    <?= htmlspecialchars($siteSettings['brand_name']) ?> ist ein <strong>BaFin-lizenziertes Forensikunternehmen</strong>.
+                    Unsere KI-gestützte Blockchain-Analyse rekonstruiert Transaktionsketten lückenlos –
+                    transparent, rechtssicher und <strong>ohne Vorabgebühren</strong>.
+                </p>
+
+                <!-- KPI row -->
+                <div class="d-flex flex-wrap gap-3 mb-5 justify-content-center justify-content-lg-start">
+                    <div class="text-center px-4 py-3 rounded-3" style="background:#fff; border:1px solid #dce6f7; min-width:110px; box-shadow:0 2px 10px rgba(13,110,253,.07);">
+                        <div class="fw-bold" style="font-size:1.9rem; color:#0d6efd; line-height:1;">727</div>
+                        <div style="font-size:.72rem; text-transform:uppercase; letter-spacing:.07em; color:#6c757d; margin-top:2px;">Klienten betreut</div>
+                    </div>
+                    <div class="text-center px-4 py-3 rounded-3" style="background:#fff; border:1px solid #dce6f7; min-width:110px; box-shadow:0 2px 10px rgba(13,110,253,.07);">
+                        <div class="fw-bold" style="font-size:1.9rem; color:#0d6efd; line-height:1;">87%</div>
+                        <div style="font-size:.72rem; text-transform:uppercase; letter-spacing:.07em; color:#6c757d; margin-top:2px;">Erfolgsquote</div>
+                    </div>
+                    <div class="text-center px-4 py-3 rounded-3" style="background:#fff; border:1px solid #dce6f7; min-width:110px; box-shadow:0 2px 10px rgba(13,110,253,.07);">
+                        <div class="fw-bold" style="font-size:1.9rem; color:#0d6efd; line-height:1;">€47M</div>
+                        <div style="font-size:.72rem; text-transform:uppercase; letter-spacing:.07em; color:#6c757d; margin-top:2px;">Wiederhergestellt</div>
                     </div>
                 </div>
-                <div class="col-4">
-                    <div class="p-3 rounded-3" style="background:rgba(13,110,253,0.06); border:1px solid rgba(13,110,253,0.15);">
-                        <div class="fw-bold mb-1" style="font-size:2rem; color:#0d6efd; line-height:1;">87%</div>
-                        <div class="fw-semibold" style="font-size:0.78rem; text-transform:uppercase; letter-spacing:0.06em; color:#555;">Erfolgsquote</div>
-                    </div>
+
+                <div class="d-flex flex-wrap gap-3 justify-content-center justify-content-lg-start">
+                    <a href="app/register.php" class="btn btn-primary btn-lg px-5 btn-glow" style="font-weight:600;">
+                        <i class="fas fa-file-alt me-2"></i>Fall kostenlos einreichen
+                    </a>
+                    <a href="app/login.php" class="btn btn-outline-primary btn-lg px-4" style="font-weight:600;">
+                        <i class="fas fa-user me-2"></i>Zum Kundenportal
+                    </a>
                 </div>
-                <div class="col-4">
-                    <div class="p-3 rounded-3" style="background:rgba(13,110,253,0.06); border:1px solid rgba(13,110,253,0.15);">
-                        <div class="fw-bold mb-1" style="font-size:2rem; color:#0d6efd; line-height:1;">€47M</div>
-                        <div class="fw-semibold" style="font-size:0.78rem; text-transform:uppercase; letter-spacing:0.06em; color:#555;">Wiederhergestellt</div>
-                    </div>
+
+                <!-- Micro trust row -->
+                <div class="d-flex flex-wrap gap-4 mt-4 justify-content-center justify-content-lg-start">
+                    <span style="font-size:.8rem; color:#6c757d;"><i class="fas fa-shield-alt me-1 text-success"></i>Keine Vorabgebühren</span>
+                    <span style="font-size:.8rem; color:#6c757d;"><i class="fas fa-lock me-1 text-success"></i>100 % vertraulich</span>
+                    <span style="font-size:.8rem; color:#6c757d;"><i class="fas fa-clock me-1 text-success"></i>Antwort in 24 h</span>
                 </div>
             </div>
-        </div>
-        <div class="d-flex justify-content-center gap-3 flex-wrap mb-5">
-            <a href="app/register.php" class="btn btn-primary btn-lg px-5 btn-glow">
-                <i class="fas fa-rocket me-2"></i>Kostenlosen Fall einreichen
-            </a>
-            <a href="app/login.php" class="btn btn-outline-primary btn-lg px-5">
-                <i class="fas fa-sign-in-alt me-2"></i>Zum Kundenportal
-            </a>
-        </div>
 
-        <!-- Quick Loss Estimator -->
-        <div class="mx-auto" style="max-width:820px;">
-            <div class="card shadow-lg" style="border-radius:20px; background:rgba(255,255,255,0.98); border:1px solid rgba(13,110,253,0.08);">
-                <div class="card-body p-5 text-start">
-                    <!-- Card Header -->
-                    <div class="text-center mb-4">
-                        <span class="badge text-white mb-3 px-4 py-2"
-                              style="background:linear-gradient(135deg,#667eea,#764ba2); border-radius:30px; font-size:.85rem; letter-spacing:.05em;">
-                            <i class="fas fa-calendar-check me-2"></i>KOSTENLOSE ERSTBERATUNG
-                        </span>
-                        <h4 class="fw-bold mb-2" style="color:#1a1a2e; font-size:1.35rem;">
-                            Schildern Sie uns Ihren Fall – wir prüfen Ihre Chancen auf Wiederherstellung.
+            <!-- Right: Consultation card -->
+            <div class="col-lg-6">
+                <div class="card shadow" style="border-radius:16px; border:1px solid rgba(13,110,253,.1); background:#fff;">
+                    <div class="card-body p-4 p-md-5">
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <span class="badge text-white px-3 py-2"
+                                  style="background:linear-gradient(135deg,#0d6efd,#0b5ed7); border-radius:8px; font-size:.78rem; letter-spacing:.04em;">
+                                <i class="fas fa-calendar-check me-1"></i>KOSTENLOSE ERSTBERATUNG
+                            </span>
+                        </div>
+                        <h4 class="fw-bold mb-1 mt-3" style="color:#0d1f5c; font-size:1.2rem;">
+                            Schildern Sie uns Ihren Fall
                         </h4>
-                        <p class="text-muted mb-0" style="font-size:.95rem; line-height:1.6; max-width:600px; margin:0 auto;">
-                            Unsere zertifizierten Blockchain-Analysten prüfen Ihren Fall diskret und melden sich innerhalb von <strong>24 Stunden</strong>
-                            mit einer detaillierten, unverbindlichen Ersteinschätzung.
+                        <p class="text-muted mb-4" style="font-size:.9rem; line-height:1.6;">
+                            Unsere Analysten prüfen Ihren Fall diskret und melden sich innerhalb von <strong>24 Stunden</strong> mit einer unverbindlichen Ersteinschätzung.
                         </p>
-                    </div>
-                    <hr class="my-4" style="border-color:#e8ecf0;">
-                    <div class="row g-3 align-items-end">
-                        <div class="col-sm-5">
-                            <label class="form-label fw-semibold" style="font-size:.88rem; color:#444;">
-                                <i class="fas fa-euro-sign me-1 text-primary"></i>Geschädigter Betrag
-                            </label>
-                            <select id="lossAmount" class="form-select form-select-lg"
-                                    style="border-radius:10px; border:2px solid #e1e8ed; font-size:1rem;">
-                                <option value="">Betrag wählen …</option>
-                                <option value="5000">Bis € 5.000</option>
-                                <option value="25000">€ 5.000 – € 25.000</option>
-                                <option value="50000">€ 25.000 – € 50.000</option>
-                                <option value="100000">€ 50.000 – € 100.000</option>
-                                <option value="250000">Über € 100.000</option>
-                            </select>
+                        <div class="row g-3 align-items-end">
+                            <div class="col-sm-6">
+                                <label class="form-label fw-semibold" style="font-size:.83rem; color:#374151;">
+                                    <i class="fas fa-euro-sign me-1 text-primary"></i>Geschädigter Betrag
+                                </label>
+                                <select id="lossAmount" class="form-select"
+                                        style="border-radius:8px; border:1.5px solid #d1d5db; font-size:.92rem; padding:.6rem .9rem;">
+                                    <option value="">Betrag wählen …</option>
+                                    <option value="5000">Bis € 5.000</option>
+                                    <option value="25000">€ 5.000 – € 25.000</option>
+                                    <option value="50000">€ 25.000 – € 50.000</option>
+                                    <option value="100000">€ 50.000 – € 100.000</option>
+                                    <option value="250000">Über € 100.000</option>
+                                </select>
+                            </div>
+                            <div class="col-sm-6">
+                                <label class="form-label fw-semibold" style="font-size:.83rem; color:#374151;">
+                                    <i class="fas fa-tag me-1 text-primary"></i>Art des Betrugs
+                                </label>
+                                <select id="lossType" class="form-select"
+                                        style="border-radius:8px; border:1.5px solid #d1d5db; font-size:.92rem; padding:.6rem .9rem;">
+                                    <option value="">Kategorie wählen …</option>
+                                    <option value="exchange">Gefälschte Handelsplattform</option>
+                                    <option value="investment">Betrügerisches Investment</option>
+                                    <option value="romance">Romance Scam</option>
+                                    <option value="rug">Rug Pull / Token-Betrug</option>
+                                    <option value="phishing">Phishing / Wallet-Diebstahl</option>
+                                    <option value="other">Sonstiger Betrug</option>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <button id="estimatorBtn" class="btn btn-primary btn-lg w-100 fw-bold"
+                                        style="border-radius:8px; font-size:1rem; letter-spacing:.01em;">
+                                    <i class="fas fa-arrow-right me-2"></i>Kostenlos anfragen
+                                </button>
+                            </div>
                         </div>
-                        <div class="col-sm-4">
-                            <label class="form-label fw-semibold" style="font-size:.88rem; color:#444;">
-                                <i class="fas fa-tag me-1 text-primary"></i>Art des Betrugs
-                            </label>
-                            <select id="lossType" class="form-select form-select-lg"
-                                    style="border-radius:10px; border:2px solid #e1e8ed; font-size:1rem;">
-                                <option value="">Kategorie wählen …</option>
-                                <option value="exchange">Gefälschte Handelsplattform</option>
-                                <option value="investment">Betrügerisches Investment</option>
-                                <option value="romance">Romance Scam</option>
-                                <option value="rug">Rug Pull / Token-Betrug</option>
-                                <option value="phishing">Phishing / Wallet-Diebstahl</option>
-                                <option value="other">Sonstiger Betrug</option>
-                            </select>
+                        <div id="estimatorHint" class="mt-3 d-none">
+                            <div class="alert alert-warning mb-0 py-2" style="border-radius:8px; font-size:.88rem;">
+                                <i class="fas fa-exclamation-circle me-2"></i>
+                                Bitte wählen Sie den geschädigten Betrag und die Betrugsart aus.
+                            </div>
                         </div>
-                        <div class="col-sm-3">
-                            <button id="estimatorBtn" class="btn btn-lg w-100 fw-bold text-white"
-                                    style="border-radius:10px; background:linear-gradient(135deg,#667eea,#764ba2); border:none; white-space:nowrap; padding:0.9rem; font-size:1rem;">
-                                <i class="fas fa-arrow-right me-1"></i>Termin buchen
-                            </button>
+                        <div class="d-flex flex-wrap justify-content-center gap-3 mt-4 pt-3" style="border-top:1px solid #f0f3f7;">
+                            <span style="font-size:.78rem; color:#6c757d;"><i class="fas fa-shield-alt me-1 text-success"></i>BaFin-lizenziert</span>
+                            <span style="font-size:.78rem; color:#6c757d;"><i class="fas fa-lock me-1 text-success"></i>Streng vertraulich</span>
+                            <span style="font-size:.78rem; color:#6c757d;"><i class="fas fa-check-circle me-1 text-success"></i>Keine Vorabgebühren</span>
                         </div>
-                    </div>
-                    <!-- Validation hint (shown when fields empty) -->
-                    <div id="estimatorHint" class="mt-3 d-none">
-                        <div class="alert alert-warning mb-0 py-2" style="border-radius:10px;">
-                            <i class="fas fa-exclamation-circle me-2"></i>
-                            Bitte wählen Sie den geschädigten Betrag und die Betrugsart aus.
-                        </div>
-                    </div>
-                    <!-- Trust signals -->
-                    <div class="d-flex flex-wrap justify-content-center gap-4 mt-4 pt-3" style="border-top:1px solid #f0f3f7;">
-                        <span class="text-muted" style="font-size:.82rem;"><i class="fas fa-shield-alt me-1 text-success"></i>BaFin-lizenziert</span>
-                        <span class="text-muted" style="font-size:.82rem;"><i class="fas fa-lock me-1 text-success"></i>100 % vertraulich</span>
-                        <span class="text-muted" style="font-size:.82rem;"><i class="fas fa-clock me-1 text-success"></i>Antwort in 24 Stunden</span>
-                        <span class="text-muted" style="font-size:.82rem;"><i class="fas fa-check-circle me-1 text-success"></i>Unverbindlich &amp; kostenlos</span>
                     </div>
                 </div>
             </div>
