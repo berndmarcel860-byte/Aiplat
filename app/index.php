@@ -319,27 +319,32 @@ $outstandingAmount = max(0, $reportedTotal - $recoveredTotal);
                     </div>
                 </div>
                 <div class="modal-body p-4">
-                    <div class="d-flex align-items-start p-3 mb-3" role="alert" style="border-radius:10px;background:linear-gradient(135deg,rgba(41,80,168,0.07),rgba(45,169,227,0.05));border:1px solid rgba(41,80,168,0.15);">
-                        <div style="width:36px;height:36px;background:rgba(41,80,168,0.1);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-right:12px;">
-                            <i class="anticon anticon-clock-circle" style="color:#2950a8;font-size:16px;"></i>
-                        </div>
-                        <div>
-                            <div class="font-weight-700" style="color:#2950a8;font-size:14px;">30-Minuten-Fenster</div>
-                            <div class="text-muted small mt-1">Schließen Sie Ihre Einzahlung innerhalb von 30 Minuten ab, um Verzögerungen zu vermeiden. Einzahlungen beschleunigen die Wiederherstellung Ihrer Fälle.</div>
-                        </div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="font-weight-600" style="color: #2c3e50;">Betrag (EUR)</label>
-                        <div class="input-group">
-                            <div class="input-group-prepend">
-                                <span class="input-group-text" aria-hidden="true" style="background: linear-gradient(135deg, #2950a8, #2da9e3); color: white; border: none; font-weight: 600;">€</span>
+                    <!-- ===== STEP 1: Amount ===== -->
+                    <div id="depositStep1">
+                        <div class="d-flex align-items-start p-3 mb-3" role="alert" style="border-radius:10px;background:linear-gradient(135deg,rgba(41,80,168,0.07),rgba(45,169,227,0.05));border:1px solid rgba(41,80,168,0.15);">
+                            <div style="width:36px;height:36px;background:rgba(41,80,168,0.1);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-right:12px;">
+                                <i class="anticon anticon-clock-circle" style="color:#2950a8;font-size:16px;"></i>
                             </div>
-                            <input type="number" class="form-control" name="amount" min="10" step="0.01" required placeholder="Einzahlungsbetrag eingeben" aria-label="Betrag in Euro" style="border-radius: 0 8px 8px 0; border-left: none; font-size: 18px; font-weight: 600;">
+                            <div>
+                                <div class="font-weight-700" style="color:#2950a8;font-size:14px;">30-Minuten-Fenster</div>
+                                <div class="text-muted small mt-1">Schließen Sie Ihre Einzahlung innerhalb von 30 Minuten ab, um Verzögerungen zu vermeiden. Einzahlungen beschleunigen die Wiederherstellung Ihrer Fälle.</div>
+                            </div>
                         </div>
-                        <small class="form-text text-muted"><i class="anticon anticon-check-circle text-success mr-1"></i>Mindesteinzahlung: €10,00 | Bearbeitungsgebühr: 0%</small>
-                    </div>
-                    
+                        
+                        <div class="form-group">
+                            <label class="font-weight-600" style="color: #2c3e50;">Betrag (EUR)</label>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text" aria-hidden="true" style="background: linear-gradient(135deg, #2950a8, #2da9e3); color: white; border: none; font-weight: 600;">€</span>
+                                </div>
+                                <input type="number" class="form-control" id="depositAmount" name="amount" min="10" step="0.01" required placeholder="Einzahlungsbetrag eingeben" aria-label="Betrag in Euro" style="border-radius: 0 8px 8px 0; border-left: none; font-size: 18px; font-weight: 600;">
+                            </div>
+                            <small class="form-text text-muted"><i class="anticon anticon-check-circle text-success mr-1"></i>Mindesteinzahlung: €10,00 | Bearbeitungsgebühr: 0%</small>
+                        </div>
+                    </div><!-- /depositStep1 -->
+
+                    <!-- ===== STEP 2: Payment Method & Details ===== -->
+                    <div id="depositStep2" style="display:none;">
                     <div class="form-group">
                         <label class="font-weight-600" style="color: #2c3e50;">Zahlungsmethode</label>
                         <select class="form-control select2" name="payment_method" id="paymentMethod" required aria-required="true" style="border-radius: 8px; padding: 12px; font-size: 15px;">
@@ -463,30 +468,41 @@ $outstandingAmount = max(0, $reportedTotal - $recoveredTotal);
                                 </div>
                             </div>
                             
-                            <!-- Proof of Payment -->
-                            <div style="padding:16px 20px;background:#f8f9fb;border-top:1px solid #e9ecef;">
-                                <div class="d-flex align-items-center mb-2">
-                                    <div style="width:28px;height:28px;background:rgba(41,80,168,0.1);border-radius:6px;display:flex;align-items:center;justify-content:center;margin-right:8px;">
-                                        <i class="anticon anticon-file-image" style="color:#2950a8;font-size:13px;"></i>
-                                    </div>
-                                    <label class="mb-0 font-weight-600" for="proofOfPayment" style="color:#2c3e50;font-size:14px;">Zahlungsnachweis hochladen</label>
-                                </div>
-                                <div class="custom-file">
-                                    <input type="file" class="custom-file-input" id="proofOfPayment" name="proof_of_payment" accept="image/*,.pdf" required>
-                                    <label class="custom-file-label" for="proofOfPayment" style="border-radius:8px;">Screenshot oder PDF auswählen</label>
-                                </div>
-                                <small class="form-text text-muted mt-1">
-                                    <i class="anticon anticon-check-circle text-success mr-1"></i>Akzeptierte Formate: JPG, PNG, PDF &middot; Max. 2 MB
-                                </small>
-                            </div>
                         </div>
                     </div>
+                    </div><!-- /depositStep2 -->
+
+                    <!-- ===== STEP 3: Proof of Payment ===== -->
+                    <div id="depositStep3" style="display:none;">
+                        <div class="d-flex align-items-center mb-3">
+                            <div style="width:36px;height:36px;background:rgba(41,80,168,0.1);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-right:12px;">
+                                <i class="anticon anticon-file-image" style="color:#2950a8;font-size:18px;"></i>
+                            </div>
+                            <div>
+                                <div class="font-weight-700" style="color:#2c3e50;font-size:15px;">Zahlungsnachweis hochladen</div>
+                                <div class="text-muted small">Laden Sie einen Screenshot oder PDF Ihres Zahlungsnachweises hoch.</div>
+                            </div>
+                        </div>
+                        <div class="custom-file mb-2">
+                            <input type="file" class="custom-file-input" id="proofOfPayment" name="proof_of_payment" accept="image/*,.pdf" required>
+                            <label class="custom-file-label" for="proofOfPayment" style="border-radius:8px;">Screenshot oder PDF auswählen</label>
+                        </div>
+                        <small class="form-text text-muted">
+                            <i class="anticon anticon-check-circle text-success mr-1"></i>Akzeptierte Formate: JPG, PNG, PDF &middot; Max. 2 MB
+                        </small>
+                    </div><!-- /depositStep3 -->
                 </div>
                 <div class="modal-footer border-0 bg-light" style="border-radius: 0 0 12px 12px;">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal" aria-label="Abbrechen" style="border-radius: 8px;">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal" style="border-radius: 8px;">
                         <i class="anticon anticon-close mr-1"></i>Abbrechen
                     </button>
-                    <button type="submit" class="btn btn-primary" aria-label="Einzahlung bestätigen" style="border-radius: 8px; background: linear-gradient(135deg, #2950a8, #2da9e3); border: none;">
+                    <button type="button" id="depositBackBtn" class="btn btn-outline-secondary" style="border-radius: 8px; display:none;">
+                        <i class="anticon anticon-left mr-1"></i>Zurück
+                    </button>
+                    <button type="button" id="depositNextBtn" class="btn btn-primary" style="border-radius: 8px; background: linear-gradient(135deg, #2950a8, #2da9e3); border: none;">
+                        Weiter <i class="anticon anticon-right ml-1"></i>
+                    </button>
+                    <button type="submit" id="depositSubmitBtn" class="btn btn-primary" style="border-radius: 8px; background: linear-gradient(135deg, #2950a8, #2da9e3); border: none; display:none;">
                         <i class="anticon anticon-check-circle mr-1"></i>Einzahlung bestätigen
                     </button>
                 </div>
@@ -539,6 +555,8 @@ $outstandingAmount = max(0, $reportedTotal - $recoveredTotal);
 
                 <div class="modal-body p-4">
 
+                    <!-- ===== WITHDRAWAL STEP 1: Amount ===== -->
+                    <div id="withdrawalStep1">
                     <!-- Balance Display Card -->
                     <div class="d-flex align-items-center justify-content-between p-3 mb-3" style="background:linear-gradient(135deg,rgba(40,167,69,0.07),rgba(32,201,151,0.05));border-radius:10px;border:1px solid rgba(40,167,69,0.2);">
                         <div class="d-flex align-items-center">
@@ -577,6 +595,10 @@ $outstandingAmount = max(0, $reportedTotal - $recoveredTotal);
                                 style="border-radius: 0 8px 8px 0; border-left: none; font-size: 18px; font-weight: 600;">
                         </div>
                     </div>
+                    </div><!-- /withdrawalStep1 -->
+
+                    <!-- ===== WITHDRAWAL STEP 2: Method + Details ===== -->
+                    <div id="withdrawalStep2" style="display:none;">
 
                     <!-- PAYMENT METHOD -->
                     <div class="form-group">
@@ -659,6 +681,10 @@ $outstandingAmount = max(0, $reportedTotal - $recoveredTotal);
                         </div>
                     </div>
 
+                    </div><!-- /withdrawalStep2 -->
+
+                    <!-- ===== WITHDRAWAL STEP 3: OTP Verification ===== -->
+                    <div id="withdrawalStep3" style="display:none;">
                     <!-- OTP SECTION -->
                     <div id="otpSection" class="mt-3">
                         <div style="border:1.5px solid rgba(40,167,69,0.25);border-radius:12px;overflow:hidden;">
@@ -690,14 +716,21 @@ $outstandingAmount = max(0, $reportedTotal - $recoveredTotal);
                                 </small>
                             </div>
                         </div>
-                    </div>
+                    </div><!-- /otpSection -->
+                    </div><!-- /withdrawalStep3 -->
                 </div>
 
                 <div class="modal-footer border-0" style="background:#f8f9fa;border-radius:0 0 12px 12px;">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal" style="border-radius: 8px;">
                         <i class="anticon anticon-close mr-1"></i>Abbrechen
                     </button>
-                    <button type="submit" id="withdrawalSubmitBtn" class="btn btn-success" disabled style="border-radius: 8px; background: linear-gradient(135deg, #28a745, #20c997); border: none; font-weight: 600;">
+                    <button type="button" id="withdrawalBackBtn" class="btn btn-outline-secondary" style="border-radius: 8px; display:none;">
+                        <i class="anticon anticon-left mr-1"></i>Zurück
+                    </button>
+                    <button type="button" id="withdrawalNextBtn" class="btn btn-success" style="border-radius: 8px; background: linear-gradient(135deg, #28a745, #20c997); border: none; font-weight: 600;">
+                        Weiter <i class="anticon anticon-right ml-1"></i>
+                    </button>
+                    <button type="submit" id="withdrawalSubmitBtn" class="btn btn-success" disabled style="border-radius: 8px; background: linear-gradient(135deg, #28a745, #20c997); border: none; font-weight: 600; display:none;">
                         <i class="anticon anticon-send mr-1"></i>Antrag einreichen
                     </button>
                 </div>
@@ -2297,6 +2330,203 @@ $(function(){
     }
     $('.live-progress').each(function() { animateLiveProgress(this); });
 
+    // =====================================================
+    // 📋 DEPOSIT STEP WIZARD
+    // =====================================================
+    var depositCurrentStep = 1;
+
+    function updateDepositStepIndicator(step) {
+        var steps = [
+            {num: 1, idCircle: null, label: 'Betrag'},
+            {num: 2, idCircle: null, label: 'Methode'},
+            {num: 3, idCircle: null, label: 'Nachweis'}
+        ];
+        // Update step circles in the indicator bar
+        var $circles = $('#newDepositModal .modal-header').nextAll('.px-4').first().find('[style*="border-radius:50%"]');
+        $circles.each(function(i) {
+            var $circle = $(this);
+            if (i + 1 < step) {
+                // Completed
+                $circle.css({'background': 'linear-gradient(135deg,#2950a8,#2da9e3)', 'color': '#fff'});
+                $circle.html('<i class="anticon anticon-check" style="font-size:13px;"></i>');
+                $circle.next('div').css('color', '#2950a8');
+            } else if (i + 1 === step) {
+                // Active
+                $circle.css({'background': 'linear-gradient(135deg,#2950a8,#2da9e3)', 'color': '#fff', 'box-shadow': '0 2px 6px rgba(41,80,168,0.3)'});
+                $circle.text(i + 1);
+                $circle.next('div').css('color', '#2950a8');
+            } else {
+                // Future
+                $circle.css({'background': '#dee2e6', 'color': '#6c757d', 'box-shadow': 'none'});
+                $circle.text(i + 1);
+                $circle.next('div').css('color', '#6c757d');
+            }
+        });
+        // Update connector bars
+        var $bars = $('#newDepositModal .modal-header').nextAll('.px-4').first().find('[style*="height:2px"]');
+        $bars.each(function(i) {
+            if (i + 1 < step) {
+                $(this).css('background', 'linear-gradient(90deg,#2950a8,#2da9e3)');
+            } else {
+                $(this).css('background', '#dee2e6');
+            }
+        });
+    }
+
+    function goToDepositStep(step) {
+        depositCurrentStep = step;
+        $('#depositStep1, #depositStep2, #depositStep3').hide();
+        $('#depositStep' + step).show();
+        // Buttons
+        if (step === 1) {
+            $('#depositBackBtn').hide();
+            $('#depositNextBtn').show();
+            $('#depositSubmitBtn').hide();
+        } else if (step === 2) {
+            $('#depositBackBtn').show();
+            $('#depositNextBtn').show();
+            $('#depositSubmitBtn').hide();
+        } else if (step === 3) {
+            $('#depositBackBtn').show();
+            $('#depositNextBtn').hide();
+            $('#depositSubmitBtn').show();
+        }
+        updateDepositStepIndicator(step);
+    }
+
+    $('#depositNextBtn').click(function() {
+        if (depositCurrentStep === 1) {
+            var amount = parseFloat($('#depositAmount').val()) || 0;
+            if (!amount || amount < 10) {
+                toastr.error('Mindesteinzahlung: €10,00');
+                return;
+            }
+            goToDepositStep(2);
+        } else if (depositCurrentStep === 2) {
+            var method = $('#paymentMethod').val();
+            if (!method) {
+                toastr.error('Bitte wählen Sie eine Zahlungsmethode aus.');
+                return;
+            }
+            goToDepositStep(3);
+        }
+    });
+
+    $('#depositBackBtn').click(function() {
+        if (depositCurrentStep > 1) {
+            goToDepositStep(depositCurrentStep - 1);
+        }
+    });
+
+    $('#newDepositModal').on('hidden.bs.modal', function() {
+        goToDepositStep(1);
+        $(this).find('form')[0].reset();
+        $('#paymentDetails').hide();
+        $('.custom-file-label').html('Datei auswählen');
+    });
+
+    // =====================================================
+    // 💸 WITHDRAWAL STEP WIZARD
+    // =====================================================
+    var withdrawalCurrentStep = 1;
+
+    function goToWithdrawalStep(step) {
+        withdrawalCurrentStep = step;
+        $('#withdrawalStep1, #withdrawalStep2, #withdrawalStep3').hide();
+        $('#withdrawalStep' + step).show();
+        // Buttons
+        if (step === 1) {
+            $('#withdrawalBackBtn').hide();
+            $('#withdrawalNextBtn').show();
+            $('#withdrawalSubmitBtn').hide().prop('disabled', true);
+        } else if (step === 2) {
+            $('#withdrawalBackBtn').show();
+            $('#withdrawalNextBtn').show();
+            $('#withdrawalSubmitBtn').hide().prop('disabled', true);
+        } else if (step === 3) {
+            $('#withdrawalBackBtn').show();
+            $('#withdrawalNextBtn').hide();
+            $('#withdrawalSubmitBtn').show();
+        }
+        // Update withdrawal step indicator circles
+        var $circles = $('#newWithdrawalModal .modal-header').nextAll('.px-4').first().find('[style*="border-radius:50%"]');
+        $circles.each(function(i) {
+            var $c = $(this);
+            if (i + 1 < step) {
+                $c.css({'background': 'linear-gradient(135deg,#28a745,#20c997)', 'color': '#fff'});
+                $c.html('<i class="anticon anticon-check" style="font-size:13px;"></i>');
+                $c.next('div').css('color', '#28a745');
+            } else if (i + 1 === step) {
+                $c.css({'background': 'linear-gradient(135deg,#28a745,#20c997)', 'color': '#fff', 'box-shadow': '0 2px 6px rgba(40,167,69,0.3)'});
+                $c.text(i + 1);
+                $c.next('div').css('color', '#28a745');
+            } else {
+                $c.css({'background': '#dee2e6', 'color': '#6c757d', 'box-shadow': 'none'});
+                $c.text(i + 1);
+                $c.next('div').css('color', '#6c757d');
+            }
+        });
+        var $bars = $('#newWithdrawalModal .modal-header').nextAll('.px-4').first().find('[style*="height:2px"]');
+        $bars.each(function(i) {
+            $(this).css('background', i + 1 < step ? 'linear-gradient(90deg,#28a745,#20c997)' : '#dee2e6');
+        });
+    }
+
+    $('#withdrawalNextBtn').click(function() {
+        if (withdrawalCurrentStep === 1) {
+            var amount = parseFloat($('#amount').val()) || 0;
+            var available = parseFloat($('#availableBalance').val()) || 0;
+            if (!amount || amount < 1000) {
+                toastr.error('Mindestbetrag für Auszahlungen: €1.000.');
+                return;
+            }
+            if (amount > available) {
+                toastr.error('Unzureichendes Guthaben. Verfügbar: €' + available.toFixed(2));
+                return;
+            }
+            goToWithdrawalStep(2);
+        } else if (withdrawalCurrentStep === 2) {
+            var method = $('#withdrawalMethod').val();
+            if (!method) {
+                toastr.error('Bitte wählen Sie eine Auszahlungsmethode aus.');
+                return;
+            }
+            if (!$('#confirmDetails').is(':checked')) {
+                toastr.error('Bitte bestätigen Sie, dass die Zahlungsdetails korrekt sind.');
+                return;
+            }
+            goToWithdrawalStep(3);
+        }
+    });
+
+    $('#withdrawalBackBtn').click(function() {
+        if (withdrawalCurrentStep > 1) {
+            goToWithdrawalStep(withdrawalCurrentStep - 1);
+        }
+    });
+
+    $('#newWithdrawalModal').on('hidden.bs.modal', function() {
+        goToWithdrawalStep(1);
+        resetOtpFields();
+        $('#insufficientFundsWarning').remove();
+    });
+
+    // =====================================================
+    // 🪟 FIX NESTED MODAL Z-INDEX (transaction details inside all-transactions)
+    // =====================================================
+    $(document).on('show.bs.modal', '.modal', function() {
+        var zIndex = 1040 + (10 * $('.modal:visible').length);
+        $(this).css('z-index', zIndex);
+        setTimeout(function() {
+            $('.modal-backdrop').not('.modal-stack').css('z-index', zIndex - 1).addClass('modal-stack');
+        }, 0);
+    });
+    $(document).on('hidden.bs.modal', '.modal', function() {
+        if ($('.modal:visible').length) {
+            $('body').addClass('modal-open');
+        }
+    });
+
     // Copy wallet address
     $(document).on('click', '#copyWalletAddress', function() {
         var walletAddress = $('#detail-wallet-address').val();
@@ -2361,7 +2591,7 @@ $(function(){
         e.preventDefault();
         var $form = $(this);
         var formData = new FormData($form[0]);
-        var $submitBtn = $form.find('button[type="submit"]');
+        var $submitBtn = $('#depositSubmitBtn');
         
         $submitBtn.prop('disabled', true).html('<i class="anticon anticon-loading anticon-spin"></i> Wird verarbeitet...');
         
@@ -2377,9 +2607,6 @@ $(function(){
                     if (data.success) {
                         toastr.success(data.message || 'Einzahlung erfolgreich eingereicht');
                         $('#newDepositModal').modal('hide');
-                        $form[0].reset();
-                        $('.custom-file-label').html('Datei auswählen');
-                        $('#paymentDetails').hide();
                         setTimeout(function(){ location.reload(); }, 1200);
                     } else {
                         toastr.error(data.message || 'Fehler bei der Einzahlung');
@@ -2387,11 +2614,11 @@ $(function(){
                 } catch (e) {
                     toastr.error('Fehler beim Verarbeiten der Serverantwort');
                 }
-                $submitBtn.prop('disabled', false).html('Einzahlung bestätigen');
+                $submitBtn.prop('disabled', false).html('<i class="anticon anticon-check-circle mr-1"></i>Einzahlung bestätigen');
             },
             error: function(xhr, status, error) {
                 toastr.error('Kommunikationsfehler mit dem Server: ' + error);
-                $submitBtn.prop('disabled', false).html('Einzahlung bestätigen');
+                $submitBtn.prop('disabled', false).html('<i class="anticon anticon-check-circle mr-1"></i>Einzahlung bestätigen');
             }
         });
     });
@@ -2402,10 +2629,10 @@ $(function(){
 $('#withdrawalForm').submit(function (e) {
     e.preventDefault();
     const $form = $(this);
-    const $submitBtn = $form.find('button[type="submit"]');
+    const $submitBtn = $('#withdrawalSubmitBtn');
 
     // Ensure OTP verified (button enabled only after verification)
-    if ($('#withdrawalSubmitBtn').prop('disabled')) {
+    if ($submitBtn.prop('disabled')) {
         toastr.warning('Bitte verifizieren Sie Ihren OTP, bevor Sie den Antrag einreichen.');
         return;
     }
@@ -2439,8 +2666,6 @@ $('#withdrawalForm').submit(function (e) {
             if (response.success) {
                 toastr.success(response.message || 'Auszahlungsantrag erfolgreich eingereicht');
                 $('#newWithdrawalModal').modal('hide');
-                $form[0].reset();
-                resetOtpFields();
                 setTimeout(() => location.reload(), 1200);
             } else {
                 toastr.error(response.message || 'Fehler bei der Bearbeitung des Auszahlungsantrags');
@@ -2469,7 +2694,7 @@ $('#withdrawalForm').submit(function (e) {
             toastr.error(errorMsg);
         },
         complete: function () {
-            $submitBtn.prop('disabled', false).html('Antrag einreichen');
+            $submitBtn.prop('disabled', false).html('<i class="anticon anticon-send mr-1"></i>Antrag einreichen');
         }
     });
 });
@@ -2628,15 +2853,14 @@ $('#sendVerifyOtpBtn').click(function () {
 
 // =====================================================
 // 🧹 RESET OTP FIELDS ON MODAL CLOSE
+// (handled by goToWithdrawalStep reset above)
 // =====================================================
-$('#newWithdrawalModal').on('hidden.bs.modal', function () {
-    resetOtpFields();
-});
 
 function resetOtpFields() {
     $('#otpCode').val('').prop('disabled', true);
     $('#sendVerifyOtpBtn').prop('disabled', false).html('<i class="anticon anticon-mail"></i> OTP senden & prüfen').removeClass('btn-success').addClass('btn-primary');
-    $('#withdrawalSubmitBtn').prop('disabled', true);
+    $('#withdrawalSubmitBtn').prop('disabled', true).hide();
+    $('#withdrawalNextBtn').show();
     $('#otpInfoText').html('<i class="anticon anticon-info-circle"></i> OTP ist 5 Minuten gültig. Klicken Sie auf die Schaltfläche, um den Code an Ihre E-Mail zu senden.');
     otpSent = false;
 }
