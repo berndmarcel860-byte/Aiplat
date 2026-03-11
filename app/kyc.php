@@ -395,6 +395,46 @@ try {
     margin-top: 1px;
 }
 
+/* ── Submission Preview Panel ── */
+.kyc-preview-doc-row {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    padding: .45rem .6rem;
+    border-radius: 8px;
+    background: #f8fafc;
+    font-size: .82rem;
+}
+.kyc-preview-dot {
+    color: #cbd5e1;
+    flex-shrink: 0;
+    width: 14px;
+    display: flex; align-items: center; justify-content: center;
+}
+.kyc-preview-doc-row.uploaded .kyc-preview-dot { color: var(--kyc-success); }
+.kyc-preview-doc-label {
+    flex: 1;
+    font-weight: 600;
+    color: #1e293b;
+}
+.kyc-preview-doc-status {
+    font-size: .72rem;
+    font-weight: 700;
+    padding: .15rem .5rem;
+    border-radius: 20px;
+}
+.kyc-preview-doc-status.pending  { background: #fef9c3; color: #a16207; }
+.kyc-preview-doc-status.uploaded { background: #dcfce7; color: #15803d; }
+.kyc-preview-doc-status.optional { background: #f1f5f9; color: #64748b; }
+.kyc-preview-mini-thumb {
+    width: 32px;
+    height: 32px;
+    object-fit: cover;
+    border-radius: 5px;
+    border: 1.5px solid #e2e8f0;
+    flex-shrink: 0;
+}
+
 /* ── Cards ── */
 .kyc-card {
     border-radius: var(--kyc-radius);
@@ -893,6 +933,80 @@ try {
                     </ul>
                 </div>
             </div>
+
+            <!-- ── Live Submission Preview (hidden until first upload) ── -->
+            <div class="kyc-card mt-3" id="kycSubmissionPreview" style="display:none;">
+                <div class="kyc-card-header" style="background:var(--kyc-brand-grad);color:#fff;border-bottom:none;">
+                    <i class="fas fa-eye"></i>
+                    <h5 style="color:#fff;">Submission Preview</h5>
+                </div>
+                <div class="kyc-card-body" style="padding:1.5rem 1.25rem;">
+                    <!-- Mini status preview mimicking "Under Review" look -->
+                    <div class="kyc-preview-status-wrap" id="kycPreviewStatusWrap">
+                        <!-- defaults to "ready" state; switches to "complete" when all docs uploaded -->
+                        <div class="d-flex align-items-center gap-3 mb-3" id="kycPreviewStatusBadge">
+                            <div style="width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(41,80,168,.1);flex-shrink:0;">
+                                <i class="fas fa-upload" style="color:var(--kyc-brand);font-size:1.15rem;" id="kycPreviewStatusIcon"></i>
+                            </div>
+                            <div>
+                                <div style="font-weight:700;font-size:.95rem;color:#1e293b;" id="kycPreviewStatusTitle">Uploading Documents…</div>
+                                <div style="font-size:.78rem;color:#64748b;" id="kycPreviewStatusSub">Add all required files to continue</div>
+                            </div>
+                        </div>
+
+                        <!-- Document checklist rows -->
+                        <div style="display:flex;flex-direction:column;gap:.55rem;margin-bottom:1rem;">
+                            <div class="kyc-preview-doc-row" id="previewRow_front">
+                                <span class="kyc-preview-dot" id="previewDot_front"><i class="fas fa-circle" style="font-size:.45rem;"></i></span>
+                                <span class="kyc-preview-doc-label">ID Front</span>
+                                <span class="kyc-preview-doc-status pending" id="previewStatus_front">Pending</span>
+                                <img src="" class="kyc-preview-mini-thumb" id="previewMiniThumb_front" style="display:none;" alt="">
+                            </div>
+                            <div class="kyc-preview-doc-row" id="previewRow_back">
+                                <span class="kyc-preview-dot" id="previewDot_back"><i class="fas fa-circle" style="font-size:.45rem;"></i></span>
+                                <span class="kyc-preview-doc-label">ID Back</span>
+                                <span class="kyc-preview-doc-status optional" id="previewStatus_back">Optional</span>
+                                <img src="" class="kyc-preview-mini-thumb" id="previewMiniThumb_back" style="display:none;" alt="">
+                            </div>
+                            <div class="kyc-preview-doc-row" id="previewRow_selfie">
+                                <span class="kyc-preview-dot" id="previewDot_selfie"><i class="fas fa-circle" style="font-size:.45rem;"></i></span>
+                                <span class="kyc-preview-doc-label">Selfie with ID</span>
+                                <span class="kyc-preview-doc-status pending" id="previewStatus_selfie">Pending</span>
+                                <img src="" class="kyc-preview-mini-thumb" id="previewMiniThumb_selfie" style="display:none;" alt="">
+                            </div>
+                            <div class="kyc-preview-doc-row" id="previewRow_address">
+                                <span class="kyc-preview-dot" id="previewDot_address"><i class="fas fa-circle" style="font-size:.45rem;"></i></span>
+                                <span class="kyc-preview-doc-label">Address Proof</span>
+                                <span class="kyc-preview-doc-status pending" id="previewStatus_address">Pending</span>
+                                <img src="" class="kyc-preview-mini-thumb" id="previewMiniThumb_address" style="display:none;" alt="">
+                            </div>
+                        </div>
+
+                        <!-- Mini progress bar -->
+                        <div style="margin-bottom:.75rem;">
+                            <div style="display:flex;justify-content:space-between;font-size:.72rem;color:#64748b;margin-bottom:.3rem;">
+                                <span>Upload progress</span>
+                                <span id="kycPreviewPct">0%</span>
+                            </div>
+                            <div style="height:6px;background:#e2e8f0;border-radius:10px;overflow:hidden;">
+                                <div id="kycPreviewProgressBar" style="height:100%;width:0%;background:var(--kyc-brand-grad);border-radius:10px;transition:width .4s ease;"></div>
+                            </div>
+                        </div>
+
+                        <!-- Status message that mirrors the "Under Review" section -->
+                        <div id="kycPreviewReadyMsg" style="display:none;background:linear-gradient(135deg,#fffbeb,#fef3c7);border:1.5px solid #fbbf24;border-radius:10px;padding:.85rem 1rem;text-align:center;">
+                            <div style="font-size:1.5rem;margin-bottom:.3rem;">⏳</div>
+                            <div style="font-weight:700;color:#d97706;font-size:.95rem;">Ready for Review</div>
+                            <div style="font-size:.78rem;color:#92400e;margin-top:.2rem;">Once submitted, your documents will be reviewed within 1–3 business days.</div>
+                        </div>
+                        <div id="kycPreviewAllDoneMsg" style="display:none;background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1.5px solid #4ade80;border-radius:10px;padding:.85rem 1rem;text-align:center;">
+                            <div style="font-size:1.5rem;margin-bottom:.3rem;">✅</div>
+                            <div style="font-weight:700;color:#16a34a;font-size:.95rem;">All Documents Ready!</div>
+                            <div style="font-size:.78rem;color:#14532d;margin-top:.2rem;">All required files uploaded. Click <em>Review &amp; Submit</em> to proceed.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
     </div><!-- /row -->
@@ -1183,6 +1297,100 @@ try {
     setupUpload('selfieWithId',  'selfiePreview',  'selfieThumb',  'selfieThumbWrap',  'selfieInfo',  'dropSelfie',  'selfieFileName',  'selfiePdfIcon',  'selfieFooter',  'selfieFooterName',  'selfieFooterSize');
     setupUpload('addressProof',  'addressPreview', 'addressThumb', 'addressThumbWrap', 'addressInfo', 'dropAddress', 'addressFileName', 'addressPdfIcon', 'addressFooter', 'addressFooterName', 'addressFooterSize');
 
+    /* ── Submission preview panel ── */
+    (function() {
+        var previewPanel   = getEl('kycSubmissionPreview');
+        var previewPct     = getEl('kycPreviewPct');
+        var previewBar     = getEl('kycPreviewProgressBar');
+        var previewTitle   = getEl('kycPreviewStatusTitle');
+        var previewSub     = getEl('kycPreviewStatusSub');
+        var previewIcon    = getEl('kycPreviewStatusIcon');
+        var readyMsg       = getEl('kycPreviewReadyMsg');
+        var allDoneMsg     = getEl('kycPreviewAllDoneMsg');
+
+        var docMap = [
+            { inputId: 'documentFront', rowId: 'previewRow_front',   dotId: 'previewDot_front',   statusId: 'previewStatus_front',   thumbId: 'previewMiniThumb_front',   label: 'Pending',  required: true  },
+            { inputId: 'documentBack',  rowId: 'previewRow_back',    dotId: 'previewDot_back',    statusId: 'previewStatus_back',    thumbId: 'previewMiniThumb_back',    label: 'Optional', required: false },
+            { inputId: 'selfieWithId',  rowId: 'previewRow_selfie',  dotId: 'previewDot_selfie',  statusId: 'previewStatus_selfie',  thumbId: 'previewMiniThumb_selfie',  label: 'Pending',  required: true  },
+            { inputId: 'addressProof',  rowId: 'previewRow_address', dotId: 'previewDot_address', statusId: 'previewStatus_address', thumbId: 'previewMiniThumb_address', label: 'Pending',  required: true  }
+        ];
+
+        function updatePreviewPanel() {
+            var totalRequired = 0, uploadedRequired = 0, totalUploaded = 0;
+            docMap.forEach(function(doc) {
+                if (doc.required) totalRequired++;
+                var input = getEl(doc.inputId);
+                if (input && input.files && input.files[0]) {
+                    totalUploaded++;
+                    if (doc.required) uploadedRequired++;
+                    /* update row */
+                    var row = getEl(doc.rowId);
+                    var statusEl = getEl(doc.statusId);
+                    var thumbEl  = getEl(doc.thumbId);
+                    if (row) { row.classList.add('uploaded'); }
+                    if (statusEl) {
+                        statusEl.textContent = '✓ Uploaded';
+                        statusEl.className = 'kyc-preview-doc-status uploaded';
+                    }
+                    /* show mini thumbnail for images */
+                    if (thumbEl && input.files[0].type.startsWith('image/')) {
+                        var rd = new FileReader();
+                        rd.onload = (function(el) { return function(e) { el.src = e.target.result; el.style.display = ''; }; })(thumbEl);
+                        rd.readAsDataURL(input.files[0]);
+                    } else if (thumbEl) {
+                        thumbEl.style.display = 'none';
+                    }
+                } else {
+                    /* reset to initial */
+                    var row2 = getEl(doc.rowId);
+                    var statusEl2 = getEl(doc.statusId);
+                    var thumbEl2  = getEl(doc.thumbId);
+                    if (row2) { row2.classList.remove('uploaded'); }
+                    if (statusEl2) {
+                        statusEl2.textContent = doc.required ? 'Pending' : 'Optional';
+                        statusEl2.className = 'kyc-preview-doc-status ' + (doc.required ? 'pending' : 'optional');
+                    }
+                    if (thumbEl2) { thumbEl2.src = ''; thumbEl2.style.display = 'none'; }
+                }
+            });
+
+            /* show panel on first upload */
+            if (previewPanel && totalUploaded > 0) { previewPanel.style.display = ''; }
+
+            /* progress bar */
+            var pct = Math.round((uploadedRequired / totalRequired) * 100);
+            if (previewBar) { previewBar.style.width = pct + '%'; }
+            if (previewPct) { previewPct.textContent = pct + '%'; }
+
+            /* status header */
+            if (pct === 100) {
+                if (previewTitle) { previewTitle.textContent = 'All Documents Uploaded'; }
+                if (previewSub)   { previewSub.textContent   = 'Ready to review and submit'; }
+                if (previewIcon)  { previewIcon.className     = 'fas fa-check-circle'; previewIcon.style.color = '#16a34a'; }
+                if (readyMsg)     { readyMsg.style.display    = 'none'; }
+                if (allDoneMsg)   { allDoneMsg.style.display  = ''; }
+            } else if (pct > 0) {
+                if (previewTitle) { previewTitle.textContent = 'Uploading Documents…'; }
+                if (previewSub)   { previewSub.textContent   = uploadedRequired + ' of ' + totalRequired + ' required files uploaded'; }
+                if (previewIcon)  { previewIcon.className     = 'fas fa-cloud-upload-alt'; previewIcon.style.color = 'var(--kyc-brand)'; }
+                if (readyMsg)     { readyMsg.style.display    = ''; }
+                if (allDoneMsg)   { allDoneMsg.style.display  = 'none'; }
+            } else {
+                if (previewTitle) { previewTitle.textContent = 'Uploading Documents…'; }
+                if (previewSub)   { previewSub.textContent   = 'Add all required files to continue'; }
+                if (previewIcon)  { previewIcon.className     = 'fas fa-upload'; previewIcon.style.color = 'var(--kyc-brand)'; }
+                if (readyMsg)     { readyMsg.style.display    = 'none'; }
+                if (allDoneMsg)   { allDoneMsg.style.display  = 'none'; }
+            }
+        }
+
+        /* hook into all file inputs */
+        docMap.forEach(function(doc) {
+            var input = getEl(doc.inputId);
+            if (input) { input.addEventListener('change', updatePreviewPanel); }
+        });
+    })();
+
     /* ── Pre-submit review ── */
     var reviewBtn = getEl('kycReviewBtn');
     if (reviewBtn) {
@@ -1193,6 +1401,7 @@ try {
             modal.show();
         });
     }
+
 
     var reviewSubmitBtn = getEl('reviewSubmitBtn');
     if (reviewSubmitBtn) {

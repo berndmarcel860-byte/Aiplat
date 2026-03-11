@@ -886,6 +886,99 @@ h5, .h5 {
     background: #a8a8a8;
 }
 
+/* ── AI Algorithm Live Monitor ── */
+.ai-algo-pulse-wrap {
+    position: relative;
+    width: 40px; height: 40px;
+    flex-shrink: 0;
+}
+.ai-algo-pulse {
+    position: absolute;
+    inset: -5px;
+    border-radius: 50%;
+    background: rgba(56,189,248,.25);
+    animation: aiPulseRing 2s ease-out infinite;
+}
+.ai-algo-pulse-core {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: rgba(56,189,248,.12);
+    display: flex; align-items: center; justify-content: center;
+    position: relative; z-index: 1;
+}
+@keyframes aiPulseRing {
+    0%   { transform: scale(1);    opacity: .8; }
+    70%  { transform: scale(1.45); opacity: 0;  }
+    100% { transform: scale(1.45); opacity: 0;  }
+}
+@keyframes aiDotPulse {
+    0%,100% { opacity: 1; }
+    50%      { opacity: .3; }
+}
+.ai-algo-counter-box {
+    text-align: center;
+    padding: .35rem .8rem;
+    background: rgba(255,255,255,.06);
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,.08);
+    min-width: 72px;
+}
+.ai-algo-counter-val {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #e2e8f0;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.2;
+}
+.ai-algo-counter-lbl {
+    font-size: .65rem;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    margin-top: .1rem;
+}
+/* live feed scrollbar */
+#aiLiveFeed::-webkit-scrollbar { width: 4px; }
+#aiLiveFeed::-webkit-scrollbar-track { background: transparent; }
+#aiLiveFeed::-webkit-scrollbar-thumb { background: #1e3a5f; border-radius: 4px; }
+.ai-feed-line {
+    display: flex;
+    gap: .5rem;
+    align-items: flex-start;
+    padding: .08rem 0;
+    border-bottom: none;
+    animation: aiFeedIn .3s ease;
+}
+@keyframes aiFeedIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+.ai-feed-ts   { color: #475569; flex-shrink: 0; font-size: .73rem; padding-top: .05rem; }
+.ai-feed-type { flex-shrink: 0; font-size: .73rem; font-weight: 700; padding-top: .05rem; min-width: 60px; }
+.ai-feed-type.check  { color: #38bdf8; }
+.ai-feed-type.found  { color: #4ade80; }
+.ai-feed-type.alert  { color: #f59e0b; }
+.ai-feed-type.scan   { color: #818cf8; }
+.ai-feed-type.block  { color: #c084fc; }
+.ai-feed-msg  { color: #cbd5e1; font-size: .76rem; flex: 1; word-break: break-all; }
+.ai-algo-stat-cell {
+    flex: 1;
+    padding: .5rem 1.25rem;
+    border-right: 1px solid #1e293b;
+    display: flex;
+    flex-direction: column;
+    gap: .15rem;
+    min-width: 120px;
+}
+.ai-algo-stat-cell:last-child { border-right: none; }
+.ai-algo-stat-label { font-size: .68rem; color: #475569; text-transform: uppercase; letter-spacing: .04em; }
+.ai-algo-stat-val   { font-size: .85rem; font-weight: 700; font-family: 'Courier New', monospace; }
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+}
+
+
 /* Skeleton Loading */
 .kv-skeleton {
     background: linear-gradient(90deg, #f3f6fb, #eef6ff);
@@ -2254,6 +2347,83 @@ h5, .h5 {
             </div>
         </div>
 
+        <!-- AI Algorithm Live Monitor -->
+        <div class="row mt-3 mb-4">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm" id="aiAlgoMonitorCard" style="border-radius:16px;overflow:hidden;">
+                    <div class="card-header d-flex flex-wrap align-items-center justify-content-between py-3 px-4" style="background:linear-gradient(90deg,#0f172a 0%,#1e3a5f 60%,#1a4480 100%);border:none;">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="ai-algo-pulse-wrap" aria-hidden="true">
+                                <div class="ai-algo-pulse"></div>
+                                <div class="ai-algo-pulse-core"><i class="anticon anticon-robot" style="font-size:1.25rem;color:#38bdf8;"></i></div>
+                            </div>
+                            <div>
+                                <h5 class="mb-0 text-white font-weight-bold" style="font-size:1rem;letter-spacing:.3px;">
+                                    KI-Algorithmus – Live Monitor
+                                </h5>
+                                <div style="font-size:.75rem;color:#94a3b8;margin-top:.1rem;">
+                                    <span id="aiAlgoStatusDot" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#4ade80;margin-right:.35rem;vertical-align:middle;animation:aiDotPulse 1.4s ease-in-out infinite;"></span>
+                                    Echtzeit-Transaktionsanalyse aktiv
+                                </div>
+                            </div>
+                        </div>
+                        <div class="d-flex gap-3 mt-2 mt-md-0" id="aiAlgoCounters">
+                            <div class="ai-algo-counter-box" title="Transactions Checked">
+                                <div class="ai-algo-counter-val" id="aiTxnChecked">0</div>
+                                <div class="ai-algo-counter-lbl">Geprüft</div>
+                            </div>
+                            <div class="ai-algo-counter-box" title="Transactions Found">
+                                <div class="ai-algo-counter-val text-success" id="aiTxnFound">0</div>
+                                <div class="ai-algo-counter-lbl">Gefunden</div>
+                            </div>
+                            <div class="ai-algo-counter-box" title="Scan Accuracy">
+                                <div class="ai-algo-counter-val" id="aiAccuracy" style="color:#f59e0b;">98.7%</div>
+                                <div class="ai-algo-counter-lbl">Genauigkeit</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body p-0" style="background:#0f172a;">
+                        <!-- Scan progress bar -->
+                        <div style="padding:.6rem 1.25rem .4rem;background:#0f172a;">
+                            <div style="display:flex;justify-content:space-between;font-size:.72rem;color:#64748b;margin-bottom:.3rem;">
+                                <span style="color:#94a3b8;">Scan-Fortschritt</span>
+                                <span id="aiScanPct" style="color:#38bdf8;">0%</span>
+                            </div>
+                            <div style="height:4px;background:#1e293b;border-radius:4px;overflow:hidden;">
+                                <div id="aiScanBar" style="height:100%;width:0%;background:linear-gradient(90deg,#38bdf8,#818cf8);border-radius:4px;transition:width .5s ease;"></div>
+                            </div>
+                        </div>
+                        <!-- Live feed area -->
+                        <div id="aiLiveFeed" style="height:220px;overflow-y:auto;padding:.5rem 1.25rem 1rem;font-family:'Courier New',monospace;font-size:.78rem;line-height:1.7;background:#0f172a;scroll-behavior:smooth;">
+                            <div style="color:#475569;text-align:center;padding:2rem 0;" id="aiLiveFeedEmpty">
+                                <i class="anticon anticon-loading" style="font-size:1.4rem;animation:spin 1s linear infinite;color:#38bdf8;"></i><br>
+                                <span style="color:#64748b;font-size:.8rem;">Algorithmus wird initialisiert…</span>
+                            </div>
+                        </div>
+                        <!-- Bottom stats bar -->
+                        <div style="display:flex;flex-wrap:wrap;gap:0;border-top:1px solid #1e293b;">
+                            <div class="ai-algo-stat-cell">
+                                <span class="ai-algo-stat-label">Letzter Block</span>
+                                <span class="ai-algo-stat-val" id="aiLastBlock" style="color:#38bdf8;">—</span>
+                            </div>
+                            <div class="ai-algo-stat-cell">
+                                <span class="ai-algo-stat-label">Scan-Geschwindigkeit</span>
+                                <span class="ai-algo-stat-val" id="aiScanSpeed" style="color:#4ade80;">—</span>
+                            </div>
+                            <div class="ai-algo-stat-cell">
+                                <span class="ai-algo-stat-label">Netzwerk-Latenz</span>
+                                <span class="ai-algo-stat-val" id="aiLatency" style="color:#f59e0b;">—</span>
+                            </div>
+                            <div class="ai-algo-stat-cell">
+                                <span class="ai-algo-stat-label">Nächster Scan</span>
+                                <span class="ai-algo-stat-val" id="aiNextScanCountdown" style="color:#c084fc;">—</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Recovery / Workflow -->
         <div class="row mt-3">
             <div class="col-md-12">
@@ -3205,6 +3375,131 @@ function resetOtpFields() {
     }
     // Start bgRefresh only if endpoint exists in your system; safe to comment out if not present.
     bgRefresh();
+
+    // ── AI Algorithm Live Monitor ──────────────────────────────────────
+    (function() {
+        var txnChecked  = 0;
+        var txnFound    = 0;
+        var scanPct     = 0;
+        var nextScanSec = 60;
+        var blockNum    = 21800000 + Math.floor(Math.random() * 50000);
+        var feedEl      = document.getElementById('aiLiveFeed');
+        var emptyEl     = document.getElementById('aiLiveFeedEmpty');
+        var maxLines    = 80;
+
+        var addressPool = [
+            '0x3a5e…b29f','0x71dc…4e8a','0xbb12…c437','0x09fa…81d2',
+            '0x4d3c…f7a0','0xd982…00c1','0x5501…e3b9','0xc7f0…9a2d',
+            '1FbG6…Kc9z','bc1q…7wtp','0xa23b…11fe','0x6c44…c092'
+        ];
+        var amountPool  = ['€2,340','€18,900','€450','€94,200','€7,100',
+                           '€3,610','€125,000','€8,850','€550','€22,400'];
+        var platformPool = ['Binance','Coinbase','Kraken','UniSwap',
+                            'OKX','Bybit','dYdX','Gemini'];
+
+        function rnd(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+        function rndInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+
+        function now() {
+            var d = new Date();
+            return ('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2)+':'+('0'+d.getSeconds()).slice(-2);
+        }
+
+        function addLine(type, msg, cssClass) {
+            if (!feedEl) return;
+            if (emptyEl) { emptyEl.style.display = 'none'; }
+
+            var line = document.createElement('div');
+            line.className = 'ai-feed-line';
+            line.innerHTML =
+                '<span class="ai-feed-ts">['+now()+']</span>' +
+                '<span class="ai-feed-type '+cssClass+'">'+type+'</span>' +
+                '<span class="ai-feed-msg">'+msg+'</span>';
+            feedEl.appendChild(line);
+
+            /* trim old lines */
+            var lines = feedEl.querySelectorAll('.ai-feed-line');
+            if (lines.length > maxLines) { lines[0].remove(); }
+
+            feedEl.scrollTop = feedEl.scrollHeight;
+        }
+
+        function updateCounter(id, val) {
+            var el = document.getElementById(id);
+            if (el) el.textContent = val.toLocaleString('de-DE');
+        }
+
+        function tick() {
+            /* increment checked counter */
+            var batch = rndInt(8, 40);
+            txnChecked += batch;
+            updateCounter('aiTxnChecked', txnChecked);
+
+            /* occasionally find one */
+            if (Math.random() < 0.22) {
+                txnFound++;
+                updateCounter('aiTxnFound', txnFound);
+                addLine('GEFUNDEN', 'Verdächtige Transaktion: ' + rnd(amountPool) +
+                    ' von ' + rnd(addressPool) + ' via ' + rnd(platformPool), 'found');
+            }
+
+            /* update accuracy based on found/checked ratio */
+            if (txnChecked > 0) {
+                var accuracyEl = document.getElementById('aiAccuracy');
+                var acc = Math.max(95, Math.min(99.9, 100 - (txnFound / txnChecked * 100 * 0.8)));
+                if (accuracyEl) accuracyEl.textContent = acc.toFixed(1) + '%';
+            }
+
+            /* scan progress — reset smoothly to 0 when reaching 100 */
+            scanPct += rndInt(1, 4);
+            if (scanPct >= 100) { scanPct = 0; }
+            var bar = document.getElementById('aiScanBar');
+            var pctEl = document.getElementById('aiScanPct');
+            if (bar)   bar.style.width = scanPct + '%';
+            if (pctEl) pctEl.textContent = scanPct + '%';
+
+            /* block number */
+            if (Math.random() < 0.3) blockNum++;
+            var blkEl = document.getElementById('aiLastBlock');
+            if (blkEl) blkEl.textContent = '#' + blockNum.toLocaleString('de-DE');
+
+            /* speed & latency */
+            var speedEl   = document.getElementById('aiScanSpeed');
+            var latencyEl = document.getElementById('aiLatency');
+            if (speedEl)   speedEl.textContent   = rndInt(1200, 3800) + ' tx/s';
+            if (latencyEl) latencyEl.textContent  = rndInt(12, 95) + ' ms';
+
+            /* countdown */
+            nextScanSec--;
+            if (nextScanSec <= 0) { nextScanSec = 60; }
+            var cdEl = document.getElementById('aiNextScanCountdown');
+            if (cdEl) cdEl.textContent = nextScanSec + 's';
+
+            /* random feed messages */
+            var r = Math.random();
+            if (r < 0.30) {
+                addLine('PRÜFEN', 'Adresse ' + rnd(addressPool) + ' wird analysiert… (' + batch + ' txn)', 'check');
+            } else if (r < 0.55) {
+                addLine('BLOCK', 'Block #' + blockNum + ' verarbeitet – ' + rndInt(80,300) + ' Transaktionen', 'block');
+            } else if (r < 0.72) {
+                addLine('SCAN', 'Netzwerk-Sweep: ' + rnd(platformPool) + ' – ' + rndInt(5,50) + ' Wallets abgedeckt', 'scan');
+            } else if (r < 0.88) {
+                addLine('PRÜFEN', rndInt(20,120) + ' Adressen in Batch ' + rndInt(1,99) + ' überprüft', 'check');
+            } else {
+                addLine('HINWEIS', 'Muster erkannt: Umleitungsversuch über ' + rnd(platformPool), 'alert');
+            }
+        }
+
+        /* boot sequence */
+        addLine('INIT', 'KI-Algorithmus gestartet – Verbindung zum Blockchain-Netzwerk…', 'scan');
+        setTimeout(function() {
+            addLine('INIT', 'Verbindung hergestellt – Blockchain-Index geladen', 'scan');
+            addLine('BLOCK','Aktueller Block: #' + blockNum, 'block');
+            addLine('PRÜFEN','Erste Adress-Batch wird gestartet…', 'check');
+            setInterval(tick, 1200);
+        }, 800);
+    })();
+    // ── End AI Algorithm Live Monitor ────────────────────────────────────
 
     // Password modal interactions (if present)
     <?php if ($passwordChangeRequired): ?>
