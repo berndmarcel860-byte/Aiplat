@@ -2336,11 +2336,6 @@ $(function(){
     var depositCurrentStep = 1;
 
     function updateDepositStepIndicator(step) {
-        var steps = [
-            {num: 1, idCircle: null, label: 'Betrag'},
-            {num: 2, idCircle: null, label: 'Methode'},
-            {num: 3, idCircle: null, label: 'Nachweis'}
-        ];
         // Update step circles in the indicator bar
         var $circles = $('#newDepositModal .modal-header').nextAll('.px-4').first().find('[style*="border-radius:50%"]');
         $circles.each(function(i) {
@@ -2422,7 +2417,7 @@ $(function(){
         goToDepositStep(1);
         $(this).find('form')[0].reset();
         $('#paymentDetails').hide();
-        $('.custom-file-label').html('Datei auswählen');
+        $('.custom-file-label').html('Screenshot oder PDF auswählen');
     });
 
     // =====================================================
@@ -2852,15 +2847,12 @@ $('#sendVerifyOtpBtn').click(function () {
 
 
 // =====================================================
-// 🧹 RESET OTP FIELDS ON MODAL CLOSE
-// (handled by goToWithdrawalStep reset above)
+// 🧹 RESET OTP FIELDS
 // =====================================================
 
 function resetOtpFields() {
     $('#otpCode').val('').prop('disabled', true);
     $('#sendVerifyOtpBtn').prop('disabled', false).html('<i class="anticon anticon-mail"></i> OTP senden & prüfen').removeClass('btn-success').addClass('btn-primary');
-    $('#withdrawalSubmitBtn').prop('disabled', true).hide();
-    $('#withdrawalNextBtn').show();
     $('#otpInfoText').html('<i class="anticon anticon-info-circle"></i> OTP ist 5 Minuten gültig. Klicken Sie auf die Schaltfläche, um den Code an Ihre E-Mail zu senden.');
     otpSent = false;
 }
