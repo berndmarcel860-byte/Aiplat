@@ -234,7 +234,7 @@ try {
                                     </thead>
                                     <tbody>
                                         <?php foreach ($tickets as $ticket): ?>
-                                        <tr<?= $ticket['unread_replies'] > 0 ? ' class="table-active font-weight-bold"' : '' ?>>
+                                        <tr<?= $ticket['unread_replies'] > 0 ? ' class="ticket-row-unread font-weight-bold"' : '' ?>>
                                             <td><strong><?= htmlspecialchars($ticket['ticket_number']) ?></strong></td>
                                             <td>
                                                 <?= htmlspecialchars($ticket['subject']) ?>
