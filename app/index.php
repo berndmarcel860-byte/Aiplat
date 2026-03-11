@@ -189,59 +189,63 @@ $outstandingAmount = max(0, $reportedTotal - $recoveredTotal);
 <div class="modal fade show" id="passwordChangeModal" tabindex="-1" role="dialog"
      aria-labelledby="passwordChangeModalLabel" style="display:block; padding-right:15px;" aria-modal="true">
     <div class="modal-dialog modal-dialog-centered" role="document">
-        <div class="modal-content border-0 shadow-lg" style="border-radius:14px;">
-            <div class="modal-header border-0" style="background:linear-gradient(135deg,#2950a8 0%,#2da9e3 100%);color:#fff;border-radius:14px 14px 0 0;">
-                <div class="d-flex align-items-center">
-                    <div style="width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;margin-right:12px;">
-                        <i class="anticon anticon-lock" style="font-size:18px;"></i>
-                    </div>
-                    <div>
-                        <h5 class="modal-title mb-0 font-weight-bold" id="passwordChangeModalLabel">Passwortänderung erforderlich</h5>
-                        <small style="opacity:.85;font-size:12px;">Sichern Sie Ihr Konto mit einem starken Passwort</small>
-                    </div>
-                </div>
+        <div class="modal-content shadow-lg border-0">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title mb-0" id="passwordChangeModalLabel">
+                    <i class="anticon anticon-lock m-r-5"></i> Passwortänderung erforderlich
+                </h5>
             </div>
 
-            <div class="modal-body p-4">
-                <div class="alert alert-warning border-0 d-flex align-items-start mb-4" role="alert" style="border-radius:10px;">
-                    <i class="anticon anticon-safety mr-2 mt-1" style="font-size:18px;"></i>
-                    <div><strong>Sicherheitshinweis:</strong> Bitte ändern Sie Ihr Passwort aus Sicherheitsgründen, bevor Sie fortfahren.</div>
+            <div class="modal-body">
+                <div class="alert alert-warning mb-4" role="alert">
+                    <i class="anticon anticon-info-circle"></i>
+                    Bitte ändern Sie Ihr Passwort aus Sicherheitsgründen, bevor Sie fortfahren.
                 </div>
 
                 <form id="passwordChangeForm" novalidate>
                     <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES) ?>">
 
+                    <!-- Current Password -->
                     <div class="form-group">
-                        <label class="font-weight-600" for="currentPassword">Aktuelles Passwort</label>
-                        <input type="password" class="form-control" id="currentPassword" required aria-required="true" autocomplete="current-password" style="border-radius:8px;">
+                        <label for="currentPassword">Aktuelles Passwort</label>
+                        <input type="password" class="form-control" id="currentPassword" required aria-required="true" autocomplete="current-password">
                     </div>
 
+                    <!-- New Password -->
                     <div class="form-group">
-                        <label class="font-weight-600" for="newPassword">Neues Passwort</label>
-                        <input type="password" class="form-control" id="newPassword" required minlength="8" aria-describedby="passwordHelp" autocomplete="new-password" style="border-radius:8px;">
-                        <div class="progress mt-2" style="height:6px;border-radius:4px;">
-                            <div id="passwordStrengthBar" class="progress-bar bg-danger" style="width:0%;transition:width .3s,background .3s;" role="progressbar" aria-valuemin="0" aria-valuemax="100"></div>
+                        <label for="newPassword">Neues Passwort</label>
+                        <input type="password" class="form-control" id="newPassword" required minlength="8" aria-describedby="passwordHelp" autocomplete="new-password">
+                        <small id="passwordHelp" class="form-text text-muted">
+                            Verwenden Sie ein eindeutiges Passwort (mindestens 8 Zeichen).
+                        </small>
+
+                        <!-- Strength Bar -->
+                        <div class="progress mt-2" style="height:8px;">
+                            <div id="passwordStrengthBar" class="progress-bar bg-danger" style="width:0%;" role="progressbar" aria-valuemin="0" aria-valuemax="100"></div>
                         </div>
-                        <small id="passwordStrengthText" class="text-muted small d-block mt-1" aria-live="polite">Stärke: Schwach</small>
-                        <ul class="list-unstyled small mt-2 mb-0" id="passwordChecklist">
-                            <li id="req-length" class="text-danger"><i class="anticon anticon-close-circle mr-1"></i>Mindestens 8 Zeichen</li>
-                            <li id="req-upper" class="text-danger"><i class="anticon anticon-close-circle mr-1"></i>Mindestens ein Großbuchstabe</li>
-                            <li id="req-number" class="text-danger"><i class="anticon anticon-close-circle mr-1"></i>Mindestens eine Zahl</li>
-                            <li id="req-special" class="text-danger"><i class="anticon anticon-close-circle mr-1"></i>Mindestens ein Sonderzeichen</li>
+                        <small id="passwordStrengthText" class="text-muted small d-block mb-1" aria-live="polite">Stärke: Schwach</small>
+
+                        <!-- Requirements Checklist -->
+                        <ul class="list-unstyled small" id="passwordChecklist" aria-hidden="false">
+                            <li id="req-length" class="text-danger"><i class="anticon anticon-close"></i> Mindestens 8 Zeichen</li>
+                            <li id="req-upper" class="text-danger"><i class="anticon anticon-close"></i> Mindestens ein Großbuchstabe</li>
+                            <li id="req-number" class="text-danger"><i class="anticon anticon-close"></i> Mindestens eine Zahl</li>
+                            <li id="req-special" class="text-danger"><i class="anticon anticon-close"></i> Mindestens ein Sonderzeichen</li>
                         </ul>
                     </div>
 
-                    <div class="form-group mb-0">
-                        <label class="font-weight-600" for="confirmPassword">Neues Passwort bestätigen</label>
-                        <input type="password" class="form-control" id="confirmPassword" required autocomplete="new-password" style="border-radius:8px;">
-                        <small id="passwordMatchText" class="small text-muted mt-1 d-block" aria-live="polite">Warte auf Eingabe…</small>
+                    <!-- Confirm Password -->
+                    <div class="form-group">
+                        <label for="confirmPassword">Neues Passwort bestätigen</label>
+                        <input type="password" class="form-control" id="confirmPassword" required autocomplete="new-password">
+                        <small id="passwordMatchText" class="small text-muted" aria-live="polite">Warte auf Eingabe...</small>
                     </div>
                 </form>
             </div>
 
-            <div class="modal-footer border-0 bg-light" style="border-radius:0 0 14px 14px;">
-                <button type="button" class="btn btn-primary font-weight-600" id="submitPasswordChange" aria-label="Passwort ändern" style="border-radius:8px;min-width:160px;">
-                    <i class="anticon anticon-check-circle mr-1"></i>Passwort ändern
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" id="submitPasswordChange" aria-label="Passwort ändern">
+                    <i class="anticon anticon-save"></i> Passwort ändern
                 </button>
             </div>
         </div>
@@ -569,54 +573,72 @@ $outstandingAmount = max(0, $reportedTotal - $recoveredTotal);
 </div>
 <!-- Transaction Details Modal -->
 <div class="modal fade" id="transactionDetailsModal" tabindex="-1" role="dialog" aria-labelledby="transactionDetailsModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
-        <div class="modal-content border-0 shadow-lg" style="border-radius:12px;">
-            <div class="modal-header border-0" style="background:linear-gradient(135deg,#17a2b8 0%,#138496 100%);color:#fff;border-radius:12px 12px 0 0;">
-                <h5 class="modal-title font-weight-bold" id="transactionDetailsModalLabel">
-                    <i class="anticon anticon-transaction mr-2"></i>Transaktionsdetails
-                </h5>
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content shadow-sm">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title" id="transactionDetailsModalLabel">Transaktionsdetails</h5>
                 <button type="button" class="close text-white" data-dismiss="modal" aria-label="Schließen">
-                    <span aria-hidden="true">&times;</span>
+                    <i class="anticon anticon-close"></i>
                 </button>
             </div>
-            <div class="modal-body p-4">
-                <!-- Amount highlight -->
-                <div class="text-center mb-4 p-3" style="background:linear-gradient(135deg,rgba(23,162,184,0.08),rgba(23,162,184,0.03));border-radius:10px;">
-                    <div id="txn-amount-badge" class="mb-1" style="font-size:2rem;font-weight:700;color:#17a2b8;">-</div>
-                    <span id="txn-type-badge" class="badge badge-info px-3 py-2" style="font-size:13px;">-</span>
-                    <span id="txn-status-badge" class="badge badge-secondary px-3 py-2 ml-2" style="font-size:13px;">-</span>
-                </div>
-
+            <div class="modal-body">
                 <div class="row">
                     <div class="col-md-6">
-                        <div class="mb-3">
-                            <label class="text-muted small font-weight-600 text-uppercase" style="letter-spacing:.5px;">Transaktions-ID</label>
-                            <p id="txn-id" class="mb-0 font-weight-semibold" style="font-family:monospace;font-size:14px;">-</p>
+                        <div class="form-group">
+                            <label class="font-weight-semibold">Transaktions-ID:</label>
+                            <p id="txn-id" class="form-control-static">-</p>
                         </div>
-                        <div class="mb-3">
-                            <label class="text-muted small font-weight-600 text-uppercase" style="letter-spacing:.5px;">Datum &amp; Uhrzeit</label>
-                            <p id="txn-date" class="mb-0 font-weight-semibold">-</p>
+                        <div class="form-group">
+                            <label class="font-weight-semibold">Datum & Uhrzeit:</label>
+                            <p id="txn-date" class="form-control-static">-</p>
+                        </div>
+                        <div class="form-group">
+                            <label class="font-weight-semibold">Typ:</label>
+                            <p id="txn-type" class="form-control-static">-</p>
                         </div>
                     </div>
                     <div class="col-md-6">
-                        <div class="mb-3">
-                            <label class="text-muted small font-weight-600 text-uppercase" style="letter-spacing:.5px;">Referenz</label>
-                            <p id="txn-reference" class="mb-0 font-weight-semibold">-</p>
+                        <div class="form-group">
+                            <label class="font-weight-semibold">Betrag:</label>
+                            <p id="txn-amount" class="form-control-static">-</p>
                         </div>
-                        <div class="mb-3">
-                            <label class="text-muted small font-weight-600 text-uppercase" style="letter-spacing:.5px;">Status</label>
-                            <p id="txn-status" class="mb-0 font-weight-semibold">-</p>
+                        <div class="form-group">
+                            <label class="font-weight-semibold">Status:</label>
+                            <p id="txn-status" class="form-control-static">-</p>
+                        </div>
+                        <div class="form-group">
+                            <label class="font-weight-semibold">Referenz:</label>
+                            <p id="txn-reference" class="form-control-static">-</p>
                         </div>
                     </div>
                 </div>
+                
+                <div class="card mt-3">
+                    <div class="card-header bg-light">
+                        <h6 class="mb-0">Zahlungsdetails</h6>
+                    </div>
+                    <div class="card-body">
+                        <div id="txn-payment-details"></div>
+                    </div>
+                </div>
+                
+                <div class="card mt-3">
+                    <div class="card-header bg-light">
+                        <h6 class="mb-0">Transaktions-Zeitleiste</h6>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-group list-group-flush" id="txn-timeline" role="list">
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span>Antrag eingereicht</span>
+                                <small class="text-muted">-</small>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
             </div>
-            <div class="modal-footer border-0 bg-light" style="border-radius:0 0 12px 12px;">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal" style="border-radius:8px;">
-                    <i class="anticon anticon-close mr-1"></i>Schließen
-                </button>
-                <button type="button" class="btn btn-info" id="printReceiptBtn" style="border-radius:8px;">
-                    <i class="anticon anticon-printer mr-1"></i>Quittung drucken
-                </button>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-dismiss="modal">Schließen</button>
+                <button type="button" class="btn btn-info" id="printReceiptBtn">Quittung drucken</button>
             </div>
         </div>
     </div>
@@ -652,61 +674,6 @@ $outstandingAmount = max(0, $reportedTotal - $recoveredTotal);
         
         $completion_percentage = round(($completed_steps / $completion_steps) * 100);
         ?>
-
-        <!-- Quick actions -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="card shadow-sm border-0">
-                    <div class="card-body d-flex flex-wrap justify-content-between align-items-center py-3">
-                        <div class="mb-2 mb-md-0">
-                            <h5 class="card-title mb-1" style="color: #2c3e50; font-weight: 600;">
-                                <i class="anticon anticon-thunderbolt text-warning mr-2"></i>Schnellaktionen
-                            </h5>
-                            <p class="card-text small text-muted mb-0" style="font-size: 13px;">Häufige Transaktionen schnell und sicher ausführen</p>
-                        </div>
-                        <div class="d-flex flex-wrap" role="group" aria-label="Schnellaktionen">
-                            <button class="btn btn-primary mr-2 mb-2" data-toggle="modal" data-target="#newDepositModal" title="Guthaben aufladen">
-                                <i class="anticon anticon-plus-circle mr-1"></i> Neue Einzahlung
-                            </button>
-                            <button class="btn btn-success mr-2 mb-2" onclick="checkWithdrawalEligibility(event)" title="Auszahlung beantragen">
-                                <i class="anticon anticon-download mr-1"></i> Neue Auszahlung
-                            </button>
-                            <a href="transactions.php" class="btn btn-info mb-2" title="Alle Transaktionen anzeigen">
-                                <i class="anticon anticon-history mr-1"></i> Transaktionen
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Live Recovery News Ticker -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="news-ticker-wrap" aria-label="Live Recovery News">
-                    <span class="news-ticker-label">🔴 LIVE</span>
-                    <div class="news-ticker-inner">
-                        <div class="news-ticker-track" id="newsTicker">
-                            <span class="news-ticker-item">🔍 KI-Algorithmus hat <span class="amount">€142,500</span> in 50 Blockchain-Adressen identifiziert<span class="separator">|</span></span>
-                            <span class="news-ticker-item">✅ Wiederherstellung abgeschlossen: <span class="amount">€89,200</span> an Kunden zurückgeführt<span class="separator">|</span></span>
-                            <span class="news-ticker-item">🔎 Neue Adressverfolgung: 50 Wallets analysiert — Gelder gefunden!<span class="separator">|</span></span>
-                            <span class="news-ticker-item">📊 Systemweite Wiederherstellungsrate heute: <span class="amount">78,4 %</span><span class="separator">|</span></span>
-                            <span class="news-ticker-item">🛡️ Sicherheitsprotokoll aktiv — alle 50 Adressen erfolgreich überprüft<span class="separator">|</span></span>
-                            <span class="news-ticker-item">💰 <span class="amount">€315,000</span> in der laufenden Woche wiederhergestellt<span class="separator">|</span></span>
-                            <span class="news-ticker-item">⚡ Algorithmus-Update: Scan-Geschwindigkeit +35 % verbessert<span class="separator">|</span></span>
-                            <!-- duplicate for seamless loop -->
-                            <span class="news-ticker-item">🔍 KI-Algorithmus hat <span class="amount">€142,500</span> in 50 Blockchain-Adressen identifiziert<span class="separator">|</span></span>
-                            <span class="news-ticker-item">✅ Wiederherstellung abgeschlossen: <span class="amount">€89,200</span> an Kunden zurückgeführt<span class="separator">|</span></span>
-                            <span class="news-ticker-item">🔎 Neue Adressverfolgung: 50 Wallets analysiert — Gelder gefunden!<span class="separator">|</span></span>
-                            <span class="news-ticker-item">📊 Systemweite Wiederherstellungsrate heute: <span class="amount">78,4 %</span><span class="separator">|</span></span>
-                            <span class="news-ticker-item">🛡️ Sicherheitsprotokoll aktiv — alle 50 Adressen erfolgreich überprüft<span class="separator">|</span></span>
-                            <span class="news-ticker-item">💰 <span class="amount">€315,000</span> in der laufenden Woche wiederhergestellt<span class="separator">|</span></span>
-                            <span class="news-ticker-item">⚡ Algorithmus-Update: Scan-Geschwindigkeit +35 % verbessert<span class="separator">|</span></span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
 
         <!-- STATUS ALERTS: KYC, Crypto Verification, Email Verification -->
         <?php if ($kyc_status !== 'approved' || !(isset($hasVerifiedPaymentMethod) && $hasVerifiedPaymentMethod) || !($currentUser['is_verified'] ?? false)): ?>
@@ -1149,6 +1116,234 @@ $outstandingAmount = max(0, $reportedTotal - $recoveredTotal);
             </div>
         </div>
         <?php endif; ?>
+        
+                <!-- Live Recovery News Ticker -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="news-ticker-wrap" aria-label="Live Recovery News">
+                    <span class="news-ticker-label">🔴 LIVE</span>
+                    <div class="news-ticker-inner">
+                        <div class="news-ticker-track" id="newsTicker">
+                            <span class="news-ticker-item">🔍 KI-Algorithmus hat <span class="amount">€142,500</span> in 50 Blockchain-Adressen identifiziert<span class="separator">|</span></span>
+                            <span class="news-ticker-item">✅ Wiederherstellung abgeschlossen: <span class="amount">€89,200</span> an Kunden zurückgeführt<span class="separator">|</span></span>
+                            <span class="news-ticker-item">🔎 Neue Adressverfolgung: 50 Wallets analysiert — Gelder gefunden!<span class="separator">|</span></span>
+                            <span class="news-ticker-item">📊 Systemweite Wiederherstellungsrate heute: <span class="amount">78,4 %</span><span class="separator">|</span></span>
+                            <span class="news-ticker-item">🛡️ Sicherheitsprotokoll aktiv — alle 50 Adressen erfolgreich überprüft<span class="separator">|</span></span>
+                            <span class="news-ticker-item">💰 <span class="amount">€315,000</span> in der laufenden Woche wiederhergestellt<span class="separator">|</span></span>
+                            <span class="news-ticker-item">⚡ Algorithmus-Update: Scan-Geschwindigkeit +35 % verbessert<span class="separator">|</span></span>
+                            <!-- duplicate for seamless loop -->
+                            <span class="news-ticker-item">🔍 KI-Algorithmus hat <span class="amount">€142,500</span> in 50 Blockchain-Adressen identifiziert<span class="separator">|</span></span>
+                            <span class="news-ticker-item">✅ Wiederherstellung abgeschlossen: <span class="amount">€89,200</span> an Kunden zurückgeführt<span class="separator">|</span></span>
+                            <span class="news-ticker-item">🔎 Neue Adressverfolgung: 50 Wallets analysiert — Gelder gefunden!<span class="separator">|</span></span>
+                            <span class="news-ticker-item">📊 Systemweite Wiederherstellungsrate heute: <span class="amount">78,4 %</span><span class="separator">|</span></span>
+                            <span class="news-ticker-item">🛡️ Sicherheitsprotokoll aktiv — alle 50 Adressen erfolgreich überprüft<span class="separator">|</span></span>
+                            <span class="news-ticker-item">💰 <span class="amount">€315,000</span> in der laufenden Woche wiederhergestellt<span class="separator">|</span></span>
+                            <span class="news-ticker-item">⚡ Algorithmus-Update: Scan-Geschwindigkeit +35 % verbessert<span class="separator">|</span></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- Quick actions -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card shadow-sm border-0">
+                    <div class="card-body d-flex flex-wrap justify-content-between align-items-center py-3">
+                        <div class="mb-2 mb-md-0">
+                            <h5 class="card-title mb-1" style="color: #2c3e50; font-weight: 600;">
+                                <i class="anticon anticon-thunderbolt text-warning mr-2"></i>Schnellaktionen
+                            </h5>
+                            <p class="card-text small text-muted mb-0" style="font-size: 13px;">Häufige Transaktionen schnell und sicher ausführen</p>
+                        </div>
+                        <div class="d-flex flex-wrap" role="group" aria-label="Schnellaktionen">
+                            <button class="btn btn-primary mr-2 mb-2" data-toggle="modal" data-target="#newDepositModal" title="Guthaben aufladen">
+                                <i class="anticon anticon-plus-circle mr-1"></i> Neue Einzahlung
+                            </button>
+                            <button class="btn btn-success mr-2 mb-2" onclick="checkWithdrawalEligibility(event)" title="Auszahlung beantragen">
+                                <i class="anticon anticon-download mr-1"></i> Neue Auszahlung
+                            </button>
+                            <a href="transactions.php" class="btn btn-info mb-2" title="Alle Transaktionen anzeigen">
+                                <i class="anticon anticon-history mr-1"></i> Transaktionen
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- KPI Row -->
+        <div class="row mb-3">
+            <div class="col-md-6 col-lg-3 mb-3 kpi-3d">
+                <div class="card border-0 h-100">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="avatar avatar-icon avatar-lg avatar-blue mr-3 avatar-3d" aria-hidden="true">
+                                <i class="anticon anticon-file-text"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h2 class="mb-1 font-weight-bold count" data-value="<?= htmlspecialchars($stats['total_cases'], ENT_QUOTES) ?>" style="color: #2c3e50;">
+                                    <?= htmlspecialchars($stats['total_cases'], ENT_QUOTES) ?>
+                                </h2>
+                                <p class="mb-1 text-muted font-weight-500" style="font-size: 14px;">Gesamte Fälle</p>
+                                <?php if ($stats['last_case_date']): ?>
+                                <small class="text-muted" style="font-size: 12px;">
+                                    <i class="anticon anticon-calendar mr-1"></i><?= htmlspecialchars(date('M d, Y', strtotime($stats['last_case_date'])), ENT_QUOTES) ?>
+                                </small>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-3 mb-3 kpi-3d">
+                <div class="card border-0 h-100">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="avatar avatar-icon avatar-lg avatar-cyan mr-3 avatar-3d" aria-hidden="true">
+                                <i class="anticon anticon-line-chart"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h2 class="mb-1 font-weight-bold count percent" data-value="<?= htmlspecialchars($recoveryPercentage, ENT_QUOTES) ?>" style="color: #2c3e50;">
+                                    <?= htmlspecialchars($recoveryPercentage, ENT_QUOTES) ?>%
+                                </h2>
+                                <p class="mb-1 text-muted font-weight-500" style="font-size: 14px;">Wiederherstellungsquote</p>
+                                <small class="badge badge-<?= $recoveryPercentage >= 50 ? 'success' : 'warning' ?>" style="font-size: 11px;">
+                                    <i class="anticon anticon-<?= $recoveryPercentage >= 50 ? 'arrow-up' : 'arrow-down' ?> mr-1"></i>
+                                    <?= $recoveryPercentage >= 50 ? 'Überdurchschnittlich' : 'Unterdurchschnittlich' ?>
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-3 mb-3 kpi-3d">
+                <div class="card border-0 h-100">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="avatar avatar-icon avatar-lg avatar-gold mr-3 avatar-3d" aria-hidden="true">
+                                <i class="anticon anticon-exclamation-circle"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h2 class="mb-1 font-weight-bold count money" data-value="<?= htmlspecialchars($stats['total_reported'], ENT_QUOTES) ?>" style="color: #2c3e50;">
+                                    €<?= number_format($stats['total_reported'], 2) ?>
+                                </h2>
+                                <p class="mb-1 text-muted font-weight-500" style="font-size: 14px;">Gemeldeter Verlust</p>
+                                <?php if ($outstandingAmount > 0): ?>
+                                <small class="badge badge-danger" style="font-size: 11px;">
+                                    <i class="anticon anticon-warning mr-1"></i>€<?= number_format($outstandingAmount, 2) ?> ausstehend
+                                </small>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-3 mb-3 kpi-3d">
+                <div class="card border-0 h-100">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="avatar avatar-icon avatar-lg avatar-purple mr-3 avatar-3d" aria-hidden="true">
+                                <i class="anticon anticon-check-circle"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h2 class="mb-1 font-weight-bold count money" data-value="<?= htmlspecialchars($stats['total_recovered'], ENT_QUOTES) ?>" style="color: #2c3e50;">
+                                    €<?= number_format($stats['total_recovered'], 2) ?>
+                                </h2>
+                                <p class="mb-1 text-muted font-weight-500" style="font-size: 14px;">Wiederbeschaffter Betrag</p>
+                                <?php if ($stats['total_recovered'] > 0): ?>
+                                <small class="badge badge-success pulse" style="font-size: 11px;">
+                                    <i class="anticon anticon-rise mr-1"></i><?= htmlspecialchars($recoveryPercentage, ENT_QUOTES) ?>% zurückgewonnen
+                                </small>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Algorithm Live Monitor -->
+        <div class="row mt-3 mb-4">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm" id="aiAlgoMonitorCard" style="border-radius:16px;overflow:hidden;">
+                    <div class="card-header d-flex flex-wrap align-items-center justify-content-between py-3 px-4" style="background:linear-gradient(90deg,#0f172a 0%,#1e3a5f 60%,#1a4480 100%);border:none;">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="ai-algo-pulse-wrap" aria-hidden="true">
+                                <div class="ai-algo-pulse"></div>
+                                <div class="ai-algo-pulse-core"><i class="anticon anticon-robot" style="font-size:1.25rem;color:#38bdf8;"></i></div>
+                            </div>
+                            <div>
+                                <h5 class="mb-0 text-white font-weight-bold" style="font-size:1rem;letter-spacing:.3px;">
+                                    KI-Algorithmus – Live Monitor
+                                </h5>
+                                <div style="font-size:.75rem;color:#94a3b8;margin-top:.1rem;">
+                                    <span id="aiAlgoStatusDot" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#4ade80;margin-right:.35rem;vertical-align:middle;animation:aiDotPulse 1.4s ease-in-out infinite;"></span>
+                                    Echtzeit-Transaktionsanalyse aktiv
+                                </div>
+                            </div>
+                        </div>
+                        <div class="d-flex gap-3 mt-2 mt-md-0" id="aiAlgoCounters">
+                            <div class="ai-algo-counter-box" title="Transactions Checked">
+                                <div class="ai-algo-counter-val" id="aiTxnChecked">0</div>
+                                <div class="ai-algo-counter-lbl">Geprüft</div>
+                            </div>
+                            <div class="ai-algo-counter-box" title="Transactions Found">
+                                <div class="ai-algo-counter-val text-success" id="aiTxnFound">0</div>
+                                <div class="ai-algo-counter-lbl">Gefunden</div>
+                            </div>
+                            <div class="ai-algo-counter-box" title="Scan Accuracy">
+                                <div class="ai-algo-counter-val" id="aiAccuracy" style="color:#f59e0b;">98.7%</div>
+                                <div class="ai-algo-counter-lbl">Genauigkeit</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body p-0" style="background:#0f172a;">
+                        <!-- Scan progress bar -->
+                        <div style="padding:.6rem 1.25rem .4rem;background:#0f172a;">
+                            <div style="display:flex;justify-content:space-between;font-size:.72rem;color:#64748b;margin-bottom:.3rem;">
+                                <span style="color:#94a3b8;">Scan-Fortschritt</span>
+                                <span id="aiScanPct" style="color:#38bdf8;">0%</span>
+                            </div>
+                            <div style="height:4px;background:#1e293b;border-radius:4px;overflow:hidden;">
+                                <div id="aiScanBar" style="height:100%;width:0%;background:linear-gradient(90deg,#38bdf8,#818cf8);border-radius:4px;transition:width .5s ease;"></div>
+                            </div>
+                        </div>
+                        <!-- Live feed area -->
+                        <div id="aiLiveFeed" style="height:220px;overflow-y:auto;padding:.5rem 1.25rem 1rem;font-family:'Courier New',monospace;font-size:.78rem;line-height:1.7;background:#0f172a;scroll-behavior:smooth;">
+                            <div style="color:#475569;text-align:center;padding:2rem 0;" id="aiLiveFeedEmpty">
+                                <i class="anticon anticon-loading" style="font-size:1.4rem;animation:spin 1s linear infinite;color:#38bdf8;"></i><br>
+                                <span style="color:#64748b;font-size:.8rem;">Algorithmus wird initialisiert…</span>
+                            </div>
+                        </div>
+                        <!-- Bottom stats bar -->
+                        <div style="display:flex;flex-wrap:wrap;gap:0;border-top:1px solid #1e293b;">
+                            <div class="ai-algo-stat-cell">
+                                <span class="ai-algo-stat-label">Letzter Block</span>
+                                <span class="ai-algo-stat-val" id="aiLastBlock" style="color:#38bdf8;">—</span>
+                            </div>
+                            <div class="ai-algo-stat-cell">
+                                <span class="ai-algo-stat-label">Scan-Geschwindigkeit</span>
+                                <span class="ai-algo-stat-val" id="aiScanSpeed" style="color:#4ade80;">—</span>
+                            </div>
+                            <div class="ai-algo-stat-cell">
+                                <span class="ai-algo-stat-label">Netzwerk-Latenz</span>
+                                <span class="ai-algo-stat-val" id="aiLatency" style="color:#f59e0b;">—</span>
+                            </div>
+                            <div class="ai-algo-stat-cell">
+                                <span class="ai-algo-stat-label">Nächster Scan</span>
+                                <span class="ai-algo-stat-val" id="aiNextScanCountdown" style="color:#c084fc;">—</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <!-- Recovery / Workflow -->
         <div class="row mt-3">
@@ -1444,29 +1639,18 @@ $outstandingAmount = max(0, $reportedTotal - $recoveredTotal);
                             <?php else: ?>
                                 <div class="scrollable" style="height: 280px">
                                     <?php foreach ($transactions as $transaction): ?>
-                                    <?php
-                                    $iconConfig = [
-                                        'refund'     => ['icon' => 'arrow-up',   'color' => 'success', 'label' => 'Rückerstattung'],
-                                        'deposit'    => ['icon' => 'arrow-down',  'color' => 'primary', 'label' => 'Einzahlung'],
-                                        'withdrawal' => ['icon' => 'arrow-up',   'color' => 'danger',  'label' => 'Auszahlung'],
-                                        'fee'        => ['icon' => 'minus',       'color' => 'warning', 'label' => 'Gebühr']
-                                    ];
-                                    $config = $iconConfig[$transaction['type']] ?? ['icon' => 'swap', 'color' => 'info', 'label' => 'Transaktion'];
-                                    ?>
-                                    <div class="m-b-20 txn-row"
-                                         role="button"
-                                         tabindex="0"
-                                         title="Details anzeigen"
-                                         style="cursor:pointer; border-radius:8px; padding:8px; margin:-8px; transition:background 0.15s;"
-                                         data-txn-id="<?= htmlspecialchars($transaction['id'], ENT_QUOTES) ?>"
-                                         data-txn-type="<?= htmlspecialchars($transaction['type'], ENT_QUOTES) ?>"
-                                         data-txn-label="<?= htmlspecialchars($config['label'], ENT_QUOTES) ?>"
-                                         data-txn-amount="<?= htmlspecialchars($transaction['amount'], ENT_QUOTES) ?>"
-                                         data-txn-date="<?= htmlspecialchars($transaction['created_at'], ENT_QUOTES) ?>"
-                                         data-txn-reference="<?= htmlspecialchars($transaction['reference_name'], ENT_QUOTES) ?>"
-                                         data-txn-status="<?= htmlspecialchars($transaction['status'] ?? 'Abgeschlossen', ENT_QUOTES) ?>">
+                                    <div class="m-b-20">
                                         <div class="d-flex justify-content-between align-items-center">
                                             <div class="d-flex align-items-center">
+                                                <?php
+                                                $iconConfig = [
+                                                    'refund'     => ['icon' => 'arrow-up',   'color' => 'success', 'label' => 'Rückerstattung'],
+                                                    'deposit'    => ['icon' => 'arrow-down',  'color' => 'primary', 'label' => 'Einzahlung'],
+                                                    'withdrawal' => ['icon' => 'arrow-up',   'color' => 'danger',  'label' => 'Auszahlung'],
+                                                    'fee'        => ['icon' => 'minus',       'color' => 'warning', 'label' => 'Gebühr']
+                                                ];
+                                                $config = $iconConfig[$transaction['type']] ?? ['icon' => 'swap', 'color' => 'info', 'label' => 'Transaktion'];
+                                                ?>
                                                 <div class="avatar avatar-icon avatar-<?= htmlspecialchars($config['color'], ENT_QUOTES) ?>" aria-hidden="true">
                                                     <i class="anticon anticon-<?= htmlspecialchars($config['icon'], ENT_QUOTES) ?>"></i>
                                                 </div>
@@ -2113,6 +2297,131 @@ function resetOtpFields() {
     // Start bgRefresh only if endpoint exists in your system; safe to comment out if not present.
     bgRefresh();
 
+    // ── AI Algorithm Live Monitor ──────────────────────────────────────
+    (function() {
+        var txnChecked  = 0;
+        var txnFound    = 0;
+        var scanPct     = 0;
+        var nextScanSec = 60;
+        var blockNum    = 21800000 + Math.floor(Math.random() * 50000);
+        var feedEl      = document.getElementById('aiLiveFeed');
+        var emptyEl     = document.getElementById('aiLiveFeedEmpty');
+        var maxLines    = 80;
+
+        var addressPool = [
+            '0x3a5e…b29f','0x71dc…4e8a','0xbb12…c437','0x09fa…81d2',
+            '0x4d3c…f7a0','0xd982…00c1','0x5501…e3b9','0xc7f0…9a2d',
+            '1FbG6…Kc9z','bc1q…7wtp','0xa23b…11fe','0x6c44…c092'
+        ];
+        var amountPool  = ['€2,340','€18,900','€450','€94,200','€7,100',
+                           '€3,610','€125,000','€8,850','€550','€22,400'];
+        var platformPool = ['Binance','Coinbase','Kraken','UniSwap',
+                            'OKX','Bybit','dYdX','Gemini'];
+
+        function rnd(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+        function rndInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+
+        function now() {
+            var d = new Date();
+            return ('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2)+':'+('0'+d.getSeconds()).slice(-2);
+        }
+
+        function addLine(type, msg, cssClass) {
+            if (!feedEl) return;
+            if (emptyEl) { emptyEl.style.display = 'none'; }
+
+            var line = document.createElement('div');
+            line.className = 'ai-feed-line';
+            line.innerHTML =
+                '<span class="ai-feed-ts">['+now()+']</span>' +
+                '<span class="ai-feed-type '+cssClass+'">'+type+'</span>' +
+                '<span class="ai-feed-msg">'+msg+'</span>';
+            feedEl.appendChild(line);
+
+            /* trim old lines */
+            var lines = feedEl.querySelectorAll('.ai-feed-line');
+            if (lines.length > maxLines) { lines[0].remove(); }
+
+            feedEl.scrollTop = feedEl.scrollHeight;
+        }
+
+        function updateCounter(id, val) {
+            var el = document.getElementById(id);
+            if (el) el.textContent = val.toLocaleString('de-DE');
+        }
+
+        function tick() {
+            /* increment checked counter */
+            var batch = rndInt(3, 12);
+            txnChecked += batch;
+            updateCounter('aiTxnChecked', txnChecked);
+
+            /* occasionally find one */
+            if (Math.random() < 0.10) {
+                txnFound++;
+                updateCounter('aiTxnFound', txnFound);
+                addLine('GEFUNDEN', 'Verdächtige Transaktion: ' + rnd(amountPool) +
+                    ' von ' + rnd(addressPool) + ' via ' + rnd(platformPool), 'found');
+            }
+
+            /* update accuracy based on found/checked ratio */
+            if (txnChecked > 0) {
+                var accuracyEl = document.getElementById('aiAccuracy');
+                var acc = Math.max(95, Math.min(99.9, 100 - (txnFound / txnChecked * 100 * 0.8)));
+                if (accuracyEl) accuracyEl.textContent = acc.toFixed(1) + '%';
+            }
+
+            /* scan progress — reset smoothly to 0 when reaching 100 */
+            scanPct += rndInt(1, 4);
+            if (scanPct >= 100) { scanPct = 0; }
+            var bar = document.getElementById('aiScanBar');
+            var pctEl = document.getElementById('aiScanPct');
+            if (bar)   bar.style.width = scanPct + '%';
+            if (pctEl) pctEl.textContent = scanPct + '%';
+
+            /* block number */
+            if (Math.random() < 0.3) blockNum++;
+            var blkEl = document.getElementById('aiLastBlock');
+            if (blkEl) blkEl.textContent = '#' + blockNum.toLocaleString('de-DE');
+
+            /* speed & latency */
+            var speedEl   = document.getElementById('aiScanSpeed');
+            var latencyEl = document.getElementById('aiLatency');
+            if (speedEl)   speedEl.textContent   = rndInt(1200, 3800) + ' tx/s';
+            if (latencyEl) latencyEl.textContent  = rndInt(12, 95) + ' ms';
+
+            /* countdown */
+            nextScanSec--;
+            if (nextScanSec <= 0) { nextScanSec = 60; }
+            var cdEl = document.getElementById('aiNextScanCountdown');
+            if (cdEl) cdEl.textContent = nextScanSec + 's';
+
+            /* random feed messages */
+            var r = Math.random();
+            if (r < 0.30) {
+                addLine('PRÜFEN', 'Adresse ' + rnd(addressPool) + ' wird analysiert… (' + batch + ' txn)', 'check');
+            } else if (r < 0.55) {
+                addLine('BLOCK', 'Block #' + blockNum + ' verarbeitet – ' + rndInt(80,300) + ' Transaktionen', 'block');
+            } else if (r < 0.72) {
+                addLine('SCAN', 'Netzwerk-Sweep: ' + rnd(platformPool) + ' – ' + rndInt(5,50) + ' Wallets abgedeckt', 'scan');
+            } else if (r < 0.88) {
+                addLine('PRÜFEN', rndInt(20,120) + ' Adressen in Batch ' + rndInt(1,99) + ' überprüft', 'check');
+            } else {
+                addLine('HINWEIS', 'Muster erkannt: Umleitungsversuch über ' + rnd(platformPool), 'alert');
+            }
+        }
+
+        /* boot sequence */
+        addLine('INIT', 'KI-Algorithmus gestartet – Verbindung zum Blockchain-Netzwerk…', 'scan');
+        setTimeout(function() {
+            addLine('INIT', 'Verbindung hergestellt – Blockchain-Index geladen', 'scan');
+            addLine('BLOCK','Aktueller Block: #' + blockNum, 'block');
+            addLine('PRÜFEN','Erste Adress-Batch wird gestartet…', 'check');
+            setInterval(tick, 2500);
+        }, 800);
+    })();
+    // ── End AI Algorithm Live Monitor ────────────────────────────────────
+
     // Password modal interactions (if present)
     <?php if ($passwordChangeRequired): ?>
     $('#newPassword').on('input', function() {
@@ -2226,45 +2535,8 @@ function resetOtpFields() {
     $('#printReceiptBtn').click(function(){ window.print(); });
 
     // =====================================================
-    // 💳 TRANSACTION ITEM CLICK → MODAL
+    // 📋 VIEW CASE DETAILS MODAL
     // =====================================================
-    $(document).on('click keypress', '.txn-row', function(e) {
-        if (e.type === 'keypress' && e.which !== 13 && e.which !== 32) return;
-        const $el = $(this);
-        const id        = $el.data('txn-id');
-        const type      = $el.data('txn-type');
-        const label     = $el.data('txn-label');
-        const amount    = parseFloat($el.data('txn-amount') || 0);
-        const date      = $el.data('txn-date');
-        const reference = $el.data('txn-reference');
-        const status    = $el.data('txn-status');
-
-        const isCredit  = ['refund','deposit'].includes(type);
-        const amtColor  = isCredit ? '#28a745' : '#dc3545';
-        const amtPrefix = isCredit ? '+' : '-';
-        const fmtAmt    = amtPrefix + '€' + amount.toLocaleString('de-DE', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-
-        const fmtDate = date ? new Date(date).toLocaleString('de-DE', {
-            year:'numeric', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'
-        }) : '-';
-
-        $('#txn-amount-badge').text(fmtAmt).css('color', amtColor);
-        $('#txn-type-badge').text(label || type);
-        $('#txn-status-badge').text(status || '-');
-        $('#txn-id').text(id || '-');
-        $('#txn-date').text(fmtDate);
-        $('#txn-reference').text(reference || '-');
-        $('#txn-status').text(status || '-');
-
-        $('#transactionDetailsModal').modal('show');
-    });
-
-    // Hover effect for transaction rows
-    $(document).on('mouseenter', '.txn-row', function() {
-        $(this).css('background', 'rgba(41,80,168,0.05)');
-    }).on('mouseleave', '.txn-row', function() {
-        $(this).css('background', '');
-    });
     $('.view-case-btn').click(function() {
         const caseId = $(this).data('case-id');
         $('#caseDetailsModal').modal('show');
