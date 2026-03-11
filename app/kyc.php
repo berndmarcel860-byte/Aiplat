@@ -88,17 +88,6 @@ try {
 .kyc-status-card.approved { background: linear-gradient(135deg,#f0fdf4,#dcfce7); border: 2px solid #4ade80; }
 .kyc-status-card.rejected { background: linear-gradient(135deg,#fff1f2,#ffe4e6); border: 2px solid #f87171; }
 
-.kyc-status-icon {
-    width: 80px; height: 80px;
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 2.2rem;
-    margin: 0 auto 1.2rem;
-}
-.pending  .kyc-status-icon { background: rgba(251,191,36,.2);  color: #d97706; }
-.approved .kyc-status-icon { background: rgba(74,222,128,.2);  color: #16a34a; }
-.rejected .kyc-status-icon { background: rgba(248,113,113,.2); color: #dc2626; }
-
 .kyc-status-card h3 { font-size: 1.4rem; font-weight: 700; margin-bottom: .6rem; }
 .kyc-status-card .subtitle { font-size: .95rem; opacity: .8; margin-bottom: 1.5rem; }
 
@@ -147,6 +136,11 @@ try {
     transition: border-color .25s, background .25s, box-shadow .25s;
     cursor: pointer;
     position: relative;
+    min-height: 160px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
 }
 .kyc-upload-card:hover,
 .kyc-upload-card.dragover {
@@ -158,6 +152,9 @@ try {
     border-style: solid;
     border-color: var(--kyc-brand);
     background: #f0f7ff;
+    padding: 0;
+    overflow: hidden;
+    justify-content: flex-start;
 }
 .kyc-upload-card input[type="file"] {
     position: absolute;
@@ -168,6 +165,7 @@ try {
     height: 100%;
     z-index: 2;
 }
+.kyc-upload-card.has-file input[type="file"] { z-index: 0; }
 .kyc-upload-icon {
     width: 52px; height: 52px;
     border-radius: 12px;
@@ -183,39 +181,94 @@ try {
 .kyc-file-preview {
     display: none;
     position: relative;
-    margin-top: .9rem;
+    width: 100%;
+}
+.kyc-file-thumb-wrap {
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+    border-radius: calc(var(--kyc-radius) - 2px);
 }
 .kyc-file-thumb {
-    width: 100%; max-height: 130px;
+    width: 100%;
+    height: 160px;
     object-fit: cover;
-    border-radius: 8px;
-    cursor: pointer;
-    border: 1px solid #e5e7eb;
+    display: block;
+    border-radius: calc(var(--kyc-radius) - 2px);
+    transition: transform .3s;
 }
+.kyc-file-thumb-wrap:hover .kyc-file-thumb { transform: scale(1.04); }
+.kyc-thumb-zoom-hint {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,.35);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0;
+    transition: opacity .2s;
+    border-radius: calc(var(--kyc-radius) - 2px);
+    pointer-events: none;
+    flex-direction: column;
+    gap: .3rem;
+    color: #fff;
+    font-size: .82rem;
+    font-weight: 600;
+}
+.kyc-thumb-zoom-hint i { font-size: 1.4rem; }
+.kyc-file-thumb-wrap:hover .kyc-thumb-zoom-hint { opacity: 1; }
+
+.kyc-file-footer {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: .5rem .75rem;
+    background: rgba(41,80,168,.06);
+    gap: .5rem;
+    border-top: 1px solid rgba(41,80,168,.12);
+}
+.kyc-file-footer-name {
+    font-size: .76rem; font-weight: 600; color: #1e293b;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    flex: 1;
+    text-align: left;
+}
+.kyc-file-footer-size {
+    font-size: .72rem; color: #64748b; white-space: nowrap;
+}
+.kyc-file-check {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: var(--kyc-success);
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: .68rem;
+    flex-shrink: 0;
+}
+
 .kyc-file-info {
     display: flex; align-items: center; gap: .6rem;
-    padding: .6rem .8rem;
+    padding: .75rem;
     background: #f1f5f9;
     border-radius: 8px;
     font-size: .82rem;
     text-align: left;
+    width: 100%;
 }
-.kyc-file-pdf-icon { font-size: 1.8rem; color: #dc2626; flex-shrink: 0; }
+.kyc-file-pdf-icon { font-size: 2rem; color: #dc2626; flex-shrink: 0; }
 .kyc-remove-btn {
     position: absolute;
-    top: -8px; right: -8px;
-    width: 26px; height: 26px;
+    top: 6px; right: 6px;
+    width: 28px; height: 28px;
     border-radius: 50%;
-    background: #dc2626;
+    background: rgba(220,38,38,.85);
+    backdrop-filter: blur(4px);
     color: #fff;
     border: none;
     font-size: .75rem;
     display: flex; align-items: center; justify-content: center;
     cursor: pointer;
     z-index: 10;
-    transition: background .2s;
+    transition: background .2s, transform .15s;
+    box-shadow: 0 2px 6px rgba(0,0,0,.25);
 }
-.kyc-remove-btn:hover { background: #b91c1c; }
+.kyc-remove-btn:hover { background: #b91c1c; transform: scale(1.12); }
 
 /* ── Select document type ── */
 .kyc-doc-type-grid {
@@ -226,33 +279,66 @@ try {
 }
 .kyc-doc-type-btn {
     border: 2px solid #e5e7eb;
-    border-radius: 10px;
-    padding: .85rem .7rem;
+    border-radius: 12px;
+    padding: 1rem;
     text-align: center;
     cursor: pointer;
     background: #fff;
-    transition: border-color .2s, background .2s, box-shadow .2s;
+    transition: border-color .2s, background .2s, box-shadow .2s, transform .15s;
     position: relative;
 }
-.kyc-doc-type-btn:hover { border-color: var(--kyc-brand); background: #eff6ff; }
+.kyc-doc-type-btn:hover { border-color: var(--kyc-brand); background: #eff6ff; transform: translateY(-2px); }
 .kyc-doc-type-btn.selected {
     border-color: var(--kyc-brand);
     background: #eff6ff;
     box-shadow: 0 0 0 3px rgba(41,80,168,.12);
+    transform: translateY(-2px);
 }
 .kyc-doc-type-btn .check-mark {
     display: none;
-    position: absolute; top: 6px; right: 6px;
-    width: 20px; height: 20px;
+    position: absolute; top: 7px; right: 7px;
+    width: 22px; height: 22px;
     background: var(--kyc-brand);
     border-radius: 50%;
     color: #fff;
     font-size: .65rem;
     align-items: center; justify-content: center;
+    box-shadow: 0 2px 6px rgba(41,80,168,.3);
 }
 .kyc-doc-type-btn.selected .check-mark { display: flex; }
-.kyc-doc-type-emoji { font-size: 1.6rem; display: block; margin-bottom: .25rem; }
-.kyc-doc-type-label { font-size: .8rem; font-weight: 600; color: #1e293b; }
+.kyc-doc-type-emoji { font-size: 1.8rem; display: block; margin-bottom: .3rem; }
+.kyc-doc-type-label { font-size: .82rem; font-weight: 700; color: #1e293b; margin-bottom: .15rem; }
+.kyc-doc-type-desc  { font-size: .71rem; color: #64748b; line-height: 1.3; }
+
+/* ── Pending pulse animation ── */
+@keyframes kyc-pulse-ring {
+    0%   { transform: scale(1);   opacity: .7; }
+    70%  { transform: scale(1.35); opacity: 0; }
+    100% { transform: scale(1.35); opacity: 0; }
+}
+.kyc-status-icon-wrap {
+    position: relative;
+    width: 80px; height: 80px;
+    margin: 0 auto 1.2rem;
+}
+.kyc-status-icon-wrap .kyc-pulse-ring {
+    position: absolute;
+    inset: -6px;
+    border-radius: 50%;
+    border: 3px solid #d97706;
+    animation: kyc-pulse-ring 2s ease-out infinite;
+    pointer-events: none;
+}
+.kyc-status-icon {
+    width: 100%; height: 100%;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2.2rem;
+    position: relative; z-index: 1;
+}
+.pending  .kyc-status-icon { background: rgba(251,191,36,.2);  color: #d97706; }
+.approved .kyc-status-icon { background: rgba(74,222,128,.2);  color: #16a34a; }
+.rejected .kyc-status-icon { background: rgba(248,113,113,.2); color: #dc2626; }
 
 /* ── Review modal ── */
 .kyc-review-doc-grid {
@@ -448,9 +534,12 @@ try {
     <!-- ── Status display ── -->
     <?php if ($hasPendingKyc): ?>
         <div class="kyc-status-card pending">
-            <div class="kyc-status-icon"><i class="fas fa-clock"></i></div>
-            <h3 style="color:#d97706;">Under Review</h3>
-            <p class="subtitle">Your KYC documents have been submitted and are being reviewed by our team.</p>
+            <div class="kyc-status-icon-wrap">
+                <div class="kyc-pulse-ring"></div>
+                <div class="kyc-status-icon"><i class="fas fa-clock"></i></div>
+            </div>
+            <h3 style="color:#d97706;">&#x23F3; Under Review</h3>
+            <p class="subtitle">Your KYC documents have been submitted and are being carefully reviewed by our compliance team.</p>
             <div class="kyc-progress-steps">
                 <div class="kyc-progress-step done">
                     <div class="kyc-ps-bubble"><i class="fas fa-check"></i></div>
@@ -465,20 +554,28 @@ try {
                     <small>Approved</small>
                 </div>
             </div>
-            <div class="d-inline-flex align-items-center gap-2 px-4 py-2 rounded-3" style="background:rgba(217,119,6,.1);font-size:.88rem;">
-                <i class="fas fa-calendar-alt" style="color:#d97706;"></i>
-                <strong>Submitted:</strong>&nbsp;<?= htmlspecialchars(date('F j, Y \a\t g:i A', strtotime($latestKyc['created_at']))) ?>
+            <div class="d-flex flex-wrap justify-content-center gap-3 mt-3">
+                <div class="d-inline-flex align-items-center gap-2 px-4 py-2 rounded-3" style="background:rgba(217,119,6,.1);font-size:.88rem;">
+                    <i class="fas fa-calendar-alt" style="color:#d97706;"></i>
+                    <span><strong>Submitted:</strong>&nbsp;<?= htmlspecialchars(date('F j, Y \a\t g:i A', strtotime($latestKyc['created_at']))) ?></span>
+                </div>
+                <div class="d-inline-flex align-items-center gap-2 px-4 py-2 rounded-3" style="background:rgba(217,119,6,.08);font-size:.88rem;">
+                    <i class="fas fa-hourglass-half" style="color:#d97706;"></i>
+                    <span>Est. <strong>1–3 business days</strong></span>
+                </div>
             </div>
-            <div class="mt-3 text-muted" style="font-size:.85rem;">
-                <i class="fas fa-info-circle me-1"></i> Typical processing time: <strong>1–3 business days</strong>
+            <div class="mt-3 text-muted" style="font-size:.82rem;">
+                <i class="fas fa-lock me-1" style="color:#16a34a;"></i> Your data is encrypted and handled securely.
             </div>
         </div>
 
     <?php elseif (!empty($kycRequests) && $latestKyc['status'] === 'approved'): ?>
         <div class="kyc-status-card approved">
-            <div class="kyc-status-icon"><i class="fas fa-check-circle"></i></div>
-            <h3 style="color:#16a34a;">Verification Complete &#10003;</h3>
-            <p class="subtitle">Congratulations! Your identity has been successfully verified.</p>
+            <div class="kyc-status-icon-wrap">
+                <div class="kyc-status-icon"><i class="fas fa-check-circle"></i></div>
+            </div>
+            <h3 style="color:#16a34a;">&#x2705; Verification Complete</h3>
+            <p class="subtitle">Congratulations! Your identity has been successfully verified. You now have full access to all platform features.</p>
             <div class="kyc-progress-steps">
                 <div class="kyc-progress-step done">
                     <div class="kyc-ps-bubble"><i class="fas fa-check"></i></div>
@@ -493,25 +590,37 @@ try {
                     <small>Approved</small>
                 </div>
             </div>
-            <div class="d-inline-flex align-items-center gap-2 px-4 py-2 rounded-3" style="background:rgba(22,163,74,.1);font-size:.88rem;">
-                <i class="fas fa-calendar-check" style="color:#16a34a;"></i>
-                <strong>Approved:</strong>&nbsp;<?= htmlspecialchars(date('F j, Y \a\t g:i A', strtotime($latestKyc['verified_at']))) ?>
+            <div class="d-flex flex-wrap justify-content-center gap-3 mt-3">
+                <div class="d-inline-flex align-items-center gap-2 px-4 py-2 rounded-3" style="background:rgba(22,163,74,.12);font-size:.88rem;">
+                    <i class="fas fa-calendar-check" style="color:#16a34a;"></i>
+                    <span><strong>Approved:</strong>&nbsp;<?= htmlspecialchars(date('F j, Y \a\t g:i A', strtotime($latestKyc['verified_at']))) ?></span>
+                </div>
+                <div class="d-inline-flex align-items-center gap-2 px-4 py-2 rounded-3" style="background:rgba(22,163,74,.08);font-size:.88rem;">
+                    <i class="fas fa-shield-alt" style="color:#16a34a;"></i>
+                    <span>KYC <strong>Verified &amp; Active</strong></span>
+                </div>
             </div>
         </div>
 
     <?php elseif (!empty($kycRequests) && $latestKyc['status'] === 'rejected'): ?>
         <div class="kyc-status-card rejected">
-            <div class="kyc-status-icon"><i class="fas fa-times-circle"></i></div>
-            <h3 style="color:#dc2626;">Verification Rejected</h3>
-            <p class="subtitle">Your submission was not approved. Please review the reason below and resubmit.</p>
+            <div class="kyc-status-icon-wrap">
+                <div class="kyc-status-icon"><i class="fas fa-times-circle"></i></div>
+            </div>
+            <h3 style="color:#dc2626;">&#x274C; Verification Not Approved</h3>
+            <p class="subtitle">Your submission could not be approved. Please review the reason below, correct the issue, and resubmit your documents.</p>
             <?php if (!empty($latestKyc['rejection_reason'])): ?>
-            <div class="d-inline-flex align-items-center gap-2 px-4 py-2 rounded-3 mb-2" style="background:rgba(220,38,38,.1);font-size:.88rem;max-width:100%;text-align:left;">
-                <i class="fas fa-exclamation-triangle" style="color:#dc2626;flex-shrink:0;"></i>
-                <div><strong>Reason:</strong> <?= htmlspecialchars($latestKyc['rejection_reason']) ?></div>
+            <div class="d-flex align-items-start gap-3 px-4 py-3 rounded-3 mb-3 mx-auto text-start" style="background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.2);max-width:520px;">
+                <i class="fas fa-exclamation-triangle mt-1" style="color:#dc2626;flex-shrink:0;font-size:1.1rem;"></i>
+                <div>
+                    <div style="font-size:.78rem;font-weight:700;color:#dc2626;text-transform:uppercase;letter-spacing:.04em;margin-bottom:.3rem;">Rejection Reason</div>
+                    <div style="font-size:.9rem;color:#374151;"><?= htmlspecialchars($latestKyc['rejection_reason']) ?></div>
+                </div>
             </div>
             <?php endif; ?>
-            <div class="mt-2 text-muted" style="font-size:.85rem;">
-                Please correct the issue and submit new documents using the form below.
+            <div class="d-inline-flex align-items-center gap-2 px-4 py-2 rounded-3" style="background:rgba(220,38,38,.08);font-size:.85rem;">
+                <i class="fas fa-redo" style="color:#dc2626;"></i>
+                <span>Correct the issue and <strong>resubmit below</strong></span>
             </div>
         </div>
     <?php endif; ?>
@@ -556,24 +665,28 @@ try {
                                     <div class="check-mark"><i class="fas fa-check"></i></div>
                                     <span class="kyc-doc-type-emoji">&#x1F6C2;</span>
                                     <div class="kyc-doc-type-label">Passport</div>
+                                    <div class="kyc-doc-type-desc">International travel document (front page only)</div>
                                 </label>
                                 <label class="kyc-doc-type-btn" id="dtBtn-id_card">
                                     <input type="radio" name="document_type" value="id_card" style="display:none;">
                                     <div class="check-mark"><i class="fas fa-check"></i></div>
                                     <span class="kyc-doc-type-emoji">&#x1F194;</span>
                                     <div class="kyc-doc-type-label">National ID Card</div>
+                                    <div class="kyc-doc-type-desc">Government-issued national identity card (front &amp; back)</div>
                                 </label>
                                 <label class="kyc-doc-type-btn" id="dtBtn-driving_license">
                                     <input type="radio" name="document_type" value="driving_license" style="display:none;">
                                     <div class="check-mark"><i class="fas fa-check"></i></div>
                                     <span class="kyc-doc-type-emoji">&#x1F697;</span>
                                     <div class="kyc-doc-type-label">Driver's License</div>
+                                    <div class="kyc-doc-type-desc">Valid driver's license with photo (front &amp; back)</div>
                                 </label>
                                 <label class="kyc-doc-type-btn" id="dtBtn-other">
                                     <input type="radio" name="document_type" value="other" style="display:none;">
                                     <div class="check-mark"><i class="fas fa-check"></i></div>
                                     <span class="kyc-doc-type-emoji">&#x1F4C4;</span>
                                     <div class="kyc-doc-type-label">Other Gov. ID</div>
+                                    <div class="kyc-doc-type-desc">Any other government-issued photo ID</div>
                                 </label>
                             </div>
                         </div>
@@ -594,12 +707,20 @@ try {
                                         <h6>Document Front <span class="text-danger">*</span></h6>
                                         <small>JPG, PNG or PDF &bull; max 10 MB</small>
                                         <div class="kyc-file-preview" id="frontPreview">
-                                            <img class="kyc-file-thumb" id="frontThumb" alt="preview" style="display:none;">
-                                            <div class="kyc-file-info" id="frontInfo" style="display:none;">
-                                                <i class="fas fa-file-pdf kyc-file-pdf-icon" id="frontPdfIcon" style="display:none;"></i>
-                                                <div id="frontFileName" style="word-break:break-all;"></div>
+                                            <div class="kyc-file-thumb-wrap" id="frontThumbWrap" style="display:none;">
+                                                <img class="kyc-file-thumb" id="frontThumb" alt="preview">
+                                                <div class="kyc-thumb-zoom-hint"><i class="fas fa-search-plus"></i>Click to zoom</div>
                                             </div>
-                                            <button type="button" class="kyc-remove-btn" aria-label="Remove file" onclick="clearUpload('documentFront','frontPreview','frontThumb','frontInfo','dropFront','frontFileName','frontPdfIcon')">&#x2715;</button>
+                                            <div class="kyc-file-info" id="frontInfo" style="display:none;">
+                                                <i class="fas fa-file-pdf kyc-file-pdf-icon" id="frontPdfIcon"></i>
+                                                <div id="frontFileName" style="word-break:break-all;flex:1;"></div>
+                                            </div>
+                                            <div class="kyc-file-footer" id="frontFooter" style="display:none;">
+                                                <span class="kyc-file-check"><i class="fas fa-check"></i></span>
+                                                <span class="kyc-file-footer-name" id="frontFooterName"></span>
+                                                <span class="kyc-file-footer-size" id="frontFooterSize"></span>
+                                            </div>
+                                            <button type="button" class="kyc-remove-btn" aria-label="Remove file" onclick="clearUpload('documentFront','frontPreview','frontThumb','frontThumbWrap','frontInfo','dropFront','frontFileName','frontPdfIcon','frontFooter','frontFooterName','frontFooterSize')">&#x2715;</button>
                                         </div>
                                     </div>
                                 </div>
@@ -612,12 +733,20 @@ try {
                                         <h6>Document Back</h6>
                                         <small>JPG, PNG or PDF &bull; max 10 MB</small>
                                         <div class="kyc-file-preview" id="backPreview">
-                                            <img class="kyc-file-thumb" id="backThumb" alt="preview" style="display:none;">
-                                            <div class="kyc-file-info" id="backInfo" style="display:none;">
-                                                <i class="fas fa-file-pdf kyc-file-pdf-icon" id="backPdfIcon" style="display:none;"></i>
-                                                <div id="backFileName" style="word-break:break-all;"></div>
+                                            <div class="kyc-file-thumb-wrap" id="backThumbWrap" style="display:none;">
+                                                <img class="kyc-file-thumb" id="backThumb" alt="preview">
+                                                <div class="kyc-thumb-zoom-hint"><i class="fas fa-search-plus"></i>Click to zoom</div>
                                             </div>
-                                            <button type="button" class="kyc-remove-btn" aria-label="Remove file" onclick="clearUpload('documentBack','backPreview','backThumb','backInfo','dropBack','backFileName','backPdfIcon')">&#x2715;</button>
+                                            <div class="kyc-file-info" id="backInfo" style="display:none;">
+                                                <i class="fas fa-file-pdf kyc-file-pdf-icon" id="backPdfIcon"></i>
+                                                <div id="backFileName" style="word-break:break-all;flex:1;"></div>
+                                            </div>
+                                            <div class="kyc-file-footer" id="backFooter" style="display:none;">
+                                                <span class="kyc-file-check"><i class="fas fa-check"></i></span>
+                                                <span class="kyc-file-footer-name" id="backFooterName"></span>
+                                                <span class="kyc-file-footer-size" id="backFooterSize"></span>
+                                            </div>
+                                            <button type="button" class="kyc-remove-btn" aria-label="Remove file" onclick="clearUpload('documentBack','backPreview','backThumb','backThumbWrap','backInfo','dropBack','backFileName','backPdfIcon','backFooter','backFooterName','backFooterSize')">&#x2715;</button>
                                         </div>
                                     </div>
                                 </div>
@@ -630,12 +759,20 @@ try {
                                         <h6>Selfie with Document <span class="text-danger">*</span></h6>
                                         <small>JPG or PNG &bull; max 10 MB</small>
                                         <div class="kyc-file-preview" id="selfiePreview">
-                                            <img class="kyc-file-thumb" id="selfieThumb" alt="preview" style="display:none;">
-                                            <div class="kyc-file-info" id="selfieInfo" style="display:none;">
-                                                <i class="fas fa-file-pdf kyc-file-pdf-icon" id="selfiePdfIcon" style="display:none;"></i>
-                                                <div id="selfieFileName" style="word-break:break-all;"></div>
+                                            <div class="kyc-file-thumb-wrap" id="selfieThumbWrap" style="display:none;">
+                                                <img class="kyc-file-thumb" id="selfieThumb" alt="preview">
+                                                <div class="kyc-thumb-zoom-hint"><i class="fas fa-search-plus"></i>Click to zoom</div>
                                             </div>
-                                            <button type="button" class="kyc-remove-btn" aria-label="Remove file" onclick="clearUpload('selfieWithId','selfiePreview','selfieThumb','selfieInfo','dropSelfie','selfieFileName','selfiePdfIcon')">&#x2715;</button>
+                                            <div class="kyc-file-info" id="selfieInfo" style="display:none;">
+                                                <i class="fas fa-file-pdf kyc-file-pdf-icon" id="selfiePdfIcon"></i>
+                                                <div id="selfieFileName" style="word-break:break-all;flex:1;"></div>
+                                            </div>
+                                            <div class="kyc-file-footer" id="selfieFooter" style="display:none;">
+                                                <span class="kyc-file-check"><i class="fas fa-check"></i></span>
+                                                <span class="kyc-file-footer-name" id="selfieFooterName"></span>
+                                                <span class="kyc-file-footer-size" id="selfieFooterSize"></span>
+                                            </div>
+                                            <button type="button" class="kyc-remove-btn" aria-label="Remove file" onclick="clearUpload('selfieWithId','selfiePreview','selfieThumb','selfieThumbWrap','selfieInfo','dropSelfie','selfieFileName','selfiePdfIcon','selfieFooter','selfieFooterName','selfieFooterSize')">&#x2715;</button>
                                         </div>
                                     </div>
                                 </div>
@@ -648,17 +785,25 @@ try {
                                         <h6>Proof of Address <span class="text-danger">*</span></h6>
                                         <small>JPG, PNG or PDF &bull; max 10 MB</small>
                                         <div class="kyc-file-preview" id="addressPreview">
-                                            <img class="kyc-file-thumb" id="addressThumb" alt="preview" style="display:none;">
-                                            <div class="kyc-file-info" id="addressInfo" style="display:none;">
-                                                <i class="fas fa-file-pdf kyc-file-pdf-icon" id="addressPdfIcon" style="display:none;"></i>
-                                                <div id="addressFileName" style="word-break:break-all;"></div>
+                                            <div class="kyc-file-thumb-wrap" id="addressThumbWrap" style="display:none;">
+                                                <img class="kyc-file-thumb" id="addressThumb" alt="preview">
+                                                <div class="kyc-thumb-zoom-hint"><i class="fas fa-search-plus"></i>Click to zoom</div>
                                             </div>
-                                            <button type="button" class="kyc-remove-btn" aria-label="Remove file" onclick="clearUpload('addressProof','addressPreview','addressThumb','addressInfo','dropAddress','addressFileName','addressPdfIcon')">&#x2715;</button>
+                                            <div class="kyc-file-info" id="addressInfo" style="display:none;">
+                                                <i class="fas fa-file-pdf kyc-file-pdf-icon" id="addressPdfIcon"></i>
+                                                <div id="addressFileName" style="word-break:break-all;flex:1;"></div>
+                                            </div>
+                                            <div class="kyc-file-footer" id="addressFooter" style="display:none;">
+                                                <span class="kyc-file-check"><i class="fas fa-check"></i></span>
+                                                <span class="kyc-file-footer-name" id="addressFooterName"></span>
+                                                <span class="kyc-file-footer-size" id="addressFooterSize"></span>
+                                            </div>
+                                            <button type="button" class="kyc-remove-btn" aria-label="Remove file" onclick="clearUpload('addressProof','addressPreview','addressThumb','addressThumbWrap','addressInfo','dropAddress','addressFileName','addressPdfIcon','addressFooter','addressFooterName','addressFooterSize')">&#x2715;</button>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
+                            </div><!-- /row g-3 -->
+                        </div><!-- /mb-4 Step 2 -->
 
                         <!-- Step 3: Review & Submit -->
                         <div class="mb-3">
@@ -896,6 +1041,7 @@ try {
     function getEl(id) { return document.getElementById(id); }
     function showEl(id) { var el = getEl(id); if (el) el.style.display = ''; }
     function hideEl(id) { var el = getEl(id); if (el) el.style.display = 'none'; }
+    function formatMB(bytes) { return (bytes / 1024 / 1024).toFixed(2) + ' MB'; }
 
     function showMsg(msg, type) {
         var el = getEl('kycMsg');
@@ -949,7 +1095,7 @@ try {
     });
 
     /* ── Shared file-upload handler ── */
-    function setupUpload(inputId, previewId, thumbId, infoId, dropId, fileNameId, pdfIconId) {
+    function setupUpload(inputId, previewId, thumbId, thumbWrapId, infoId, dropId, fileNameId, pdfIconId, footerId, footerNameId, footerSizeId) {
         var input    = getEl(inputId);
         var dropZone = getEl(dropId);
         if (!input || !dropZone) return;
@@ -961,29 +1107,52 @@ try {
                 input.value = '';
                 return;
             }
-            var preview  = getEl(previewId);
-            var thumb    = getEl(thumbId);
-            var info     = getEl(infoId);
-            var pdfIcon  = getEl(pdfIconId);
-            var fileName = getEl(fileNameId);
+            var preview   = getEl(previewId);
+            var thumb     = getEl(thumbId);
+            var thumbWrap = getEl(thumbWrapId);
+            var info      = getEl(infoId);
+            var pdfIcon   = getEl(pdfIconId);
+            var fileName  = getEl(fileNameId);
+            var footer    = getEl(footerId);
+            var footerName = getEl(footerNameId);
+            var footerSize = getEl(footerSizeId);
+
+            var sizeMB = formatMB(file.size);
 
             if (file.type.startsWith('image/')) {
                 var reader = new FileReader();
                 reader.onload = function(e) {
-                    if (thumb) { thumb.src = e.target.result; thumb.style.display = ''; }
-                    if (info)  { info.style.display  = 'none'; }
-                    if (pdfIcon) pdfIcon.style.display = 'none';
+                    if (thumb) { thumb.src = e.target.result; }
+                    if (thumbWrap) { thumbWrap.style.display = ''; }
+                    if (info)    { info.style.display  = 'none'; }
+                    /* Clicking the thumb zooms it */
+                    if (thumbWrap) {
+                        thumbWrap.style.cursor = 'pointer';
+                        thumbWrap.onclick = function() { zoomImage(thumb.src); };
+                    }
                 };
                 reader.readAsDataURL(file);
             } else {
-                if (thumb)   thumb.style.display = 'none';
-                if (pdfIcon) pdfIcon.style.display = '';
-                if (fileName) fileName.textContent = file.name + ' (' + (file.size / 1024 / 1024).toFixed(2) + ' MB)';
-                if (info)    info.style.display = 'flex';
+                if (thumbWrap) thumbWrap.style.display = 'none';
+                if (pdfIcon)  pdfIcon.style.display = '';
+                if (fileName) fileName.textContent = file.name;
+                if (info)     info.style.display = 'flex';
             }
+
+            /* Footer always shows for both types */
+            if (footerName) footerName.textContent = file.name;
+            if (footerSize) footerSize.textContent = sizeMB;
+            if (footer)     footer.style.display = '';
 
             if (preview) preview.style.display = '';
             dropZone.classList.add('has-file');
+            /* Hide the static placeholder content */
+            var icon = dropZone.querySelector('.kyc-upload-icon');
+            var h6   = dropZone.querySelector('h6');
+            var sm   = dropZone.querySelector('small');
+            if (icon) icon.style.display = 'none';
+            if (h6)   h6.style.display   = 'none';
+            if (sm)   sm.style.display   = 'none';
         }
 
         input.addEventListener('change', function() { handleFile(input.files[0]); });
@@ -1009,10 +1178,10 @@ try {
         });
     }
 
-    setupUpload('documentFront', 'frontPreview',   'frontThumb',   'frontInfo',   'dropFront',   'frontFileName',   'frontPdfIcon');
-    setupUpload('documentBack',  'backPreview',    'backThumb',    'backInfo',    'dropBack',    'backFileName',    'backPdfIcon');
-    setupUpload('selfieWithId',  'selfiePreview',  'selfieThumb',  'selfieInfo',  'dropSelfie',  'selfieFileName',  'selfiePdfIcon');
-    setupUpload('addressProof',  'addressPreview', 'addressThumb', 'addressInfo', 'dropAddress', 'addressFileName', 'addressPdfIcon');
+    setupUpload('documentFront', 'frontPreview',   'frontThumb',   'frontThumbWrap',   'frontInfo',   'dropFront',   'frontFileName',   'frontPdfIcon',   'frontFooter',   'frontFooterName',   'frontFooterSize');
+    setupUpload('documentBack',  'backPreview',    'backThumb',    'backThumbWrap',    'backInfo',    'dropBack',    'backFileName',    'backPdfIcon',    'backFooter',    'backFooterName',    'backFooterSize');
+    setupUpload('selfieWithId',  'selfiePreview',  'selfieThumb',  'selfieThumbWrap',  'selfieInfo',  'dropSelfie',  'selfieFileName',  'selfiePdfIcon',  'selfieFooter',  'selfieFooterName',  'selfieFooterSize');
+    setupUpload('addressProof',  'addressPreview', 'addressThumb', 'addressThumbWrap', 'addressInfo', 'dropAddress', 'addressFileName', 'addressPdfIcon', 'addressFooter', 'addressFooterName', 'addressFooterSize');
 
     /* ── Pre-submit review ── */
     var reviewBtn = getEl('kycReviewBtn');
@@ -1105,12 +1274,12 @@ try {
                 } else {
                     var box = document.createElement('div');
                     box.className = 'kyc-review-pdf-box';
-                    box.innerHTML = '<i class="fas fa-file-pdf" style="font-size:2.5rem;margin-bottom:.4rem;"></i><div>' + file.name + '</div><small>' + (file.size/1024/1024).toFixed(2) + ' MB</small>';
+                    box.innerHTML = '<i class="fas fa-file-pdf" style="font-size:2.5rem;margin-bottom:.4rem;"></i><div>' + file.name + '</div><small>' + formatMB(file.size) + '</small>';
                     body.appendChild(box);
                 }
                 var sizeLine = document.createElement('div');
                 sizeLine.style.cssText = 'font-size:.72rem;color:#64748b;margin-top:.4rem;';
-                sizeLine.textContent = file.name + ' – ' + (file.size/1024/1024).toFixed(2) + ' MB';
+                sizeLine.textContent = file.name + ' – ' + formatMB(file.size);
                 body.appendChild(sizeLine);
                 item.appendChild(labelDiv);
                 item.appendChild(body);
@@ -1265,19 +1434,32 @@ try {
 })();
 
 /* ── Global helpers called from inline onclick ── */
-function clearUpload(inputId, previewId, thumbId, infoId, dropId, fileNameId, pdfIconId) {
+function clearUpload(inputId, previewId, thumbId, thumbWrapId, infoId, dropId, fileNameId, pdfIconId, footerId, footerNameId, footerSizeId) {
     var input    = document.getElementById(inputId);
     var preview  = document.getElementById(previewId);
     var thumb    = document.getElementById(thumbId);
+    var thumbWrap = document.getElementById(thumbWrapId);
     var info     = document.getElementById(infoId);
     var dropZone = document.getElementById(dropId);
     var pdfIcon  = document.getElementById(pdfIconId);
-    if (input)   input.value = '';
-    if (thumb)   { thumb.src = ''; thumb.style.display = 'none'; }
-    if (info)    info.style.display = 'none';
-    if (pdfIcon) pdfIcon.style.display = 'none';
-    if (preview) preview.style.display = 'none';
-    if (dropZone) dropZone.classList.remove('has-file');
+    var footer   = document.getElementById(footerId);
+    if (input)    input.value = '';
+    if (thumb)    { thumb.src = ''; }
+    if (thumbWrap){ thumbWrap.style.display = 'none'; thumbWrap.onclick = null; }
+    if (info)     info.style.display = 'none';
+    if (pdfIcon)  pdfIcon.style.display = 'none';
+    if (footer)   footer.style.display = 'none';
+    if (preview)  preview.style.display = 'none';
+    if (dropZone) {
+        dropZone.classList.remove('has-file');
+        /* Restore the placeholder content */
+        var icon = dropZone.querySelector('.kyc-upload-icon');
+        var h6   = dropZone.querySelector('h6');
+        var sm   = dropZone.querySelector('small');
+        if (icon) icon.style.display = '';
+        if (h6)   h6.style.display   = '';
+        if (sm)   sm.style.display   = '';
+    }
 }
 
 function zoomImage(src) {
