@@ -571,14 +571,12 @@ include 'includes/navbar.php';
                 <i class="fas fa-certificate me-2"></i>BaFin-lizenziert | BaFin-Reg.: <?php echo htmlspecialchars($siteSettings['fca_reference_number']); ?>
             </span>
         </div>
-        <h1 class="display-3 fw-bold mb-4 hero-heading">Professionelle Blockchain-Forensik<br>
-            <span class="text-primary">zur Wiederherstellung betrügerisch entwendeter Kryptowährungen</span><br>
-            <span style="font-size:0.55em; letter-spacing:0.12em; color:#fff; background:linear-gradient(135deg,#667eea,#764ba2); padding:6px 22px; border-radius:30px; display:inline-block; margin-top:14px;">und KOSTENLOSE ERSTBERATUNG</span>
+        <h1 class="display-3 fw-bold mb-4 hero-heading">Blockchain-Forensik &amp; Krypto-Asset-Recovery<br>
+            <span class="text-primary">durch zertifizierte Spezialisten &amp; KI-gestützte Analyse</span><br>
+            <span style="font-size:0.55em; letter-spacing:0.12em; color:#fff; background:linear-gradient(135deg,#667eea,#764ba2); padding:6px 22px; border-radius:30px; display:inline-block; margin-top:14px;">Kostenlose &amp; unverbindliche Erstberatung</span>
         </h1>
         <p class="lead mb-4" style="max-width:820px;margin:0 auto;font-size:1.2rem;line-height:1.75;color:#4a5568;">
-            <?= htmlspecialchars($siteSettings['brand_name']) ?> nutzt fortschrittliche KI-Algorithmen zur Analyse und Nachverfolgung betrügerischer 
-            Krypto-Transaktionen. Als <strong>BaFin-lizenziertes Unternehmen</strong> führen wir identifizierte Vermögenswerte 
-            rechtskonform an die rechtmäßigen Eigentümer zurück – transparent, rechtssicher und ohne Vorabgebühren.
+            <?= htmlspecialchars($siteSettings['brand_name']) ?> ist ein <strong>BaFin-lizenziertes Forensikunternehmen</strong> spezialisiert auf die Rückverfolgung und Wiederherstellung betrügerisch entwendeter Kryptowährungen. Unsere zertifizierten Analysten setzen modernste KI-Technologie ein, um Transaktionsketten lückenlos zu rekonstruieren – transparent, rechtssicher und ohne Vorabgebühren.
         </p>
         <div class="mb-5" style="max-width:760px;margin:0 auto;">
             <div class="row g-3 text-center">
@@ -622,11 +620,11 @@ include 'includes/navbar.php';
                             <i class="fas fa-calendar-check me-2"></i>KOSTENLOSE ERSTBERATUNG
                         </span>
                         <h4 class="fw-bold mb-2" style="color:#1a1a2e; font-size:1.35rem;">
-                            Wie hoch ist Ihr Verlust? Lassen Sie ihn jetzt professionell prüfen.
+                            Schildern Sie uns Ihren Fall – wir prüfen Ihre Chancen auf Wiederherstellung.
                         </h4>
                         <p class="text-muted mb-0" style="font-size:.95rem; line-height:1.6; max-width:600px; margin:0 auto;">
-                            Schildern Sie uns Ihren Fall – unsere zertifizierten Blockchain-Analysten melden sich innerhalb von <strong>24 Stunden</strong>
-                            mit einer unverbindlichen und kostenlosen Ersteinschätzung.
+                            Unsere zertifizierten Blockchain-Analysten prüfen Ihren Fall diskret und melden sich innerhalb von <strong>24 Stunden</strong>
+                            mit einer detaillierten, unverbindlichen Ersteinschätzung.
                         </p>
                     </div>
                     <hr class="my-4" style="border-color:#e8ecf0;">
@@ -1283,7 +1281,7 @@ include 'includes/navbar.php';
   85%  { opacity:1; transform:translateY(0); }
   100% { opacity:0; transform:translateY(-6px); }
 }
-.ticker-animate { animation: tickerSlide 4s ease forwards; }
+.ticker-animate { animation: tickerSlide 7s ease forwards; }
 </style>
 
 <!-- ===== Three.js 3D Recovery Canvas ===== -->
@@ -1329,7 +1327,7 @@ include 'includes/navbar.php';
     el.classList.add('ticker-animate');
     tickerIdx++;
   }
-  setTimeout(function () { rotateTicker(); setInterval(rotateTicker, 4200); }, 1800);
+  setTimeout(function () { rotateTicker(); setInterval(rotateTicker, 7000); }, 2500);
 
   /* ---- Counter animation helper ---- */
   function animateCounter(el, target, suffix, duration, isFloat) {
@@ -1499,9 +1497,9 @@ include 'includes/navbar.php';
     pPositions[p * 3 + 2] = Math.sin(angle) * radius;
     pVelocities.push({
       r: radius, angle: angle,
-      speed:  0.004 + Math.random() * 0.010,
+      speed:  0.0015 + Math.random() * 0.004,
       y:      pPositions[p * 3 + 1],
-      ySpeed: (Math.random() - 0.5) * 0.3
+      ySpeed: (Math.random() - 0.5) * 0.12
     });
   }
   pGeo.setAttribute('position', new THREE.BufferAttribute(pPositions, 3));
@@ -1522,9 +1520,9 @@ include 'includes/navbar.php';
       x: Math.sin(startPhi) * Math.cos(startAngle) * r,
       y: Math.cos(startPhi) * r,
       z: Math.sin(startPhi) * Math.sin(startAngle) * r,
-      vx: (Math.random() - 0.5) * 5,
-      vy: (Math.random() - 0.5) * 5,
-      vz: (Math.random() - 0.5) * 5,
+      vx: (Math.random() - 0.5) * 2,
+      vy: (Math.random() - 0.5) * 2,
+      vz: (Math.random() - 0.5) * 2,
       life: 0,
       maxLife: 60 + Math.random() * 60
     };
@@ -1545,8 +1543,8 @@ include 'includes/navbar.php';
     var t = clock.getElapsedTime();
 
     /* Rotate globe + attached groups */
-    globe.rotation.y  += 0.0018;
-    globe.rotation.x  += 0.0004;
+    globe.rotation.y  += 0.0007;
+    globe.rotation.x  += 0.00015;
     nodeGroup.rotation.y = globe.rotation.y;
     nodeGroup.rotation.x = globe.rotation.x;
     lineGroup.rotation.y = globe.rotation.y;
@@ -1554,8 +1552,8 @@ include 'includes/navbar.php';
 
     /* Animate orbital rings independently */
     rings.forEach(function (rObj) {
-      rObj.mesh.rotation.x += rObj.speedX;
-      rObj.mesh.rotation.z += rObj.speedZ;
+      rObj.mesh.rotation.x += rObj.speedX * 0.35;
+      rObj.mesh.rotation.z += rObj.speedZ * 0.35;
     });
 
     /* Pulse core with multi-frequency oscillation */
@@ -1594,9 +1592,9 @@ include 'includes/navbar.php';
     cometMat.opacity = 0.7 + 0.3 * Math.sin(t * 4);
 
     /* Camera dramatic orbit */
-    camera.position.x = Math.sin(t * 0.09) * 28;
-    camera.position.y = 30 + Math.cos(t * 0.07) * 18;
-    camera.position.z = 260 + Math.sin(t * 0.05) * 15;
+    camera.position.x = Math.sin(t * 0.035) * 28;
+    camera.position.y = 30 + Math.cos(t * 0.028) * 18;
+    camera.position.z = 260 + Math.sin(t * 0.02) * 15;
     camera.lookAt(scene.position);
 
     renderer.render(scene, camera);
