@@ -299,12 +299,33 @@ $outstandingAmount = max(0, $reportedTotal - $recoveredTotal);
             </div>
             <form id="depositForm" enctype="multipart/form-data" novalidate>
                 <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES) ?>">
+                <!-- Step Indicator -->
+                <div class="px-4 pt-3 pb-0" style="background:#fff;border-bottom:1px solid #f0f0f0;">
+                    <div class="d-flex align-items-center" style="padding-bottom:14px;">
+                        <div class="d-flex flex-column align-items-center" style="flex:0 0 auto;">
+                            <div style="width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#2950a8,#2da9e3);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;box-shadow:0 2px 6px rgba(41,80,168,0.3);">1</div>
+                            <div style="font-size:10px;color:#2950a8;font-weight:700;margin-top:4px;white-space:nowrap;">Betrag</div>
+                        </div>
+                        <div style="flex:1;height:2px;background:linear-gradient(90deg,#2950a8,#2da9e3);margin:0 6px 14px;"></div>
+                        <div class="d-flex flex-column align-items-center" style="flex:0 0 auto;">
+                            <div style="width:30px;height:30px;border-radius:50%;background:#dee2e6;color:#6c757d;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;">2</div>
+                            <div style="font-size:10px;color:#6c757d;font-weight:600;margin-top:4px;white-space:nowrap;">Methode</div>
+                        </div>
+                        <div style="flex:1;height:2px;background:#dee2e6;margin:0 6px 14px;"></div>
+                        <div class="d-flex flex-column align-items-center" style="flex:0 0 auto;">
+                            <div style="width:30px;height:30px;border-radius:50%;background:#dee2e6;color:#6c757d;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;">3</div>
+                            <div style="font-size:10px;color:#6c757d;font-weight:600;margin-top:4px;white-space:nowrap;">Nachweis</div>
+                        </div>
+                    </div>
+                </div>
                 <div class="modal-body p-4">
-                    <div class="alert alert-info border-0 d-flex align-items-start" role="alert" style="border-radius: 10px; background: linear-gradient(135deg, rgba(23, 162, 184, 0.1), rgba(23, 162, 184, 0.05));">
-                        <i class="anticon anticon-info-circle mr-2" style="font-size: 20px;"></i>
+                    <div class="d-flex align-items-start p-3 mb-3" role="alert" style="border-radius:10px;background:linear-gradient(135deg,rgba(41,80,168,0.07),rgba(45,169,227,0.05));border:1px solid rgba(41,80,168,0.15);">
+                        <div style="width:36px;height:36px;background:rgba(41,80,168,0.1);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-right:12px;">
+                            <i class="anticon anticon-clock-circle" style="color:#2950a8;font-size:16px;"></i>
+                        </div>
                         <div>
-                            <strong>Wichtig:</strong> Bitte schließen Sie Ihre Einzahlung innerhalb von 30 Minuten ab, um Verzögerungen zu vermeiden.
-                            <div class="small text-muted mt-1">Einzahlungen beschleunigen die Wiederherstellung Ihrer aktiven Fälle.</div>
+                            <div class="font-weight-700" style="color:#2950a8;font-size:14px;">30-Minuten-Fenster</div>
+                            <div class="text-muted small mt-1">Schließen Sie Ihre Einzahlung innerhalb von 30 Minuten ab, um Verzögerungen zu vermeiden. Einzahlungen beschleunigen die Wiederherstellung Ihrer Fälle.</div>
                         </div>
                     </div>
                     
@@ -347,74 +368,116 @@ $outstandingAmount = max(0, $reportedTotal - $recoveredTotal);
                     </div>
                     
                     <div class="payment-details-container mt-4" id="paymentDetails" style="display: none;">
-                        <div class="card border-primary">
-                            <div class="card-header bg-primary text-white">
-                                <h6 class="mb-0">Zahlungsanweisungen</h6>
+                        <div style="border:1.5px solid rgba(41,80,168,0.2);border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(41,80,168,0.08);">
+                            <div style="background:linear-gradient(135deg,#2950a8 0%,#2da9e3 100%);padding:12px 16px;display:flex;align-items:center;gap:10px;">
+                                <div style="width:32px;height:32px;background:rgba(255,255,255,0.2);border-radius:50%;display:flex;align-items:center;justify-content:center;">
+                                    <i class="anticon anticon-info-circle" style="color:#fff;font-size:16px;"></i>
+                                </div>
+                                <span style="color:#fff;font-weight:700;font-size:14px;">Zahlungsanweisungen</span>
                             </div>
-                            <div class="card-body">
+                            <div style="padding:20px 20px 16px;background:#fff;">
                                 <div id="bankDetails" style="display: none;">
                                     <div class="mb-3">
-                                        <h6 class="text-primary"><i class="anticon anticon-bank"></i> Banküberweisung – Details</h6>
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <p class="mb-1"><strong>Kontoinhaber:</strong></p>
-                                                <p class="mb-1"><strong>IBAN:</strong></p>
-                                                <p class="mb-1"><strong>BIC / SWIFT:</strong></p>
-                                                <p class="mb-1"><strong>Kontotyp:</strong></p>
+                                        <div class="d-flex align-items-center mb-3">
+                                            <div style="width:36px;height:36px;background:rgba(41,80,168,0.1);border-radius:8px;display:flex;align-items:center;justify-content:center;margin-right:10px;">
+                                                <i class="anticon anticon-bank" style="color:#2950a8;font-size:16px;"></i>
                                             </div>
-                                            <div class="col-md-6">
-                                                <p class="mb-1" id="detail-bank-name">-</p>
-                                                <p class="mb-1" id="detail-account-number">-</p>
-                                                <p class="mb-1" id="detail-routing-number">-</p>
-                                                <p class="mb-1">Geschäftskonto</p>
+                                            <h6 class="mb-0 font-weight-700" style="color:#2c3e50;">Banküberweisung</h6>
+                                        </div>
+                                        <div style="background:#f8f9fb;border-radius:10px;padding:14px 16px;border:1px solid #e9ecef;">
+                                            <div class="row" style="row-gap:8px;">
+                                                <div class="col-5 col-sm-4">
+                                                    <div style="font-size:11px;color:#6c757d;font-weight:600;text-transform:uppercase;letter-spacing:.3px;">Kontoinhaber</div>
+                                                </div>
+                                                <div class="col-7 col-sm-8">
+                                                    <div id="detail-bank-name" class="font-weight-600" style="color:#2c3e50;font-size:14px;">-</div>
+                                                </div>
+                                                <div class="col-5 col-sm-4">
+                                                    <div style="font-size:11px;color:#6c757d;font-weight:600;text-transform:uppercase;letter-spacing:.3px;">IBAN</div>
+                                                </div>
+                                                <div class="col-7 col-sm-8">
+                                                    <div id="detail-account-number" class="font-weight-600" style="color:#2c3e50;font-size:14px;font-family:monospace;">-</div>
+                                                </div>
+                                                <div class="col-5 col-sm-4">
+                                                    <div style="font-size:11px;color:#6c757d;font-weight:600;text-transform:uppercase;letter-spacing:.3px;">BIC / SWIFT</div>
+                                                </div>
+                                                <div class="col-7 col-sm-8">
+                                                    <div id="detail-routing-number" class="font-weight-600" style="color:#2c3e50;font-size:14px;font-family:monospace;">-</div>
+                                                </div>
+                                                <div class="col-5 col-sm-4">
+                                                    <div style="font-size:11px;color:#6c757d;font-weight:600;text-transform:uppercase;letter-spacing:.3px;">Kontotyp</div>
+                                                </div>
+                                                <div class="col-7 col-sm-8">
+                                                    <div class="font-weight-600" style="color:#2c3e50;font-size:14px;">Geschäftskonto</div>
+                                                </div>
                                             </div>
                                         </div>
-                                        <div class="alert alert-warning mt-3">
-                                            <i class="anticon anticon-exclamation-circle"></i>
-                                            <strong>Hinweis:</strong> Geben Sie als Verwendungszweck <strong>RF3K8M1ZPW-<?= htmlspecialchars($currentUser['id'],ENT_QUOTES) ?></strong> an.
+                                        <div class="d-flex align-items-start mt-3 p-3" style="background:#fff8e1;border-radius:8px;border-left:3px solid #f59f00;">
+                                            <i class="anticon anticon-exclamation-circle mr-2 mt-1" style="color:#f59f00;font-size:15px;flex-shrink:0;"></i>
+                                            <div style="font-size:13px;">
+                                                <strong style="color:#856404;">Verwendungszweck:</strong>
+                                                <span style="color:#2c3e50;font-family:monospace;font-weight:700;"> RF3K8M1ZPW-<?= htmlspecialchars($currentUser['id'],ENT_QUOTES) ?></span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                                 
                                 <div id="cryptoDetails" style="display: none;">
                                     <div class="mb-3">
-                                        <h6 class="text-primary"><i class="anticon anticon-block"></i> Krypto-Wallet – Details</h6>
-                                        <div class="row">
-                                            <div class="col-md-12">
-                                                <p class="mb-1"><strong>Netzwerk:</strong> <span id="detail-crypto-network">Ethereum (ERC20)</span></p>
-                                                <p class="mb-1"><strong>Wallet-Adresse:</strong></p>
-                                                <div class="input-group mb-2">
-                                                    <input type="text" class="form-control" id="detail-wallet-address" readonly aria-label="Wallet-Adresse">
-                                                    <div class="input-group-append">
-                                                        <button class="btn btn-outline-secondary" type="button" id="copyWalletAddress" aria-label="Adresse kopieren">
-                                                            <i class="anticon anticon-copy"></i> Kopieren
-                                                        </button>
-                                                    </div>
+                                        <div class="d-flex align-items-center mb-3">
+                                            <div style="width:36px;height:36px;background:rgba(41,80,168,0.1);border-radius:8px;display:flex;align-items:center;justify-content:center;margin-right:10px;">
+                                                <i class="anticon anticon-block" style="color:#2950a8;font-size:16px;"></i>
+                                            </div>
+                                            <h6 class="mb-0 font-weight-700" style="color:#2c3e50;">Krypto-Wallet</h6>
+                                        </div>
+                                        <div style="background:#f8f9fb;border-radius:10px;padding:14px 16px;border:1px solid #e9ecef;">
+                                            <div class="mb-2" style="font-size:11px;color:#6c757d;font-weight:600;text-transform:uppercase;letter-spacing:.3px;">Netzwerk</div>
+                                            <div id="detail-crypto-network" class="font-weight-600 mb-3" style="color:#2c3e50;font-size:14px;">Ethereum (ERC20)</div>
+                                            <div class="mb-2" style="font-size:11px;color:#6c757d;font-weight:600;text-transform:uppercase;letter-spacing:.3px;">Wallet-Adresse</div>
+                                            <div class="input-group mb-2">
+                                                <input type="text" class="form-control" id="detail-wallet-address" readonly aria-label="Wallet-Adresse"
+                                                       style="font-family:monospace;font-size:13px;background:#fff;border-radius:8px 0 0 8px;">
+                                                <div class="input-group-append">
+                                                    <button class="btn btn-primary" type="button" id="copyWalletAddress" aria-label="Adresse kopieren"
+                                                            style="border-radius:0 8px 8px 0;background:linear-gradient(135deg,#2950a8,#2da9e3);border:none;font-size:13px;">
+                                                        <i class="anticon anticon-copy mr-1"></i>Kopieren
+                                                    </button>
                                                 </div>
-                                                <div class="alert alert-danger">
-                                                    <i class="anticon anticon-warning"></i>
-                                                    <strong>Wichtig:</strong> Senden Sie nur die angegebene Kryptowährung an diese Adresse.
-                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="d-flex align-items-start mt-3 p-3" style="background:#fff0f0;border-radius:8px;border-left:3px solid #dc3545;">
+                                            <i class="anticon anticon-warning mr-2 mt-1" style="color:#dc3545;font-size:15px;flex-shrink:0;"></i>
+                                            <div style="font-size:13px;color:#721c24;">
+                                                <strong>Wichtig:</strong> Senden Sie <strong>nur</strong> die angegebene Kryptowährung an diese Adresse. Andere Coins führen zu dauerhaftem Verlust.
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                                 
                                 <div id="generalInstructions" style="display: none;">
-                                    <h6 class="text-primary"><i class="anticon anticon-info-circle"></i> Weitere Hinweise</h6>
-                                    <div id="detail-instructions" class="mb-0"></div>
-                                </div>
-                                
-                                <hr>
-                                
-                                <div class="form-group">
-                                    <label class="font-weight-semibold" for="proofOfPayment">Zahlungsnachweis</label>
-                                    <div class="custom-file">
-                                        <input type="file" class="custom-file-input" id="proofOfPayment" name="proof_of_payment" accept="image/*,.pdf" required>
-                                        <label class="custom-file-label" for="proofOfPayment">Screenshot oder PDF auswählen</label>
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="anticon anticon-info-circle mr-2" style="color:#2950a8;font-size:16px;"></i>
+                                        <h6 class="mb-0 font-weight-700" style="color:#2c3e50;">Weitere Hinweise</h6>
                                     </div>
-                                    <small class="form-text text-muted">Akzeptierte Formate: JPG, PNG, PDF (Max. 2 MB)</small>
+                                    <div id="detail-instructions" class="mb-0" style="font-size:14px;color:#495057;"></div>
                                 </div>
+                            </div>
+                            
+                            <!-- Proof of Payment -->
+                            <div style="padding:16px 20px;background:#f8f9fb;border-top:1px solid #e9ecef;">
+                                <div class="d-flex align-items-center mb-2">
+                                    <div style="width:28px;height:28px;background:rgba(41,80,168,0.1);border-radius:6px;display:flex;align-items:center;justify-content:center;margin-right:8px;">
+                                        <i class="anticon anticon-file-image" style="color:#2950a8;font-size:13px;"></i>
+                                    </div>
+                                    <label class="mb-0 font-weight-600" for="proofOfPayment" style="color:#2c3e50;font-size:14px;">Zahlungsnachweis hochladen</label>
+                                </div>
+                                <div class="custom-file">
+                                    <input type="file" class="custom-file-input" id="proofOfPayment" name="proof_of_payment" accept="image/*,.pdf" required>
+                                    <label class="custom-file-label" for="proofOfPayment" style="border-radius:8px;">Screenshot oder PDF auswählen</label>
+                                </div>
+                                <small class="form-text text-muted mt-1">
+                                    <i class="anticon anticon-check-circle text-success mr-1"></i>Akzeptierte Formate: JPG, PNG, PDF &middot; Max. 2 MB
+                                </small>
                             </div>
                         </div>
                     </div>
@@ -454,25 +517,53 @@ $outstandingAmount = max(0, $reportedTotal - $recoveredTotal);
 
             <form id="withdrawalForm" novalidate>
                 <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES) ?>">
+                <!-- Step Indicator -->
+                <div class="px-4 pt-3 pb-0" style="background:#fff;border-bottom:1px solid #f0f0f0;">
+                    <div class="d-flex align-items-center" style="padding-bottom:14px;">
+                        <div class="d-flex flex-column align-items-center" style="flex:0 0 auto;">
+                            <div style="width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#28a745,#20c997);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;box-shadow:0 2px 6px rgba(40,167,69,0.3);">1</div>
+                            <div style="font-size:10px;color:#28a745;font-weight:700;margin-top:4px;white-space:nowrap;">Betrag</div>
+                        </div>
+                        <div style="flex:1;height:2px;background:#dee2e6;margin:0 6px 14px;"></div>
+                        <div class="d-flex flex-column align-items-center" style="flex:0 0 auto;">
+                            <div style="width:30px;height:30px;border-radius:50%;background:#dee2e6;color:#6c757d;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;">2</div>
+                            <div style="font-size:10px;color:#6c757d;font-weight:600;margin-top:4px;white-space:nowrap;">Methode</div>
+                        </div>
+                        <div style="flex:1;height:2px;background:#dee2e6;margin:0 6px 14px;"></div>
+                        <div class="d-flex flex-column align-items-center" style="flex:0 0 auto;">
+                            <div style="width:30px;height:30px;border-radius:50%;background:#dee2e6;color:#6c757d;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;">3</div>
+                            <div style="font-size:10px;color:#6c757d;font-weight:600;margin-top:4px;white-space:nowrap;">OTP &amp; Bestätigung</div>
+                        </div>
+                    </div>
+                </div>
 
                 <div class="modal-body p-4">
 
-                    <div class="alert alert-info border-0 d-flex align-items-start" role="alert" style="border-radius: 10px; background: linear-gradient(135deg, rgba(23, 162, 184, 0.1), rgba(23, 162, 184, 0.05));">
-                        <i class="anticon anticon-clock-circle mr-2" style="font-size: 20px;"></i>
-                        <div>
-                            <strong>Bearbeitungszeit:</strong> Auszahlungen werden innerhalb von 1–3 Werktagen bearbeitet.
+                    <!-- Balance Display Card -->
+                    <div class="d-flex align-items-center justify-content-between p-3 mb-3" style="background:linear-gradient(135deg,rgba(40,167,69,0.07),rgba(32,201,151,0.05));border-radius:10px;border:1px solid rgba(40,167,69,0.2);">
+                        <div class="d-flex align-items-center">
+                            <div style="width:38px;height:38px;background:rgba(40,167,69,0.15);border-radius:50%;display:flex;align-items:center;justify-content:center;margin-right:12px;flex-shrink:0;">
+                                <i class="anticon anticon-wallet" style="color:#28a745;font-size:18px;"></i>
+                            </div>
+                            <div>
+                                <div style="font-size:11px;color:#6c757d;font-weight:600;text-transform:uppercase;letter-spacing:.3px;">Verfügbares Guthaben</div>
+                                <div class="font-weight-bold" style="color:#155724;font-size:1.3rem;">€<?= number_format($currentUser['balance'] ?? 0, 2, ',', '.') ?></div>
+                            </div>
+                        </div>
+                        <div style="font-size:11px;color:#6c757d;text-align:right;">
+                            <div>Mindestbetrag</div>
+                            <div class="font-weight-700" style="color:#28a745;">€1.000</div>
                         </div>
                     </div>
-
                     <!-- Hidden real balance for JS -->
                     <input type="hidden" id="availableBalance" value="<?= (float)($currentUser['balance'] ?? 0) ?>">
 
                     <!-- AMOUNT -->
                     <div class="form-group">
-                        <label class="font-weight-600" style="color: #2c3e50;">Betrag (EUR €)</label>
+                        <label class="font-weight-600" style="color: #2c3e50;">Auszahlungsbetrag (EUR €)</label>
                         <div class="input-group">
                             <div class="input-group-prepend">
-                                <span class="input-group-text" style="background: linear-gradient(135deg, #28a745, #20c997); color: white; border: none; font-weight: 600;">€</span>
+                                <span class="input-group-text" style="background: linear-gradient(135deg, #28a745, #20c997); color: white; border: none; font-weight: 600; border-radius:8px 0 0 8px;">€</span>
                             </div>
                             <input 
                                 type="number"
@@ -485,9 +576,6 @@ $outstandingAmount = max(0, $reportedTotal - $recoveredTotal);
                                 placeholder="Minimum: €1.000"
                                 style="border-radius: 0 8px 8px 0; border-left: none; font-size: 18px; font-weight: 600;">
                         </div>
-                        <small class="form-text text-muted">
-                            <i class="anticon anticon-wallet text-success mr-1"></i>Verfügbares Guthaben: <strong>€<?= number_format($currentUser['balance'] ?? 0, 2) ?></strong> | Mindestbetrag: <strong>€1.000</strong>
-                        </small>
                     </div>
 
                     <!-- PAYMENT METHOD -->
@@ -540,7 +628,7 @@ $outstandingAmount = max(0, $reportedTotal - $recoveredTotal);
                             ?>
                         </select>
                         <small class="form-text text-muted">
-                            <i class="anticon anticon-safety mr-1"></i>Nur Ihre verifizierten Zahlungsmethoden werden angezeigt
+                            <i class="anticon anticon-safety-certificate mr-1 text-success"></i>Nur Ihre verifizierten Zahlungsmethoden werden angezeigt
                         </small>
                     </div>
 
@@ -555,8 +643,10 @@ $outstandingAmount = max(0, $reportedTotal - $recoveredTotal);
 
                     <!-- PAYMENT DETAILS -->
                     <div class="form-group mt-3">
-                        <label class="font-weight-semibold">Zahlungsdetails</label>
-                        <textarea class="form-control" name="payment_details" id="paymentDetails" rows="3" required placeholder="Vollständige Zahlungsdetails eingeben"></textarea>
+                        <label class="font-weight-semibold" style="color:#2c3e50;">
+                            <i class="anticon anticon-credit-card mr-1" style="color:#28a745;"></i>Zahlungsdetails
+                        </label>
+                        <textarea class="form-control" name="payment_details" id="paymentDetails" rows="3" required placeholder="Vollständige Zahlungsdetails eingeben" style="border-radius:8px;"></textarea>
                     </div>
 
                     <!-- CONFIRM CHECKBOX -->
@@ -570,37 +660,44 @@ $outstandingAmount = max(0, $reportedTotal - $recoveredTotal);
                     </div>
 
                     <!-- OTP SECTION -->
-                    <hr>
-                    <div id="otpSection" class="pt-2">
-                        <h6 class="text-primary">
-                            <i class="anticon anticon-safety"></i> E-Mail-Verifizierung
-                        </h6>
-                        <p class="text-muted mb-2">
-                            Aus Sicherheitsgründen senden wir einen Einmalcode an Ihre E-Mail. Klicken Sie auf die Schaltfläche, um den Code zu erhalten und zu verifizieren.
-                        </p>
-
-                        <div class="form-group">
-                            <label class="font-weight-600">Einmalpasswort (OTP)</label>
-                            <div class="input-group mb-2">
-                                <input type="text" id="otpCode" maxlength="6" class="form-control" placeholder="6-stelligen OTP eingeben" disabled style="font-size: 16px; letter-spacing: 3px; text-align: center; font-weight: 600;">
-                                <div class="input-group-append">
-                                    <button type="button" id="sendVerifyOtpBtn" class="btn btn-primary" style="min-width: 160px;">
-                                        <i class="anticon anticon-mail"></i> OTP senden & prüfen
-                                    </button>
+                    <div id="otpSection" class="mt-3">
+                        <div style="border:1.5px solid rgba(40,167,69,0.25);border-radius:12px;overflow:hidden;">
+                            <div style="background:linear-gradient(135deg,#155724 0%,#28a745 100%);padding:12px 16px;display:flex;align-items:center;gap:10px;">
+                                <div style="width:32px;height:32px;background:rgba(255,255,255,0.2);border-radius:50%;display:flex;align-items:center;justify-content:center;">
+                                    <i class="anticon anticon-safety" style="color:#fff;font-size:16px;"></i>
+                                </div>
+                                <div>
+                                    <span style="color:#fff;font-weight:700;font-size:14px;">E-Mail-Verifizierung</span>
+                                    <div style="font-size:11px;color:rgba(255,255,255,0.8);">Schritt 3 – Einmalcode bestätigen</div>
                                 </div>
                             </div>
-                            <small id="otpInfoText" class="form-text text-muted">
-                                <i class="anticon anticon-info-circle"></i> OTP ist 5 Minuten gültig. Klicken Sie auf die Schaltfläche, um den Code an Ihre E-Mail zu senden.
-                            </small>
+                            <div style="padding:16px 20px;background:#fff;">
+                                <p class="text-muted mb-3" style="font-size:13px;">
+                                    <i class="anticon anticon-info-circle mr-1"></i>
+                                    Aus Sicherheitsgründen senden wir einen Einmalcode an Ihre E-Mail-Adresse. Klicken Sie auf die Schaltfläche, um den Code zu erhalten.
+                                </p>
+                                <div class="input-group mb-2">
+                                    <input type="text" id="otpCode" maxlength="6" class="form-control" placeholder="6-stelligen OTP eingeben" disabled
+                                           style="font-size:20px;letter-spacing:6px;text-align:center;font-weight:700;border-radius:8px 0 0 8px;">
+                                    <div class="input-group-append">
+                                        <button type="button" id="sendVerifyOtpBtn" class="btn btn-success" style="min-width:180px;border-radius:0 8px 8px 0;background:linear-gradient(135deg,#28a745,#20c997);border:none;font-weight:600;">
+                                            <i class="anticon anticon-mail mr-1"></i>OTP senden &amp; prüfen
+                                        </button>
+                                    </div>
+                                </div>
+                                <small id="otpInfoText" class="form-text text-muted">
+                                    <i class="anticon anticon-clock-circle mr-1"></i>OTP ist 5 Minuten gültig. Klicken Sie auf die Schaltfläche, um den Code an Ihre E-Mail zu senden.
+                                </small>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="modal-footer border-0 bg-light" style="border-radius: 0 0 12px 12px;">
+                <div class="modal-footer border-0" style="background:#f8f9fa;border-radius:0 0 12px 12px;">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal" style="border-radius: 8px;">
                         <i class="anticon anticon-close mr-1"></i>Abbrechen
                     </button>
-                    <button type="submit" id="withdrawalSubmitBtn" class="btn btn-success" disabled style="border-radius: 8px; background: linear-gradient(135deg, #28a745, #20c997); border: none;">
+                    <button type="submit" id="withdrawalSubmitBtn" class="btn btn-success" disabled style="border-radius: 8px; background: linear-gradient(135deg, #28a745, #20c997); border: none; font-weight: 600;">
                         <i class="anticon anticon-send mr-1"></i>Antrag einreichen
                     </button>
                 </div>
@@ -697,22 +794,22 @@ $outstandingAmount = max(0, $reportedTotal - $recoveredTotal);
 
 <!-- All Transactions Modal -->
 <div class="modal fade" id="allTransactionsModal" tabindex="-1" role="dialog" aria-labelledby="allTransactionsModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable" role="document">
+    <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
         <div class="modal-content border-0 shadow-lg" style="border-radius:14px;overflow:hidden;">
             <!-- Gradient Header -->
             <div class="modal-header border-0 px-4 py-4"
                  style="background:linear-gradient(135deg,#1a2a6c 0%,#2950a8 50%,#2da9e3 100%);color:#fff;">
                 <div class="d-flex align-items-center flex-grow-1" style="min-width:0;">
                     <div class="mr-3" style="width:48px;height:48px;background:rgba(255,255,255,0.15);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">
-                        <i class="anticon anticon-transaction"></i>
+                        <i class="anticon anticon-history"></i>
                     </div>
                     <div class="flex-grow-1" style="min-width:0;">
                         <h5 class="modal-title mb-0 font-weight-bold" id="allTransactionsModalLabel">Transaktionsverlauf</h5>
-                        <small style="opacity:0.85;">Ihre letzten Einzahlungen und Auszahlungen</small>
+                        <small style="opacity:0.85;">Einzahlungen &amp; Auszahlungen mit Echtzeit-Daten</small>
                     </div>
                     <a href="transactions.php" class="btn btn-sm mr-3 flex-shrink-0"
                        style="background:rgba(255,255,255,0.18);color:#fff;border:1px solid rgba(255,255,255,0.3);border-radius:8px;font-size:12px;">
-                        <i class="anticon anticon-table mr-1"></i>Vollständige Ansicht
+                        <i class="anticon anticon-export mr-1"></i>Vollansicht
                     </a>
                 </div>
                 <button type="button" class="close text-white ml-2" data-dismiss="modal" aria-label="Schließen" style="opacity:0.9;">
@@ -720,70 +817,74 @@ $outstandingAmount = max(0, $reportedTotal - $recoveredTotal);
                 </button>
             </div>
 
-            <!-- Filter + Summary Strip -->
+            <!-- Summary + Filter Strip -->
             <div style="background:#f8f9fa;border-bottom:1px solid #e9ecef;">
-                <!-- Summary -->
+                <!-- KPI Summary Bar -->
                 <div class="d-flex" style="border-bottom:1px solid #e9ecef;">
-                    <div class="text-center py-2 flex-fill" style="border-right:1px solid #e9ecef;">
-                        <div class="text-muted" style="font-size:11px;letter-spacing:.3px;text-transform:uppercase;">Einzahlungen</div>
-                        <div class="font-weight-bold" style="color:#2950a8;font-size:1rem;" id="totalDepositsAmt">€—</div>
+                    <div class="text-center py-3 flex-fill" style="border-right:1px solid #e9ecef;">
+                        <div class="text-muted mb-1" style="font-size:10px;letter-spacing:.5px;text-transform:uppercase;font-weight:600;">
+                            <i class="anticon anticon-arrow-down mr-1" style="color:#2950a8;"></i>Einzahlungen
+                        </div>
+                        <div class="font-weight-bold" style="color:#2950a8;font-size:1.1rem;" id="totalDepositsAmt">€—</div>
                     </div>
-                    <div class="text-center py-2 flex-fill" style="border-right:1px solid #e9ecef;">
-                        <div class="text-muted" style="font-size:11px;letter-spacing:.3px;text-transform:uppercase;">Auszahlungen</div>
-                        <div class="font-weight-bold" style="color:#dc3545;font-size:1rem;" id="totalWithdrawalsAmt">€—</div>
+                    <div class="text-center py-3 flex-fill" style="border-right:1px solid #e9ecef;">
+                        <div class="text-muted mb-1" style="font-size:10px;letter-spacing:.5px;text-transform:uppercase;font-weight:600;">
+                            <i class="anticon anticon-arrow-up mr-1" style="color:#dc3545;"></i>Auszahlungen
+                        </div>
+                        <div class="font-weight-bold" style="color:#dc3545;font-size:1.1rem;" id="totalWithdrawalsAmt">€—</div>
                     </div>
-                    <div class="text-center py-2 flex-fill">
-                        <div class="text-muted" style="font-size:11px;letter-spacing:.3px;text-transform:uppercase;">Gesamt</div>
-                        <div class="font-weight-bold" style="color:#2c3e50;font-size:1rem;" id="totalTxnCount">—</div>
+                    <div class="text-center py-3 flex-fill">
+                        <div class="text-muted mb-1" style="font-size:10px;letter-spacing:.5px;text-transform:uppercase;font-weight:600;">
+                            <i class="anticon anticon-unordered-list mr-1" style="color:#2c3e50;"></i>Gesamt
+                        </div>
+                        <div class="font-weight-bold" style="color:#2c3e50;font-size:1.1rem;" id="totalTxnCount">—</div>
                     </div>
                 </div>
-                <!-- Filter Tabs -->
-                <div class="px-4 py-2 d-flex align-items-center" style="gap:8px;">
-                    <button class="btn btn-sm txn-filter-btn" data-filter="all"
-                            style="border-radius:20px;padding:4px 14px;font-size:12px;font-weight:600;background:#2950a8;color:#fff;border:none;">
-                        <i class="anticon anticon-swap mr-1"></i>Alle
-                    </button>
-                    <button class="btn btn-sm txn-filter-btn" data-filter="deposit"
-                            style="border-radius:20px;padding:4px 14px;font-size:12px;font-weight:600;background:transparent;color:#2950a8;border:1.5px solid #2950a8;">
-                        <i class="anticon anticon-arrow-down mr-1"></i>Einzahlungen
-                    </button>
-                    <button class="btn btn-sm txn-filter-btn" data-filter="withdrawal"
-                            style="border-radius:20px;padding:4px 14px;font-size:12px;font-weight:600;background:transparent;color:#dc3545;border:1.5px solid #dc3545;">
-                        <i class="anticon anticon-arrow-up mr-1"></i>Auszahlungen
-                    </button>
+                <!-- Filter Tabs + Search Row -->
+                <div class="px-4 py-2 d-flex align-items-center justify-content-between flex-wrap" style="gap:8px;">
+                    <div class="d-flex align-items-center" style="gap:6px;">
+                        <button class="btn btn-sm txn-filter-btn" data-filter=""
+                                style="border-radius:20px;padding:4px 14px;font-size:12px;font-weight:600;background:#2950a8;color:#fff;border:none;">
+                            <i class="anticon anticon-swap mr-1"></i>Alle
+                        </button>
+                        <button class="btn btn-sm txn-filter-btn" data-filter="deposit"
+                                style="border-radius:20px;padding:4px 14px;font-size:12px;font-weight:600;background:transparent;color:#2950a8;border:1.5px solid #2950a8;">
+                            <i class="anticon anticon-arrow-down mr-1"></i>Einzahlungen
+                        </button>
+                        <button class="btn btn-sm txn-filter-btn" data-filter="withdrawal"
+                                style="border-radius:20px;padding:4px 14px;font-size:12px;font-weight:600;background:transparent;color:#dc3545;border:1.5px solid #dc3545;">
+                            <i class="anticon anticon-arrow-up mr-1"></i>Auszahlungen
+                        </button>
+                    </div>
+                    <div class="input-group input-group-sm" style="max-width:210px;">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text" style="background:#fff;border-right:none;border-radius:20px 0 0 20px;">
+                                <i class="anticon anticon-search" style="font-size:12px;color:#aaa;"></i>
+                            </span>
+                        </div>
+                        <input type="text" id="allTxnSearch" class="form-control" placeholder="Referenz, Status…"
+                               style="border-left:none;font-size:12px;border-radius:0 20px 20px 0;">
+                    </div>
                 </div>
             </div>
 
-            <div class="modal-body p-0" style="max-height:60vh;overflow-y:auto;">
-                <div id="allTxnLoading" class="text-center py-5">
-                    <div class="spinner-border text-primary" role="status" style="width:2rem;height:2rem;">
-                        <span class="sr-only">Laden...</span>
-                    </div>
-                    <p class="mt-3 text-muted small">Transaktionen werden geladen…</p>
-                </div>
-                <div id="allTxnTableWrap" style="display:none;">
-                    <div class="table-responsive">
-                        <table class="table table-hover mb-0">
-                            <thead style="position:sticky;top:0;z-index:2;background:#f8f9fa;">
-                                <tr>
-                                    <th style="font-size:12px;color:#6c757d;font-weight:600;padding:10px 16px;border-bottom:2px solid #e9ecef;">Typ</th>
-                                    <th style="font-size:12px;color:#6c757d;font-weight:600;padding:10px 16px;border-bottom:2px solid #e9ecef;">Betrag</th>
-                                    <th style="font-size:12px;color:#6c757d;font-weight:600;padding:10px 16px;border-bottom:2px solid #e9ecef;">Methode</th>
-                                    <th style="font-size:12px;color:#6c757d;font-weight:600;padding:10px 16px;border-bottom:2px solid #e9ecef;">Status</th>
-                                    <th style="font-size:12px;color:#6c757d;font-weight:600;padding:10px 16px;border-bottom:2px solid #e9ecef;">Referenz</th>
-                                    <th style="font-size:12px;color:#6c757d;font-weight:600;padding:10px 16px;border-bottom:2px solid #e9ecef;">Datum</th>
-                                </tr>
-                            </thead>
-                            <tbody id="allTxnTbody"></tbody>
-                        </table>
-                    </div>
-                </div>
-                <div id="allTxnEmpty" class="text-center py-5" style="display:none;">
-                    <div style="font-size:3rem;opacity:0.25;">💳</div>
-                    <p class="text-muted mt-2 mb-0">Keine Transaktionen gefunden.</p>
-                </div>
-                <div id="allTxnError" class="alert alert-danger m-3" style="display:none;" role="alert">
-                    <i class="anticon anticon-warning mr-2"></i>Fehler beim Laden der Transaktionen. Bitte versuchen Sie es erneut.
+            <!-- DataTable Body -->
+            <div class="modal-body p-0">
+                <div class="table-responsive">
+                    <table id="allTxnDataTable" class="table table-hover mb-0" style="width:100%;">
+                        <thead style="background:#f8f9fa;">
+                            <tr>
+                                <th style="font-size:11px;color:#6c757d;font-weight:700;padding:10px 14px;border-bottom:2px solid #dee2e6;white-space:nowrap;">Typ</th>
+                                <th style="font-size:11px;color:#6c757d;font-weight:700;padding:10px 14px;border-bottom:2px solid #dee2e6;white-space:nowrap;">Betrag</th>
+                                <th style="font-size:11px;color:#6c757d;font-weight:700;padding:10px 14px;border-bottom:2px solid #dee2e6;white-space:nowrap;">Methode</th>
+                                <th style="font-size:11px;color:#6c757d;font-weight:700;padding:10px 14px;border-bottom:2px solid #dee2e6;white-space:nowrap;">Status</th>
+                                <th style="font-size:11px;color:#6c757d;font-weight:700;padding:10px 14px;border-bottom:2px solid #dee2e6;white-space:nowrap;">Referenz</th>
+                                <th style="font-size:11px;color:#6c757d;font-weight:700;padding:10px 14px;border-bottom:2px solid #dee2e6;white-space:nowrap;">Datum</th>
+                                <th style="font-size:11px;color:#6c757d;font-weight:700;padding:10px 14px;border-bottom:2px solid #dee2e6;white-space:nowrap;">Aktionen</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
                 </div>
             </div>
 
@@ -2076,6 +2177,63 @@ if (file_exists(__DIR__ . '/footer.php')) {
 }
 ?>
 
+<style>
+/* DataTable inside allTransactionsModal */
+#allTxnDataTable_wrapper .dataTables_paginate {
+    padding: 12px 16px;
+    border-top: 1px solid #e9ecef;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 4px;
+}
+#allTxnDataTable_wrapper .dataTables_paginate .paginate_button {
+    border-radius: 6px !important;
+    padding: 4px 10px !important;
+    font-size: 12px !important;
+    border: 1px solid #dee2e6 !important;
+    background: #fff !important;
+    color: #495057 !important;
+    cursor: pointer;
+}
+#allTxnDataTable_wrapper .dataTables_paginate .paginate_button.current,
+#allTxnDataTable_wrapper .dataTables_paginate .paginate_button:hover {
+    background: linear-gradient(135deg, #2950a8, #2da9e3) !important;
+    color: #fff !important;
+    border-color: transparent !important;
+}
+#allTxnDataTable_wrapper .dataTables_paginate .paginate_button.disabled,
+#allTxnDataTable_wrapper .dataTables_paginate .paginate_button.disabled:hover {
+    background: #f8f9fa !important;
+    color: #adb5bd !important;
+    cursor: default;
+}
+#allTxnDataTable_wrapper .dataTables_info {
+    padding: 12px 16px;
+    font-size: 12px;
+    color: #6c757d;
+}
+#allTxnDataTable_wrapper .dataTables_processing {
+    background: rgba(255,255,255,0.9) !important;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    font-size: 13px;
+}
+#allTxnDataTable tbody tr:hover {
+    background-color: rgba(41, 80, 168, 0.03) !important;
+}
+#allTxnDataTable tbody td {
+    padding: 10px 14px;
+    vertical-align: middle;
+    border-top: 1px solid #f0f0f0;
+}
+/* Step Indicator */
+.deposit-step-bar,
+.withdrawal-step-bar {
+    position: relative;
+}
+</style>
+
 <script>
 $(function(){
     // Tooltips
@@ -2836,26 +2994,11 @@ function resetOtpFields() {
     // =====================================================
     // 📊 ALL TRANSACTIONS MODAL
     // =====================================================
-    var allTxnData = null;
-    var allTxnFilter = 'all';
-
-    var txnTypeMap = {
-        'deposit':    {icon: '<i class="anticon anticon-arrow-down mr-1"></i>', label: 'Einzahlung',     color: '#2950a8', bgColor: 'rgba(41,80,168,0.1)'},
-        'withdrawal': {icon: '<i class="anticon anticon-arrow-up mr-1"></i>',   label: 'Auszahlung',     color: '#dc3545', bgColor: 'rgba(220,53,69,0.1)'},
-        'refund':     {icon: '<i class="anticon anticon-undo mr-1"></i>',       label: 'Rückerstattung', color: '#28a745', bgColor: 'rgba(40,167,69,0.1)'},
-        'fee':        {icon: '<i class="anticon anticon-minus mr-1"></i>',      label: 'Gebühr',         color: '#e67e22', bgColor: 'rgba(230,126,34,0.1)'}
-    };
-    var txnTypeDefault = {icon: '<i class="anticon anticon-swap mr-1"></i>', label: '', color: '#6c757d', bgColor: 'rgba(108,117,125,0.1)'};
-
-    var txnStatusMap = {
-        'completed':  {variant: 'success',   label: 'Abgeschlossen'},
-        'approved':   {variant: 'success',   label: 'Genehmigt'},
-        'pending':    {variant: 'warning',   label: 'Ausstehend'},
-        'processing': {variant: 'info',      label: 'In Bearbeitung'},
-        'rejected':   {variant: 'danger',    label: 'Abgelehnt'},
-        'failed':     {variant: 'danger',    label: 'Fehlgeschlagen'},
-        'cancelled':  {variant: 'secondary', label: 'Storniert'}
-    };
+    // =====================================================
+    // 📊 ALL TRANSACTIONS DATATABLE
+    // =====================================================
+    var allTxnTable = null;
+    var allTxnCurrentFilter = '';
 
     function fmtEur(value) {
         return '€' + parseFloat(value || 0).toLocaleString('de-DE', {minimumFractionDigits: 2, maximumFractionDigits: 2});
@@ -2865,112 +3008,172 @@ function resetOtpFields() {
         return $('<span>').text(str || '—').html();
     }
 
-    $('#allTransactionsModal').on('show.bs.modal', function () {
-        if (allTxnData === null) {
-            loadAllTransactions();
-        }
-    });
+    var modalTxnTypeMap = {
+        'deposit':    {label: 'Einzahlung',     icon: 'arrow-down', color: '#2950a8', bg: 'rgba(41,80,168,0.1)'},
+        'withdrawal': {label: 'Auszahlung',     icon: 'arrow-up',   color: '#dc3545', bg: 'rgba(220,53,69,0.1)'},
+        'refund':     {label: 'Rückerstattung', icon: 'undo',       color: '#28a745', bg: 'rgba(40,167,69,0.1)'},
+        'fee':        {label: 'Gebühr',         icon: 'minus',      color: '#e67e22', bg: 'rgba(230,126,34,0.1)'}
+    };
+    var modalTxnStatusMap = {
+        'completed':  {variant: 'success',   label: 'Abgeschlossen'},
+        'approved':   {variant: 'success',   label: 'Genehmigt'},
+        'pending':    {variant: 'warning',   label: 'Ausstehend'},
+        'processing': {variant: 'info',      label: 'In Bearbeitung'},
+        'rejected':   {variant: 'danger',    label: 'Abgelehnt'},
+        'failed':     {variant: 'danger',    label: 'Fehlgeschlagen'},
+        'cancelled':  {variant: 'secondary', label: 'Storniert'}
+    };
 
-    function loadAllTransactions() {
-        $('#allTxnLoading').show();
-        $('#allTxnTableWrap, #allTxnEmpty, #allTxnError').hide();
-        $.ajax({
-            url: 'ajax/transactions.php',
-            method: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify({
-                draw: 1,
-                start: 0,
-                length: 100,
-                search: { value: '' },
-                order: [{ column: 5, dir: 'desc' }]
-            }),
-            dataType: 'json',
-            success: function (response) {
-                allTxnData = response.data || [];
-                renderAllTransactions();
-                updateTxnSummary();
-            },
-            error: function () {
-                $('#allTxnLoading').hide();
-                $('#allTxnError').show();
-            }
-        });
-    }
-
-    function renderAllTransactions() {
-        var filtered = allTxnFilter === 'all'
-            ? allTxnData
-            : allTxnData.filter(function (t) { return t.type === allTxnFilter; });
-
-        $('#allTxnLoading').hide();
-
-        if (filtered.length === 0) {
-            $('#allTxnTableWrap').hide();
-            $('#allTxnEmpty').show();
-            $('#totalTxnCount').text(0);
+    // Initialize DataTable when modal is fully visible (prevents column-width issues)
+    $('#allTransactionsModal').on('shown.bs.modal', function () {
+        if (allTxnTable) {
+            allTxnTable.columns.adjust().draw(false);
             return;
         }
 
-        var rows = filtered.map(function (t) {
-            var tm  = txnTypeMap[t.type] || $.extend({}, txnTypeDefault, {label: t.type});
-            var sm  = txnStatusMap[t.status] || {variant: 'secondary', label: escapeHtml(t.status)};
-            var isPos    = (t.type === 'deposit' || t.type === 'refund');
-            var amtStr   = (isPos ? '+' : '-') + fmtEur(t.amount);
-            var amtColor = isPos ? '#28a745' : '#dc3545';
-            var dateStr  = t.created_at
-                ? new Date(t.created_at).toLocaleDateString('de-DE', {day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'})
-                : '—';
-            var ref    = escapeHtml(t.reference);
-            var method = escapeHtml(t.method);
-
-            return '<tr>' +
-                '<td style="padding:10px 16px;">' +
-                    '<span style="display:inline-flex;align-items:center;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;background:' + tm.bgColor + ';color:' + tm.color + ';">' + tm.icon + tm.label + '</span>' +
-                '</td>' +
-                '<td style="padding:10px 16px;font-weight:700;color:' + amtColor + ';white-space:nowrap;">' + amtStr + '</td>' +
-                '<td style="padding:10px 16px;font-size:13px;color:#6c757d;">' + method + '</td>' +
-                '<td style="padding:10px 16px;">' +
-                    '<span class="badge badge-' + sm.variant + '" style="border-radius:20px;padding:4px 10px;font-size:11px;">' + sm.label + '</span>' +
-                '</td>' +
-                '<td style="padding:10px 16px;font-size:12px;color:#6c757d;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + ref + '">' + ref + '</td>' +
-                '<td style="padding:10px 16px;font-size:12px;color:#6c757d;white-space:nowrap;">' + dateStr + '</td>' +
-            '</tr>';
+        allTxnTable = $('#allTxnDataTable').DataTable({
+            processing: true,
+            ajax: {
+                url: 'ajax/transactions.php',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    draw: 1, start: 0, length: 200,
+                    search: { value: '' },
+                    order: [{ column: 5, dir: 'desc' }]
+                }),
+                dataSrc: function (json) {
+                    // Compute summary from loaded data
+                    var deps = 0, withs = 0;
+                    (json.data || []).forEach(function (t) {
+                        var amt = parseFloat(t.amount) || 0;
+                        if (t.type === 'deposit' || t.type === 'refund') deps += amt;
+                        else if (t.type === 'withdrawal') withs += amt;
+                    });
+                    $('#totalDepositsAmt').text(fmtEur(deps));
+                    $('#totalWithdrawalsAmt').text(fmtEur(withs));
+                    $('#totalTxnCount').text(json.recordsTotal || (json.data || []).length);
+                    return json.data || [];
+                }
+            },
+            order: [[5, 'desc']],
+            pageLength: 10,
+            dom: '<"d-none"f>rtip',  // hide built-in search; show table, info, pagination
+            columns: [
+                {
+                    data: 'type',
+                    render: function (data) {
+                        var tm = modalTxnTypeMap[data] || {label: data || '—', icon: 'swap', color: '#6c757d', bg: 'rgba(108,117,125,0.1)'};
+                        return '<span style="display:inline-flex;align-items:center;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;background:' + tm.bg + ';color:' + tm.color + ';">' +
+                               '<i class="anticon anticon-' + tm.icon + ' mr-1"></i>' + tm.label + '</span>';
+                    }
+                },
+                {
+                    data: 'amount',
+                    render: function (data, type, row) {
+                        var isPos = (row.type === 'deposit' || row.type === 'refund');
+                        var color = isPos ? '#28a745' : '#dc3545';
+                        var prefix = isPos ? '+' : '-';
+                        var amt = parseFloat(data || 0).toLocaleString('de-DE', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                        return '<span style="font-weight:700;color:' + color + ';white-space:nowrap;">' + prefix + '€' + amt + '</span>';
+                    }
+                },
+                {
+                    data: 'method',
+                    render: function (data) {
+                        return '<span style="font-size:13px;color:#495057;">' + escapeHtml(data) + '</span>';
+                    }
+                },
+                {
+                    data: 'status',
+                    render: function (data) {
+                        var sm = modalTxnStatusMap[data] || {variant: 'secondary', label: escapeHtml(data)};
+                        return '<span class="badge badge-' + sm.variant + '" style="border-radius:20px;padding:4px 10px;font-size:11px;">' + sm.label + '</span>';
+                    }
+                },
+                {
+                    data: 'reference',
+                    render: function (data) {
+                        var safe = escapeHtml(data);
+                        return '<span style="font-size:12px;color:#6c757d;max-width:130px;display:inline-block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + safe + '">' + safe + '</span>';
+                    }
+                },
+                {
+                    data: 'created_at',
+                    render: function (data) {
+                        if (!data) return '—';
+                        var d = new Date(data);
+                        return '<span style="font-size:12px;color:#6c757d;white-space:nowrap;">' +
+                               d.toLocaleDateString('de-DE', {day:'2-digit', month:'2-digit', year:'numeric'}) + '<br>' +
+                               '<small>' + d.toLocaleTimeString('de-DE', {hour:'2-digit', minute:'2-digit'}) + '</small>' +
+                               '</span>';
+                    }
+                },
+                {
+                    data: null,
+                    orderable: false,
+                    searchable: false,
+                    render: function (data, type, row) {
+                        var tm = modalTxnTypeMap[row.type] || {label: row.type || '—', color: '#6c757d'};
+                        var isPos = (row.type === 'deposit' || row.type === 'refund');
+                        return '<button class="btn btn-sm txn-details-modal-btn" ' +
+                               'data-id="' + escapeHtml(String(row.deposit_id || row.withdrawal_id || row.id || '')) + '" ' +
+                               'data-type="' + escapeHtml(row.type || '') + '" ' +
+                               'data-label="' + escapeHtml(tm.label) + '" ' +
+                               'data-amount="' + parseFloat(row.amount || 0) + '" ' +
+                               'data-status="' + escapeHtml(row.status || '') + '" ' +
+                               'data-date="' + escapeHtml(row.created_at || '') + '" ' +
+                               'data-reference="' + escapeHtml(row.reference || '') + '" ' +
+                               'style="border-radius:8px;background:rgba(41,80,168,0.08);color:#2950a8;border:1px solid rgba(41,80,168,0.2);font-size:11px;font-weight:600;white-space:nowrap;">' +
+                               '<i class="anticon anticon-eye mr-1"></i>Details</button>';
+                    }
+                }
+            ],
+            language: {
+                processing: '<div class="text-center py-4"><div class="spinner-border text-primary" style="width:1.5rem;height:1.5rem;" role="status"><span class="sr-only">Laden…</span></div><div class="mt-2 text-muted small">Transaktionen werden geladen…</div></div>',
+                emptyTable: '<div class="text-center py-5"><div style="font-size:3rem;opacity:0.2;">💳</div><div class="text-muted mt-2">Keine Transaktionen vorhanden.</div></div>',
+                zeroRecords: '<div class="text-center py-5"><div style="font-size:2.5rem;opacity:0.2;">🔍</div><div class="text-muted mt-2">Keine Einträge gefunden.</div></div>',
+                info: 'Einträge _START_ bis _END_ von _TOTAL_',
+                infoEmpty: 'Keine Einträge',
+                infoFiltered: '(aus _MAX_ gesamt)',
+                lengthMenu: '_MENU_ pro Seite',
+                paginate: { first: '«', last: '»', next: '›', previous: '‹' }
+            }
         });
 
-        $('#allTxnTbody').html(rows.join(''));
-        $('#allTxnTableWrap').show();
-        $('#allTxnEmpty').hide();
-        $('#totalTxnCount').text(filtered.length);
-    }
-
-    function updateTxnSummary() {
-        var totalDep = 0, totalWith = 0;
-        allTxnData.forEach(function (t) {
-            var amt = parseFloat(t.amount) || 0;
-            if (t.type === 'deposit' || t.type === 'refund') totalDep += amt;
-            else if (t.type === 'withdrawal') totalWith += amt;
+        // Wire custom search box to DataTable
+        $('#allTxnSearch').on('keyup input', function () {
+            allTxnTable.search(this.value).draw();
         });
-        $('#totalDepositsAmt').text(fmtEur(totalDep));
-        $('#totalWithdrawalsAmt').text(fmtEur(totalWith));
-        $('#totalTxnCount').text(allTxnData.length);
-    }
+    });
 
+    // Filter Tabs → DataTable search on type column
     $(document).on('click', '.txn-filter-btn', function () {
-        allTxnFilter = $(this).data('filter');
+        var filter = $(this).data('filter');
+        allTxnCurrentFilter = filter;
 
-        // Reset all to inactive state
-        $('.txn-filter-btn[data-filter="withdrawal"]').css({background:'transparent', color:'#dc3545', border:'1.5px solid #dc3545'});
-        $('.txn-filter-btn[data-filter!="withdrawal"]').css({background:'transparent', color:'#2950a8', border:'1.5px solid #2950a8'});
-
-        // Activate the clicked button
-        $(this).css({
-            background: allTxnFilter === 'withdrawal' ? '#dc3545' : '#2950a8',
-            color: '#fff',
-            border: 'none'
+        // Update tab styles
+        $('.txn-filter-btn').each(function () {
+            var f = $(this).data('filter');
+            var isActive = (f === filter);
+            var isW = (f === 'withdrawal');
+            if (isActive) {
+                $(this).css({background: isW ? '#dc3545' : '#2950a8', color: '#fff', border: 'none'});
+            } else {
+                var inactiveColor = isW ? '#dc3545' : '#2950a8';
+                $(this).css({background: 'transparent', color: inactiveColor, border: '1.5px solid ' + inactiveColor});
+            }
         });
 
-        if (allTxnData !== null) { renderAllTransactions(); }
+        // Apply DataTable search (empty string = show all)
+        if (allTxnTable) {
+            allTxnTable.search(filter).draw();
+        }
+    });
+
+    // View details button within the DataTable
+    $(document).on('click', '.txn-details-modal-btn', function () {
+        showTransactionDetails(this);
     });
 
     // =====================================================
