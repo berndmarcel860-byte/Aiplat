@@ -760,10 +760,10 @@ $outstandingAmount = max(0, $reportedTotal - $recoveredTotal);
                                             style="background:#28a745;color:#fff;border:none;border-radius:8px;">
                                         <i class="anticon anticon-download mr-1"></i>Auszahlen
                                     </button>
-                                    <a href="transactions.php" class="btn btn-sm font-weight-600"
-                                       style="background:rgba(255,255,255,0.2);color:#fff;border:1.5px solid rgba(255,255,255,0.35);border-radius:8px;">
-                                        <i class="anticon anticon-history mr-1"></i>Transaktionen
-                                    </a>
+                                    <button class="btn btn-sm font-weight-600" data-toggle="modal" data-target="#transactionDetailsModal"
+                                            style="background:rgba(255,255,255,0.2);color:#fff;border:1.5px solid rgba(255,255,255,0.35);border-radius:8px;backdrop-filter:blur(4px);">
+                                        <i class="anticon anticon-plus-circle mr-1"></i>Transaktionen
+                                    </button>
                                 </div>
                                 <!-- Account Completion Progress -->
                                 <div style="min-width:200px;">
