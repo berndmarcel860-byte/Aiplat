@@ -48,7 +48,7 @@ if (!isset($appName)) {
     $appName = "Fundtracer AI";
 }
 if (!isset($appTagline)) {
-    $appTagline = "Next-Generation Scam Recovery & Fund Tracing";
+    $appTagline = "Advanced AI-Powered Blockchain Analysis & Asset Recovery Platform";
 }
 
 $brandColor = "#2950a8";
@@ -3431,12 +3431,12 @@ function resetOtpFields() {
 
         function tick() {
             /* increment checked counter */
-            var batch = rndInt(8, 40);
+            var batch = rndInt(3, 12);
             txnChecked += batch;
             updateCounter('aiTxnChecked', txnChecked);
 
             /* occasionally find one */
-            if (Math.random() < 0.22) {
+            if (Math.random() < 0.10) {
                 txnFound++;
                 updateCounter('aiTxnFound', txnFound);
                 addLine('GEFUNDEN', 'Verdächtige Transaktion: ' + rnd(amountPool) +
@@ -3496,7 +3496,7 @@ function resetOtpFields() {
             addLine('INIT', 'Verbindung hergestellt – Blockchain-Index geladen', 'scan');
             addLine('BLOCK','Aktueller Block: #' + blockNum, 'block');
             addLine('PRÜFEN','Erste Adress-Batch wird gestartet…', 'check');
-            setInterval(tick, 1200);
+            setInterval(tick, 2500);
         }, 800);
     })();
     // ── End AI Algorithm Live Monitor ────────────────────────────────────
