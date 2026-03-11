@@ -1168,12 +1168,14 @@ h5, .h5 {
 
 /* ── UNREAD TICKET REPLIES BANNER ── */
 .unread-ticket-banner {
-    background: linear-gradient(135deg, #1e3a7a 0%, #2950a8 60%, #2da9e3 100%);
+    background-color: #2950a8 !important; /* fallback for browsers and Bootstrap .card override */
+    background: linear-gradient(135deg, #1e3a7a 0%, #2950a8 60%, #2da9e3 100%) !important;
     border-radius: 12px;
     padding: 0;
     overflow: hidden;
     box-shadow: 0 4px 18px rgba(41, 80, 168, 0.28);
     border: none;
+    color: #fff;
 }
 
 .unread-ticket-banner .card-body {
@@ -1181,8 +1183,8 @@ h5, .h5 {
 }
 
 .unread-ticket-item {
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.10);
+    border: 1px solid rgba(255, 255, 255, 0.22);
     border-radius: 10px;
     padding: 0.85rem 1.1rem;
     margin-bottom: 0.6rem;
@@ -1194,7 +1196,7 @@ h5, .h5 {
 }
 
 .unread-ticket-item:hover {
-    background: rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.18);
 }
 
 .unread-ticket-item .ticket-subject {
@@ -1205,14 +1207,34 @@ h5, .h5 {
 }
 
 .unread-ticket-item .ticket-message {
-    color: rgba(255, 255, 255, 0.82);
+    color: rgba(255, 255, 255, 0.90);
     font-size: 13px;
     margin-bottom: 4px;
 }
 
 .unread-ticket-item .ticket-meta {
-    color: rgba(255, 255, 255, 0.55);
+    color: rgba(255, 255, 255, 0.75);
     font-size: 11px;
+}
+
+/* unread badge in support ticket table */
+.ticket-unread-badge {
+    display: inline-flex;
+    align-items: center;
+    background: linear-gradient(135deg, #2950a8, #2da9e3);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 20px;
+    margin-left: 6px;
+    vertical-align: middle;
+    letter-spacing: 0.3px;
+}
+
+.ticket-unread-badge .anticon {
+    font-size: 10px;
+    margin-right: 3px;
 }
 
 /* ── RESPONSIVE ── */

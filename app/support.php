@@ -80,10 +80,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_ticket'])) {
     }
 }
 
-// Get user's tickets
+// Get user's tickets with unread reply count
 $tickets = [];
 try {
-    $stmt = $pdo->prepare("SELECT * FROM support_tickets WHERE user_id = ? ORDER BY created_at DESC");
+    $stmt = $pdo->prepare("
+        SELECT st.*,
+               COUNT(tr.id) AS unread_replies
+        FROM support_tickets st
+        LEFT JOIN ticket_replies tr
+               ON tr.ticket_id = st.id
+              AND tr.admin_id IS NOT NULL
+              AND tr.read_at IS NULL
+        WHERE st.user_id = ?
+        GROUP BY st.id
+        ORDER BY st.created_at DESC
+    ");
     $stmt->execute([$_SESSION['user_id']]);
     $tickets = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
@@ -223,9 +234,19 @@ try {
                                     </thead>
                                     <tbody>
                                         <?php foreach ($tickets as $ticket): ?>
-                                        <tr>
+                                        <tr<?= $ticket['unread_replies'] > 0 ? ' class="table-active font-weight-bold"' : '' ?>>
                                             <td><strong><?= htmlspecialchars($ticket['ticket_number']) ?></strong></td>
-                                            <td><?= htmlspecialchars($ticket['subject']) ?></td>
+                                            <td>
+                                                <?= htmlspecialchars($ticket['subject']) ?>
+                                                <?php if ($ticket['unread_replies'] > 0): ?>
+                                                    <?php $replyCount = (int)$ticket['unread_replies']; ?>
+                                                    <span class="ticket-unread-badge"
+                                                          title="<?= $replyCount === 1 ? '1 ungelesene Antwort' : "$replyCount ungelesene Antworten" ?>">
+                                                        <i class="anticon anticon-message"></i>
+                                                        <?= $replyCount ?> neu
+                                                    </span>
+                                                <?php endif; ?>
+                                            </td>
                                             <td><?= htmlspecialchars($ticket['category']) ?></td>
                                             <td>
                                                 <span class="badge badge-<?= 
