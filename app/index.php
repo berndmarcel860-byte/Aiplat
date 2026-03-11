@@ -2229,7 +2229,7 @@ function resetOtpFields() {
     // 💳 TRANSACTION ITEM CLICK → MODAL
     // =====================================================
     $(document).on('click keypress', '.txn-row', function(e) {
-        if (e.type === 'keypress' && e.which !== 13) return;
+        if (e.type === 'keypress' && e.which !== 13 && e.which !== 32) return;
         const $el = $(this);
         const id        = $el.data('txn-id');
         const type      = $el.data('txn-type');
@@ -2242,7 +2242,7 @@ function resetOtpFields() {
         const isCredit  = ['refund','deposit'].includes(type);
         const amtColor  = isCredit ? '#28a745' : '#dc3545';
         const amtPrefix = isCredit ? '+' : '-';
-        const fmtAmt    = amtPrefix + '$' + amount.toLocaleString('de-DE', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        const fmtAmt    = amtPrefix + '€' + amount.toLocaleString('de-DE', {minimumFractionDigits: 2, maximumFractionDigits: 2});
 
         const fmtDate = date ? new Date(date).toLocaleString('de-DE', {
             year:'numeric', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'
