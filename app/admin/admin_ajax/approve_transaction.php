@@ -9,7 +9,7 @@ error_reporting(E_ALL);
 // Include admin session and email helper
 // =======================================================
 require_once '../admin_session.php';
-require_once '../../EmailHelper.php';
+require_once '../AdminEmailHelper.php';
 header('Content-Type: application/json');
 
 if (!isset($_POST['id']) || !is_numeric($_POST['id'])) {
@@ -71,7 +71,7 @@ try {
         if ($user) {
             // === 1️⃣ Send transaction approval email
             try {
-                $emailHelper = new EmailHelper($pdo);
+                $emailHelper = new AdminEmailHelper($pdo);
                 
                 $customVars = [
                     'amount' => number_format($transaction['amount'], 2) . ' €',
@@ -81,7 +81,7 @@ try {
                     'transaction_status' => 'Completed'
                 ];
                 
-                $emailHelper->sendEmail('deposit_received', $user['id'], $customVars);
+                $emailHelper->sendTemplateEmail('deposit_received', $user['id'], $customVars);
             } catch (Exception $e) {
                 error_log("Transaction approval email failed: " . $e->getMessage());
             }

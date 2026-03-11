@@ -2337,7 +2337,7 @@ $(function(){
 
     function updateDepositStepIndicator(step) {
         // Update step circles in the indicator bar
-        var $circles = $('#newDepositModal .modal-header').nextAll('.px-4').first().find('[style*="border-radius:50%"]');
+        var $circles = $('#newDepositModal form > .px-4').find('[style*="border-radius:50%"]');
         $circles.each(function(i) {
             var $circle = $(this);
             if (i + 1 < step) {
@@ -2358,7 +2358,7 @@ $(function(){
             }
         });
         // Update connector bars
-        var $bars = $('#newDepositModal .modal-header').nextAll('.px-4').first().find('[style*="height:2px"]');
+        var $bars = $('#newDepositModal form > .px-4').find('[style*="height:2px"]');
         $bars.each(function(i) {
             if (i + 1 < step) {
                 $(this).css('background', 'linear-gradient(90deg,#2950a8,#2da9e3)');
@@ -2444,7 +2444,7 @@ $(function(){
             $('#withdrawalSubmitBtn').show();
         }
         // Update withdrawal step indicator circles
-        var $circles = $('#newWithdrawalModal .modal-header').nextAll('.px-4').first().find('[style*="border-radius:50%"]');
+        var $circles = $('#newWithdrawalModal form > .px-4').find('[style*="border-radius:50%"]');
         $circles.each(function(i) {
             var $c = $(this);
             if (i + 1 < step) {
@@ -2461,7 +2461,7 @@ $(function(){
                 $c.next('div').css('color', '#6c757d');
             }
         });
-        var $bars = $('#newWithdrawalModal .modal-header').nextAll('.px-4').first().find('[style*="height:2px"]');
+        var $bars = $('#newWithdrawalModal form > .px-4').find('[style*="height:2px"]');
         $bars.each(function(i) {
             $(this).css('background', i + 1 < step ? 'linear-gradient(90deg,#28a745,#20c997)' : '#dee2e6');
         });
@@ -2510,7 +2510,7 @@ $(function(){
     // 🪟 FIX NESTED MODAL Z-INDEX (transaction details inside all-transactions)
     // =====================================================
     $(document).on('show.bs.modal', '.modal', function() {
-        var zIndex = 1040 + (10 * $('.modal:visible').length);
+        var zIndex = 1050 + (10 * $('.modal:visible').length);
         $(this).css('z-index', zIndex);
         setTimeout(function() {
             $('.modal-backdrop').not('.modal-stack').css('z-index', zIndex - 1).addClass('modal-stack');
