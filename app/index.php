@@ -1069,46 +1069,6 @@ $outstandingAmount = max(0, $reportedTotal - $recoveredTotal);
             </div>
         </div>
 
-        <?php if (!empty($unreadReplies)): ?>
-        <!-- UNREAD TICKET REPLY NOTIFICATIONS -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="card border-0 shadow-sm" style="border-left: 4px solid #2950a8 !important; background: linear-gradient(135deg, #e8f0fe, #f0f4ff);">
-                    <div class="card-body py-3 px-4">
-                        <div class="d-flex align-items-start">
-                            <div class="mr-3 mt-1 flex-shrink-0">
-                                <span style="display:inline-flex; align-items:center; justify-content:center; width:40px; height:40px; border-radius:10px; background:linear-gradient(135deg,#2950a8,#2da9e3);">
-                                    <i class="anticon anticon-message" style="color:#fff; font-size:20px;"></i>
-                                </span>
-                            </div>
-                            <div class="flex-grow-1">
-                                <div class="d-flex align-items-center justify-content-between flex-wrap">
-                                    <h6 class="mb-1 font-weight-bold" style="color:#0d1f5c;">
-                                        <i class="anticon anticon-bell mr-1" style="color:#2950a8;"></i>
-                                        Sie haben <?= count($unreadReplies) ?> ungelesene Antwort<?= count($unreadReplies) > 1 ? 'en' : '' ?> auf Ihr<?= count($unreadReplies) > 1 ? 'e' : '' ?> Support-Ticket<?= count($unreadReplies) > 1 ? 's' : '' ?>
-                                    </h6>
-                                    <a href="support.php" class="btn btn-primary btn-sm ml-2" style="white-space:nowrap; font-weight:500; background:linear-gradient(135deg,#2950a8,#2da9e3); border:none;">
-                                        <i class="anticon anticon-arrow-right mr-1"></i>Antworten lesen
-                                    </a>
-                                </div>
-                                <div class="mt-2">
-                                    <?php foreach ($unreadReplies as $reply): ?>
-                                    <div class="d-flex align-items-baseline flex-wrap mb-1" style="font-size:13px; color:#374151; gap:6px;">
-                                        <span class="badge badge-primary badge-pill" style="font-size:11px; background:#2950a8;">Neu</span>
-                                        <strong style="color:#0d1f5c;"><?= htmlspecialchars($reply['ticket_number'], ENT_QUOTES) ?>:</strong>
-                                        <span class="text-muted"><?= htmlspecialchars($reply['subject'], ENT_QUOTES) ?></span>
-                                        <span class="text-muted" style="font-size:11px; white-space:nowrap;"><?= date('d.m.Y H:i', strtotime($reply['created_at'])) ?> Uhr</span>
-                                    </div>
-                                    <?php endforeach; ?>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <?php endif; ?>
-
         <!-- UNREAD TICKET REPLIES NOTIFICATION -->
         <?php if (!empty($unreadReplies)): ?>
         <div class="row mb-4">
