@@ -66,6 +66,16 @@ class EmailHelper {
             $content = $this->replaceVariables($template['content'], $variables);
             $content = $this->handleConditionals($content, $variables);
 
+            // Strip full-HTML shell from legacy templates before wrapping.
+            // DB templates should contain only partial HTML; older templates that
+            // still include <!DOCTYPE…<html…<body…> would otherwise be embedded
+            // *inside* the wrapper, producing broken double-wrapped HTML.
+            if (strpos($content, '<!DOCTYPE') !== false || strpos($content, '<html') !== false) {
+                if (preg_match('/<body[^>]*>(.*?)<\/body>/is', $content, $m)) {
+                    $content = trim($m[1]);
+                }
+            }
+
             // Always wrap DB-fetched template content in the standard HTML email template
             $content = $this->wrapInTemplate($subject, $content, $variables);
 

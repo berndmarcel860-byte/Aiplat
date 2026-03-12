@@ -69,7 +69,7 @@ try {
             w.status COLLATE utf8mb4_unicode_ci as status,
             w.reference COLLATE utf8mb4_unicode_ci as reference,
             w.created_at,
-            COALESCE(upm.label, upm.cryptocurrency, upm.bank_name, w.method_code) COLLATE utf8mb4_unicode_ci as method_display,
+            COALESCE(upm.display_name, w.method_code) COLLATE utf8mb4_unicode_ci as method_display,
             w.payment_details COLLATE utf8mb4_unicode_ci as details,
             w.id as withdrawal_id,
             NULL as deposit_id,
@@ -82,7 +82,12 @@ try {
             w.processed_by as confirmed_by,
             NULL as ip_address
         FROM withdrawals w
-        LEFT JOIN user_payment_methods upm ON w.user_id = upm.user_id 
+        LEFT JOIN (
+            SELECT user_id, payment_method,
+                   COALESCE(label, cryptocurrency, bank_name, payment_method) AS display_name
+            FROM user_payment_methods
+            GROUP BY user_id, payment_method
+        ) upm ON w.user_id = upm.user_id
             AND w.method_code COLLATE utf8mb4_unicode_ci = upm.payment_method COLLATE utf8mb4_unicode_ci
         WHERE w.user_id = :user_id2
     ";

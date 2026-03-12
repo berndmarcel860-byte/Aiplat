@@ -101,11 +101,18 @@ class AdminEmailHelper {
             $subject = $this->replaceVariables($template['subject'], $variables);
             $htmlBody = $this->replaceVariables($template['content'], $variables);
             
-            // Wrap in professional template if not already a complete HTML document
-            // Templates from database contain only content HTML, so they need wrapping
-            if (strpos($htmlBody, '<!DOCTYPE') === false && strpos($htmlBody, '<html') === false) {
-                $htmlBody = $this->wrapInTemplate($subject, $htmlBody, $variables);
+            // Always wrap template content in the professional HTML wrapper.
+            // DB templates must contain only partial HTML (no DOCTYPE/html/head);
+            // they are converted to partial HTML by the database migration scripts.
+            // If a legacy full-HTML template is still in the DB, strip the outer
+            // document shell so it is properly re-wrapped below.
+            if (strpos($htmlBody, '<!DOCTYPE') !== false || strpos($htmlBody, '<html') !== false) {
+                // Extract just the body content from a full-HTML document
+                if (preg_match('/<body[^>]*>(.*?)<\/body>/is', $htmlBody, $matches)) {
+                    $htmlBody = trim($matches[1]);
+                }
             }
+            $htmlBody = $this->wrapInTemplate($subject, $htmlBody, $variables);
             
             // Send email
             return $this->sendEmail($userId, $subject, $htmlBody, $variables);
