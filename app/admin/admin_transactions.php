@@ -122,20 +122,57 @@ require_once 'admin_header.php';
 </div>
 
 <!-- Transaction Details Modal -->
-<div class="modal fade" id="transactionDetailsModal">
-    <div class="modal-dialog">
+<div class="modal fade" id="transactionDetailsModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-light border-bottom">
+                <h5 class="modal-title font-weight-bold">
+                    <i class="anticon anticon-file-text mr-2 text-primary"></i>
+                    Transaction Details
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <i class="anticon anticon-close"></i>
+                </button>
+            </div>
+            <div class="modal-body p-0" id="transactionDetailsContent">
+                <div class="text-center py-5">
+                    <i class="anticon anticon-loading anticon-spin font-size-24 text-primary"></i>
+                    <p class="mt-2 text-muted">Loading details…</p>
+                </div>
+            </div>
+            <div class="modal-footer" id="transactionDetailsFooter">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Rejection Reason Modal -->
+<div class="modal fade" id="rejectTransactionModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-centered" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Transaction Details</h5>
+                <h5 class="modal-title">
+                    <i class="anticon anticon-close-circle mr-1 text-danger"></i>
+                    Reject Transaction
+                </h5>
                 <button type="button" class="close" data-dismiss="modal">
                     <i class="anticon anticon-close"></i>
                 </button>
             </div>
-            <div class="modal-body" id="transactionDetailsContent">
-                <!-- AJAX will populate this -->
+            <div class="modal-body">
+                <p class="text-muted">Please provide a reason for rejecting this transaction. The user will be notified.</p>
+                <input type="hidden" id="rejectTransactionId">
+                <div class="form-group">
+                    <label for="rejectReason">Rejection Reason <span class="text-muted">(optional)</span></label>
+                    <textarea id="rejectReason" class="form-control" rows="3" placeholder="e.g. Insufficient documentation, suspicious activity..."></textarea>
+                </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmRejectTransaction">
+                    <i class="anticon anticon-stop mr-1"></i> Reject Transaction
+                </button>
             </div>
         </div>
     </div>
@@ -185,9 +222,24 @@ $(document).ready(function() {
     });
 
     /* ------------------------------------------------------------------ */
+    /*  Helper: badge HTML for type and status                             */
+    /* ------------------------------------------------------------------ */
+    function typeBadge(type) {
+        var map = { deposit: 'primary', withdrawal: 'warning', refund: 'success', fee: 'danger' };
+        var cls = map[type] || 'secondary';
+        return '<span class="badge badge-' + cls + '">' + (type.charAt(0).toUpperCase() + type.slice(1)) + '</span>';
+    }
+
+    function statusBadge(status) {
+        var map = { pending: 'warning', completed: 'success', failed: 'danger', cancelled: 'secondary' };
+        var cls = map[status] || 'secondary';
+        return '<span class="badge badge-' + cls + '">' + (status.charAt(0).toUpperCase() + status.slice(1)) + '</span>';
+    }
+
+    /* ------------------------------------------------------------------ */
     /*  Initialize DataTable                                               */
     /* ------------------------------------------------------------------ */
-    const transactionsTable = $('#transactionsTable').DataTable({
+    var transactionsTable = $('#transactionsTable').DataTable({
         processing: true,
         serverSide: true,
         ajax: {
@@ -196,176 +248,261 @@ $(document).ready(function() {
         },
         columns: [
             { data: 'id' },
-            { 
+            {
                 data: null,
-                render: function(data) {
-                    return data.user_first_name + ' ' + data.user_last_name;
+                render: function(data, type, row) {
+                    return row.user_first_name + ' ' + row.user_last_name;
                 }
             },
-            { 
+            {
                 data: 'type',
-                render: function(data) {
-                    const typeClass = {
-                        deposit: 'primary',
-                        withdrawal: 'warning',
-                        refund: 'success',
-                        fee: 'danger'
-                    }[data];
-                    return `<span class="badge badge-${typeClass}">${data.charAt(0).toUpperCase() + data.slice(1)}</span>`;
+                render: function(data, type, row) {
+                    return typeBadge(data);
                 }
             },
-            { 
+            {
                 data: 'amount',
                 render: function(data) {
-                    return '$' + parseFloat(data).toFixed(2);
+                    return '€' + parseFloat(data).toFixed(2);
                 }
             },
             { data: 'method_name' },
-            { 
+            {
                 data: 'status',
                 render: function(data) {
-                    const statusClass = {
-                        pending: 'warning',
-                        completed: 'success',
-                        failed: 'danger',
-                        cancelled: 'secondary'
-                    }[data];
-                    return `<span class="badge badge-${statusClass}">${data.charAt(0).toUpperCase() + data.slice(1)}</span>`;
+                    return statusBadge(data);
                 }
             },
-            { 
+            {
                 data: 'created_at',
                 render: function(data) {
                     return new Date(data).toLocaleString();
                 }
             },
             {
-                data: 'id',
+                data: null,
                 render: function(data, type, row) {
-                    let buttons = `
-                        <button class="btn btn-sm btn-primary view-transaction" data-id="${data}">
-                            <i class="anticon anticon-eye"></i>
-                        </button>`;
-                    
+                    var id = parseInt(row.id, 10);
+                    var buttons = '<button class="btn btn-sm btn-primary view-transaction" data-id="' + id + '" title="View Details">'
+                                + '<i class="anticon anticon-eye"></i></button>';
+
                     if (row.status === 'pending') {
-                        buttons += `
-                            <button class="btn btn-sm btn-success approve-transaction" data-id="${data}">
-                                <i class="anticon anticon-check"></i>
-                            </button>
-                            <button class="btn btn-sm btn-danger reject-transaction" data-id="${data}">
-                                <i class="anticon anticon-close"></i>
-                            </button>`;
+                        buttons += ' <button class="btn btn-sm btn-success approve-transaction" data-id="' + id + '" title="Approve">'
+                                 + '<i class="anticon anticon-check"></i></button>';
+                        buttons += ' <button class="btn btn-sm btn-danger reject-transaction" data-id="' + id + '" title="Reject">'
+                                 + '<i class="anticon anticon-close"></i></button>';
                     }
-                    
-                    return `<div class="btn-group">${buttons}</div>`;
+
+                    return '<div class="btn-group">' + buttons + '</div>';
                 }
             }
         ]
     });
 
-    // View Transaction Details
+    /* ------------------------------------------------------------------ */
+    /*  View Transaction Details                                           */
+    /* ------------------------------------------------------------------ */
     $('#transactionsTable').on('click', '.view-transaction', function() {
-        const transactionId = $(this).data('id');
-        
+        var transactionId = $(this).data('id');
+
+        // Show loading
+        $('#transactionDetailsContent').html(
+            '<div class="text-center py-5">'
+            + '<i class="anticon anticon-loading anticon-spin font-size-24 text-primary"></i>'
+            + '<p class="mt-2 text-muted">Loading details…</p>'
+            + '</div>'
+        );
+        $('#transactionDetailsFooter').html('<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>');
+        $('#transactionDetailsModal').modal('show');
+
         $.ajax({
             url: 'admin_ajax/get_transaction.php',
             type: 'GET',
             data: { id: transactionId },
+            dataType: 'json',
             success: function(response) {
-                if (response.success) {
-                    $('#transactionDetailsContent').html(`
-                        <div class="form-group">
-                            <label>Transaction ID</label>
-                            <p>${response.transaction.id}</p>
-                        </div>
-                        <div class="form-group">
-                            <label>User</label>
-                            <p>${response.transaction.user_first_name} ${response.transaction.user_last_name}</p>
-                        </div>
-                        <div class="form-group">
-                            <label>Type</label>
-                            <p>${response.transaction.type}</p>
-                        </div>
-                        <div class="form-group">
-                            <label>Amount</label>
-                            <p>$${parseFloat(response.transaction.amount).toFixed(2)}</p>
-                        </div>
-                        <div class="form-group">
-                            <label>Status</label>
-                            <p>${response.transaction.status}</p>
-                        </div>
-                        <div class="form-group">
-                            <label>Date</label>
-                            <p>${new Date(response.transaction.created_at).toLocaleString()}</p>
-                        </div>
-                        <div class="form-group">
-                            <label>Payment Method</label>
-                            <p>${response.transaction.method_name || 'N/A'}</p>
-                        </div>
-                        <div class="form-group">
-                            <label>Reference</label>
-                            <p>${response.transaction.reference || 'N/A'}</p>
-                        </div>
-                        <div class="form-group">
-                            <label>Admin Notes</label>
-                            <p>${response.transaction.admin_notes || 'N/A'}</p>
-                        </div>
-                    `);
-                    $('#transactionDetailsModal').modal('show');
-                } else {
-                    toastr.error(response.message);
+                if (!response.success) {
+                    $('#transactionDetailsContent').html(
+                        '<div class="alert alert-danger m-3">' + (response.message || 'Failed to load transaction.') + '</div>'
+                    );
+                    return;
                 }
+
+                var t  = response.transaction;
+                var isPending = (t.status === 'pending');
+
+                var typeHtml   = typeBadge(t.type);
+                var statusHtml = statusBadge(t.status);
+                var amount     = '€' + parseFloat(t.amount).toFixed(2);
+                var date       = new Date(t.created_at).toLocaleString();
+
+                var html = '<div class="p-4">'
+
+                    // ── Summary strip
+                    + '<div class="d-flex align-items-center mb-4 p-3 rounded" style="background:#f0f4ff;border-left:4px solid #4e73df">'
+                    +   '<div class="flex-grow-1">'
+                    +     '<div class="text-muted small mb-1">Transaction #' + t.id + '</div>'
+                    +     '<div class="font-weight-bold font-size-18">' + amount + '</div>'
+                    +   '</div>'
+                    +   '<div class="text-right">'
+                    +     '<div class="mb-1">' + typeHtml + '</div>'
+                    +     '<div>' + statusHtml + '</div>'
+                    +   '</div>'
+                    + '</div>'
+
+                    // ── Two-column grid
+                    + '<div class="row">'
+
+                    + '<div class="col-md-6">'
+                    +   '<div class="mb-3"><small class="text-muted text-uppercase font-weight-semibold">User</small>'
+                    +   '<div class="font-weight-medium">' + (t.user_first_name || '') + ' ' + (t.user_last_name || '') + '</div></div>'
+
+                    +   '<div class="mb-3"><small class="text-muted text-uppercase font-weight-semibold">Reference</small>'
+                    +   '<div class="font-weight-medium">' + (t.reference || '—') + '</div></div>'
+
+                    +   '<div class="mb-3"><small class="text-muted text-uppercase font-weight-semibold">Payment Method</small>'
+                    +   '<div class="font-weight-medium">' + (t.method_name || '—') + '</div></div>'
+                    + '</div>'
+
+                    + '<div class="col-md-6">'
+                    +   '<div class="mb-3"><small class="text-muted text-uppercase font-weight-semibold">Date Created</small>'
+                    +   '<div class="font-weight-medium">' + date + '</div></div>'
+
+                    +   '<div class="mb-3"><small class="text-muted text-uppercase font-weight-semibold">Type</small>'
+                    +   '<div>' + typeHtml + '</div></div>'
+
+                    +   '<div class="mb-3"><small class="text-muted text-uppercase font-weight-semibold">Status</small>'
+                    +   '<div>' + statusHtml + '</div></div>'
+                    + '</div>'
+
+                    + '</div>'; // row
+
+                if (t.admin_notes) {
+                    html += '<div class="alert alert-light border mt-2 mb-0">'
+                          + '<small class="text-muted text-uppercase font-weight-semibold d-block mb-1">Admin Notes</small>'
+                          + '<span>' + t.admin_notes + '</span>'
+                          + '</div>';
+                }
+
+                html += '</div>'; // p-4
+
+                $('#transactionDetailsContent').html(html);
+
+                // Footer buttons
+                var footer = '<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>';
+                if (isPending) {
+                    footer += ' <button type="button" class="btn btn-success modal-approve-transaction" data-id="' + t.id + '">'
+                            + '<i class="anticon anticon-check mr-1"></i>Approve</button>';
+                    footer += ' <button type="button" class="btn btn-danger modal-reject-transaction" data-id="' + t.id + '">'
+                            + '<i class="anticon anticon-close mr-1"></i>Reject</button>';
+                }
+                $('#transactionDetailsFooter').html(footer);
+            },
+            error: function() {
+                $('#transactionDetailsContent').html('<div class="alert alert-danger m-3">Network error. Please try again.</div>');
             }
         });
     });
 
-    // Approve Transaction
+    /* ------------------------------------------------------------------ */
+    /*  Approve Transaction (table row button)                             */
+    /* ------------------------------------------------------------------ */
     $('#transactionsTable').on('click', '.approve-transaction', function() {
-        const transactionId = $(this).data('id');
-        
-        if (confirm('Are you sure you want to approve this transaction?')) {
-            $.ajax({
-                url: 'admin_ajax/approve_transaction.php',
-                type: 'POST',
-                data: { id: transactionId },
-                success: function(response) {
-                    if (response.success) {
-                        toastr.success(response.message);
-                        transactionsTable.ajax.reload();
-                    } else {
-                        toastr.error(response.message);
-                    }
-                }
-            });
-        }
+        var transactionId = $(this).data('id');
+        if (!confirm('Are you sure you want to approve this transaction?')) return;
+        doApprove(transactionId);
     });
 
-    // Reject Transaction
+    /* ------------------------------------------------------------------ */
+    /*  Approve Transaction (modal footer button)                          */
+    /* ------------------------------------------------------------------ */
+    $('#transactionDetailsModal').on('click', '.modal-approve-transaction', function() {
+        var transactionId = $(this).data('id');
+        if (!confirm('Are you sure you want to approve this transaction?')) return;
+        $('#transactionDetailsModal').modal('hide');
+        doApprove(transactionId);
+    });
+
+    function doApprove(transactionId) {
+        $.ajax({
+            url: 'admin_ajax/approve_transaction.php',
+            type: 'POST',
+            data: { id: transactionId },
+            dataType: 'json',
+            success: function(response) {
+                if (response.success) {
+                    toastr.success(response.message);
+                    transactionsTable.ajax.reload();
+                } else {
+                    toastr.error(response.message || 'Failed to approve transaction.');
+                }
+            },
+            error: function() {
+                toastr.error('Network error. Please try again.');
+            }
+        });
+    }
+
+    /* ------------------------------------------------------------------ */
+    /*  Open Rejection Modal (table row button)                            */
+    /* ------------------------------------------------------------------ */
     $('#transactionsTable').on('click', '.reject-transaction', function() {
-        const transactionId = $(this).data('id');
-        
-        if (confirm('Are you sure you want to reject this transaction?')) {
-            $.ajax({
-                url: 'admin_ajax/reject_transaction.php',
-                type: 'POST',
-                data: { id: transactionId },
-                success: function(response) {
-                    if (response.success) {
-                        toastr.success(response.message);
-                        transactionsTable.ajax.reload();
-                    } else {
-                        toastr.error(response.message);
-                    }
-                }
-            });
-        }
+        var transactionId = $(this).data('id');
+        openRejectModal(transactionId);
     });
 
-    // Apply Filters
+    /* ------------------------------------------------------------------ */
+    /*  Open Rejection Modal (modal footer button)                         */
+    /* ------------------------------------------------------------------ */
+    $('#transactionDetailsModal').on('click', '.modal-reject-transaction', function() {
+        var transactionId = $(this).data('id');
+        $('#transactionDetailsModal').modal('hide');
+        openRejectModal(transactionId);
+    });
+
+    function openRejectModal(transactionId) {
+        $('#rejectTransactionId').val(transactionId);
+        $('#rejectReason').val('');
+        $('#rejectTransactionModal').modal('show');
+    }
+
+    /* ------------------------------------------------------------------ */
+    /*  Confirm Rejection                                                  */
+    /* ------------------------------------------------------------------ */
+    $('#confirmRejectTransaction').on('click', function() {
+        var transactionId = $('#rejectTransactionId').val();
+        var reason = $('#rejectReason').val().trim();
+
+        $(this).prop('disabled', true).html('<i class="anticon anticon-loading anticon-spin mr-1"></i>Rejecting…');
+
+        $.ajax({
+            url: 'admin_ajax/reject_transaction.php',
+            type: 'POST',
+            data: { id: transactionId, reason: reason },
+            dataType: 'json',
+            success: function(response) {
+                $('#confirmRejectTransaction').prop('disabled', false).html('<i class="anticon anticon-stop mr-1"></i> Reject Transaction');
+                $('#rejectTransactionModal').modal('hide');
+                if (response.success) {
+                    toastr.success(response.message);
+                    transactionsTable.ajax.reload();
+                } else {
+                    toastr.error(response.message || 'Failed to reject transaction.');
+                }
+            },
+            error: function() {
+                $('#confirmRejectTransaction').prop('disabled', false).html('<i class="anticon anticon-stop mr-1"></i> Reject Transaction');
+                toastr.error('Network error. Please try again.');
+            }
+        });
+    });
+
+    /* ------------------------------------------------------------------ */
+    /*  Apply Filters                                                      */
+    /* ------------------------------------------------------------------ */
     $('#filterTransactionsForm').submit(function(e) {
         e.preventDefault();
-        const formData = $(this).serialize();
-        
+        var formData = $(this).serialize();
         transactionsTable.ajax.url('admin_ajax/get_transactions.php?' + formData).load();
         $('#filterTransactionsModal').modal('hide');
     });

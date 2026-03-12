@@ -84,11 +84,13 @@ try {
             }
             
             $customVars = [
-                'amount' => number_format($withdrawal['amount'], 2) . ' €',
-                'reference' => $withdrawal['reference'] ?? 'WD-' . $withdrawal['id'],
-                'payment_method' => $methodName,
-                'payment_details' => $withdrawal['payment_details'] ?? '',
-                'transaction_date' => date('Y-m-d H:i:s')
+                'amount'             => number_format($withdrawal['amount'], 2),
+                'reference'          => $withdrawal['reference'] ?? 'WD-' . $withdrawal['id'],
+                'transaction_id'     => $withdrawal['reference'] ?? 'WD-' . $withdrawal['id'],
+                'payment_method'     => $methodName,
+                'payment_details'    => $withdrawal['payment_details'] ?? '',
+                'transaction_date'   => date('d.m.Y H:i'),
+                'transaction_status' => 'Abgeschlossen',
             ];
             
             $emailHelper->sendEmail('withdrawal_completed', $user['id'], $customVars);

@@ -243,17 +243,18 @@ class AdminEmailHelper {
                 'case_title' => htmlspecialchars($latestCase['title'] ?? ''),
                 'case_amount' => isset($latestCase['amount']) ? number_format($latestCase['amount'], 2, ',', '.') . ' €' : '',
                 
-                // System/Dynamic (5 variables)
-                'current_year' => date('Y'),
-                'current_date' => date('d.m.Y'),
-                'current_time' => date('H:i'),
+                // System/Dynamic (6 variables)
+                'current_year'  => date('Y'),
+                'current_date'  => date('d.m.Y'),
+                'current_time'  => date('H:i'),
                 'dashboard_url' => htmlspecialchars($settings['site_url'] ?? $this->siteUrl) . '/dashboard',
-                'login_url' => htmlspecialchars($settings['site_url'] ?? $this->siteUrl) . '/login.php',
+                'login_url'     => htmlspecialchars($settings['site_url'] ?? $this->siteUrl) . '/login.php',
+                'support_email' => htmlspecialchars($settings['contact_email'] ?? 'info@cryptofinanze.de'),
             ];
             
-            // Merge custom variables
+            // Merge custom variables (cast to string to avoid htmlspecialchars type errors)
             foreach ($customVars as $key => $value) {
-                $variables[$key] = htmlspecialchars($value);
+                $variables[$key] = htmlspecialchars((string)$value);
             }
             
             return $variables;

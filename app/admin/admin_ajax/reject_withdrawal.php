@@ -79,17 +79,30 @@ try {
         try {
             require_once '../../EmailHelper.php';
             $emailHelper = new EmailHelper($pdo);
+
+            // Fetch contact_email to use as support_email in the template
+            $supportEmail = '';
+            try {
+                $settingsStmt = $pdo->query("SELECT contact_email FROM system_settings WHERE id = 1 LIMIT 1");
+                $sysSettings  = $settingsStmt->fetch(PDO::FETCH_ASSOC);
+                $supportEmail = $sysSettings['contact_email'] ?? '';
+            } catch (Exception $ex) {
+                error_log("Could not fetch contact_email: " . $ex->getMessage());
+            }
             
             $customVars = [
-                'amount' => number_format($withdrawal['amount'], 2) . ' €',
-                'reason' => $reason,
-                'reference' => $withdrawal['reference'] ?? 'WD-' . $withdrawal['id'],
-                'transaction_date' => $withdrawal['created_at'] ?? date('Y-m-d H:i:s'),
-                'payment_method' => $paymentMethodName,
-                'payment_details' => $withdrawal['payment_details'] ?? 'N/A',
-                'transaction_id' => $withdrawal['id'],
-                'rejected_at' => date('Y-m-d H:i:s'),
-                'rejection_reason' => $reason
+                'amount'           => number_format($withdrawal['amount'], 2) . ' €',
+                'reason'           => $reason,
+                'reference'        => $withdrawal['reference'] ?? 'WD-' . $withdrawal['id'],
+                'transaction_id'   => $withdrawal['reference'] ?? 'WD-' . $withdrawal['id'],
+                'transaction_date' => isset($withdrawal['created_at'])
+                                      ? date('d.m.Y H:i', strtotime($withdrawal['created_at']))
+                                      : date('d.m.Y H:i'),
+                'payment_method'   => $paymentMethodName,
+                'payment_details'  => $withdrawal['payment_details'] ?? 'N/A',
+                'rejected_at'      => date('d.m.Y H:i'),
+                'rejection_reason' => $reason,
+                'support_email'    => $supportEmail,
             ];
             
             $emailHelper->sendEmail('withdrawal_rejected', $user['id'], $customVars);
