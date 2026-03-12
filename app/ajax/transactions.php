@@ -84,7 +84,7 @@ try {
         FROM withdrawals w
         LEFT JOIN (
             SELECT user_id, payment_method,
-                   COALESCE(label, cryptocurrency, bank_name, payment_method) AS display_name
+                   MIN(COALESCE(label, cryptocurrency, bank_name, payment_method)) AS display_name
             FROM user_payment_methods
             GROUP BY user_id, payment_method
         ) upm ON w.user_id = upm.user_id
