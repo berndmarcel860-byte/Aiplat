@@ -9,7 +9,7 @@ error_reporting(E_ALL);
 // Include admin session and email helper
 // =======================================================
 require_once '../admin_session.php';
-require_once '../../EmailHelper.php';
+require_once __DIR__ . '/../AdminEmailHelper.php';
 header('Content-Type: application/json');
 
 // =======================================================
@@ -92,7 +92,7 @@ try {
     // 7️⃣ Send deposit confirmation email
     // =======================================================
     try {
-        $emailHelper = new EmailHelper($pdo);
+        $emailHelper = new AdminEmailHelper($pdo);
         
         // Lookup payment method name
         $methodName = 'Unknown';
@@ -114,7 +114,7 @@ try {
             'deposit_id' => $transaction['id']
         ];
         
-        $emailHelper->sendEmail('deposit_received', $user['id'], $customVars);
+        $emailHelper->sendTemplateEmail('deposit_received', $user['id'], $customVars);
     } catch (Exception $e) {
         error_log("Deposit confirmation email failed: " . $e->getMessage());
     }

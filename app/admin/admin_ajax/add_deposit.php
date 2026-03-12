@@ -158,10 +158,10 @@ try {
     ]);
     $logStmt->execute([$currentAdminId, $logDetails]);
     
-    // Send email notification to user using EmailHelper with templates
+    // Send email notification to user using AdminEmailHelper with templates
     try {
-        require_once '../../EmailHelper.php';
-        $emailHelper = new EmailHelper($pdo);
+        require_once __DIR__ . '/../AdminEmailHelper.php';
+        $emailHelper = new AdminEmailHelper($pdo);
         
         // Prepare custom variables specific to this deposit
         $customVars = [
@@ -176,8 +176,7 @@ try {
         $templateKey = ($status === 'completed') ? 'deposit_completed_de' : 'deposit_pending_de';
         
         // Send email using template from email_templates table
-        // sendEmail() fetches the template from database and automatically replaces all variables
-        $success = $emailHelper->sendEmail($templateKey, $userId, $customVars);
+        $success = $emailHelper->sendTemplateEmail($templateKey, $userId, $customVars);
         
         if ($success) {
             error_log("Deposit email sent successfully to user ID: {$userId} for reference: {$reference} using template: {$templateKey}");

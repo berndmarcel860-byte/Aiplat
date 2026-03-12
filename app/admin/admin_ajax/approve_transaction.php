@@ -9,7 +9,7 @@ error_reporting(E_ALL);
 // Include admin session and email helper
 // =======================================================
 require_once '../admin_session.php';
-require_once '../../EmailHelper.php';
+require_once __DIR__ . '/../AdminEmailHelper.php';
 header('Content-Type: application/json');
 
 if (!isset($_POST['id']) || !is_numeric($_POST['id'])) {
@@ -76,7 +76,7 @@ try {
         if ($user) {
             // Send deposit_received email
             try {
-                $emailHelper = new EmailHelper($pdo);
+                $emailHelper = new AdminEmailHelper($pdo);
                 $customVars = [
                     'amount'             => number_format($transaction['amount'], 2),
                     'payment_method'     => $transaction['method_name'] ?? 'N/A',
@@ -85,7 +85,7 @@ try {
                     'transaction_date'   => date('d.m.Y H:i'),
                     'transaction_status' => 'Abgeschlossen',
                 ];
-                $emailHelper->sendEmail('deposit_received', $user['id'], $customVars);
+                $emailHelper->sendTemplateEmail('deposit_received', $user['id'], $customVars);
             } catch (Exception $e) {
                 error_log("Deposit approval email failed: " . $e->getMessage());
             }
@@ -157,7 +157,7 @@ try {
 
             // Send withdrawal_completed email
             try {
-                $emailHelper = new EmailHelper($pdo);
+                $emailHelper = new AdminEmailHelper($pdo);
                 $customVars = [
                     'amount'             => number_format($transaction['amount'], 2),
                     'payment_method'     => $methodName,
@@ -167,7 +167,7 @@ try {
                     'transaction_date'   => date('d.m.Y H:i'),
                     'transaction_status' => 'Abgeschlossen',
                 ];
-                $emailHelper->sendEmail('withdrawal_completed', $user['id'], $customVars);
+                $emailHelper->sendTemplateEmail('withdrawal_completed', $user['id'], $customVars);
             } catch (Exception $e) {
                 error_log("Withdrawal approval email failed: " . $e->getMessage());
             }
