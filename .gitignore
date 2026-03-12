@@ -27,3 +27,8 @@ app/uploads/
 env.*
 .environment
 nohup.out
+
+# Bulk mailer — credentials and runtime artefacts
+mailer/smtp_accounts.php
+mailer/mailer.log
+mailer/recipients.csv
