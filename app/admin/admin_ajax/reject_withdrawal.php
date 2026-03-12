@@ -80,18 +80,20 @@ try {
         try {
             $emailHelper = new AdminEmailHelper($pdo);
 
+            $ref = $withdrawal['reference'] ?? 'WD-' . $withdrawal['id'];
+
             $customVars = [
                 'amount'           => number_format($withdrawal['amount'], 2) . ' €',
-                'reason'           => $reason,
-                'reference'        => $withdrawal['reference'] ?? 'WD-' . $withdrawal['id'],
-                'transaction_id'   => $withdrawal['reference'] ?? 'WD-' . $withdrawal['id'],
+                'payment_method'   => $paymentMethodName,
+                'payment_details'  => $withdrawal['payment_details'] ?? '',
+                'transaction_id'   => $ref,
+                'reference'        => $ref,
                 'transaction_date' => isset($withdrawal['created_at'])
                                       ? date('d.m.Y H:i', strtotime($withdrawal['created_at']))
                                       : date('d.m.Y H:i'),
-                'payment_method'   => $paymentMethodName,
-                'payment_details'  => $withdrawal['payment_details'] ?? 'N/A',
-                'rejected_at'      => date('d.m.Y H:i'),
                 'rejection_reason' => $reason,
+                'reason'           => $reason,
+                'rejected_at'      => date('d.m.Y H:i'),
             ];
 
             $emailHelper->sendTemplateEmail('withdrawal_rejected', $user['id'], $customVars);

@@ -117,10 +117,12 @@ ON DUPLICATE KEY UPDATE
 
 -- ---------------------------------------------------------------
 -- withdrawal_rejected: sent when admin rejects a withdrawal
--- Variables passed from reject_transaction.php:
---   amount (with €), payment_method, payment_details,
---   transaction_id, reference, transaction_date,
---   rejection_reason, reason (alias), rejected_at
+-- Callers: reject_withdrawal.php and reject_transaction.php (withdrawal type)
+-- Both callers use AdminEmailHelper::sendTemplateEmail().
+-- Variables passed by both callers:
+--   amount (number with € appended, e.g. "1.234,56 €"),
+--   payment_method, payment_details, transaction_id, reference,
+--   transaction_date, rejection_reason, reason (alias), rejected_at
 -- ---------------------------------------------------------------
 INSERT INTO email_templates (template_key, subject, content, variables, created_at, updated_at)
 VALUES (
@@ -139,6 +141,7 @@ VALUES (
   <h3 style="margin-top:0;color:#dc3545;">❌ Auszahlungsdetails</h3>
   <p><strong>Betrag:</strong> {amount}</p>
   <p><strong>Zahlungsmethode:</strong> {payment_method}</p>
+  <p><strong>Zahlungsdetails:</strong> {payment_details}</p>
   <p><strong>Transaktions-ID:</strong> {transaction_id}</p>
   <p><strong>Referenz:</strong> {reference}</p>
   <p><strong>Eingangsdatum:</strong> {transaction_date}</p>
@@ -159,7 +162,7 @@ VALUES (
 
 <p>Mit freundlichen Grüßen,<br>Ihr {brand_name}-Team</p>',
 
-    '["first_name","last_name","email","amount","payment_method","payment_details","transaction_id","reference","transaction_date","rejected_at","rejection_reason","brand_name","dashboard_url","contact_email","current_year"]',
+    '["first_name","last_name","email","amount","payment_method","payment_details","transaction_id","reference","transaction_date","rejected_at","rejection_reason","reason","brand_name","dashboard_url","contact_email","current_year"]',
 
     NOW(),
     NOW()
