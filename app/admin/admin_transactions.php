@@ -347,7 +347,7 @@ $(document).ready(function() {
                     // ── Summary strip
                     + '<div class="d-flex align-items-center mb-4 p-3 rounded" style="background:' + stripColor + ';border-left:4px solid ' + stripBorder + '">'
                     +   '<div class="flex-grow-1">'
-                    +     '<div class="text-muted small mb-1">Transaction #' + t.id + ' &nbsp;·&nbsp; ' + (t.reference || '—') + '</div>'
+                    +     '<div class="text-muted small mb-1">Transaction #' + parseInt(t.id, 10) + ' &nbsp;·&nbsp; ' + $('<span>').text(t.reference || '—').html() + '</div>'
                     +     '<div class="font-weight-bold" style="font-size:1.5rem;">' + amount + '</div>'
                     +   '</div>'
                     +   '<div class="text-right">'

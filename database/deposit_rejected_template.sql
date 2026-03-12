@@ -2,7 +2,8 @@
 -- Sent automatically when an admin rejects a pending deposit.
 -- Content is in German. Uses partial HTML (no DOCTYPE) so EmailHelper.sendEmail()
 -- wraps it in the standard brand template automatically.
--- Safe to run multiple times: INSERT updates if template_key already exists.
+-- Uses INSERT ... ON DUPLICATE KEY UPDATE so running this multiple times is safe:
+-- the ON DUPLICATE KEY UPDATE clause updates the template if template_key already exists.
 
 INSERT INTO email_templates (template_key, subject, content, variables, created_at, updated_at)
 VALUES (
