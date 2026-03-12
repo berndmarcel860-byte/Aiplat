@@ -6,6 +6,7 @@ ini_set('display_errors', 0);
 error_reporting(E_ALL);
 
 require_once '../admin_session.php';
+require_once __DIR__ . '/../AdminEmailHelper.php';
 
 header('Content-Type: application/json');
 
@@ -49,11 +50,10 @@ try {
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
     
     if ($user) {
-        // Send rejection email using EmailHelper
+        // Send rejection email using AdminEmailHelper
         try {
-            require_once '../../EmailHelper.php';
-            $emailHelper = new EmailHelper($pdo);
-            
+            $emailHelper = new AdminEmailHelper($pdo);
+
             $customVars = [
                 'amount' => number_format($deposit['amount'], 2) . ' €',
                 'reason' => $reason,
@@ -61,8 +61,8 @@ try {
                 'transaction_id' => $deposit['reference'] ?? $deposit['id'],
                 'transaction_date' => date('d.m.Y H:i')
             ];
-            
-            $emailHelper->sendEmail('deposit_rejected', $user['id'], $customVars);
+
+            $emailHelper->sendTemplateEmail('deposit_rejected', $user['id'], $customVars);
         } catch (Exception $e) {
             error_log("Deposit rejection email failed: " . $e->getMessage());
         }
