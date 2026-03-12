@@ -59,7 +59,7 @@ try {
                 'reason' => $reason,
                 'reference' => $deposit['reference'] ?? $deposit['id'],
                 'transaction_id' => $deposit['reference'] ?? $deposit['id'],
-                'transaction_date' => date('Y-m-d H:i:s')
+                'transaction_date' => date('d.m.Y H:i')
             ];
             
             $emailHelper->sendEmail('deposit_rejected', $user['id'], $customVars);

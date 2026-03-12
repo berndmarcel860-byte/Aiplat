@@ -333,16 +333,22 @@ $(document).ready(function() {
 
                 var typeHtml   = typeBadge(t.type);
                 var statusHtml = statusBadge(t.status);
-                var amount     = '€' + parseFloat(t.amount).toFixed(2);
-                var date       = new Date(t.created_at).toLocaleString();
+                var amount     = '€' + parseFloat(t.amount || 0).toFixed(2);
+                var createdDate = t.created_at ? new Date(t.created_at).toLocaleString('de-DE') : '—';
+                var processedDate = t.processed_at ? new Date(t.processed_at).toLocaleString('de-DE') : '—';
+                var userFullName = ((t.user_first_name || '') + ' ' + (t.user_last_name || '')).trim() || '—';
+
+                // Determine status colour for summary strip
+                var stripColor = { pending: '#fff3cd', completed: '#d1e7dd', failed: '#f8d7da', cancelled: '#e2e3e5' }[t.status] || '#f0f4ff';
+                var stripBorder = { pending: '#ffc107', completed: '#198754', failed: '#dc3545', cancelled: '#6c757d' }[t.status] || '#4e73df';
 
                 var html = '<div class="p-4">'
 
                     // ── Summary strip
-                    + '<div class="d-flex align-items-center mb-4 p-3 rounded" style="background:#f0f4ff;border-left:4px solid #4e73df">'
+                    + '<div class="d-flex align-items-center mb-4 p-3 rounded" style="background:' + stripColor + ';border-left:4px solid ' + stripBorder + '">'
                     +   '<div class="flex-grow-1">'
-                    +     '<div class="text-muted small mb-1">Transaction #' + t.id + '</div>'
-                    +     '<div class="font-weight-bold font-size-18">' + amount + '</div>'
+                    +     '<div class="text-muted small mb-1">Transaction #' + t.id + ' &nbsp;·&nbsp; ' + (t.reference || '—') + '</div>'
+                    +     '<div class="font-weight-bold" style="font-size:1.5rem;">' + amount + '</div>'
                     +   '</div>'
                     +   '<div class="text-right">'
                     +     '<div class="mb-1">' + typeHtml + '</div>'
@@ -351,36 +357,63 @@ $(document).ready(function() {
                     + '</div>'
 
                     // ── Two-column grid
-                    + '<div class="row">'
+                    + '<div class="row no-gutters">'
 
-                    + '<div class="col-md-6">'
-                    +   '<div class="mb-3"><small class="text-muted text-uppercase font-weight-semibold">User</small>'
-                    +   '<div class="font-weight-medium">' + (t.user_first_name || '') + ' ' + (t.user_last_name || '') + '</div></div>'
+                    // Left column
+                    + '<div class="col-md-6 pr-md-3">'
 
-                    +   '<div class="mb-3"><small class="text-muted text-uppercase font-weight-semibold">Reference</small>'
-                    +   '<div class="font-weight-medium">' + (t.reference || '—') + '</div></div>'
+                    +   '<div class="mb-3">'
+                    +     '<small class="text-muted text-uppercase font-weight-semibold d-block" style="font-size:0.72rem;letter-spacing:.05em;">Customer</small>'
+                    +     '<div class="font-weight-medium">' + $('<span>').text(userFullName).html() + '</div>'
+                    +     (t.user_email ? '<div class="text-muted small">' + $('<span>').text(t.user_email).html() + '</div>' : '')
+                    +     '<div class="text-muted small">User ID: ' + (t.user_id || '—') + '</div>'
+                    +   '</div>'
 
-                    +   '<div class="mb-3"><small class="text-muted text-uppercase font-weight-semibold">Payment Method</small>'
-                    +   '<div class="font-weight-medium">' + (t.method_name || '—') + '</div></div>'
+                    +   '<div class="mb-3">'
+                    +     '<small class="text-muted text-uppercase font-weight-semibold d-block" style="font-size:0.72rem;letter-spacing:.05em;">Reference</small>'
+                    +     '<div class="font-weight-medium font-monospace">' + $('<span>').text(t.reference || '—').html() + '</div>'
+                    +   '</div>'
+
+                    +   '<div class="mb-3">'
+                    +     '<small class="text-muted text-uppercase font-weight-semibold d-block" style="font-size:0.72rem;letter-spacing:.05em;">Payment Method</small>'
+                    +     '<div class="font-weight-medium">' + $('<span>').text(t.method_name || '—').html() + '</div>'
+                    +   '</div>'
+
                     + '</div>'
 
-                    + '<div class="col-md-6">'
-                    +   '<div class="mb-3"><small class="text-muted text-uppercase font-weight-semibold">Date Created</small>'
-                    +   '<div class="font-weight-medium">' + date + '</div></div>'
+                    // Right column
+                    + '<div class="col-md-6 pl-md-3">'
 
-                    +   '<div class="mb-3"><small class="text-muted text-uppercase font-weight-semibold">Type</small>'
-                    +   '<div>' + typeHtml + '</div></div>'
+                    +   '<div class="mb-3">'
+                    +     '<small class="text-muted text-uppercase font-weight-semibold d-block" style="font-size:0.72rem;letter-spacing:.05em;">Date Created</small>'
+                    +     '<div class="font-weight-medium">' + createdDate + '</div>'
+                    +   '</div>'
 
-                    +   '<div class="mb-3"><small class="text-muted text-uppercase font-weight-semibold">Status</small>'
-                    +   '<div>' + statusHtml + '</div></div>'
+                    +   '<div class="mb-3">'
+                    +     '<small class="text-muted text-uppercase font-weight-semibold d-block" style="font-size:0.72rem;letter-spacing:.05em;">Processed</small>'
+                    +     '<div class="font-weight-medium">' + processedDate + '</div>'
+                    +   '</div>'
+
+                    +   '<div class="mb-3">'
+                    +     '<small class="text-muted text-uppercase font-weight-semibold d-block" style="font-size:0.72rem;letter-spacing:.05em;">Type / Status</small>'
+                    +     '<div>' + typeHtml + ' &nbsp; ' + statusHtml + '</div>'
+                    +   '</div>'
+
                     + '</div>'
 
                     + '</div>'; // row
 
+                if (t.description) {
+                    html += '<div class="border-top pt-3 mt-1 mb-2">'
+                          + '<small class="text-muted text-uppercase font-weight-semibold d-block mb-1" style="font-size:0.72rem;letter-spacing:.05em;">Description</small>'
+                          + '<div class="text-dark">' + $('<span>').text(t.description).html() + '</div>'
+                          + '</div>';
+                }
+
                 if (t.admin_notes) {
-                    html += '<div class="alert alert-light border mt-2 mb-0">'
-                          + '<small class="text-muted text-uppercase font-weight-semibold d-block mb-1">Admin Notes</small>'
-                          + '<span>' + t.admin_notes + '</span>'
+                    html += '<div class="alert alert-secondary border mt-2 mb-0 py-2">'
+                          + '<small class="text-muted text-uppercase font-weight-semibold d-block mb-1" style="font-size:0.72rem;letter-spacing:.05em;"><i class="anticon anticon-info-circle mr-1"></i>Admin Notes</small>'
+                          + '<span class="text-dark">' + $('<span>').text(t.admin_notes).html() + '</span>'
                           + '</div>';
                 }
 
@@ -391,9 +424,9 @@ $(document).ready(function() {
                 // Footer buttons
                 var footer = '<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>';
                 if (isPending) {
-                    footer += ' <button type="button" class="btn btn-success modal-approve-transaction" data-id="' + t.id + '">'
+                    footer += ' <button type="button" class="btn btn-success modal-approve-transaction" data-id="' + parseInt(t.id, 10) + '">'
                             + '<i class="anticon anticon-check mr-1"></i>Approve</button>';
-                    footer += ' <button type="button" class="btn btn-danger modal-reject-transaction" data-id="' + t.id + '">'
+                    footer += ' <button type="button" class="btn btn-danger modal-reject-transaction" data-id="' + parseInt(t.id, 10) + '">'
                             + '<i class="anticon anticon-close mr-1"></i>Reject</button>';
                 }
                 $('#transactionDetailsFooter').html(footer);

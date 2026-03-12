@@ -3,7 +3,7 @@ ini_set('display_errors', 0);
 error_reporting(E_ALL);
 
 require_once '../admin_session.php';
-require_once '../AdminEmailHelper.php';
+require_once '../../EmailHelper.php';
 
 header('Content-Type: application/json');
 
@@ -79,9 +79,9 @@ try {
                 }
             }
 
-            // Send withdrawal_rejected email via AdminEmailHelper
+            // Send withdrawal_rejected email via EmailHelper
             try {
-                $emailHelper = new AdminEmailHelper($pdo);
+                $emailHelper = new EmailHelper($pdo);
                 $customVars = [
                     'amount'           => number_format($transaction['amount'], 2) . ' €',
                     'payment_method'   => $methodName,
@@ -92,9 +92,10 @@ try {
                                          ? date('d.m.Y H:i', strtotime($transaction['created_at']))
                                          : date('d.m.Y H:i'),
                     'rejection_reason' => $reason ?: 'Keine Angabe',
+                    'reason'           => $reason ?: 'Keine Angabe',
                     'rejected_at'      => date('d.m.Y H:i'),
                 ];
-                $emailHelper->sendTemplateEmail('withdrawal_rejected', $user['id'], $customVars);
+                $emailHelper->sendEmail('withdrawal_rejected', $user['id'], $customVars);
             } catch (Exception $e) {
                 error_log("Withdrawal rejection email failed: " . $e->getMessage());
             }
