@@ -5,7 +5,8 @@
 
 Options -Indexes
 
-# Allow only exactly send_campaign.php — all other PHP files are denied
+# Deny all PHP files from direct web access
+# (run_campaign.php and DbBulkMailer.php are CLI-only)
 <FilesMatch "\.php$">
     Require all denied
 </FilesMatch>

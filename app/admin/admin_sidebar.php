@@ -170,6 +170,13 @@
                     </ul>
                 </li>
 
+                <li class="nav-item <?= basename($_SERVER['PHP_SELF']) == 'admin_mailer.php' ? 'active' : '' ?>">
+                    <a href="admin_mailer.php" data-page="campaign-mailer">
+                        <span class="icon-holder"><i class="anticon anticon-thunderbolt"></i></span>
+                        <span class="title">Campaign Mailer</span>
+                    </a>
+                </li>
+
                 <li class="nav-item dropdown <?= in_array(basename($_SERVER['PHP_SELF']), ['admin_support_tickets.php', 'admin_faq.php']) ? 'open' : '' ?>">
                     <a class="dropdown-toggle" href="javascript:void(0);" data-toggle="support">
                         <span class="icon-holder"><i class="anticon anticon-question-circle"></i></span>
