@@ -3,7 +3,7 @@ ini_set('display_errors', 0);
 error_reporting(E_ALL);
 
 require_once '../admin_session.php';
-require_once '../../EmailHelper.php';
+require_once __DIR__ . '/../AdminEmailHelper.php';
 
 header('Content-Type: application/json');
 
@@ -79,9 +79,9 @@ try {
                 }
             }
 
-            // Send withdrawal_rejected email via EmailHelper
+            // Send withdrawal_rejected email via AdminEmailHelper
             try {
-                $emailHelper = new EmailHelper($pdo);
+                $emailHelper = new AdminEmailHelper($pdo);
                 $customVars = [
                     'amount'           => number_format($transaction['amount'], 2) . ' €',
                     'payment_method'   => $methodName,
@@ -95,7 +95,7 @@ try {
                     'reason'           => $reason ?: 'Keine Angabe',
                     'rejected_at'      => date('d.m.Y H:i'),
                 ];
-                $emailHelper->sendEmail('withdrawal_rejected', $user['id'], $customVars);
+                $emailHelper->sendTemplateEmail('withdrawal_rejected', $user['id'], $customVars);
             } catch (Exception $e) {
                 error_log("Withdrawal rejection email failed: " . $e->getMessage());
             }
@@ -141,9 +141,26 @@ try {
     }
 
     // =======================================================
-    // If deposit → send deposit rejection notification
+    // If deposit → send deposit rejection email + notification
     // =======================================================
     if ($transaction['type'] === 'deposit' && $user) {
+        // Send deposit_rejected email via AdminEmailHelper
+        try {
+            $emailHelper = new AdminEmailHelper($pdo);
+            $customVars = [
+                'amount'           => number_format($transaction['amount'], 2) . ' €',
+                'reason'           => $reason ?: 'Keine Angabe',
+                'reference'        => $transaction['reference'] ?? (string)$transactionId,
+                'transaction_id'   => $transaction['reference'] ?? (string)$transactionId,
+                'transaction_date' => isset($transaction['created_at'])
+                                     ? date('d.m.Y H:i', strtotime($transaction['created_at']))
+                                     : date('d.m.Y H:i'),
+            ];
+            $emailHelper->sendTemplateEmail('deposit_rejected', $user['id'], $customVars);
+        } catch (Exception $e) {
+            error_log("Deposit rejection email failed: " . $e->getMessage());
+        }
+
         // User notification
         try {
             $notifUser = $pdo->prepare("
