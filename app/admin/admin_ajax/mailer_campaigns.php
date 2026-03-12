@@ -133,12 +133,12 @@ try {
             $phpBin     = PHP_BINARY ?: 'php';
             $logFile    = MAILER_DIR . '/mailer.log';
 
-            // Spawn a detached background process (works on Linux/Mac)
+            // $id is already (int)-cast above; escapeshellarg adds extra protection
             $cmd = sprintf(
-                '%s %s %d >> %s 2>&1 &',
+                '%s %s %s >> %s 2>&1 &',
                 escapeshellcmd($phpBin),
                 escapeshellarg($runnerPath),
-                $id,
+                escapeshellarg((string)$id),
                 escapeshellarg($logFile)
             );
 

@@ -208,10 +208,15 @@ class DbBulkMailer
                 "UPDATE mailer_campaigns SET status = ?, completed_at = NOW() WHERE id = ?"
             )->execute([$status, $this->campaignId]);
         } else {
-            $started = $status === 'running' ? ', started_at = NOW()' : '';
-            $this->pdo->prepare(
-                "UPDATE mailer_campaigns SET status = ? $started WHERE id = ?"
-            )->execute([$status, $this->campaignId]);
+            if ($status === 'running') {
+                $this->pdo->prepare(
+                    "UPDATE mailer_campaigns SET status = ?, started_at = NOW() WHERE id = ?"
+                )->execute([$status, $this->campaignId]);
+            } else {
+                $this->pdo->prepare(
+                    "UPDATE mailer_campaigns SET status = ? WHERE id = ?"
+                )->execute([$status, $this->campaignId]);
+            }
         }
     }
 

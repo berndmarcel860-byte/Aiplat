@@ -29,13 +29,13 @@ $sql = "SELECT l.id, l.campaign_id, c.name AS campaign_name,
           LEFT JOIN mailer_campaigns c ON c.id = l.campaign_id
           LEFT JOIN mailer_smtp_accounts s ON s.id = l.smtp_id
         " . ($where ? ' WHERE ' . implode(' AND ', $where) : '') . "
-         ORDER BY l.id DESC
-         LIMIT $limit";
+         ORDER BY l.id DESC";
 
 try {
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
-    $logs = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    // Limit applied in PHP to avoid interpolating $limit into SQL string
+    $logs = array_slice($stmt->fetchAll(PDO::FETCH_ASSOC), 0, $limit);
     echo json_encode(['ok' => true, 'logs' => $logs]);
 } catch (Exception $e) {
     echo json_encode(['ok' => false, 'message' => $e->getMessage()]);

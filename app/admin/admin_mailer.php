@@ -533,8 +533,10 @@ require_once 'admin_header.php';
 <!-- ═══════════════════════════════════════════════
      JavaScript
 ════════════════════════════════════════════════ -->
-<!-- Ace code editor -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.6/ace.js"></script>
+<!-- Ace code editor (SRI-verified) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.6/ace.js"
+        integrity="sha512-AiKprgIzXMjNL4gLpJPaRsKVqfKb+FpPdgSBJHRuPl0n2XBi9hTqBqf4I9Tvy9bG+TiGSZm3D8VNLxTDmm6Q=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
 <script>
 // ── Ace editor setup ──────────────────────────────────────────────────────────
