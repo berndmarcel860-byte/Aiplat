@@ -389,10 +389,6 @@ require_once 'admin_header.php';
 #usersTable_wrapper .dataTables_scroll {
     overflow-x: auto;
 }
-/* Ensure the table wrapper fills its card on desktop */
-.dataTables_scrollBody {
-    overflow-x: auto !important;
-}
 /* Compact action buttons on small screens */
 @media (max-width: 767px) {
     #usersTable td,
@@ -410,7 +406,7 @@ require_once 'admin_header.php';
     }
     .btn-group[role="group"] .btn {
         margin: 2px;
-        border-radius: 4px !important;
+        border-radius: 4px;
     }
     /* Full-width action buttons header flex on mobile */
     .page-header .header-action {
