@@ -9,22 +9,43 @@ require_once 'email_template_helper.php';
 // Initialize email helper
 $emailHelper = new EmailTemplateHelper($pdo);
 
-// Get available email templates (German templates prioritized)
-$templatesStmt = $pdo->query("
-    SELECT template_key, subject 
-    FROM email_templates 
-    WHERE template_key LIKE '%_de' OR template_key LIKE '%german%'
-    ORDER BY template_key ASC
-");
-$germanTemplates = $templatesStmt->fetchAll(PDO::FETCH_ASSOC);
+// Get notification templates from the dedicated email_notifications table (grouped by category)
+$notificationTemplates = [];
+try {
+    $notifStmt = $pdo->query("
+        SELECT notification_key, name, subject, description, category, variables
+        FROM email_notifications
+        WHERE is_active = 1
+        ORDER BY category ASC, name ASC
+    ");
+    $notifRows = $notifStmt->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($notifRows as $row) {
+        $notificationTemplates[$row['category']][] = $row;
+    }
+} catch (PDOException $e) {
+    // Table may not yet exist – fall back gracefully
+    $notificationTemplates = [];
+}
 
-// Get all templates as fallback
+// Get all generic email templates as fallback
 $allTemplatesStmt = $pdo->query("
     SELECT template_key, subject 
     FROM email_templates 
     ORDER BY template_key ASC
 ");
 $allTemplates = $allTemplatesStmt->fetchAll(PDO::FETCH_ASSOC);
+
+$categoryLabels = [
+    'engagement'  => '💬 Engagement & Inaktivität',
+    'onboarding'  => '🚀 Onboarding',
+    'kyc'         => '🔒 KYC & Verifizierung',
+    'financial'   => '💰 Finanzen & Transaktionen',
+    'case'        => '📁 Fallmanagement',
+    'security'    => '🛡️ Sicherheit',
+    'account'     => '👤 Konto',
+    'reporting'   => '📊 Berichte',
+    'general'     => '📧 Allgemein',
+];
 ?>
 
 <div class="main-content">
@@ -188,21 +209,32 @@ $allTemplates = $allTemplatesStmt->fetchAll(PDO::FETCH_ASSOC);
                         <label><strong>E-Mail-Vorlage auswählen</strong></label>
                         <select class="form-control" name="template_key" id="emailTemplate" required>
                             <option value="">-- Vorlage auswählen --</option>
-                            <optgroup label="Deutsche Vorlagen">
-                                <?php foreach ($germanTemplates as $template): ?>
-                                    <option value="<?= htmlspecialchars($template['template_key']) ?>">
-                                        <?= htmlspecialchars($template['subject']) ?>
-                                    </option>
+                            <?php if (!empty($notificationTemplates)): ?>
+                                <?php foreach ($notificationTemplates as $cat => $catTemplates): ?>
+                                    <optgroup label="<?= htmlspecialchars($categoryLabels[$cat] ?? ucfirst($cat)) ?>">
+                                        <?php foreach ($catTemplates as $notif): ?>
+                                            <option value="notif:<?= htmlspecialchars($notif['notification_key']) ?>"
+                                                    data-description="<?= htmlspecialchars($notif['description'] ?? '') ?>"
+                                                    data-vars="<?= htmlspecialchars($notif['variables']) ?>">
+                                                <?= htmlspecialchars($notif['name']) ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </optgroup>
                                 <?php endforeach; ?>
-                            </optgroup>
-                            <optgroup label="Alle Vorlagen">
-                                <?php foreach ($allTemplates as $template): ?>
-                                    <option value="<?= htmlspecialchars($template['template_key']) ?>">
-                                        <?= htmlspecialchars($template['subject']) ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </optgroup>
+                            <?php endif; ?>
+                            <?php if (!empty($allTemplates)): ?>
+                                <optgroup label="📋 E-Mail-Vorlagensystem">
+                                    <?php foreach ($allTemplates as $template): ?>
+                                        <option value="tpl:<?= htmlspecialchars($template['template_key']) ?>">
+                                            <?= htmlspecialchars($template['subject']) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </optgroup>
+                            <?php endif; ?>
                         </select>
+                        <div id="templateDescription" class="mt-2" style="display:none;">
+                            <small class="text-muted" id="templateDescriptionText"></small>
+                        </div>
                     </div>
                     
                     <div class="form-group">
@@ -398,6 +430,18 @@ $(document).ready(function() {
         $('#selectAll').prop('checked', selectedUsers.length > 0 && selectedUsers.length === $('.user-checkbox').length);
     }
     
+    // Show template description when a notification template is selected
+    $('#emailTemplate').on('change', function() {
+        const selected = $(this).find(':selected');
+        const desc = selected.data('description');
+        if (desc) {
+            $('#templateDescriptionText').text(desc);
+            $('#templateDescription').show();
+        } else {
+            $('#templateDescription').hide();
+        }
+    });
+
     // Send to selected
     $('#sendToSelectedBtn').click(function() {
         if (selectedUsers.length === 0) {
