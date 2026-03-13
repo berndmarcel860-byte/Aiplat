@@ -535,7 +535,7 @@ require_once 'admin_header.php';
 ════════════════════════════════════════════════ -->
 <!-- Ace code editor (SRI-verified) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.6/ace.js"
-        integrity="sha512-AiKprgIzXMjNL4gLpJPaRsKVqfKb+FpPdgSBJHRuPl0n2XBi9hTqBqf4I9Tvy9bG+TiGSZm3D8VNLxTDmm6Q=="
+        integrity="sha512-gqjFRgajJiZM9GmvHEE7vpzPSL/moP+zxpl4F6lRNJDOI3pb2Tvu8k5vUjAzJKsl0ragzWL0/WasKhR430PkCw=="
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
 <script>
