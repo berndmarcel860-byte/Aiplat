@@ -729,9 +729,15 @@ function loadTemplateSelect() {
         const sel = document.getElementById('cmpTemplateSelect');
         const cur = sel.value;
         sel.innerHTML = '<option value="">— Select template —</option>';
+        if (!d.ok) {
+            sel.innerHTML += '<option value="" disabled>⚠ Templates unavailable (run mailer_schema.sql)</option>';
+            return;
+        }
         (d.templates || []).forEach(t => {
             sel.innerHTML += `<option value="${t.id}" ${t.id == cur ? 'selected' : ''}>${escHtml(t.name)}</option>`;
         });
+    }).catch(() => {
+        document.getElementById('cmpTemplateSelect').innerHTML = '<option value="" disabled>⚠ Could not load templates</option>';
     });
 }
 
@@ -896,32 +902,56 @@ document.getElementById('importLeadsForm').addEventListener('submit', e => {
 // TEMPLATES
 // ═══════════════════════════════════════════════
 function loadTemplates() {
-    fetch('admin_ajax/mailer_templates.php?action=list').then(r => r.json()).then(d => {
-        const container = document.getElementById('templateCards');
-        container.innerHTML = '';
-        (d.templates || []).forEach(t => {
-            container.innerHTML += `
-              <div class="col-md-6 col-lg-4 mb-4">
-                <div class="card h-100">
-                  <div class="card-header d-flex justify-content-between align-items-center">
-                    <strong>${escHtml(t.name)}</strong>
-                    ${t.is_default ? '<span class="badge badge-primary">Default</span>' : ''}
-                  </div>
-                  <div class="card-body">
-                    <p class="text-muted mb-1" style="font-size:13px;">${escHtml(t.subject)}</p>
-                    <small class="text-muted">Updated: ${t.updated_at}</small>
-                  </div>
-                  <div class="card-footer d-flex justify-content-end">
-                    <button class="btn btn-xs btn-info mr-1 tpl-edit" data-id="${t.id}">Edit</button>
-                    <button class="btn btn-xs btn-danger tpl-del" data-id="${t.id}">Del</button>
-                  </div>
-                </div>
-              </div>`;
+    const container = document.getElementById('templateCards');
+    container.innerHTML = '<div class="col-12 text-center text-muted py-4"><i class="anticon anticon-loading anticon-spin"></i> Loading templates…</div>';
+    fetch('admin_ajax/mailer_templates.php?action=list')
+        .then(r => r.json())
+        .then(d => {
+            container.innerHTML = '';
+            if (!d.ok) {
+                container.innerHTML = `<div class="col-12"><div class="alert alert-danger">
+                    <strong>Could not load templates:</strong> ${escHtml(d.message || 'Unknown error')}
+                    <br><small class="text-muted">Make sure the database schema has been imported (database/mailer_schema.sql).</small>
+                </div></div>`;
+                return;
+            }
+            const templates = d.templates || [];
+            if (templates.length === 0) {
+                container.innerHTML = `<div class="col-12"><div class="alert alert-info">
+                    <i class="anticon anticon-info-circle"></i>
+                    No email templates yet. Click <strong>New Template</strong> to create your first professional template.
+                </div></div>`;
+                return;
+            }
+            templates.forEach(t => {
+                container.innerHTML += `
+                  <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card h-100">
+                      <div class="card-header d-flex justify-content-between align-items-center">
+                        <strong>${escHtml(t.name)}</strong>
+                        ${t.is_default ? '<span class="badge badge-primary">Default</span>' : ''}
+                      </div>
+                      <div class="card-body">
+                        <p class="text-muted mb-1" style="font-size:13px;">${escHtml(t.subject)}</p>
+                        <small class="text-muted">Updated: ${t.updated_at || '—'}</small>
+                      </div>
+                      <div class="card-footer d-flex justify-content-end">
+                        <button class="btn btn-xs btn-info mr-1 tpl-edit" data-id="${t.id}">Edit</button>
+                        <button class="btn btn-xs btn-danger tpl-del" data-id="${t.id}">Del</button>
+                      </div>
+                    </div>
+                  </div>`;
+            });
+        })
+        .catch(err => {
+            container.innerHTML = `<div class="col-12"><div class="alert alert-warning">
+                <strong>Network error:</strong> ${escHtml(err.message)}
+            </div></div>`;
         });
-    });
 }
 
 document.querySelector('#tab-templates-link').addEventListener('click', loadTemplates);
+loadTemplates();
 
 document.getElementById('templateCards').addEventListener('click', e => {
     const btn = e.target.closest('button');
