@@ -152,7 +152,7 @@ try {
                 // Send via AdminEmailHelper (wraps in branded template) or plain PHPMailer fallback
                 if ($adminEmailHelper) {
                     $success = $adminEmailHelper->sendDirectEmail(
-                        $fullUser['email'],
+                        $fullUser['id'],
                         $subject,
                         $content
                     );

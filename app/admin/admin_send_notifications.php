@@ -464,6 +464,7 @@ $(document).ready(function() {
         $.ajax({
             url: 'admin_ajax/preview_notification.php',
             type: 'POST',
+            dataType: 'json',
             data: { template_key: templateKey },
             success: function(response) {
                 if (response.success) {
@@ -495,6 +496,8 @@ $(document).ready(function() {
         $.ajax({
             url: 'admin_ajax/send_bulk_notifications.php',
             type: 'POST',
+            dataType: 'json',
+            timeout: 300000,
             data: {
                 template_key: templateKey,
                 users: JSON.stringify(selectedUsers)
@@ -514,9 +517,13 @@ $(document).ready(function() {
                     toastr.error(response.message || 'Fehler beim Senden der E-Mails');
                 }
             },
-            error: function() {
+            error: function(xhr, status) {
                 $('#progressModal').modal('hide');
-                toastr.error('Fehler beim Senden der E-Mails');
+                if (status === 'timeout') {
+                    toastr.error('Zeitüberschreitung beim Senden — bitte weniger Benutzer auswählen');
+                } else {
+                    toastr.error('Fehler beim Senden der E-Mails');
+                }
             }
         });
     });
