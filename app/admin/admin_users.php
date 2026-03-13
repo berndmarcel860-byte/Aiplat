@@ -57,8 +57,8 @@ require_once 'admin_header.php';
                 </div>
             </div>
             
-            <div class="m-t-25">
-                <table id="usersTable" class="table table-hover nowrap w-100">
+            <div class="m-t-25" style="overflow-x:auto;">
+                <table id="usersTable" class="table table-hover nowrap" style="width:100%;">
                     <thead>
                         <tr>
                             <th>ID</th>
@@ -380,6 +380,65 @@ require_once 'admin_header.php';
   </div>
 </div>
 
+<style>
+/* ── Admin Users Table: desktop + mobile responsive fixes ── */
+#usersTable_wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+#usersTable_wrapper .dataTables_scroll {
+    overflow-x: auto;
+}
+/* Ensure the table wrapper fills its card on desktop */
+.dataTables_scrollBody {
+    overflow-x: auto !important;
+}
+/* Compact action buttons on small screens */
+@media (max-width: 767px) {
+    #usersTable td,
+    #usersTable th {
+        font-size: 0.8rem;
+        padding: 0.35rem 0.5rem;
+    }
+    /* Responsive toggle row detail */
+    tr.child td.child {
+        padding: 0.5rem 1rem;
+    }
+    /* Allow the login filter buttons to wrap on mobile */
+    .btn-group[role="group"] {
+        flex-wrap: wrap;
+    }
+    .btn-group[role="group"] .btn {
+        margin: 2px;
+        border-radius: 4px !important;
+    }
+    /* Full-width action buttons header flex on mobile */
+    .page-header .header-action {
+        flex-wrap: wrap;
+    }
+    .d-flex.justify-content-between.align-items-center.mb-3 {
+        flex-direction: column;
+        align-items: flex-start !important;
+        gap: 0.5rem;
+    }
+    .d-flex.justify-content-between.align-items-center.mb-3 > .d-flex {
+        flex-wrap: wrap;
+        gap: 0.25rem;
+    }
+}
+/* Responsive row-detail child row style */
+tr.child td.child ul {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.25rem 1rem;
+}
+@media (max-width: 480px) {
+    tr.child td.child ul {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+
 <?php require_once 'admin_footer.php'; ?>
 
 <script>
@@ -402,7 +461,12 @@ $(document).ready(function() {
     const usersTable = $('#usersTable').DataTable({
         processing: true,
         serverSide: true,
-        responsive: true,
+        responsive: {
+            details: {
+                type: 'column',
+                target: 'tr'
+            }
+        },
         autoWidth: false,
         ajax: { 
             url: 'admin_ajax/get_users.php', 
@@ -414,7 +478,7 @@ $(document).ready(function() {
         order: [[0,'desc']],
         columns: [
             { data: 'id', responsivePriority: 14 },
-            { data: null, responsivePriority: 2, render: data => escapeHtml(data.first_name + ' ' + data.last_name) },
+            { data: null, responsivePriority: 2, render: (data, type, row) => escapeHtml(row.first_name + ' ' + row.last_name) },
             { data: 'email', responsivePriority: 3, render: d => escapeHtml(d) },
             { 
                 data: 'phone',
