@@ -58,7 +58,7 @@ require_once 'admin_header.php';
             </div>
             
             <div class="m-t-25">
-                <table id="usersTable" class="table table-hover">
+                <table id="usersTable" class="table table-hover nowrap w-100">
                     <thead>
                         <tr>
                             <th>ID</th>
@@ -402,6 +402,8 @@ $(document).ready(function() {
     const usersTable = $('#usersTable').DataTable({
         processing: true,
         serverSide: true,
+        responsive: true,
+        autoWidth: false,
         ajax: { 
             url: 'admin_ajax/get_users.php', 
             type: 'POST',
@@ -411,19 +413,22 @@ $(document).ready(function() {
         },
         order: [[0,'desc']],
         columns: [
-            { data: 'id' },
-            { data: null, render: data => escapeHtml(data.first_name + ' ' + data.last_name) },
-            { data: 'email', render: d => escapeHtml(d) },
+            { data: 'id', responsivePriority: 14 },
+            { data: null, responsivePriority: 2, render: data => escapeHtml(data.first_name + ' ' + data.last_name) },
+            { data: 'email', responsivePriority: 3, render: d => escapeHtml(d) },
             { 
                 data: 'phone',
+                responsivePriority: 8,
                 render: d => d ? escapeHtml(d) : '<span class="text-muted">—</span>'
             },
             { 
                 data: 'country',
+                responsivePriority: 9,
                 render: d => d ? escapeHtml(d) : '<span class="text-muted">—</span>'
             },
             { 
                 data: 'status',
+                responsivePriority: 4,
                 render: data => {
                     const cls = {active:'success', suspended:'warning', banned:'danger'}[data] ?? 'secondary';
                     return `<span class="badge badge-${cls}">${escapeHtml(data)}</span>`;
@@ -431,6 +436,7 @@ $(document).ready(function() {
             },
             { 
                 data: 'kyc_status',
+                responsivePriority: 6,
                 render: function(data) {
                     if (!data || data === 'none') return '<span class="badge badge-secondary">None</span>';
                     if (data === 'pending') return '<span class="badge badge-warning">Pending</span>';
@@ -441,6 +447,7 @@ $(document).ready(function() {
             },
             {
                 data: 'wallet_status',
+                responsivePriority: 11,
                 render: function(data) {
                     if (!data || data === 'none') return '<span class="badge badge-secondary">None</span>';
                     if (data === 'pending') return '<span class="badge badge-warning">Pending</span>';
@@ -452,20 +459,24 @@ $(document).ready(function() {
             },
             {
                 data: 'onboarding_done',
+                responsivePriority: 10,
                 render: function(data) {
                     return parseInt(data) ? '<span class="badge badge-success">Done</span>' : '<span class="badge badge-warning">Pending</span>';
                 }
             },
             {
                 data: 'cases_count',
+                responsivePriority: 12,
                 render: d => `<span class="badge badge-${parseInt(d) > 0 ? 'primary' : 'light text-muted'}">${parseInt(d)}</span>`
             },
             {
                 data: 'tickets_count',
+                responsivePriority: 13,
                 render: d => `<span class="badge badge-${parseInt(d) > 0 ? 'info' : 'light text-muted'}">${parseInt(d)}</span>`
             },
             { 
                 data: 'last_login',
+                responsivePriority: 7,
                 render: function(data) {
                     if (!data) return '<span class="badge badge-danger">Never</span>';
                     const date = new Date(data);
@@ -476,11 +487,12 @@ $(document).ready(function() {
                     return `<span class="badge badge-${badgeClass}" title="${date.toLocaleString()}">${days}d ago</span>`;
                 }
             },
-            { data: 'balance', render: d => '$' + parseFloat(d).toFixed(2) },
-            { data: 'created_at', render: d => new Date(d).toLocaleDateString() },
+            { data: 'balance', responsivePriority: 5, render: d => '$' + parseFloat(d).toFixed(2) },
+            { data: 'created_at', responsivePriority: 15, render: d => new Date(d).toLocaleDateString() },
             {
                 data: null,
                 orderable: false,
+                responsivePriority: 1,
                 render: function(data, type, row) {
                     const email = escapeHtml(row.email);
                     const name  = escapeHtml(row.first_name + ' ' + row.last_name);
