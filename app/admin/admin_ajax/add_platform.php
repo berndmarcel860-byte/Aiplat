@@ -84,33 +84,36 @@ try {
     $platform_id = $pdo->lastInsertId();
     
     // Send notification emails to all active users about new scam platform
-    try {
-        require_once dirname(__FILE__, 2) . '/AdminEmailHelper.php';
-        $emailHelper = new AdminEmailHelper($pdo);
+    // Only if the admin checked "Notify all users"
+    $emailsSent = 0;
+    if (!empty($_POST['notify_users'])) {
+        try {
+            require_once dirname(__FILE__, 2) . '/AdminEmailHelper.php';
+            $emailHelper = new AdminEmailHelper($pdo);
 
-        // Build custom variables that the alert_platform template uses
-        $platformUrlLine = $url
-            ? '<li><strong>URL:</strong> ' . htmlspecialchars($url) . '</li>'
-            : '';
+            // Build custom variables that the alert_platform template uses
+            $platformUrlLine = $url
+                ? '<li><strong>URL:</strong> ' . htmlspecialchars($url) . '</li>'
+                : '';
 
-        $customVars = [
-            'platform_name'     => $name,
-            'platform_type'     => ucfirst($type),
-            'platform_url'      => $url ?? '',
-            'platform_url_line' => $platformUrlLine,
-        ];
+            $customVars = [
+                'platform_name'     => $name,
+                'platform_type'     => ucfirst($type),
+                'platform_url'      => $url ?? '',
+                'platform_url_line' => $platformUrlLine,
+            ];
 
-        $usersStmt = $pdo->query("SELECT id FROM users WHERE status = 'active' AND is_verified = 1 LIMIT 500");
-        $users = $usersStmt->fetchAll(PDO::FETCH_ASSOC);
+            $usersStmt = $pdo->query("SELECT id FROM users WHERE status = 'active' AND is_verified = 1 LIMIT 500");
+            $users = $usersStmt->fetchAll(PDO::FETCH_ASSOC);
 
-        $emailsSent = 0;
-        foreach ($users as $user) {
-            if ($emailHelper->sendTemplateEmail('alert_platform', $user['id'], $customVars)) {
-                $emailsSent++;
+            foreach ($users as $user) {
+                if ($emailHelper->sendTemplateEmail('alert_platform', $user['id'], $customVars)) {
+                    $emailsSent++;
+                }
             }
+        } catch (Exception $emailEx) {
+            error_log("Failed to send scam platform notifications: " . $emailEx->getMessage());
         }
-    } catch (Exception $emailEx) {
-        error_log("Failed to send scam platform notifications: " . $emailEx->getMessage());
     }
     
     // Log the action
@@ -131,7 +134,9 @@ try {
     
     echo json_encode([
         'success' => true, 
-        'message' => "Platform added successfully! Sent {$emailsSent} notification emails to users.",
+        'message' => $emailsSent > 0
+            ? "Platform added successfully! Sent {$emailsSent} notification emails to users."
+            : "Platform added successfully!",
         'platform_id' => $platform_id,
         'emails_sent' => $emailsSent
     ]);
