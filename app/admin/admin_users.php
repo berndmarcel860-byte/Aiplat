@@ -27,6 +27,9 @@ require_once 'admin_header.php';
                     <button class="btn btn-warning mr-2" id="sendKycRemindersBtn">
                         <i class="anticon anticon-mail"></i> Send KYC Reminders
                     </button>
+                    <button class="btn btn-info mr-2" data-toggle="modal" data-target="#sendMailAllModal">
+                        <i class="anticon anticon-mail"></i> Send Mail to All
+                    </button>
                     <button class="btn btn-primary" data-toggle="modal" data-target="#addUserModal">
                         <i class="anticon anticon-plus"></i> Add User
                     </button>
@@ -229,6 +232,50 @@ require_once 'admin_header.php';
           <button type="button" class="btn btn-default" data-dismiss="modal"><i class="anticon anticon-close mr-1"></i>Cancel</button>
           <button type="submit" class="btn btn-success">
             <i class="anticon anticon-send mr-1"></i> Send Email
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Send Mail to All Users Modal -->
+<div class="modal fade" id="sendMailAllModal">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header" style="background:linear-gradient(90deg,#17a2b8,#138496);color:#fff;">
+        <h5 class="modal-title">
+          <span style="background:rgba(255,255,255,0.2);border-radius:50%;width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;margin-right:8px;">
+            <i class="anticon anticon-mail"></i>
+          </span>
+          Send Email to All Active Users
+        </h5>
+        <button type="button" class="close text-white" data-dismiss="modal"><i class="anticon anticon-close"></i></button>
+      </div>
+      <form id="sendMailAllForm">
+        <div class="modal-body">
+          <div class="alert alert-warning">
+            <i class="anticon anticon-warning"></i> <strong>Warning:</strong> This will send an email to <strong>all active verified users</strong>. Please double-check your subject and message before sending.
+          </div>
+          <div class="form-group">
+            <label><i class="anticon anticon-tag text-muted mr-1"></i> Subject <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" name="subject" id="send_mail_all_subject" placeholder="Enter email subject" required>
+          </div>
+          <div class="form-group">
+            <label><i class="anticon anticon-align-left text-muted mr-1"></i> Message <span class="text-danger">*</span></label>
+            <textarea class="form-control" name="message" id="send_mail_all_content" rows="8" placeholder="Enter your message here. HTML is supported." required></textarea>
+            <small class="form-text text-muted">
+              <strong>Variables:</strong> {first_name}, {last_name}, {email}, {user_id}, {site_url}, {site_name}, {contact_email}
+            </small>
+          </div>
+          <div class="alert alert-info mb-0">
+            <i class="anticon anticon-info-circle"></i> Your message will be automatically wrapped in the professional HTML email template with header, signature, and footer.
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal"><i class="anticon anticon-close mr-1"></i>Cancel</button>
+          <button type="submit" class="btn btn-info">
+            <i class="anticon anticon-send mr-1"></i> Send to All Users
           </button>
         </div>
       </form>
@@ -794,6 +841,51 @@ $(document).ready(function() {
         });
     });
     
+    // Send Mail to All Users Form Submission
+    $('#sendMailAllForm').submit(function(e) {
+        e.preventDefault();
+
+        const subject = $('#send_mail_all_subject').val().trim();
+        const message = $('#send_mail_all_content').val().trim();
+
+        if (!subject || !message) {
+            toastr.error('Please fill in both subject and message.');
+            return;
+        }
+
+        if (!confirm('Are you sure you want to send this email to ALL active users? This action cannot be undone.')) {
+            return;
+        }
+
+        $.ajax({
+            url: 'admin_ajax/send_all_users_email.php',
+            type: 'POST',
+            data: { subject: subject, message: message },
+            dataType: 'json',
+            beforeSend: function() {
+                $('#sendMailAllForm button[type="submit"]').prop('disabled', true)
+                    .html('<i class="anticon anticon-loading anticon-spin mr-1"></i> Sending...');
+            },
+            success: function(response) {
+                if (response.success) {
+                    toastr.success(response.message);
+                    $('#sendMailAllModal').modal('hide');
+                    $('#sendMailAllForm')[0].reset();
+                } else {
+                    toastr.error(response.message || 'Failed to send emails');
+                }
+            },
+            error: function(xhr) {
+                console.error('Error:', xhr.responseText);
+                toastr.error('Failed to send emails. Please check console for details.');
+            },
+            complete: function() {
+                $('#sendMailAllForm button[type="submit"]').prop('disabled', false)
+                    .html('<i class="anticon anticon-send mr-1"></i> Send to All Users');
+            }
+        });
+    });
+
     // Login Filter Buttons
     $('.filter-login').click(function() {
         $('.filter-login').removeClass('active');
