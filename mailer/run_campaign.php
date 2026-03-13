@@ -21,19 +21,20 @@ if ($campaignId <= 0) {
     exit(1);
 }
 
-// Load DB connection (identical credentials to the main app)
-$configFile = __DIR__ . '/../app/config.php';
-if (!file_exists($configFile)) {
-    fwrite(STDERR, "config.php not found at: $configFile\n");
+// Load the mailer's own DB connection (external DB when MAILER_DB_* env vars
+// are set; falls back to the main app credentials when they are not).
+$mailerConfigFile = __DIR__ . '/mailer_config.php';
+if (!file_exists($mailerConfigFile)) {
+    fwrite(STDERR, "mailer_config.php not found at: $mailerConfigFile\n");
     exit(1);
 }
-require_once $configFile;
+require_once $mailerConfigFile;
 
 require_once __DIR__ . '/SmtpClient.php';
 require_once __DIR__ . '/DbBulkMailer.php';
 
 // ── Load campaign ─────────────────────────────────────────────────────────────
-$stmt = $pdo->prepare("SELECT * FROM mailer_campaigns WHERE id = ?");
+$stmt = $mailerPdo->prepare("SELECT * FROM mailer_campaigns WHERE id = ?");
 $stmt->execute([$campaignId]);
 $campaign = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -50,7 +51,7 @@ if ($campaign['status'] === 'running') {
 // ── Load HTML template ────────────────────────────────────────────────────────
 $htmlBody = '';
 if ($campaign['template_id']) {
-    $tStmt = $pdo->prepare("SELECT html_body FROM mailer_templates WHERE id = ?");
+    $tStmt = $mailerPdo->prepare("SELECT html_body FROM mailer_templates WHERE id = ?");
     $tStmt->execute([$campaign['template_id']]);
     $tRow = $tStmt->fetch(PDO::FETCH_ASSOC);
     if ($tRow) {
@@ -67,7 +68,7 @@ if (empty($htmlBody)) {
 $htmlBody = wrapEmailBody($htmlBody, $campaign);
 
 // ── Load recipients (active leads not already sent to in this campaign) ────────
-$leadsStmt = $pdo->prepare(
+$leadsStmt = $mailerPdo->prepare(
     "SELECT l.id AS lead_id, l.email, l.name
        FROM mailer_leads l
       WHERE l.status = 'active'
@@ -84,16 +85,16 @@ $recipients = $leadsStmt->fetchAll(PDO::FETCH_ASSOC);
 if (empty($recipients)) {
     fwrite(STDOUT, "No eligible recipients for campaign #$campaignId.\n");
     // Mark completed if nothing to send
-    $pdo->prepare("UPDATE mailer_campaigns SET status='completed', completed_at=NOW() WHERE id=?")->execute([$campaignId]);
+    $mailerPdo->prepare("UPDATE mailer_campaigns SET status='completed', completed_at=NOW() WHERE id=?")->execute([$campaignId]);
     exit(0);
 }
 
 // Update total_recipients count
-$pdo->prepare("UPDATE mailer_campaigns SET total_recipients = ? WHERE id = ?")->execute([count($recipients), $campaignId]);
+$mailerPdo->prepare("UPDATE mailer_campaigns SET total_recipients = ? WHERE id = ?")->execute([count($recipients), $campaignId]);
 
 // ── Run ───────────────────────────────────────────────────────────────────────
 try {
-    $mailer = new DbBulkMailer($pdo, $campaignId, [
+    $mailer = new DbBulkMailer($mailerPdo, $campaignId, [
         'emails_per_account' => (int)$campaign['emails_per_account'],
         'pause_seconds'      => (int)$campaign['pause_seconds'],
         'reply_to'           => $campaign['reply_to'],
@@ -106,7 +107,7 @@ try {
     echo "Failed: {$stats['failed']}\n";
 } catch (RuntimeException $e) {
     fwrite(STDERR, "ERROR: " . $e->getMessage() . "\n");
-    $pdo->prepare("UPDATE mailer_campaigns SET status='failed' WHERE id=?")->execute([$campaignId]);
+    $mailerPdo->prepare("UPDATE mailer_campaigns SET status='failed' WHERE id=?")->execute([$campaignId]);
     exit(1);
 }
 
@@ -114,16 +115,18 @@ try {
 
 function wrapEmailBody(string $partial, array $campaign): string
 {
-    // Resolve brand settings from DB if possible
-    global $pdo;
+    // Resolve brand settings from DB if possible; MAILER_BASE_URL overrides site_url
+    global $mailerPdo;
     $settings = [];
     try {
-        $s = $pdo->query("SELECT setting_key, setting_value FROM system_settings")->fetchAll(PDO::FETCH_KEY_PAIR);
+        $s = $mailerPdo->query("SELECT setting_key, setting_value FROM system_settings")->fetchAll(PDO::FETCH_KEY_PAIR);
         $settings = $s;
     } catch (Exception $e) { }
 
     $brand   = $settings['brand_name']      ?? 'Novalnet AI';
-    $siteUrl = $settings['site_url']        ?? 'https://novalnet-ai.de';
+    // MAILER_BASE_URL is always defined by mailer_config.php (loaded before this function).
+    // If it is empty, fall back to the site_url from the DB settings table.
+    $siteUrl = (MAILER_BASE_URL !== '') ? MAILER_BASE_URL : ($settings['site_url'] ?? '');
     $addr    = $settings['company_address'] ?? 'Novalnet AI GmbH · BaFin-reg. · Deutschland';
     $ctaUrl  = !empty($campaign['cta_url']) ? $campaign['cta_url'] : $siteUrl . '/kontakt.php';
     $unsubUrl = $siteUrl . '/unsubscribe.php?email={email}';

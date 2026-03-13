@@ -1,6 +1,7 @@
 <?php
 // admin_ajax/mailer_templates.php — CRUD for email templates
 require_once '../admin_session.php';
+require_once '../mailer_db.php';
 header('Content-Type: application/json');
 if (!is_admin_logged_in()) { echo json_encode(['ok' => false, 'message' => 'Unauthorized']); exit; }
 
@@ -43,20 +44,20 @@ try {
     switch ($action) {
 
         case 'list':
-            $rows = $pdo->query(
+            $rows = $mailerPdo->query(
                 "SELECT id, name, subject, is_default, updated_at FROM mailer_templates ORDER BY id DESC"
             )->fetchAll(PDO::FETCH_ASSOC);
             echo json_encode(['ok' => true, 'templates' => $rows]);
             break;
 
         case 'list_short':
-            $rows = $pdo->query("SELECT id, name FROM mailer_templates ORDER BY name ASC")->fetchAll(PDO::FETCH_ASSOC);
+            $rows = $mailerPdo->query("SELECT id, name FROM mailer_templates ORDER BY name ASC")->fetchAll(PDO::FETCH_ASSOC);
             echo json_encode(['ok' => true, 'templates' => $rows]);
             break;
 
         case 'get':
             $id   = (int)($_GET['id'] ?? 0);
-            $stmt = $pdo->prepare("SELECT id,name,subject,html_body,is_default FROM mailer_templates WHERE id=?");
+            $stmt = $mailerPdo->prepare("SELECT id,name,subject,html_body,is_default FROM mailer_templates WHERE id=?");
             $stmt->execute([$id]);
             $row  = $stmt->fetch(PDO::FETCH_ASSOC);
             if (!$row) { echo json_encode(['ok' => false, 'message' => 'Not found']); break; }
@@ -88,16 +89,16 @@ try {
             }
 
             if ($isDefault) {
-                $pdo->exec("UPDATE mailer_templates SET is_default=0");
+                $mailerPdo->exec("UPDATE mailer_templates SET is_default=0");
             }
 
             if ($action === 'create') {
-                $pdo->prepare(
+                $mailerPdo->prepare(
                     "INSERT INTO mailer_templates (name,subject,html_body,is_default) VALUES (?,?,?,?)"
                 )->execute([$name, $subject, $htmlBody, $isDefault]);
                 echo json_encode(['ok' => true, 'message' => 'Template saved.']);
             } else {
-                $pdo->prepare(
+                $mailerPdo->prepare(
                     "UPDATE mailer_templates SET name=?,subject=?,html_body=?,is_default=? WHERE id=?"
                 )->execute([$name, $subject, $htmlBody, $isDefault, $id]);
                 echo json_encode(['ok' => true, 'message' => 'Template updated.']);
@@ -106,7 +107,7 @@ try {
 
         case 'delete':
             $id = (int)($_POST['id'] ?? 0);
-            $pdo->prepare("DELETE FROM mailer_templates WHERE id=?")->execute([$id]);
+            $mailerPdo->prepare("DELETE FROM mailer_templates WHERE id=?")->execute([$id]);
             echo json_encode(['ok' => true, 'message' => 'Template deleted.']);
             break;
 

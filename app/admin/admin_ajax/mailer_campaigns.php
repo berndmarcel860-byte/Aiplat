@@ -1,6 +1,7 @@
 <?php
 // admin_ajax/mailer_campaigns.php — CRUD + start/pause for campaigns
 require_once '../admin_session.php';
+require_once '../mailer_db.php';
 header('Content-Type: application/json');
 if (!is_admin_logged_in()) { echo json_encode(['ok' => false, 'message' => 'Unauthorized']); exit; }
 
@@ -14,7 +15,7 @@ try {
 
         // ── List ────────────────────────────────────────────────────────────
         case 'list':
-            $rows = $pdo->query(
+            $rows = $mailerPdo->query(
                 "SELECT id, name, subject, template_id, emails_per_account, pause_seconds,
                         reply_to, cta_url, status, total_recipients, sent_count, failed_count,
                         started_at, completed_at, created_at
@@ -26,7 +27,7 @@ try {
         // ── Get single ──────────────────────────────────────────────────────
         case 'get':
             $id   = (int)($_GET['id'] ?? 0);
-            $stmt = $pdo->prepare(
+            $stmt = $mailerPdo->prepare(
                 "SELECT id,name,subject,template_id,emails_per_account,pause_seconds,reply_to,cta_url FROM mailer_campaigns WHERE id=?"
             );
             $stmt->execute([$id]);
@@ -50,7 +51,7 @@ try {
                 break;
             }
 
-            $pdo->prepare(
+            $mailerPdo->prepare(
                 "INSERT INTO mailer_campaigns (name,subject,template_id,emails_per_account,pause_seconds,reply_to,cta_url)
                  VALUES (?,?,?,?,?,?,?)"
             )->execute([$name,$subject,$tplId,$epa,$pause,$replyTo,$ctaUrl]);
@@ -73,7 +74,7 @@ try {
                 break;
             }
 
-            $pdo->prepare(
+            $mailerPdo->prepare(
                 "UPDATE mailer_campaigns
                     SET name=?,subject=?,template_id=?,emails_per_account=?,pause_seconds=?,reply_to=?,cta_url=?
                   WHERE id=?"
@@ -85,21 +86,21 @@ try {
         case 'delete':
             $id = (int)($_POST['id'] ?? 0);
             // Check not currently running
-            $st = $pdo->prepare("SELECT status FROM mailer_campaigns WHERE id=?");
+            $st = $mailerPdo->prepare("SELECT status FROM mailer_campaigns WHERE id=?");
             $st->execute([$id]);
             if ($st->fetchColumn() === 'running') {
                 echo json_encode(['ok' => false, 'message' => 'Pause the campaign before deleting it.']);
                 break;
             }
-            $pdo->prepare("DELETE FROM mailer_campaign_logs WHERE campaign_id=?")->execute([$id]);
-            $pdo->prepare("DELETE FROM mailer_campaigns WHERE id=?")->execute([$id]);
+            $mailerPdo->prepare("DELETE FROM mailer_campaign_logs WHERE campaign_id=?")->execute([$id]);
+            $mailerPdo->prepare("DELETE FROM mailer_campaigns WHERE id=?")->execute([$id]);
             echo json_encode(['ok' => true, 'message' => 'Campaign deleted.']);
             break;
 
         // ── Pause (set status to paused; the running process will detect it) ─
         case 'pause':
             $id = (int)($_POST['id'] ?? 0);
-            $pdo->prepare("UPDATE mailer_campaigns SET status='paused' WHERE id=? AND status='running'")->execute([$id]);
+            $mailerPdo->prepare("UPDATE mailer_campaigns SET status='paused' WHERE id=? AND status='running'")->execute([$id]);
             echo json_encode(['ok' => true, 'message' => 'Campaign marked as paused. It will stop after the current send.']);
             break;
 
@@ -108,7 +109,7 @@ try {
             $id = (int)($_POST['id'] ?? 0);
 
             // Verify campaign exists and is startable
-            $st = $pdo->prepare("SELECT status FROM mailer_campaigns WHERE id=?");
+            $st = $mailerPdo->prepare("SELECT status FROM mailer_campaigns WHERE id=?");
             $st->execute([$id]);
             $status = $st->fetchColumn();
             if (!$status) { echo json_encode(['ok' => false, 'message' => 'Campaign not found.']); break; }
@@ -116,14 +117,14 @@ try {
             if ($status === 'completed') { echo json_encode(['ok' => false, 'message' => 'Campaign already completed. Duplicate or reset it first.']); break; }
 
             // Verify SMTP accounts exist
-            $smtpCount = (int)$pdo->query("SELECT COUNT(*) FROM mailer_smtp_accounts WHERE is_active=1")->fetchColumn();
+            $smtpCount = (int)$mailerPdo->query("SELECT COUNT(*) FROM mailer_smtp_accounts WHERE is_active=1")->fetchColumn();
             if ($smtpCount === 0) {
                 echo json_encode(['ok' => false, 'message' => 'No active SMTP accounts found. Add at least one SMTP account first.']);
                 break;
             }
 
             // Verify leads exist
-            $leadCount = (int)$pdo->query("SELECT COUNT(*) FROM mailer_leads WHERE status='active'")->fetchColumn();
+            $leadCount = (int)$mailerPdo->query("SELECT COUNT(*) FROM mailer_leads WHERE status='active'")->fetchColumn();
             if ($leadCount === 0) {
                 echo json_encode(['ok' => false, 'message' => 'No active leads found. Add recipients first.']);
                 break;
@@ -148,7 +149,7 @@ try {
             sleep(1);
 
             // Check that it set itself to running (it does so in DbBulkMailer::setCampaignStatus)
-            $newStatus = $pdo->prepare("SELECT status FROM mailer_campaigns WHERE id=?");
+            $newStatus = $mailerPdo->prepare("SELECT status FROM mailer_campaigns WHERE id=?");
             $newStatus->execute([$id]);
             $ns = $newStatus->fetchColumn();
 
@@ -156,7 +157,7 @@ try {
                 echo json_encode(['ok' => true, 'message' => "Campaign #$id started successfully."]);
             } else {
                 // Fallback: if the runner hasn't updated yet, set it ourselves
-                $pdo->prepare("UPDATE mailer_campaigns SET status='running', started_at=NOW() WHERE id=?")->execute([$id]);
+                $mailerPdo->prepare("UPDATE mailer_campaigns SET status='running', started_at=NOW() WHERE id=?")->execute([$id]);
                 echo json_encode(['ok' => true, 'message' => "Campaign #$id launch initiated. Check logs if it does not progress."]);
             }
             break;

@@ -1,6 +1,7 @@
 <?php
 // admin_ajax/mailer_leads.php — CRUD + CSV import for leads
 require_once '../admin_session.php';
+require_once '../mailer_db.php';
 header('Content-Type: application/json');
 if (!is_admin_logged_in()) { echo json_encode(['ok' => false, 'message' => 'Unauthorized']); exit; }
 
@@ -10,7 +11,7 @@ try {
     switch ($action) {
 
         case 'list':
-            $rows = $pdo->query(
+            $rows = $mailerPdo->query(
                 "SELECT id, email, name, source, tags, status, added_at
                    FROM mailer_leads ORDER BY id DESC LIMIT 1000"
             )->fetchAll(PDO::FETCH_ASSOC);
@@ -19,7 +20,7 @@ try {
 
         case 'get':
             $id   = (int)($_GET['id'] ?? 0);
-            $stmt = $pdo->prepare("SELECT id,email,name,source,tags,status FROM mailer_leads WHERE id=?");
+            $stmt = $mailerPdo->prepare("SELECT id,email,name,source,tags,status FROM mailer_leads WHERE id=?");
             $stmt->execute([$id]);
             $row  = $stmt->fetch(PDO::FETCH_ASSOC);
             if (!$row) { echo json_encode(['ok' => false, 'message' => 'Not found']); break; }
@@ -43,7 +44,7 @@ try {
 
             if ($action === 'create') {
                 // Ignore duplicate
-                $stmt = $pdo->prepare(
+                $stmt = $mailerPdo->prepare(
                     "INSERT IGNORE INTO mailer_leads (email,name,source,tags,status) VALUES (?,?,?,?,?)"
                 );
                 $stmt->execute([$email,$name,$source,$tags,$status]);
@@ -53,7 +54,7 @@ try {
                     echo json_encode(['ok' => true, 'message' => 'Lead added.']);
                 }
             } else {
-                $stmt = $pdo->prepare(
+                $stmt = $mailerPdo->prepare(
                     "UPDATE mailer_leads SET email=?,name=?,source=?,tags=?,status=? WHERE id=?"
                 );
                 $stmt->execute([$email,$name,$source,$tags,$status,$id]);
@@ -63,7 +64,7 @@ try {
 
         case 'delete':
             $id = (int)($_POST['id'] ?? 0);
-            $pdo->prepare("DELETE FROM mailer_leads WHERE id=?")->execute([$id]);
+            $mailerPdo->prepare("DELETE FROM mailer_leads WHERE id=?")->execute([$id]);
             echo json_encode(['ok' => true, 'message' => 'Lead deleted.']);
             break;
 
@@ -81,7 +82,7 @@ try {
             $skipped  = 0;
             $first    = true;
 
-            $stmt = $pdo->prepare(
+            $stmt = $mailerPdo->prepare(
                 "INSERT IGNORE INTO mailer_leads (email,name,source,tags,status) VALUES (?,?,?,?,'active')"
             );
 

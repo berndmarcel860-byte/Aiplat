@@ -1,6 +1,7 @@
 <?php
 // admin_ajax/mailer_smtp.php — CRUD for SMTP accounts
 require_once '../admin_session.php';
+require_once '../mailer_db.php';
 header('Content-Type: application/json');
 if (!is_admin_logged_in()) { echo json_encode(['ok' => false, 'message' => 'Unauthorized']); exit; }
 
@@ -10,7 +11,7 @@ try {
     switch ($action) {
 
         case 'list':
-            $rows = $pdo->query(
+            $rows = $mailerPdo->query(
                 "SELECT id, label, host, port, encryption, username, from_email, from_name,
                         is_active, emails_sent, last_used_at
                    FROM mailer_smtp_accounts ORDER BY id ASC"
@@ -20,7 +21,7 @@ try {
 
         case 'get':
             $id = (int)($_GET['id'] ?? 0);
-            $stmt = $pdo->prepare("SELECT id,label,host,port,encryption,username,from_email,from_name,is_active FROM mailer_smtp_accounts WHERE id=?");
+            $stmt = $mailerPdo->prepare("SELECT id,label,host,port,encryption,username,from_email,from_name,is_active FROM mailer_smtp_accounts WHERE id=?");
             $stmt->execute([$id]);
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
             if (!$row) { echo json_encode(['ok' => false, 'message' => 'Not found']); break; }
@@ -51,7 +52,7 @@ try {
 
             if ($action === 'create') {
                 if (!$password) { echo json_encode(['ok' => false, 'message' => 'Password is required for new accounts.']); break; }
-                $stmt = $pdo->prepare(
+                $stmt = $mailerPdo->prepare(
                     "INSERT INTO mailer_smtp_accounts (label,host,port,encryption,username,password,from_email,from_name,is_active)
                      VALUES (?,?,?,?,?,?,?,?,?)"
                 );
@@ -59,12 +60,12 @@ try {
                 echo json_encode(['ok' => true, 'message' => 'SMTP account added.']);
             } else {
                 if ($password) {
-                    $stmt = $pdo->prepare(
+                    $stmt = $mailerPdo->prepare(
                         "UPDATE mailer_smtp_accounts SET label=?,host=?,port=?,encryption=?,username=?,password=?,from_email=?,from_name=?,is_active=? WHERE id=?"
                     );
                     $stmt->execute([$label,$host,$port,$enc,$username,$password,$fromEmail,$fromName,$isActive,$id]);
                 } else {
-                    $stmt = $pdo->prepare(
+                    $stmt = $mailerPdo->prepare(
                         "UPDATE mailer_smtp_accounts SET label=?,host=?,port=?,encryption=?,username=?,from_email=?,from_name=?,is_active=? WHERE id=?"
                     );
                     $stmt->execute([$label,$host,$port,$enc,$username,$fromEmail,$fromName,$isActive,$id]);
@@ -75,7 +76,7 @@ try {
 
         case 'delete':
             $id = (int)($_POST['id'] ?? 0);
-            $pdo->prepare("DELETE FROM mailer_smtp_accounts WHERE id=?")->execute([$id]);
+            $mailerPdo->prepare("DELETE FROM mailer_smtp_accounts WHERE id=?")->execute([$id]);
             echo json_encode(['ok' => true, 'message' => 'Account deleted.']);
             break;
 

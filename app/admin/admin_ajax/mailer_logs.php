@@ -1,6 +1,7 @@
 <?php
 // admin_ajax/mailer_logs.php — query send logs
 require_once '../admin_session.php';
+require_once '../mailer_db.php';
 header('Content-Type: application/json');
 if (!is_admin_logged_in()) { echo json_encode(['ok' => false, 'message' => 'Unauthorized']); exit; }
 
@@ -32,7 +33,7 @@ $sql = "SELECT l.id, l.campaign_id, c.name AS campaign_name,
          ORDER BY l.id DESC";
 
 try {
-    $stmt = $pdo->prepare($sql);
+    $stmt = $mailerPdo->prepare($sql);
     $stmt->execute($params);
     // Limit applied in PHP to avoid interpolating $limit into SQL string
     $logs = array_slice($stmt->fetchAll(PDO::FETCH_ASSOC), 0, $limit);
