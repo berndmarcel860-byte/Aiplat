@@ -29,6 +29,7 @@ try {
         $fca_reference_number = trim($_POST['fca_reference_number'] ?? '');
         $licens_url = trim($_POST['licens_url'] ?? '');
         $logo_url = trim($_POST['logo_url'] ?? '');
+        $openai_api_key = trim($_POST['openai_api_key'] ?? '');
 
         // Validate required fields
         if (empty($brand_name) || empty($site_url) || empty($contact_email)) {
@@ -65,7 +66,7 @@ try {
         $exists = $stmt->fetch();
 
         if ($exists) {
-            // Update existing record
+            // Update existing record (openai_api_key uses IF() to preserve existing value when blank)
             $stmt = $pdo->prepare("
                 UPDATE system_settings 
                 SET brand_name = ?, 
@@ -76,6 +77,7 @@ try {
                     fca_reference_number = ?,
                     licens_url = ?,
                     logo_url = ?,
+                    openai_api_key = IF(? = '', openai_api_key, ?),
                     updated_at = NOW()
                 WHERE id = 1
             ");
@@ -87,16 +89,18 @@ try {
                 $company_address,
                 $fca_reference_number,
                 $licens_url,
-                $logo_url
+                $logo_url,
+                $openai_api_key,
+                $openai_api_key,
             ]);
         } else {
             // Insert new record
             $stmt = $pdo->prepare("
                 INSERT INTO system_settings (
                     id, brand_name, site_url, contact_email, contact_phone, 
-                    company_address, fca_reference_number, licens_url, logo_url, created_at, updated_at
+                    company_address, fca_reference_number, licens_url, logo_url, openai_api_key, created_at, updated_at
                 ) VALUES (
-                    1, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW()
+                    1, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW()
                 )
             ");
             $stmt->execute([
@@ -107,7 +111,8 @@ try {
                 $company_address,
                 $fca_reference_number,
                 $licens_url,
-                $logo_url
+                $logo_url,
+                $openai_api_key,
             ]);
         }
 

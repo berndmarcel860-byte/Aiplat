@@ -41,8 +41,14 @@ if (!$systemSettings) {
         'contact_phone' => '',
         'company_address' => '',
         'fca_reference_number' => '',
-        'logo_url' => ''
+        'logo_url' => '',
+        'openai_api_key' => '',
     ];
+} else {
+    // Ensure openai_api_key key exists (column may not yet be migrated)
+    if (!isset($systemSettings['openai_api_key'])) {
+        $systemSettings['openai_api_key'] = '';
+    }
 }
 
 if (!$smtpSettings) {
@@ -161,6 +167,20 @@ if (!$smtpSettings) {
                                             <input type="url" class="form-control" id="licens_url" name="licens_url"
                                                    value="<?php echo htmlspecialchars($systemSettings['licens_url'] ?? ''); ?>">
                                             <small class="form-text text-muted">Überprüfungslink zur BaFin-Unternehmensdatenbank (wird im Impressum angezeigt)</small>
+                                        </div>
+
+                                        <!-- OpenAI API Key -->
+                                        <div class="form-group">
+                                            <label for="openai_api_key">OpenAI API Key <span class="badge badge-info">AI Features</span></label>
+                                            <input type="password" class="form-control" id="openai_api_key" name="openai_api_key"
+                                                   autocomplete="new-password"
+                                                   placeholder="<?php echo !empty($systemSettings['openai_api_key']) ? '••••••••• (key saved – enter new key to replace)' : 'sk-…'; ?>">
+                                            <small class="form-text text-muted">
+                                                Required for AI-assisted email content generation in the
+                                                <a href="admin_notification_templates.php">Email Notification Templates</a> page.
+                                                Get your key at <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">platform.openai.com</a>.
+                                                Leave blank to keep the current key.
+                                            </small>
                                         </div>
 
                                         <!-- Logo URL (hidden, updated by upload or manual entry) -->
