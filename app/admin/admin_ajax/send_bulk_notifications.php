@@ -108,7 +108,6 @@ try {
                 $customVars = [
                     'days_inactive'  => (string)($fullUser['days_inactive'] ?? 0),
                     'ip_address'     => '',
-                    'amount'         => '',
                 ];
 
                 $success = $adminEmailHelper->sendDirectEmail(

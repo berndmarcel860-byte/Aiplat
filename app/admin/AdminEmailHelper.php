@@ -284,6 +284,9 @@ class AdminEmailHelper {
                 'deadline'          => '',
                 'login_time'        => '',
                 'login_location'    => '',
+                // Amount defaults to the user's current balance from the users table.
+                // Transactional emails (e.g. withdrawal_pending) override this via customVars.
+                'amount'           => number_format($user['balance'] ?? 0, 2, ',', '.') . ' €',
             ];
             
             // Merge custom variables (cast to string to avoid htmlspecialchars type errors)
