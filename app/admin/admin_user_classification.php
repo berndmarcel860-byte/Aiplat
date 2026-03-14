@@ -47,6 +47,38 @@ try {
             </nav>
         </div>
     </div>
+
+    <!-- Quick Service Navigation Bar -->
+    <div class="card mb-3" style="border-left:4px solid #2950a8;">
+        <div class="card-body py-2 px-3">
+            <div class="d-flex flex-wrap align-items-center" style="gap:6px;">
+                <small class="text-muted font-weight-semibold mr-2" style="white-space:nowrap;">
+                    <i class="anticon anticon-appstore mr-1"></i> Quick Access:
+                </small>
+                <a href="admin_users.php" class="btn btn-xs btn-outline-primary" style="font-size:12px;">
+                    <i class="anticon anticon-team mr-1"></i> All Users
+                </a>
+                <a href="admin_kyc.php" class="btn btn-xs btn-outline-warning" style="font-size:12px;">
+                    <i class="anticon anticon-safety-certificate mr-1"></i> KYC Review
+                </a>
+                <a href="admin_user_packages.php" class="btn btn-xs btn-outline-success" style="font-size:12px;">
+                    <i class="anticon anticon-gift mr-1"></i> Packages
+                </a>
+                <a href="admin_cases.php" class="btn btn-xs btn-outline-secondary" style="font-size:12px;">
+                    <i class="anticon anticon-folder-open mr-1"></i> Cases
+                </a>
+                <a href="admin_send_notifications.php" class="btn btn-xs btn-outline-secondary" style="font-size:12px;">
+                    <i class="anticon anticon-notification mr-1"></i> Send Notifications
+                </a>
+                <a href="admin_deposits.php" class="btn btn-xs btn-outline-secondary" style="font-size:12px;">
+                    <i class="anticon anticon-arrow-down mr-1"></i> Deposits
+                </a>
+                <a href="admin_withdrawals.php" class="btn btn-xs btn-outline-secondary" style="font-size:12px;">
+                    <i class="anticon anticon-arrow-up mr-1"></i> Withdrawals
+                </a>
+            </div>
+        </div>
+    </div>
     
     <!-- Summary Stats -->
     <div class="row">
@@ -112,6 +144,59 @@ try {
         </div>
     </div>
     
+    <!-- Progress Overview -->
+    <?php
+    $onboardingRate = $totalUsers > 0 ? round(($withCompletedOnboarding / $totalUsers) * 100, 1) : 0;
+    $packageRate    = $totalUsers > 0 ? round(($withActivePackage / $totalUsers) * 100, 1) : 0;
+    $kycRate        = $totalUsers > 0 ? round(($kycApproved / $totalUsers) * 100, 1) : 0;
+    $caseRate       = $totalUsers > 0 ? round(($withActiveCases / $totalUsers) * 100, 1) : 0;
+    ?>
+    <div class="card mb-3">
+        <div class="card-header py-2">
+            <h6 class="m-b-0"><i class="anticon anticon-bar-chart mr-1"></i> Platform Adoption Overview</h6>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6 col-lg-3 mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <small class="font-weight-semibold">Onboarding Completion</small>
+                        <small class="text-muted"><?= $withCompletedOnboarding ?>/<?= $totalUsers ?> (<?= $onboardingRate ?>%)</small>
+                    </div>
+                    <div class="progress" style="height:8px;" title="<?= $onboardingRate ?>% of users completed onboarding">
+                        <div class="progress-bar bg-success" style="width:<?= $onboardingRate ?>%"></div>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3 mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <small class="font-weight-semibold">Active Package Rate</small>
+                        <small class="text-muted"><?= $withActivePackage ?>/<?= $totalUsers ?> (<?= $packageRate ?>%)</small>
+                    </div>
+                    <div class="progress" style="height:8px;" title="<?= $packageRate ?>% of users have an active package">
+                        <div class="progress-bar bg-info" style="width:<?= $packageRate ?>%"></div>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3 mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <small class="font-weight-semibold">KYC Approval Rate</small>
+                        <small class="text-muted"><?= $kycApproved ?>/<?= $totalUsers ?> (<?= $kycRate ?>%)</small>
+                    </div>
+                    <div class="progress" style="height:8px;" title="<?= $kycRate ?>% of users have approved KYC">
+                        <div class="progress-bar bg-warning" style="width:<?= $kycRate ?>%"></div>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3 mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <small class="font-weight-semibold">Users with Active Cases</small>
+                        <small class="text-muted"><?= $withActiveCases ?>/<?= $totalUsers ?> (<?= $caseRate ?>%)</small>
+                    </div>
+                    <div class="progress" style="height:8px;" title="<?= $caseRate ?>% of users have active cases">
+                        <div class="progress-bar bg-primary" style="width:<?= $caseRate ?>%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Classification Cards -->
     <div class="row">
         <!-- Onboarding Classification -->
@@ -126,36 +211,56 @@ try {
                             <div class="p-3 text-center border rounded bg-success-light mb-2">
                                 <h3 class="text-success"><?= number_format($withCompletedOnboarding) ?></h3>
                                 <p class="mb-0">Completed Onboarding</p>
-                                <a href="#" class="btn btn-sm btn-success mt-2 filter-users" data-filter="onboarding_completed">
-                                    View Users <i class="anticon anticon-arrow-right"></i>
-                                </a>
+                                <div class="mt-2 d-flex justify-content-center" style="gap:4px;">
+                                    <a href="#" class="btn btn-sm btn-success filter-users" data-filter="onboarding_completed">
+                                        <i class="anticon anticon-eye"></i> View
+                                    </a>
+                                    <a href="admin_users.php?classification=onboarding_completed" class="btn btn-sm btn-outline-success" title="Open in Users page" target="_blank">
+                                        <i class="anticon anticon-export"></i>
+                                    </a>
+                                </div>
                             </div>
                         </div>
                         <div class="col-6">
                             <div class="p-3 text-center border rounded bg-warning-light mb-2">
                                 <h3 class="text-warning"><?= number_format($withOnboarding - $withCompletedOnboarding) ?></h3>
                                 <p class="mb-0">Incomplete Onboarding</p>
-                                <a href="#" class="btn btn-sm btn-warning mt-2 filter-users" data-filter="onboarding_incomplete">
-                                    View Users <i class="anticon anticon-arrow-right"></i>
-                                </a>
+                                <div class="mt-2 d-flex justify-content-center" style="gap:4px;">
+                                    <a href="#" class="btn btn-sm btn-warning filter-users" data-filter="onboarding_incomplete">
+                                        <i class="anticon anticon-eye"></i> View
+                                    </a>
+                                    <a href="admin_users.php?classification=onboarding_incomplete" class="btn btn-sm btn-outline-warning" title="Open in Users page" target="_blank">
+                                        <i class="anticon anticon-export"></i>
+                                    </a>
+                                </div>
                             </div>
                         </div>
                         <div class="col-6">
                             <div class="p-3 text-center border rounded bg-danger-light">
                                 <h3 class="text-danger"><?= number_format($withoutOnboarding) ?></h3>
                                 <p class="mb-0">No Onboarding</p>
-                                <a href="#" class="btn btn-sm btn-danger mt-2 filter-users" data-filter="no_onboarding">
-                                    View Users <i class="anticon anticon-arrow-right"></i>
-                                </a>
+                                <div class="mt-2 d-flex justify-content-center" style="gap:4px;">
+                                    <a href="#" class="btn btn-sm btn-danger filter-users" data-filter="no_onboarding">
+                                        <i class="anticon anticon-eye"></i> View
+                                    </a>
+                                    <a href="admin_users.php?classification=no_onboarding" class="btn btn-sm btn-outline-danger" title="Open in Users page" target="_blank">
+                                        <i class="anticon anticon-export"></i>
+                                    </a>
+                                </div>
                             </div>
                         </div>
                         <div class="col-6">
                             <div class="p-3 text-center border rounded bg-info-light">
                                 <h3 class="text-info"><?= number_format($withOnboarding) ?></h3>
                                 <p class="mb-0">Has Onboarding (Any)</p>
-                                <a href="#" class="btn btn-sm btn-info mt-2 filter-users" data-filter="has_onboarding">
-                                    View Users <i class="anticon anticon-arrow-right"></i>
-                                </a>
+                                <div class="mt-2 d-flex justify-content-center" style="gap:4px;">
+                                    <a href="#" class="btn btn-sm btn-info filter-users" data-filter="has_onboarding">
+                                        <i class="anticon anticon-eye"></i> View
+                                    </a>
+                                    <a href="admin_users.php?classification=has_onboarding" class="btn btn-sm btn-outline-info" title="Open in Users page" target="_blank">
+                                        <i class="anticon anticon-export"></i>
+                                    </a>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -175,36 +280,56 @@ try {
                             <div class="p-3 text-center border rounded bg-success-light mb-2">
                                 <h3 class="text-success"><?= number_format($withActivePackage) ?></h3>
                                 <p class="mb-0">Active Package</p>
-                                <a href="#" class="btn btn-sm btn-success mt-2 filter-users" data-filter="package_active">
-                                    View Users <i class="anticon anticon-arrow-right"></i>
-                                </a>
+                                <div class="mt-2 d-flex justify-content-center" style="gap:4px;">
+                                    <a href="#" class="btn btn-sm btn-success filter-users" data-filter="package_active">
+                                        <i class="anticon anticon-eye"></i> View
+                                    </a>
+                                    <a href="admin_users.php?classification=package_active" class="btn btn-sm btn-outline-success" title="Open in Users page" target="_blank">
+                                        <i class="anticon anticon-export"></i>
+                                    </a>
+                                </div>
                             </div>
                         </div>
                         <div class="col-6">
                             <div class="p-3 text-center border rounded bg-danger-light mb-2">
                                 <h3 class="text-danger"><?= number_format($withExpiredPackage) ?></h3>
                                 <p class="mb-0">Expired Package</p>
-                                <a href="#" class="btn btn-sm btn-danger mt-2 filter-users" data-filter="package_expired">
-                                    View Users <i class="anticon anticon-arrow-right"></i>
-                                </a>
+                                <div class="mt-2 d-flex justify-content-center" style="gap:4px;">
+                                    <a href="#" class="btn btn-sm btn-danger filter-users" data-filter="package_expired">
+                                        <i class="anticon anticon-eye"></i> View
+                                    </a>
+                                    <a href="admin_users.php?classification=package_expired" class="btn btn-sm btn-outline-danger" title="Open in Users page" target="_blank">
+                                        <i class="anticon anticon-export"></i>
+                                    </a>
+                                </div>
                             </div>
                         </div>
                         <div class="col-6">
                             <div class="p-3 text-center border rounded bg-secondary-light">
                                 <h3 class="text-secondary"><?= number_format($withoutPackage) ?></h3>
                                 <p class="mb-0">No Package</p>
-                                <a href="#" class="btn btn-sm btn-secondary mt-2 filter-users" data-filter="no_package">
-                                    View Users <i class="anticon anticon-arrow-right"></i>
-                                </a>
+                                <div class="mt-2 d-flex justify-content-center" style="gap:4px;">
+                                    <a href="#" class="btn btn-sm btn-secondary filter-users" data-filter="no_package">
+                                        <i class="anticon anticon-eye"></i> View
+                                    </a>
+                                    <a href="admin_users.php?classification=no_package" class="btn btn-sm btn-outline-secondary" title="Open in Users page" target="_blank">
+                                        <i class="anticon anticon-export"></i>
+                                    </a>
+                                </div>
                             </div>
                         </div>
                         <div class="col-6">
                             <div class="p-3 text-center border rounded bg-primary-light">
                                 <h3 class="text-primary"><?= number_format($withPackage) ?></h3>
                                 <p class="mb-0">Has Package (Any)</p>
-                                <a href="#" class="btn btn-sm btn-primary mt-2 filter-users" data-filter="has_package">
-                                    View Users <i class="anticon anticon-arrow-right"></i>
-                                </a>
+                                <div class="mt-2 d-flex justify-content-center" style="gap:4px;">
+                                    <a href="#" class="btn btn-sm btn-primary filter-users" data-filter="has_package">
+                                        <i class="anticon anticon-eye"></i> View
+                                    </a>
+                                    <a href="admin_users.php?classification=has_package" class="btn btn-sm btn-outline-primary" title="Open in Users page" target="_blank">
+                                        <i class="anticon anticon-export"></i>
+                                    </a>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -226,27 +351,42 @@ try {
                             <div class="p-3 text-center border rounded bg-warning-light mb-2">
                                 <h3 class="text-warning"><?= number_format($withActiveCases) ?></h3>
                                 <p class="mb-0">Active Cases</p>
-                                <a href="#" class="btn btn-sm btn-warning mt-2 filter-users" data-filter="cases_active">
-                                    View Users <i class="anticon anticon-arrow-right"></i>
-                                </a>
+                                <div class="mt-2 d-flex justify-content-center" style="gap:4px;">
+                                    <a href="#" class="btn btn-sm btn-warning filter-users" data-filter="cases_active">
+                                        <i class="anticon anticon-eye"></i> View
+                                    </a>
+                                    <a href="admin_users.php?classification=cases_active" class="btn btn-sm btn-outline-warning" title="Open in Users page" target="_blank">
+                                        <i class="anticon anticon-export"></i>
+                                    </a>
+                                </div>
                             </div>
                         </div>
                         <div class="col-6">
                             <div class="p-3 text-center border rounded bg-success-light mb-2">
                                 <h3 class="text-success"><?= number_format($withCases) ?></h3>
                                 <p class="mb-0">Has Cases (Any)</p>
-                                <a href="#" class="btn btn-sm btn-success mt-2 filter-users" data-filter="has_cases">
-                                    View Users <i class="anticon anticon-arrow-right"></i>
-                                </a>
+                                <div class="mt-2 d-flex justify-content-center" style="gap:4px;">
+                                    <a href="#" class="btn btn-sm btn-success filter-users" data-filter="has_cases">
+                                        <i class="anticon anticon-eye"></i> View
+                                    </a>
+                                    <a href="admin_users.php?classification=has_cases" class="btn btn-sm btn-outline-success" title="Open in Users page" target="_blank">
+                                        <i class="anticon anticon-export"></i>
+                                    </a>
+                                </div>
                             </div>
                         </div>
                         <div class="col-6">
                             <div class="p-3 text-center border rounded bg-secondary-light">
                                 <h3 class="text-secondary"><?= number_format($withoutCases) ?></h3>
                                 <p class="mb-0">No Cases</p>
-                                <a href="#" class="btn btn-sm btn-secondary mt-2 filter-users" data-filter="no_cases">
-                                    View Users <i class="anticon anticon-arrow-right"></i>
-                                </a>
+                                <div class="mt-2 d-flex justify-content-center" style="gap:4px;">
+                                    <a href="#" class="btn btn-sm btn-secondary filter-users" data-filter="no_cases">
+                                        <i class="anticon anticon-eye"></i> View
+                                    </a>
+                                    <a href="admin_users.php?classification=no_cases" class="btn btn-sm btn-outline-secondary" title="Open in Users page" target="_blank">
+                                        <i class="anticon anticon-export"></i>
+                                    </a>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -266,36 +406,56 @@ try {
                             <div class="p-3 text-center border rounded bg-success-light mb-2">
                                 <h3 class="text-success"><?= number_format($kycApproved) ?></h3>
                                 <p class="mb-0">KYC Approved</p>
-                                <a href="#" class="btn btn-sm btn-success mt-2 filter-users" data-filter="kyc_approved">
-                                    View Users <i class="anticon anticon-arrow-right"></i>
-                                </a>
+                                <div class="mt-2 d-flex justify-content-center" style="gap:4px;">
+                                    <a href="#" class="btn btn-sm btn-success filter-users" data-filter="kyc_approved">
+                                        <i class="anticon anticon-eye"></i> View
+                                    </a>
+                                    <a href="admin_kyc.php" class="btn btn-sm btn-outline-success" title="Go to KYC page" target="_blank">
+                                        <i class="anticon anticon-export"></i>
+                                    </a>
+                                </div>
                             </div>
                         </div>
                         <div class="col-6">
                             <div class="p-3 text-center border rounded bg-warning-light mb-2">
                                 <h3 class="text-warning"><?= number_format($kycPending) ?></h3>
                                 <p class="mb-0">KYC Pending</p>
-                                <a href="#" class="btn btn-sm btn-warning mt-2 filter-users" data-filter="kyc_pending">
-                                    View Users <i class="anticon anticon-arrow-right"></i>
-                                </a>
+                                <div class="mt-2 d-flex justify-content-center" style="gap:4px;">
+                                    <a href="#" class="btn btn-sm btn-warning filter-users" data-filter="kyc_pending">
+                                        <i class="anticon anticon-eye"></i> View
+                                    </a>
+                                    <a href="admin_kyc.php" class="btn btn-sm btn-outline-warning" title="Go to KYC Review page" target="_blank">
+                                        <i class="anticon anticon-export"></i>
+                                    </a>
+                                </div>
                             </div>
                         </div>
                         <div class="col-6">
                             <div class="p-3 text-center border rounded bg-secondary-light">
                                 <h3 class="text-secondary"><?= number_format($totalUsers - $withKYC) ?></h3>
                                 <p class="mb-0">No KYC Submitted</p>
-                                <a href="#" class="btn btn-sm btn-secondary mt-2 filter-users" data-filter="no_kyc">
-                                    View Users <i class="anticon anticon-arrow-right"></i>
-                                </a>
+                                <div class="mt-2 d-flex justify-content-center" style="gap:4px;">
+                                    <a href="#" class="btn btn-sm btn-secondary filter-users" data-filter="no_kyc">
+                                        <i class="anticon anticon-eye"></i> View
+                                    </a>
+                                    <a href="admin_users.php?classification=no_kyc" class="btn btn-sm btn-outline-secondary" title="Open in Users page" target="_blank">
+                                        <i class="anticon anticon-export"></i>
+                                    </a>
+                                </div>
                             </div>
                         </div>
                         <div class="col-6">
                             <div class="p-3 text-center border rounded bg-info-light">
                                 <h3 class="text-info"><?= number_format($withKYC) ?></h3>
                                 <p class="mb-0">Has KYC (Any)</p>
-                                <a href="#" class="btn btn-sm btn-info mt-2 filter-users" data-filter="has_kyc">
-                                    View Users <i class="anticon anticon-arrow-right"></i>
-                                </a>
+                                <div class="mt-2 d-flex justify-content-center" style="gap:4px;">
+                                    <a href="#" class="btn btn-sm btn-info filter-users" data-filter="has_kyc">
+                                        <i class="anticon anticon-eye"></i> View
+                                    </a>
+                                    <a href="admin_kyc.php" class="btn btn-sm btn-outline-info" title="Go to KYC page" target="_blank">
+                                        <i class="anticon anticon-export"></i>
+                                    </a>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -672,11 +832,12 @@ $(document).ready(function() {
                     data: null,
                     orderable: false,
                     render: function(data) {
-                        return '<div class="btn-group">' +
-                            '<button class="btn btn-sm btn-info view-user-btn" data-id="' + escapeHtml(data.id) + '" title="View Details"><i class="anticon anticon-eye"></i></button>' +
+                        return '<div class="d-flex" style="gap:3px;">' +
+                            '<a href="admin_view_users.php?id=' + escapeHtml(data.id) + '" class="btn btn-sm btn-primary" title="Full Profile Page" target="_blank"><i class="anticon anticon-profile"></i></a>' +
+                            '<button class="btn btn-sm btn-info view-user-btn" data-id="' + escapeHtml(data.id) + '" title="Quick View"><i class="anticon anticon-eye"></i></button>' +
                             '<button class="btn btn-sm btn-warning edit-user-btn" data-id="' + escapeHtml(data.id) + '" title="Edit User"><i class="anticon anticon-edit"></i></button>' +
                             '<button class="btn btn-sm btn-success send-email-btn" data-id="' + escapeHtml(data.id) + '" data-name="' + escapeHtml(data.first_name + ' ' + data.last_name) + '" data-email="' + escapeHtml(data.email) + '" title="Send Email"><i class="anticon anticon-mail"></i></button>' +
-                            '<button class="btn btn-sm btn-primary add-package-btn" data-id="' + escapeHtml(data.id) + '" data-name="' + escapeHtml(data.first_name + ' ' + data.last_name) + '" title="Assign Package"><i class="anticon anticon-gift"></i></button>' +
+                            '<button class="btn btn-sm btn-secondary add-package-btn" data-id="' + escapeHtml(data.id) + '" data-name="' + escapeHtml(data.first_name + ' ' + data.last_name) + '" title="Assign Package"><i class="anticon anticon-gift"></i></button>' +
                         '</div>';
                     }
                 }

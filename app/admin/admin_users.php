@@ -1,10 +1,5 @@
 <?php
 // admin_users.php
-// === ENABLE PHP ERRORS (TEMPORARILY) ===
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
-
 require_once 'admin_header.php';
 ?>
 
@@ -36,6 +31,44 @@ require_once 'admin_header.php';
                 </div>
             </div>
             
+            <!-- Quick Service Navigation -->
+            <div class="card mb-3" style="border-left:4px solid #2950a8;">
+                <div class="card-body py-2 px-3">
+                    <div class="d-flex flex-wrap align-items-center" style="gap:6px;">
+                        <small class="text-muted font-weight-semibold mr-2" style="white-space:nowrap;">
+                            <i class="anticon anticon-appstore mr-1"></i> Quick Services:
+                        </small>
+                        <a href="admin_user_classification.php" class="btn btn-xs btn-outline-info" style="font-size:12px;">
+                            <i class="anticon anticon-filter mr-1"></i> Classification
+                        </a>
+                        <a href="admin_kyc.php" class="btn btn-xs btn-outline-warning" style="font-size:12px;">
+                            <i class="anticon anticon-safety-certificate mr-1"></i> KYC Review
+                        </a>
+                        <a href="admin_cases.php" class="btn btn-xs btn-outline-primary" style="font-size:12px;">
+                            <i class="anticon anticon-folder-open mr-1"></i> Cases
+                        </a>
+                        <a href="admin_deposits.php?status=pending" class="btn btn-xs btn-outline-success" style="font-size:12px;">
+                            <i class="anticon anticon-arrow-down mr-1"></i> Deposits
+                        </a>
+                        <a href="admin_withdrawals.php?status=pending" class="btn btn-xs btn-outline-danger" style="font-size:12px;">
+                            <i class="anticon anticon-arrow-up mr-1"></i> Withdrawals
+                        </a>
+                        <a href="admin_support_tickets.php" class="btn btn-xs btn-outline-secondary" style="font-size:12px;">
+                            <i class="anticon anticon-customer-service mr-1"></i> Tickets
+                        </a>
+                        <a href="admin_send_notifications.php" class="btn btn-xs btn-outline-secondary" style="font-size:12px;">
+                            <i class="anticon anticon-notification mr-1"></i> Notifications
+                        </a>
+                        <a href="admin_transactions.php" class="btn btn-xs btn-outline-secondary" style="font-size:12px;">
+                            <i class="anticon anticon-swap mr-1"></i> Transactions
+                        </a>
+                        <a href="admin_user_packages.php" class="btn btn-xs btn-outline-secondary" style="font-size:12px;">
+                            <i class="anticon anticon-gift mr-1"></i> Packages
+                        </a>
+                    </div>
+                </div>
+            </div>
+
             <!-- Login Activity Filters -->
             <div class="card bg-light mb-3">
                 <div class="card-body">
@@ -562,53 +595,67 @@ $(document).ready(function() {
                               data-id="${row.id}" data-tab="basicInfo">
                         <i class="anticon anticon-eye"></i>
                       </button>
+                      <a href="admin_view_users.php?id=${row.id}" class="btn btn-sm btn-primary" title="Full Profile Page" target="_blank">
+                        <i class="anticon anticon-profile"></i>
+                      </a>
                       <div class="dropdown">
                         <button class="btn btn-sm btn-light border dropdown-toggle" type="button"
                                 data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"
                                 style="min-width:90px;">
                           <i class="anticon anticon-setting mr-1"></i> Actions
                         </button>
-                        <div class="dropdown-menu dropdown-menu-right shadow-sm" style="min-width:210px;">
-                          <h6 class="dropdown-header text-truncate" style="max-width:200px;">${name}</h6>
+                        <div class="dropdown-menu dropdown-menu-right shadow-sm" style="min-width:220px;">
+                          <h6 class="dropdown-header text-truncate" style="max-width:210px;">${name}</h6>
                           <div class="dropdown-divider"></div>
-                          <a href="admin_view_users.php?id=${row.id}" class="dropdown-item">
-                            <i class="anticon anticon-profile text-primary mr-2"></i> View Full Profile
+
+                          <h6 class="dropdown-header" style="font-size:10px;color:#999;text-transform:uppercase;letter-spacing:.06em;">View Details</h6>
+                          <a href="admin_view_users.php?id=${row.id}" class="dropdown-item" target="_blank">
+                            <i class="anticon anticon-profile text-primary mr-2"></i> Full Profile Page
                           </a>
-                          <div class="dropdown-divider"></div>
                           <a href="#" class="dropdown-item open-tab" data-id="${row.id}" data-tab="basicInfo">
-                            <i class="anticon anticon-idcard text-secondary mr-2"></i> Overview
+                            <i class="anticon anticon-idcard text-secondary mr-2"></i> Overview (Modal)
                           </a>
                           <a href="#" class="dropdown-item open-tab" data-id="${row.id}" data-tab="onboarding">
                             <i class="anticon anticon-solution mr-2" style="color:#6f42c1;"></i> Onboarding
                           </a>
+
+                          <div class="dropdown-divider"></div>
+                          <h6 class="dropdown-header" style="font-size:10px;color:#999;text-transform:uppercase;letter-spacing:.06em;">User Services</h6>
                           <a href="#" class="dropdown-item open-tab" data-id="${row.id}" data-tab="kyc">
-                            <i class="anticon anticon-safety text-warning mr-2"></i> KYC
+                            <i class="anticon anticon-safety text-warning mr-2"></i> KYC Verification
                           </a>
                           <a href="#" class="dropdown-item open-tab" data-id="${row.id}" data-tab="cases">
                             <i class="anticon anticon-folder text-primary mr-2"></i> Cases
                             ${parseInt(row.cases_count) > 0 ? `<span class="badge badge-primary float-right">${row.cases_count}</span>` : ''}
                           </a>
                           <a href="#" class="dropdown-item open-tab" data-id="${row.id}" data-tab="tickets">
-                            <i class="anticon anticon-customer-service text-info mr-2"></i> Tickets
+                            <i class="anticon anticon-customer-service text-info mr-2"></i> Support Tickets
                             ${parseInt(row.tickets_count) > 0 ? `<span class="badge badge-info float-right">${row.tickets_count}</span>` : ''}
                           </a>
                           <a href="#" class="dropdown-item open-tab" data-id="${row.id}" data-tab="transactions">
                             <i class="anticon anticon-swap text-success mr-2"></i> Transactions
                           </a>
-                          <a href="#" class="dropdown-item open-tab" data-id="${row.id}" data-tab="sendNotifTab">
-                            <i class="anticon anticon-notification text-danger mr-2"></i> Notifications
-                          </a>
                           <a href="#" class="dropdown-item open-tab" data-id="${row.id}" data-tab="payments">
                             <i class="anticon anticon-wallet text-secondary mr-2"></i> Wallet / Payments
                           </a>
+
                           <div class="dropdown-divider"></div>
-                          <a href="#" class="dropdown-item edit-user" data-id="${row.id}">
-                            <i class="anticon anticon-edit text-primary mr-2"></i> Edit User
+                          <h6 class="dropdown-header" style="font-size:10px;color:#999;text-transform:uppercase;letter-spacing:.06em;">Communication</h6>
+                          <a href="#" class="dropdown-item open-tab" data-id="${row.id}" data-tab="sendNotifTab">
+                            <i class="anticon anticon-notification text-danger mr-2"></i> Send Notification
                           </a>
                           <a href="#" class="dropdown-item send-mail-user" data-id="${row.id}" data-email="${email}" data-name="${name}">
                             <i class="anticon anticon-mail text-success mr-2"></i> Send Email
                           </a>
+                          <a href="#" class="dropdown-item open-tab" data-id="${row.id}" data-tab="emaillogs">
+                            <i class="anticon anticon-read text-muted mr-2"></i> Email Logs
+                          </a>
+
                           <div class="dropdown-divider"></div>
+                          <h6 class="dropdown-header" style="font-size:10px;color:#999;text-transform:uppercase;letter-spacing:.06em;">Account</h6>
+                          <a href="#" class="dropdown-item edit-user" data-id="${row.id}">
+                            <i class="anticon anticon-edit text-primary mr-2"></i> Edit User
+                          </a>
                           <a href="#" class="dropdown-item text-danger delete-user" data-id="${row.id}" data-name="${name}" data-email="${email}">
                             <i class="anticon anticon-stop mr-2"></i> Suspend User
                           </a>
