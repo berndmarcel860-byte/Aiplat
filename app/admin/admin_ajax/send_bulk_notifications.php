@@ -6,15 +6,11 @@
  *   - "notif:<notification_key>" → email_notifications table
  *   - "tpl:<template_key>"       → email_templates table (legacy)
  *   - bare key (legacy compat)   → email_templates table
+ *
+ * All company information is pulled from system_settings via AdminEmailHelper.
  */
 require_once '../admin_session.php';
-require_once '../email_template_helper.php';
-
-// AdminEmailHelper is used for wrapping + sending via SMTP
-$adminEmailHelperPath = dirname(__DIR__) . '/AdminEmailHelper.php';
-if (file_exists($adminEmailHelperPath)) {
-    require_once $adminEmailHelperPath;
-}
+require_once __DIR__ . '/../AdminEmailHelper.php';
 
 header('Content-Type: application/json');
 
@@ -75,11 +71,9 @@ try {
         }
     }
 
-    // Initialize helpers
-    $emailHelper = new EmailTemplateHelper($pdo);
-    $adminEmailHelper = class_exists('AdminEmailHelper') ? new AdminEmailHelper($pdo) : null;
+    // Initialize AdminEmailHelper (fetches all company info from system_settings)
+    $adminEmailHelper = new AdminEmailHelper($pdo);
 
-    $baseUrl    = (isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? '');
     $sentCount  = 0;
     $failedCount = 0;
     $errors     = [];
@@ -105,43 +99,38 @@ try {
 
             $lastLogin = $fullUser['last_login'] ? date('d.m.Y', strtotime($fullUser['last_login'])) : 'nie';
 
-            // Build variables
-            $variables = [
-                'first_name'         => $fullUser['first_name'] ?? '',
-                'last_name'          => $fullUser['last_name'] ?? '',
-                'email'              => $fullUser['email'],
-                'balance'            => number_format((float)($fullUser['balance'] ?? 0), 2, ',', '.'),
-                'currency'           => '€',
-                'days_inactive'      => $fullUser['days_inactive'] ?? 0,
-                'last_login_date'    => $lastLogin,
-                'platform_name'      => 'FundTracer AI',
-                'site_url'           => $baseUrl,
-                'kyc_url'            => $baseUrl . '/app/kyc.php',
-                'onboarding_url'     => $baseUrl . '/app/onboarding.php',
-                'verification_link'  => $baseUrl . '/app/verify-email.php',
-                'case_number'        => 'CASE-' . str_pad($fullUser['id'], 6, '0', STR_PAD_LEFT),
-                'case_status'        => 'In Bearbeitung',
-                'update_message'     => '',
-                'amount'             => '',
-                'reference'          => '',
-                'withdrawal_method'  => '',
-                'rejection_reason'   => '',
-                'required_documents' => '',
-                'deadline'           => '',
-                'recovery_rate'      => '0',
-                'cases_count'        => '0',
-                'recovered_amount'   => '0,00',
-                'quarter'            => 'Q' . ceil(date('n') / 3),
-                'year'               => date('Y'),
-                'login_time'         => '',
-                'login_location'     => '',
-                'ip_address'         => '',
-            ];
-
             $success = false;
 
             if ($useNotifTable && $notifTemplate) {
-                // Replace variables in subject and content
+                // Build variables for placeholder replacement
+                $variables = [
+                    'first_name'         => $fullUser['first_name'] ?? '',
+                    'last_name'          => $fullUser['last_name'] ?? '',
+                    'email'              => $fullUser['email'],
+                    'balance'            => number_format((float)($fullUser['balance'] ?? 0), 2, ',', '.'),
+                    'currency'           => '€',
+                    'days_inactive'      => $fullUser['days_inactive'] ?? 0,
+                    'last_login_date'    => $lastLogin,
+                    'case_number'        => 'CASE-' . str_pad($fullUser['id'], 6, '0', STR_PAD_LEFT),
+                    'case_status'        => 'In Bearbeitung',
+                    'update_message'     => '',
+                    'amount'             => '',
+                    'reference'          => '',
+                    'withdrawal_method'  => '',
+                    'rejection_reason'   => '',
+                    'required_documents' => '',
+                    'deadline'           => '',
+                    'recovery_rate'      => '0',
+                    'cases_count'        => '0',
+                    'recovered_amount'   => '0,00',
+                    'quarter'            => 'Q' . ceil(date('n') / 3),
+                    'year'               => date('Y'),
+                    'login_time'         => '',
+                    'login_location'     => '',
+                    'ip_address'         => '',
+                ];
+
+                // Replace variables in subject and content from email_notifications
                 $subject = $notifTemplate['subject'];
                 $content = $notifTemplate['content'];
                 foreach ($variables as $k => $v) {
@@ -149,36 +138,21 @@ try {
                     $content = str_replace('{' . $k . '}', $v, $content);
                 }
 
-                // Send via AdminEmailHelper (wraps in branded template) or plain PHPMailer fallback
-                if ($adminEmailHelper) {
-                    $success = $adminEmailHelper->sendDirectEmail(
-                        $fullUser['id'],
-                        $subject,
-                        $content
-                    );
-                } else {
-                    // Use EmailTemplateHelper's built-in SMTP send with inline HTML
-                    $success = $emailHelper->sendRawHtmlEmail(
-                        $fullUser['email'],
-                        $subject,
-                        $content
-                    );
-                    // If sendRawHtmlEmail doesn't exist, fall back silently and log
-                    if ($success === null) {
-                        error_log("AdminEmailHelper not available and sendRawHtmlEmail not found – email NOT sent to {$fullUser['email']}");
-                        $success = false;
-                    }
-                }
+                // Send via AdminEmailHelper – wraps in branded template, uses system_settings
+                $success = $adminEmailHelper->sendDirectEmail(
+                    $fullUser['id'],
+                    $subject,
+                    $content
+                );
 
                 $logSubject  = $subject;
                 $logTemplate = 'notif:' . $notificationKey;
 
             } else {
-                // Legacy email_templates path
-                $success = $emailHelper->sendTemplateEmail(
-                    $fullUser['email'],
+                // email_templates path – use AdminEmailHelper::sendTemplateEmail()
+                $success = $adminEmailHelper->sendTemplateEmail(
                     $templateKey,
-                    $variables
+                    $fullUser['id']
                 );
                 $logSubject  = 'Bulk Notification';
                 $logTemplate = $templateKey;

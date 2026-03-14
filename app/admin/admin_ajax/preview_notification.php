@@ -8,7 +8,7 @@
  *   - bare key (legacy compat)   → email_templates table
  */
 require_once '../admin_session.php';
-require_once '../email_template_helper.php';
+require_once __DIR__ . '/../AdminEmailHelper.php';
 
 header('Content-Type: application/json');
 
@@ -103,22 +103,31 @@ try {
         // ── email_templates table (legacy) ────────────────────────────────
         $templateKey = str_starts_with($rawKey, 'tpl:') ? substr($rawKey, 4) : $rawKey;
 
-        $emailHelper = new EmailTemplateHelper($pdo);
-        $rendered    = $emailHelper->renderTemplate($templateKey, $sampleVariables);
+        $stmt = $pdo->prepare("SELECT subject, content FROM email_templates WHERE template_key = ?");
+        $stmt->execute([$templateKey]);
+        $tpl = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        if (!$rendered) {
+        if (!$tpl) {
             echo json_encode(['success' => false, 'message' => 'Vorlage konnte nicht geladen werden']);
             exit();
+        }
+
+        // Replace sample variables
+        $subject = $tpl['subject'];
+        $content = $tpl['content'];
+        foreach ($sampleVariables as $k => $v) {
+            $subject = str_replace(['{' . $k . '}', '{{' . $k . '}}'], $v, $subject);
+            $content = str_replace(['{' . $k . '}', '{{' . $k . '}}'], $v, $content);
         }
 
         echo json_encode([
             'success' => true,
             'preview' => '<div style="max-height:500px;overflow-y:auto;border:1px solid #ddd;padding:15px;background:#fff;">'
-                       . '<p><strong>Betreff:</strong> ' . htmlspecialchars($rendered['subject']) . '</p>'
+                       . '<p><strong>Betreff:</strong> ' . htmlspecialchars($subject) . '</p>'
                        . '<hr>'
-                       . $rendered['content']
+                       . $content
                        . '</div>',
-            'subject' => $rendered['subject'],
+            'subject' => $subject,
         ]);
     }
 

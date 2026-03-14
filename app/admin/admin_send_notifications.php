@@ -4,10 +4,6 @@
  * Comprehensive user filtering and bulk email notification system
  */
 require_once 'admin_header.php';
-require_once 'email_template_helper.php';
-
-// Initialize email helper
-$emailHelper = new EmailTemplateHelper($pdo);
 
 // Get notification templates from the dedicated email_notifications table (grouped by category)
 $notificationTemplates = [];
