@@ -779,8 +779,8 @@ $(document).ready(function() {
     loadEmailTemplates();
     loadPackages();
     
-    // Fetch notification templates from email_notifications for the dropdown
-    $.post('admin_ajax/get_notification_templates.php', {draw: 1, start: 0, length: 200, 'search[value]': ''}, function(response) {
+    // Fetch notification templates from email_notifications for the dropdown (fetch up to 1000; active templates only)
+    $.post('admin_ajax/get_notification_templates.php', {draw: 1, start: 0, length: 1000, 'search[value]': ''}, function(response) {
         if (response && response.data && response.data.length) {
             var options = '<option value="" disabled selected>— Select notification template —</option>';
             response.data.forEach(function(tpl) {
@@ -891,7 +891,7 @@ $(document).ready(function() {
                             '<button class="btn btn-sm btn-info view-user-btn" data-id="' + escapeHtml(data.id) + '" title="Quick View"><i class="anticon anticon-eye"></i></button>' +
                             '<button class="btn btn-sm btn-warning edit-user-btn" data-id="' + escapeHtml(data.id) + '" title="Edit User"><i class="anticon anticon-edit"></i></button>' +
                             '<button class="btn btn-sm btn-success send-email-btn" data-id="' + escapeHtml(data.id) + '" data-name="' + escapeHtml(data.first_name + ' ' + data.last_name) + '" data-email="' + escapeHtml(data.email) + '" title="Send Email"><i class="anticon anticon-mail"></i></button>' +
-                            '<button class="btn btn-sm btn-info send-notif-btn" data-id="' + escapeHtml(data.id) + '" data-name="' + escapeHtml(data.first_name + ' ' + data.last_name) + '" data-email="' + escapeHtml(data.email) + '" title="Send Notification"><i class="anticon anticon-notification"></i></button>' +
+                            '<button class="btn btn-sm btn-info send-notif-btn" data-id="' + escapeHtml(data.id) + '" data-name="' + escapeHtml(data.first_name + ' ' + data.last_name) + '" data-email="' + escapeHtml(data.email) + '" title="Send Notification" aria-label="Send Notification"><i class="anticon anticon-notification"></i></button>' +
                             '<button class="btn btn-sm btn-secondary add-package-btn" data-id="' + escapeHtml(data.id) + '" data-name="' + escapeHtml(data.first_name + ' ' + data.last_name) + '" title="Assign Package"><i class="anticon anticon-gift"></i></button>' +
                         '</div>';
                     }
