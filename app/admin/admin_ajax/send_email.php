@@ -1,7 +1,13 @@
 <?php
 require_once '../admin_session.php';
+require_once __DIR__ . '/../AdminEmailHelper.php';
 
 header('Content-Type: application/json');
+
+if (!isset($_SESSION['admin_id'])) {
+    echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+    exit();
+}
 
 $requiredFields = ['recipients', 'subject', 'message'];
 $missingFields = [];
@@ -24,10 +30,10 @@ try {
     // Determine recipient users based on selection
     $recipientTypes = is_array($_POST['recipients']) ? $_POST['recipients'] : [$_POST['recipients']];
     $users = [];
-    
+
     foreach ($recipientTypes as $type) {
-        $query = "SELECT id, email, first_name, last_name FROM users WHERE ";
-        
+        $query = "SELECT id, email FROM users WHERE ";
+
         switch ($type) {
             case 'all':
                 $query .= "1=1";
@@ -53,71 +59,75 @@ try {
             default:
                 continue 2; // Skip unknown types
         }
-        
+
         $stmt = $pdo->prepare($query);
         $stmt->execute();
         $users = array_merge($users, $stmt->fetchAll(PDO::FETCH_ASSOC));
     }
-    
+
+    // Deduplicate by user id
+    $seen  = [];
+    $users = array_filter($users, function ($u) use (&$seen) {
+        if (isset($seen[$u['id']])) return false;
+        $seen[$u['id']] = true;
+        return true;
+    });
+
     if (empty($users)) {
         throw new Exception('No recipients found matching your criteria');
     }
-    
-    // Prepare email content
-    $subject = $_POST['subject'];
-    $message = $_POST['message'];
-    
-    // For each user, personalize and send email
-    $sentCount = 0;
-    foreach ($users as $user) {
-        // Personalize message (replace variables)
-        $personalizedMessage = $message;
-        $personalizedMessage = str_replace('{{user_id}}', $user['id'], $personalizedMessage);
-        $personalizedMessage = str_replace('{{email}}', $user['email'], $personalizedMessage);
-        $personalizedMessage = str_replace('{{first_name}}', $user['first_name'], $personalizedMessage);
-        $personalizedMessage = str_replace('{{last_name}}', $user['last_name'], $personalizedMessage);
-        $personalizedMessage = str_replace('{{full_name}}', $user['first_name'] . ' ' . $user['last_name'], $personalizedMessage);
-        
-        // In a real application, you would send the email here
-        // For this example, we'll just log it to the email_logs table
-        
-        $stmt = $pdo->prepare("
-            INSERT INTO email_logs (
-                template_id,
-                recipient,
-                subject,
-                content,
-                sent_at,
-                status
-            ) VALUES (
-                :template_id,
-                :recipient,
-                :subject,
-                :content,
-                NOW(),
-                'sent'
-            )
-        ");
-        
-        $stmt->execute([
-            ':template_id' => !empty($_POST['template_id']) ? (int)$_POST['template_id'] : null,
-            ':recipient' => $user['email'],
-            ':subject' => $subject,
-            ':content' => $personalizedMessage
-        ]);
-        
-        $sentCount++;
+
+    $subject = trim($_POST['subject']);
+    $message = trim($_POST['message']);
+
+    // Convert plain-text newlines to HTML paragraphs
+    $htmlMessage = '';
+    foreach (explode("\n", str_replace("\r\n", "\n", $message)) as $line) {
+        $line = trim($line);
+        $htmlMessage .= ($line !== '') ? '<p>' . $line . '</p>' : '<br>';
     }
-    
+
+    // Use AdminEmailHelper – company info is fetched from system_settings automatically.
+    $emailHelper = new AdminEmailHelper($pdo);
+
+    $sentCount  = 0;
+    $failedCount = 0;
+
+    foreach ($users as $user) {
+        if (!filter_var($user['email'], FILTER_VALIDATE_EMAIL)) {
+            $failedCount++;
+            continue;
+        }
+
+        if ($emailHelper->sendDirectEmail((int)$user['id'], $subject, $htmlMessage)) {
+            $sentCount++;
+        } else {
+            $failedCount++;
+        }
+    }
+
+    // Log admin action
+    $logStmt = $pdo->prepare(
+        "INSERT INTO admin_logs (admin_id, action, entity_type, entity_id, details, ip_address, created_at)
+         VALUES (?, 'send_email_bulk', 'users', 0, ?, ?, NOW())"
+    );
+    $logStmt->execute([
+        $_SESSION['admin_id'],
+        "Bulk email: \"{$subject}\" — {$sentCount} sent, {$failedCount} failed",
+        $_SERVER['REMOTE_ADDR'] ?? '',
+    ]);
+
     echo json_encode([
         'success' => true,
-        'message' => "Email sent successfully to $sentCount recipients"
+        'message' => "Email sent successfully to {$sentCount} recipient(s)." . ($failedCount > 0 ? " {$failedCount} failed." : ''),
+        'sent'    => $sentCount,
+        'failed'  => $failedCount,
     ]);
 } catch (Exception $e) {
+    error_log("send_email.php error: " . $e->getMessage());
     echo json_encode([
         'success' => false,
-        'message' => 'Failed to send email',
-        'error' => $e->getMessage()
+        'message' => 'Failed to send email: ' . $e->getMessage(),
     ]);
 }
 ?>

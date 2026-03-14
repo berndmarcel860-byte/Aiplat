@@ -254,9 +254,36 @@ class AdminEmailHelper {
                 'current_year'  => date('Y'),
                 'current_date'  => date('d.m.Y'),
                 'current_time'  => date('H:i'),
-                'dashboard_url' => htmlspecialchars($settings['site_url'] ?? $this->siteUrl) . '/dashboard',
-                'login_url'     => htmlspecialchars($settings['site_url'] ?? $this->siteUrl) . '/login.php',
+                'dashboard_url' => rtrim(htmlspecialchars($settings['site_url'] ?? $this->siteUrl), '/') . '/app/index.php',
+                'login_url'     => rtrim(htmlspecialchars($settings['site_url'] ?? $this->siteUrl), '/') . '/login.php',
                 'support_email' => htmlspecialchars($settings['contact_email'] ?? 'info@cryptofinanze.de'),
+
+                // Aliases and extra variables used by email_notifications templates
+                'platform_name'    => htmlspecialchars($settings['brand_name'] ?? $this->brandName),
+                'year'             => date('Y'),
+                'quarter'          => 'Q' . ceil(date('n') / 3),
+                'currency'         => '€',
+                'onboarding_url'   => rtrim(htmlspecialchars($settings['site_url'] ?? $this->siteUrl), '/') . '/app/onboarding.php',
+                'kyc_url'          => rtrim(htmlspecialchars($settings['site_url'] ?? $this->siteUrl), '/') . '/app/kyc.php',
+                'withdrawal_url'   => rtrim(htmlspecialchars($settings['site_url'] ?? $this->siteUrl), '/') . '/app/transactions.php',
+                'last_login_date'  => !empty($user['last_login'])
+                                        ? date('d.m.Y', strtotime($user['last_login']))
+                                        : 'nie',
+                'days_inactive'    => !empty($user['last_login'])
+                                        ? (string)(int)floor((time() - strtotime($user['last_login'])) / 86400)
+                                        : '0',
+                // Notification-specific stats (overridable via customVars)
+                'recovery_rate'    => '0',
+                'cases_count'      => '0',
+                'recovered_amount' => '0,00',
+                'update_message'   => '',
+                'reference'        => '',
+                'withdrawal_method' => '',
+                'rejection_reason'  => '',
+                'required_documents' => '',
+                'deadline'          => '',
+                'login_time'        => '',
+                'login_location'    => '',
             ];
             
             // Merge custom variables (cast to string to avoid htmlspecialchars type errors)

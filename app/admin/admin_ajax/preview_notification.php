@@ -25,13 +25,19 @@ try {
         exit();
     }
 
-    // Sample variables shared by all templates
-    $baseUrl = (isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'example.com');
+    // Fetch brand name, site URL and other settings from system_settings (same source as AdminEmailHelper)
+    $sysStmt  = $pdo->query("SELECT brand_name, site_url, contact_email FROM system_settings WHERE id = 1");
+    $sysRow   = $sysStmt ? $sysStmt->fetch(PDO::FETCH_ASSOC) : [];
+    $baseUrl      = rtrim($sysRow['site_url'] ?? ((isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'example.com')), '/');
+    $brandName    = $sysRow['brand_name']    ?? 'FundTracer AI';
+    $contactEmail = $sysRow['contact_email'] ?? 'support@fundtracerai.com';
+
     $sampleVariables = [
         'first_name'          => 'Max',
         'last_name'           => 'Mustermann',
+        'full_name'           => 'Max Mustermann',
         'email'               => 'max.mustermann@example.com',
-        'balance'             => '1.250,00',
+        'balance'             => '1.250,00 €',
         'currency'            => '€',
         'amount'              => '500,00',
         'days_inactive'       => '30',
@@ -40,17 +46,22 @@ try {
         'kyc_url'             => $baseUrl . '/app/kyc.php',
         'onboarding_url'      => $baseUrl . '/app/onboarding.php',
         'withdrawal_url'      => $baseUrl . '/app/transactions.php',
+        'dashboard_url'       => $baseUrl . '/app/index.php',
         'verification_link'   => $baseUrl . '/verify-email.php?token=SAMPLE',
         'site_url'            => $baseUrl,
-        'platform_name'       => 'FundTracer AI',
+        'brand_name'          => $brandName,
+        'site_name'           => $brandName,
+        'platform_name'       => $brandName,
         'case_number'         => 'CASE-000123',
         'case_status'         => 'In Bearbeitung',
         'update_message'      => 'Neue KI-Erkenntnisse wurden zu Ihrem Fall hinzugefügt.',
         'recovery_rate'       => '64',
         'cases_count'         => '3',
         'recovered_amount'    => '28.800,00',
-        'quarter'             => 'Q1',
+        'quarter'             => 'Q' . ceil(date('n') / 3),
         'year'                => date('Y'),
+        'current_year'        => date('Y'),
+        'current_date'        => date('d.m.Y'),
         'withdrawal_method'   => 'Banküberweisung',
         'reference'           => 'REF-20240310-001',
         'deadline'            => date('d.m.Y', strtotime('+3 days')),
@@ -59,7 +70,8 @@ try {
         'login_time'          => date('d.m.Y H:i') . ' Uhr',
         'login_location'      => 'Berlin, Deutschland',
         'ip_address'          => '192.168.1.1',
-        'support_email'       => 'support@fundtracerai.com',
+        'support_email'       => $contactEmail,
+        'contact_email'       => $contactEmail,
     ];
 
     // Detect source table

@@ -97,55 +97,30 @@ try {
                 continue;
             }
 
-            $lastLogin = $fullUser['last_login'] ? date('d.m.Y', strtotime($fullUser['last_login'])) : 'nie';
-
             $success = false;
 
             if ($useNotifTable && $notifTemplate) {
-                // Build variables for placeholder replacement
-                $variables = [
-                    'first_name'         => $fullUser['first_name'] ?? '',
-                    'last_name'          => $fullUser['last_name'] ?? '',
-                    'email'              => $fullUser['email'],
-                    'balance'            => number_format((float)($fullUser['balance'] ?? 0), 2, ',', '.'),
-                    'currency'           => '€',
-                    'days_inactive'      => $fullUser['days_inactive'] ?? 0,
-                    'last_login_date'    => $lastLogin,
-                    'case_number'        => 'CASE-' . str_pad($fullUser['id'], 6, '0', STR_PAD_LEFT),
-                    'case_status'        => 'In Bearbeitung',
-                    'update_message'     => '',
-                    'amount'             => '',
-                    'reference'          => '',
-                    'withdrawal_method'  => '',
-                    'rejection_reason'   => '',
-                    'required_documents' => '',
-                    'deadline'           => '',
-                    'recovery_rate'      => '0',
-                    'cases_count'        => '0',
-                    'recovered_amount'   => '0,00',
-                    'quarter'            => 'Q' . ceil(date('n') / 3),
-                    'year'               => date('Y'),
-                    'login_time'         => '',
-                    'login_location'     => '',
-                    'ip_address'         => '',
+                // Pass notification-specific custom vars to AdminEmailHelper.
+                // AdminEmailHelper::sendDirectEmail() fetches all company info from
+                // system_settings and all user data from the DB, then replaces every
+                // variable in subject and content (including {platform_name}, {site_url},
+                // {brand_name}, {onboarding_url}, {kyc_url}, {last_login_date}, etc.).
+                $customVars = [
+                    'days_inactive'  => (string)($fullUser['days_inactive'] ?? 0),
+                    'ip_address'     => '',
+                    'amount'         => '',
                 ];
 
-                // Replace variables in subject and content from email_notifications
-                $subject = $notifTemplate['subject'];
-                $content = $notifTemplate['content'];
-                foreach ($variables as $k => $v) {
-                    $subject = str_replace('{' . $k . '}', $v, $subject);
-                    $content = str_replace('{' . $k . '}', $v, $content);
-                }
-
-                // Send via AdminEmailHelper – wraps in branded template, uses system_settings
                 $success = $adminEmailHelper->sendDirectEmail(
                     $fullUser['id'],
-                    $subject,
-                    $content
+                    $notifTemplate['subject'],
+                    $notifTemplate['content'],
+                    $customVars
                 );
 
-                $logSubject  = $subject;
+                // Build a resolved subject for the log (use AdminEmailHelper's variable set)
+                $allVars    = $adminEmailHelper->getAllVariables($fullUser['id'], $customVars);
+                $logSubject = $adminEmailHelper->replaceVariables($notifTemplate['subject'], $allVars);
                 $logTemplate = 'notif:' . $notificationKey;
 
             } else {
