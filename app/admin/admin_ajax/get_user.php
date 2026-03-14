@@ -453,44 +453,44 @@ try {
     // 🔔 Send Notification (inline form)
     // --------------------------------
 
-    // Fetch templates for the notification dropdown (_de first, then all as fallback)
-    $notifTemplateOptions = "<option value='' disabled selected>— Vorlage auswählen —</option>";
+    // Fetch notification templates from email_notifications table (notif: prefix for send_bulk_notifications.php)
+    $notifTemplateOptions = "<option value='' disabled selected>— Select notification template —</option>";
     try {
-        $stmtTpl = $pdo->query("
-            SELECT template_key, subject
-            FROM email_templates
-            ORDER BY
-                CASE WHEN template_key LIKE '%_de' OR template_key LIKE '%german%' THEN 0 ELSE 1 END ASC,
-                template_key ASC
+        $stmtNotif = $pdo->query("
+            SELECT notification_key, name, subject
+            FROM email_notifications
+            WHERE is_active = 1
+            ORDER BY name ASC
         ");
-        $notifTemplates = $stmtTpl->fetchAll(PDO::FETCH_ASSOC);
+        $notifTemplates = $stmtNotif->fetchAll(PDO::FETCH_ASSOC);
         foreach ($notifTemplates as $tpl) {
-            $key  = htmlspecialchars($tpl['template_key'], ENT_QUOTES);
-            $subj = htmlspecialchars($tpl['subject'] ?? $tpl['template_key'], ENT_QUOTES);
-            $notifTemplateOptions .= "<option value='{$key}'>{$key} — {$subj}</option>";
+            $key  = htmlspecialchars('notif:' . $tpl['notification_key'], ENT_QUOTES);
+            $name = htmlspecialchars($tpl['name'], ENT_QUOTES);
+            $subj = htmlspecialchars($tpl['subject'] ?? $tpl['notification_key'], ENT_QUOTES);
+            $notifTemplateOptions .= "<option value='{$key}'>{$name} — {$subj}</option>";
         }
     } catch (Exception $e) {
-        // email_templates table unavailable — leave the select empty
+        // email_notifications table unavailable — leave the select empty
     }
 
     $sendNotifHTML = "
     <div class='p-1'>
-      <div class='alert alert-warning py-2 mb-3'>
-        <i class='anticon anticon-bell mr-1'></i>
-        Benachrichtigung senden an: <strong>{$userNameEsc}</strong>
+      <div class='alert alert-info py-2 mb-3'>
+        <i class='anticon anticon-notification mr-1'></i>
+        Send notification to: <strong>{$userNameEsc}</strong>
       </div>
       <form id='modalSendNotifForm'>
         <input type='hidden' name='user_id' value='{$user['id']}'>
         <input type='hidden' name='user_email' value='" . htmlspecialchars($user['email'], ENT_QUOTES) . "'>
         <div class='form-group'>
-          <label class='small font-weight-bold'>E-Mail-Vorlage <span class='text-danger'>*</span></label>
+          <label class='small font-weight-bold'>Notification Template <span class='text-danger'>*</span></label>
           <select class='form-control' name='template_key' id='modalNotifTemplate' required>
             {$notifTemplateOptions}
           </select>
-          <small class='text-muted'>Betreff und Inhalt werden automatisch aus der gewählten Vorlage übernommen.</small>
+          <small class='text-muted'>Subject and content are automatically taken from the selected notification template.</small>
         </div>
-        <button type='submit' class='btn btn-warning btn-block text-dark' id='modalSendNotifBtn'>
-          <i class='anticon anticon-notification mr-1'></i> Benachrichtigung senden
+        <button type='submit' class='btn btn-primary btn-block' id='modalSendNotifBtn'>
+          <i class='anticon anticon-notification mr-1'></i> Send Notification
         </button>
       </form>
     </div>";

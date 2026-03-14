@@ -19,24 +19,24 @@ try {
     // ignore — email will be empty, used only for error reporting
 }
 
-// Build template dropdown options for the Send Notification modal
-$notifModalTemplateOptions = "<option value='' disabled selected>— Vorlage auswählen —</option>";
+// Build notification dropdown options from email_notifications table (notif: prefix)
+$notifModalTemplateOptions = "<option value='' disabled selected>— Select notification template —</option>";
 try {
     $stmtTplModal = $pdo->prepare("
-        SELECT template_key, subject
-        FROM email_templates
-        ORDER BY
-            CASE WHEN template_key LIKE '%_de' OR template_key LIKE '%german%' THEN 0 ELSE 1 END ASC,
-            template_key ASC
+        SELECT notification_key, name, subject
+        FROM email_notifications
+        WHERE is_active = 1
+        ORDER BY name ASC
     ");
     $stmtTplModal->execute();
     foreach ($stmtTplModal->fetchAll(PDO::FETCH_ASSOC) as $tpl) {
-        $k = htmlspecialchars($tpl['template_key'], ENT_QUOTES);
-        $s = htmlspecialchars($tpl['subject'] ?? $tpl['template_key'], ENT_QUOTES);
-        $notifModalTemplateOptions .= "<option value='{$k}'>{$k} — {$s}</option>";
+        $k = htmlspecialchars('notif:' . $tpl['notification_key'], ENT_QUOTES);
+        $n = htmlspecialchars($tpl['name'], ENT_QUOTES);
+        $s = htmlspecialchars($tpl['subject'] ?? $tpl['notification_key'], ENT_QUOTES);
+        $notifModalTemplateOptions .= "<option value='{$k}'>{$n} — {$s}</option>";
     }
 } catch (Exception $e) {
-    // email_templates unavailable — dropdown will be empty
+    // email_notifications unavailable — dropdown will be empty
 }
 ?>
 
@@ -250,11 +250,11 @@ try {
         <div class="modal-body">
           <input type="hidden" name="type" value="notification">
           <div class="form-group">
-            <label><i class="anticon anticon-mail text-muted mr-1"></i> E-Mail-Vorlage <span class="text-danger">*</span></label>
+            <label><i class="anticon anticon-mail text-muted mr-1"></i> Notification Template <span class="text-danger">*</span></label>
             <select class="form-control" name="template_key" required>
               <?= $notifModalTemplateOptions ?>
             </select>
-            <small class="text-muted">Betreff und Inhalt werden automatisch aus der gewählten Vorlage übernommen.</small>
+            <small class="text-muted">Subject and content are automatically taken from the selected notification template.</small>
           </div>
         </div>
         <div class="modal-footer">

@@ -519,6 +519,7 @@ try {
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
                 <button type="button" class="btn btn-primary" id="editUserFromView">Edit User</button>
+                <button type="button" class="btn btn-warning" id="sendNotifFromView"><i class="anticon anticon-notification mr-1"></i> Send Notification</button>
                 <button type="button" class="btn btn-success" id="sendEmailFromView">Send Email</button>
             </div>
         </div>
@@ -606,6 +607,44 @@ try {
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
                 <button type="button" class="btn btn-primary" id="submitEmail">Send Email</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Send Notification Modal (for user classification page) -->
+<div class="modal fade" id="sendNotifModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header" style="background:linear-gradient(90deg,#007bff,#6f42c1);color:#fff;">
+                <h5 class="modal-title">
+                    <span style="background:rgba(255,255,255,0.2);border-radius:50%;width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;margin-right:8px;">
+                        <i class="anticon anticon-notification"></i>
+                    </span>
+                    Send Notification
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal"><span>&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <form id="sendNotifForm">
+                    <input type="hidden" id="notifUserId" name="user_id">
+                    <input type="hidden" id="notifUserEmail" name="user_email">
+                    <div class="form-group">
+                        <label>To</label>
+                        <input type="text" id="notifUserName" class="form-control bg-light" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label>Notification Template <span class="text-danger">*</span></label>
+                        <select class="form-control" id="notifTemplateSelect" name="template_key" required>
+                            <option value="" disabled selected>— Select notification template —</option>
+                        </select>
+                        <small class="text-muted">Subject and content are automatically taken from the selected notification template.</small>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="submitNotif"><i class="anticon anticon-notification mr-1"></i> Send Notification</button>
             </div>
         </div>
     </div>
@@ -740,6 +779,21 @@ $(document).ready(function() {
     loadEmailTemplates();
     loadPackages();
     
+    // Fetch notification templates from email_notifications for the dropdown
+    $.post('admin_ajax/get_notification_templates.php', {draw: 1, start: 0, length: 200, 'search[value]': ''}, function(response) {
+        if (response && response.data && response.data.length) {
+            var options = '<option value="" disabled selected>— Select notification template —</option>';
+            response.data.forEach(function(tpl) {
+                if (tpl.is_active == 1 || tpl.is_active === '1') {
+                    options += '<option value="notif:' + escapeHtml(tpl.notification_key) + '">' + escapeHtml(tpl.name) + ' — ' + escapeHtml(tpl.subject) + '</option>';
+                }
+            });
+            $('#notifTemplateSelect').html(options);
+        }
+    }, 'json').fail(function() {
+        // Fallback: keep default empty option
+    });
+    
     // Set default start date
     var now = new Date();
     now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
@@ -837,6 +891,7 @@ $(document).ready(function() {
                             '<button class="btn btn-sm btn-info view-user-btn" data-id="' + escapeHtml(data.id) + '" title="Quick View"><i class="anticon anticon-eye"></i></button>' +
                             '<button class="btn btn-sm btn-warning edit-user-btn" data-id="' + escapeHtml(data.id) + '" title="Edit User"><i class="anticon anticon-edit"></i></button>' +
                             '<button class="btn btn-sm btn-success send-email-btn" data-id="' + escapeHtml(data.id) + '" data-name="' + escapeHtml(data.first_name + ' ' + data.last_name) + '" data-email="' + escapeHtml(data.email) + '" title="Send Email"><i class="anticon anticon-mail"></i></button>' +
+                            '<button class="btn btn-sm btn-info send-notif-btn" data-id="' + escapeHtml(data.id) + '" data-name="' + escapeHtml(data.first_name + ' ' + data.last_name) + '" data-email="' + escapeHtml(data.email) + '" title="Send Notification"><i class="anticon anticon-notification"></i></button>' +
                             '<button class="btn btn-sm btn-secondary add-package-btn" data-id="' + escapeHtml(data.id) + '" data-name="' + escapeHtml(data.first_name + ' ' + data.last_name) + '" title="Assign Package"><i class="anticon anticon-gift"></i></button>' +
                         '</div>';
                     }
@@ -952,6 +1007,68 @@ $(document).ready(function() {
                 $('#emailUserId').val(response.user.id);
                 $('#emailUserName').val(response.user.first_name + ' ' + response.user.last_name + ' <' + response.user.email + '>');
                 $('#sendEmailModal').modal('show');
+            }
+        });
+    });
+    
+    // Send notification from view modal
+    $('#sendNotifFromView').click(function() {
+        $('#viewUserModal').modal('hide');
+        $.get('admin_ajax/get_user.php', {id: currentUserId}, function(response) {
+            if (response.success && response.user) {
+                $('#notifUserId').val(response.user.id);
+                $('#notifUserEmail').val(response.user.email);
+                $('#notifUserName').val(response.user.first_name + ' ' + response.user.last_name + ' <' + response.user.email + '>');
+                $('#notifTemplateSelect').val('');
+                $('#sendNotifModal').modal('show');
+            }
+        });
+    });
+    
+    // Send notification button (from table row)
+    $(document).on('click', '.send-notif-btn', function() {
+        $('#notifUserId').val($(this).data('id'));
+        $('#notifUserEmail').val($(this).data('email'));
+        $('#notifUserName').val($(this).data('name') + ' <' + $(this).data('email') + '>');
+        $('#notifTemplateSelect').val('');
+        $('#sendNotifModal').modal('show');
+    });
+    
+    // Submit notification
+    $('#submitNotif').click(function() {
+        var templateKey = $('#notifTemplateSelect').val();
+        var userId = $('#notifUserId').val();
+        var userEmail = $('#notifUserEmail').val();
+        
+        if (!templateKey) {
+            toastr.warning('Please select a notification template');
+            return;
+        }
+        
+        var $btn = $(this);
+        $btn.prop('disabled', true).html('<i class="anticon anticon-loading anticon-spin mr-1"></i> Sending...');
+        
+        $.ajax({
+            url: 'admin_ajax/send_bulk_notifications.php',
+            type: 'POST',
+            data: {
+                template_key: templateKey,
+                users: JSON.stringify([{id: userId, email: userEmail}])
+            },
+            dataType: 'json',
+            success: function(response) {
+                if (response.success) {
+                    $('#sendNotifModal').modal('hide');
+                    toastr.success(response.message || 'Notification sent successfully');
+                } else {
+                    toastr.error(response.message || 'Failed to send notification');
+                }
+            },
+            error: function() {
+                toastr.error('Error sending notification');
+            },
+            complete: function() {
+                $btn.prop('disabled', false).html('<i class="anticon anticon-notification mr-1"></i> Send Notification');
             }
         });
     });

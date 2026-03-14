@@ -217,6 +217,56 @@ $totalPending = array_sum($pendingItems);
                     </div>
                     <?php endif; ?>
 
+                    <!-- Quick Service Navigation Bar -->
+                    <div class="card mb-3" style="border-left:4px solid #2950a8;">
+                        <div class="card-body py-2 px-3">
+                            <div class="d-flex flex-wrap align-items-center" style="gap:6px;">
+                                <small class="text-muted font-weight-semibold mr-2" style="white-space:nowrap;">
+                                    <i class="anticon anticon-appstore mr-1"></i> Quick Access:
+                                </small>
+                                <a href="admin_users.php" class="btn btn-xs btn-outline-primary" style="font-size:12px;">
+                                    <i class="anticon anticon-team mr-1"></i> Users
+                                </a>
+                                <a href="admin_user_classification.php" class="btn btn-xs btn-outline-info" style="font-size:12px;">
+                                    <i class="anticon anticon-filter mr-1"></i> Classification
+                                </a>
+                                <a href="admin_kyc.php" class="btn btn-xs btn-outline-warning" style="font-size:12px;">
+                                    <i class="anticon anticon-safety-certificate mr-1"></i> KYC
+                                    <?php if ($stats['pending_kyc'] > 0): ?>
+                                    <span class="badge badge-warning ml-1"><?= $stats['pending_kyc'] ?></span>
+                                    <?php endif; ?>
+                                </a>
+                                <a href="admin_cases.php" class="btn btn-xs btn-outline-secondary" style="font-size:12px;">
+                                    <i class="anticon anticon-folder-open mr-1"></i> Cases
+                                </a>
+                                <a href="admin_deposits.php?status=pending" class="btn btn-xs btn-outline-success" style="font-size:12px;">
+                                    <i class="anticon anticon-arrow-down mr-1"></i> Deposits
+                                    <?php if ($stats['pending_deposits'] > 0): ?>
+                                    <span class="badge badge-success ml-1"><?= $stats['pending_deposits'] ?></span>
+                                    <?php endif; ?>
+                                </a>
+                                <a href="admin_withdrawals.php?status=pending" class="btn btn-xs btn-outline-danger" style="font-size:12px;">
+                                    <i class="anticon anticon-arrow-up mr-1"></i> Withdrawals
+                                    <?php if ($stats['pending_withdrawals'] > 0): ?>
+                                    <span class="badge badge-danger ml-1"><?= $stats['pending_withdrawals'] ?></span>
+                                    <?php endif; ?>
+                                </a>
+                                <a href="admin_transactions.php" class="btn btn-xs btn-outline-secondary" style="font-size:12px;">
+                                    <i class="anticon anticon-swap mr-1"></i> Transactions
+                                </a>
+                                <a href="admin_send_notifications.php" class="btn btn-xs btn-outline-secondary" style="font-size:12px;">
+                                    <i class="anticon anticon-notification mr-1"></i> Notifications
+                                </a>
+                                <a href="admin_support_tickets.php" class="btn btn-xs btn-outline-secondary" style="font-size:12px;">
+                                    <i class="anticon anticon-customer-service mr-1"></i> Tickets
+                                </a>
+                                <a href="admin_reports.php" class="btn btn-xs btn-outline-secondary" style="font-size:12px;">
+                                    <i class="anticon anticon-bar-chart mr-1"></i> Reports
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Main Stats Cards Row 1 -->
                     <div class="row">
                         <div class="col-md-6 col-lg-3">
@@ -728,7 +778,11 @@ $totalPending = array_sum($pendingItems);
                                                 <tbody>
                                                     <?php foreach ($recentUsers as $user): ?>
                                                     <tr>
-                                                        <td><?= htmlspecialchars($user['first_name'] . ' ' . $user['last_name']) ?></td>
+                                                        <td>
+                                                            <a href="admin_view_users.php?id=<?= (int)$user['id'] ?>" title="View Profile">
+                                                                <?= htmlspecialchars($user['first_name'] . ' ' . $user['last_name']) ?>
+                                                            </a>
+                                                        </td>
                                                         <td><?= htmlspecialchars($user['email']) ?></td>
                                                         <td>
                                                             <span class="badge badge-<?= $user['status'] === 'active' ? 'success' : 'warning' ?>">
