@@ -49,6 +49,9 @@ if (!$systemSettings) {
     if (!isset($systemSettings['openai_api_key'])) {
         $systemSettings['openai_api_key'] = '';
     }
+    if (!isset($systemSettings['dashboard_theme'])) {
+        $systemSettings['dashboard_theme'] = 'theme-1';
+    }
 }
 
 if (!$smtpSettings) {
@@ -93,6 +96,11 @@ if (!$smtpSettings) {
                         <li class="nav-item">
                             <a class="nav-link" data-toggle="tab" href="#telegram-settings" role="tab">
                                 <i class="fe fe-send"></i> Telegram Settings
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-toggle="tab" href="#dashboard-design" role="tab">
+                                <i class="fe fe-layout"></i> Dashboard Design
                             </a>
                         </li>
                     </ul>
@@ -380,6 +388,102 @@ if (!$smtpSettings) {
                             </div>
                         </div>
                     </div>
+
+                        <!-- ═══ Dashboard Design Tab ═══ -->
+                        <div class="tab-pane fade" id="dashboard-design" role="tabpanel">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h4 class="card-header-title"><i class="fe fe-layout mr-2"></i>User Dashboard Design</h4>
+                                </div>
+                                <div class="card-body">
+                                    <p class="text-muted mb-4">Wählen Sie das visuelle Design des Benutzer-Dashboards. Die Einstellung gilt global für alle Benutzer.</p>
+
+                                    <form id="dashboardThemeForm">
+                                        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
+                                        <input type="hidden" name="type" value="dashboard_theme">
+
+                                        <div class="row" id="themeCards">
+
+                                            <?php
+                                            $themes = [
+                                                'theme-1' => [
+                                                    'name'    => 'Klassisch',
+                                                    'desc'    => 'Farbverlauf-Design mit blauen Karten und modernem Heldenbereich.',
+                                                    'preview' => '#1a2a6c',
+                                                    'accent'  => '#2da9e3',
+                                                ],
+                                                'theme-2' => [
+                                                    'name'    => 'Elegant',
+                                                    'desc'    => 'Weiße Karten, weiche Schatten, marine Akzente – zurückhaltend & professionell.',
+                                                    'preview' => '#ffffff',
+                                                    'accent'  => '#1a3a6e',
+                                                ],
+                                                'theme-3' => [
+                                                    'name'    => 'Professionell',
+                                                    'desc'    => 'Unternehmensstruktur mit oberen Akzentlinien, Großbuchstaben-Bezeichnungen und tabellarischen Zahlen.',
+                                                    'preview' => '#ffffff',
+                                                    'accent'  => '#1a3a6e',
+                                                ],
+                                                'theme-4' => [
+                                                    'name'    => 'Minimalistisch',
+                                                    'desc'    => 'Ultra-sauber, viel Weißraum, Haarlinien-Rahmen und schlanke Typografie.',
+                                                    'preview' => '#ffffff',
+                                                    'accent'  => '#111111',
+                                                ],
+                                                'theme-5' => [
+                                                    'name'    => 'Executive',
+                                                    'desc'    => 'Premium-Dunkel: tiefes Anthrazit, weißer Inhalt, hoher Kontrast.',
+                                                    'preview' => '#10131a',
+                                                    'accent'  => '#64748b',
+                                                ],
+                                            ];
+                                            $currentTheme = $systemSettings['dashboard_theme'] ?? 'theme-1';
+                                            foreach ($themes as $key => $t):
+                                                $isActive = ($key === $currentTheme);
+                                            ?>
+                                            <div class="col-md-4 mb-4">
+                                                <div class="theme-card card h-100 <?= $isActive ? 'border-primary' : 'border' ?>"
+                                                     data-theme="<?= htmlspecialchars($key, ENT_QUOTES) ?>"
+                                                     style="cursor:pointer;border-radius:10px;transition:box-shadow .2s,border-color .2s;<?= $isActive ? 'box-shadow:0 0 0 3px #2950a8;' : '' ?>">
+                                                    <!-- Mini Preview -->
+                                                    <div style="height:90px;background:<?= $t['preview'] ?>;border-radius:10px 10px 0 0;border-bottom:1px solid #e2e8f0;display:flex;flex-direction:column;gap:6px;padding:12px;overflow:hidden;">
+                                                        <div style="height:12px;border-radius:3px;background:<?= $t['accent'] ?>;opacity:0.85;width:60%;"></div>
+                                                        <div style="display:flex;gap:4px;flex:1;">
+                                                            <div style="flex:1;border-radius:4px;background:<?= $t['accent'] ?>;opacity:0.12;"></div>
+                                                            <div style="flex:1;border-radius:4px;background:<?= $t['accent'] ?>;opacity:0.12;"></div>
+                                                            <div style="flex:1;border-radius:4px;background:<?= $t['accent'] ?>;opacity:0.12;"></div>
+                                                            <div style="flex:1;border-radius:4px;background:<?= $t['accent'] ?>;opacity:0.12;"></div>
+                                                        </div>
+                                                        <div style="height:8px;border-radius:2px;background:<?= $t['accent'] ?>;opacity:0.3;width:80%;"></div>
+                                                        <div style="height:6px;border-radius:2px;background:<?= $t['accent'] ?>;opacity:0.2;width:55%;"></div>
+                                                    </div>
+                                                    <div class="card-body py-3 px-3">
+                                                        <div class="d-flex align-items-center justify-content-between mb-1">
+                                                            <h6 class="mb-0 font-weight-bold"><?= htmlspecialchars($t['name'], ENT_QUOTES) ?></h6>
+                                                            <?php if ($isActive): ?>
+                                                            <span class="badge badge-primary"><i class="fe fe-check mr-1"></i>Aktiv</span>
+                                                            <?php endif; ?>
+                                                        </div>
+                                                        <p class="text-muted small mb-0"><?= htmlspecialchars($t['desc'], ENT_QUOTES) ?></p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <?php endforeach; ?>
+                                        </div><!-- /row -->
+
+                                        <input type="hidden" name="dashboard_theme" id="selectedTheme" value="<?= htmlspecialchars($currentTheme, ENT_QUOTES) ?>">
+
+                                        <hr class="my-3">
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fe fe-save"></i> Design speichern
+                                        </button>
+                                        <span id="themeStatusMsg" class="ml-3 text-muted small"></span>
+                                    </form>
+                                </div>
+                            </div>
+                        </div><!-- /dashboard-design -->
+
+                    </div><!-- /tab-content -->
                 </div>
             </div>
         </div>
@@ -595,6 +699,39 @@ $(document).ready(function() {
             complete: function() {
                 $btn.prop('disabled', false).html('<i class="fe fe-upload"></i> Upload Logo');
             }
+        });
+    });
+    // ── Dashboard Theme Selector ────────────────────────────────────────────
+    // Clicking a theme card selects it (highlights) and sets the hidden input
+    $(document).on('click', '.theme-card', function() {
+        $('.theme-card').removeClass('border-primary').css('box-shadow', '').css('border-color', '');
+        $(this).addClass('border-primary').css('box-shadow', '0 0 0 3px #2950a8');
+        const theme = $(this).data('theme');
+        $('#selectedTheme').val(theme);
+    });
+
+    // Submit dashboard theme form
+    $('#dashboardThemeForm').on('submit', function(e) {
+        e.preventDefault();
+        const formData = $(this).serialize();
+        const $btn = $(this).find('button[type="submit"]');
+        $btn.prop('disabled', true).html('<i class="fe fe-loader"></i> Speichern...');
+        $.ajax({
+            url: 'admin_ajax/save_settings.php',
+            type: 'POST',
+            data: formData,
+            dataType: 'json',
+            success: function(response) {
+                if (response.success) {
+                    toastr.success('Dashboard-Design gespeichert!');
+                    $('#themeStatusMsg').text('✓ Gespeichert').addClass('text-success').removeClass('text-muted');
+                    setTimeout(function(){ $('#themeStatusMsg').text('').removeClass('text-success').addClass('text-muted'); }, 3000);
+                } else {
+                    toastr.error(response.message || 'Fehler beim Speichern');
+                }
+            },
+            error: function() { toastr.error('Verbindungsfehler'); },
+            complete: function() { $btn.prop('disabled', false).html('<i class="fe fe-save"></i> Design speichern'); }
         });
     });
 });

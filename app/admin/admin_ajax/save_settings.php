@@ -269,6 +269,29 @@ try {
 
         echo json_encode(['success' => true, 'message' => 'Telegram settings saved successfully!']);
 
+    } elseif ($type === 'dashboard_theme') {
+        // Save dashboard theme selection
+        $allowed = ['theme-1', 'theme-2', 'theme-3', 'theme-4', 'theme-5'];
+        $theme = trim($_POST['dashboard_theme'] ?? 'theme-1');
+        if (!in_array($theme, $allowed, true)) {
+            echo json_encode(['success' => false, 'message' => 'Invalid theme value']);
+            exit();
+        }
+
+        // Update the column (gracefully handles missing column via try/catch in caller)
+        $stmt = $pdo->prepare("UPDATE system_settings SET dashboard_theme = ? WHERE id = 1");
+        $stmt->execute([$theme]);
+        if ($stmt->rowCount() === 0) {
+            $pdo->prepare("INSERT INTO system_settings (id, dashboard_theme) VALUES (1, ?) ON DUPLICATE KEY UPDATE dashboard_theme = VALUES(dashboard_theme)")->execute([$theme]);
+        }
+
+        $admin_id   = $_SESSION['admin_id'];
+        $ip_address = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+        $pdo->prepare("INSERT INTO audit_logs (admin_id, action, entity_type, entity_id, new_value, ip_address, created_at) VALUES (?, 'update', 'system_settings', 1, ?, ?, NOW())")
+            ->execute([$admin_id, json_encode(['dashboard_theme' => $theme]), $ip_address]);
+
+        echo json_encode(['success' => true, 'message' => 'Dashboard theme updated successfully!']);
+
     } else {
         echo json_encode(['success' => false, 'message' => 'Invalid settings type']);
     }

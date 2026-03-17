@@ -183,6 +183,23 @@ $reportedTotal = (float)($stats['total_reported'] ?? 0.0);
 $recoveredTotal = (float)($stats['total_recovered'] ?? 0.0);
 $recoveryPercentage = ($reportedTotal > 0) ? round(($recoveredTotal / $reportedTotal) * 100, 2) : 0;
 $outstandingAmount = max(0, $reportedTotal - $recoveredTotal);
+
+// ── Dashboard Theme ──────────────────────────────────────────────────────────
+// Load the admin-selected dashboard theme from system_settings.
+// Valid values: theme-1 … theme-5.  Falls back to theme-1 gracefully.
+$dashboardTheme = 'theme-1';
+$allowedThemes  = ['theme-1', 'theme-2', 'theme-3', 'theme-4', 'theme-5'];
+try {
+    $themeStmt = $pdo->query("SELECT dashboard_theme FROM system_settings WHERE id = 1 LIMIT 1");
+    $themeRow  = $themeStmt->fetch(PDO::FETCH_ASSOC);
+    if ($themeRow && !empty($themeRow['dashboard_theme']) && in_array($themeRow['dashboard_theme'], $allowedThemes, true)) {
+        $dashboardTheme = $themeRow['dashboard_theme'];
+    }
+} catch (PDOException $e) {
+    // Column does not exist yet (migration not run) – silently use default
+    error_log("dashboard_theme fetch: " . $e->getMessage());
+}
+$dashboardThemeSafe = htmlspecialchars($dashboardTheme, ENT_QUOTES, 'UTF-8');
 ?>
 <?php if ($passwordChangeRequired): ?>
 
@@ -944,8 +961,10 @@ $outstandingAmount = max(0, $reportedTotal - $recoveredTotal);
     </small>
 </div>
 
+<!-- Dashboard Theme Stylesheet -->
+<link rel="stylesheet" href="assets/css/themes/<?= $dashboardThemeSafe ?>.css">
 
-<div class="main-content">
+<div class="main-content db-<?= $dashboardThemeSafe ?>">
     <div class="container-fluid">
         <!-- PROFESSIONAL STATUS ALERTS & ACTION PROMPTS -->
         <?php
@@ -971,12 +990,12 @@ $outstandingAmount = max(0, $reportedTotal - $recoveredTotal);
         <!-- === PROFESSIONAL HERO WELCOME BANNER === -->
         <div class="row mb-4">
             <div class="col-12">
-                <div class="card border-0 shadow-sm" style="border-radius:16px;overflow:hidden;background:linear-gradient(135deg,#1a2a6c 0%,#2950a8 55%,#2da9e3 100%);">
+                <div class="card border-0 shadow-sm db-hero" style="border-radius:16px;overflow:hidden;background:linear-gradient(135deg,#1a2a6c 0%,#2950a8 55%,#2da9e3 100%);">
                     <div class="card-body p-0">
                         <div class="d-flex flex-wrap align-items-center justify-content-between p-4" style="gap:16px;">
                             <!-- Left: Greeting & Account Info -->
                             <div class="d-flex align-items-center" style="gap:18px;">
-                                <div style="width:60px;height:60px;border-radius:50%;background:rgba(255,255,255,0.18);display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0;font-weight:700;color:#fff;">
+                                <div class="hero-avatar" style="width:60px;height:60px;border-radius:50%;background:rgba(255,255,255,0.18);display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0;font-weight:700;color:#fff;">
                                     <?= strtoupper(substr($currentUserLogin, 0, 1)) ?>
                                 </div>
                                 <div>
@@ -1534,7 +1553,7 @@ $outstandingAmount = max(0, $reportedTotal - $recoveredTotal);
 
         <!-- KPI Row -->
         <div class="row mb-3">
-            <div class="col-md-6 col-lg-3 mb-3 kpi-3d">
+            <div class="col-md-6 col-lg-3 mb-3 kpi-3d kpi-card-wrapper">
                 <div class="card border-0 h-100 shadow-sm" style="border-radius:12px;overflow:hidden;">
                     <div class="card-body p-0">
                         <div class="p-3" style="background:linear-gradient(135deg,#1a2a6c,#2950a8);border-radius:12px 12px 0 0;">
@@ -1558,7 +1577,7 @@ $outstandingAmount = max(0, $reportedTotal - $recoveredTotal);
                 </div>
             </div>
 
-            <div class="col-md-6 col-lg-3 mb-3 kpi-3d">
+            <div class="col-md-6 col-lg-3 mb-3 kpi-3d kpi-card-wrapper">
                 <div class="card border-0 h-100 shadow-sm" style="border-radius:12px;overflow:hidden;">
                     <div class="card-body p-0">
                         <div class="p-3" style="background:linear-gradient(135deg,#0d6e6e,#17a2b8);border-radius:12px 12px 0 0;">
@@ -1583,7 +1602,7 @@ $outstandingAmount = max(0, $reportedTotal - $recoveredTotal);
                 </div>
             </div>
 
-            <div class="col-md-6 col-lg-3 mb-3 kpi-3d">
+            <div class="col-md-6 col-lg-3 mb-3 kpi-3d kpi-card-wrapper">
                 <div class="card border-0 h-100 shadow-sm" style="border-radius:12px;overflow:hidden;">
                     <div class="card-body p-0">
                         <div class="p-3" style="background:linear-gradient(135deg,#7b3a00,#e67e22);border-radius:12px 12px 0 0;">
@@ -1609,7 +1628,7 @@ $outstandingAmount = max(0, $reportedTotal - $recoveredTotal);
                 </div>
             </div>
 
-            <div class="col-md-6 col-lg-3 mb-3 kpi-3d">
+            <div class="col-md-6 col-lg-3 mb-3 kpi-3d kpi-card-wrapper">
                 <div class="card border-0 h-100 shadow-sm" style="border-radius:12px;overflow:hidden;">
                     <div class="card-body p-0">
                         <div class="p-3" style="background:linear-gradient(135deg,#155724,#28a745);border-radius:12px 12px 0 0;">
@@ -1994,7 +2013,7 @@ $outstandingAmount = max(0, $reportedTotal - $recoveredTotal);
             <div class="col-md-12 col-lg-4">
 
                 <div class="card shadow-sm border-0 mt-3" style="border-radius:12px;overflow:hidden;">
-                    <div class="card-header border-0 d-flex align-items-center justify-content-between py-3 px-3"
+                    <div class="card-header section-header border-0 d-flex align-items-center justify-content-between py-3 px-3"
                          style="background:linear-gradient(135deg,#1a2a6c,#2950a8);">
                         <h5 class="mb-0 font-weight-bold text-white" style="font-size:0.95rem;">
                             <i class="anticon anticon-transaction mr-2"></i>Aktuelle Transaktionen
