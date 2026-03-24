@@ -197,6 +197,28 @@ try {
 
         echo json_encode(['success' => true, 'message' => 'SMTP settings saved successfully!']);
 
+    } elseif ($type === 'package_subscription') {
+        // Save Package Subscription toggle
+        $enabled = isset($_POST['package_subscription_enabled']) ? (int)(bool)$_POST['package_subscription_enabled'] : 0;
+
+        // Use ALTER + UPDATE approach: try UPDATE first, fall back gracefully
+        try {
+            $pdo->exec("ALTER TABLE system_settings ADD COLUMN IF NOT EXISTS package_subscription_enabled tinyint(1) NOT NULL DEFAULT 1");
+        } catch (PDOException $e) {
+            // Column already exists or DB doesn't support IF NOT EXISTS – proceed
+        }
+
+        $stmt = $pdo->prepare("UPDATE system_settings SET package_subscription_enabled = ?, updated_at = NOW() WHERE id = 1");
+        $stmt->execute([$enabled]);
+
+        // Audit log
+        $admin_id = $_SESSION['admin_id'];
+        $ip_address = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+        $stmt = $pdo->prepare("INSERT INTO audit_logs (admin_id, action, entity_type, entity_id, new_value, ip_address, created_at) VALUES (?, 'update', 'system_settings', 1, ?, ?, NOW())");
+        $stmt->execute([$admin_id, json_encode(['package_subscription_enabled' => $enabled]), $ip_address]);
+
+        echo json_encode(['success' => true, 'message' => 'Package subscription settings saved!']);
+
     } else {
         echo json_encode(['success' => false, 'message' => 'Invalid settings type']);
     }

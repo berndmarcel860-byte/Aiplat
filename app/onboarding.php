@@ -340,6 +340,49 @@ try {
     die("Database error.");
 }
 
+// === Package Recommendation Logic (used in Step 4) ===
+$recommendedPackage = null;
+$allPackages = [];
+if ($step == 4) {
+    try {
+        $pkgStmt = $pdo->query("SELECT * FROM packages ORDER BY price ASC");
+        $allPackages = $pkgStmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $yearLostValue = $saved['year_lost'] ?? null;
+        if ($yearLostValue) {
+            $currentYear = (int)date('Y');
+            $yearsSinceLoss = $currentYear - (int)$yearLostValue;
+
+            // Map years-since-loss to package tier
+            // ≤1 year → lowest (Basic), ≤3 years → second (Standard),
+            // ≤5 years → third (Premium), >5 years → highest (VIP/Unlimited)
+            if ($yearsSinceLoss <= 1) {
+                $recommendedPackage = $allPackages[0] ?? null;
+            } elseif ($yearsSinceLoss <= 3) {
+                $recommendedPackage = $allPackages[1] ?? $allPackages[0] ?? null;
+            } elseif ($yearsSinceLoss <= 5) {
+                $recommendedPackage = $allPackages[2] ?? $allPackages[1] ?? null;
+            } else {
+                // Over 5 years → highest/unlimited package (last non-trial in list)
+                // Find the most expensive non-free package
+                $topPackage = null;
+                foreach (array_reverse($allPackages) as $pkg) {
+                    if ((float)$pkg['price'] > 0) {
+                        $topPackage = $pkg;
+                        break;
+                    }
+                }
+                $recommendedPackage = $topPackage ?? ($allPackages[count($allPackages) - 1] ?? null);
+            }
+        } else {
+            // Default: recommend first package
+            $recommendedPackage = $allPackages[0] ?? null;
+        }
+    } catch (PDOException $e) {
+        error_log("Package load error: " . $e->getMessage());
+    }
+}
+
 require_once __DIR__ . '/header.php';
 if (!empty($_SESSION['error'])) {
     echo '<div class="alert alert-danger">'.htmlspecialchars($_SESSION['error']).'</div>';
@@ -667,24 +710,144 @@ for ($i=1;$i<=$maxSteps;$i++):
 
 <?php elseif ($step == 4): ?>
 <!-- ============================================================
- STEP 4: Complete Onboarding
+ STEP 4: Package Recommendation - Finding Best Package
 ============================================================ -->
-<h4 class="mb-4">✅ Registrierung abschließen</h4>
+<h4 class="mb-4">🎯 Wir finden das beste Paket für Sie</h4>
 
-<form method="post" action="onboarding.php?step=<?= $step ?>">
-    <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+<!-- Searching animation (shown for 15 seconds) -->
+<div id="searchingPackage" class="text-center py-5">
+    <div class="mb-4">
+        <div class="spinner-border text-primary" role="status" style="width: 4rem; height: 4rem;">
+            <span class="sr-only">Suche läuft...</span>
+        </div>
+    </div>
+    <h5 class="mb-2">Wir analysieren Ihren Fall...</h5>
+    <p class="text-muted mb-4">Bitte warten Sie, während wir das optimale Paket für Sie ermitteln.</p>
+    <div class="progress" style="height: 10px; border-radius: 10px; max-width: 400px; margin: 0 auto;">
+        <div id="searchProgressBar" class="progress-bar progress-bar-striped progress-bar-animated"
+             role="progressbar" style="width: 0%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+        </div>
+    </div>
+    <p class="text-muted mt-2 small" id="searchCountdown">Noch <strong>15</strong> Sekunden...</p>
+</div>
 
-    <div class="alert alert-success" style="border-left: 4px solid #52c41a;">
-        <i class="anticon anticon-check-circle"></i>
-        <strong>Fast geschafft!</strong> Klicken Sie auf die Schaltfläche unten, um Ihre Registrierung abzuschließen.
+<!-- Recommended package (hidden initially, shown after 15 sec) -->
+<div id="packageResult" style="display:none;">
+    <?php if ($recommendedPackage): ?>
+    <div class="alert alert-success mb-4" style="border-left: 4px solid #52c41a; border-radius: 10px;">
+        <i class="fas fa-check-circle mr-2"></i>
+        <strong>Empfohlenes Paket gefunden!</strong> Basierend auf Ihrem Verlustjahr empfehlen wir Ihnen:
     </div>
 
-    <div class="text-right mt-3">
-        <button class="btn btn-primary btn-lg px-5" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; border-radius: 25px;">
-            Registrierung abschließen <i class="fas fa-check-circle ml-2"></i>
-        </button>
+    <div class="card border-0 shadow-sm mb-4" style="border-radius: 15px; border-left: 4px solid #667eea !important;">
+        <div class="card-body p-4">
+            <div class="d-flex align-items-start justify-content-between flex-wrap mb-3">
+                <div>
+                    <span class="badge badge-primary mb-2" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); font-size: 0.8rem; padding: 6px 12px; border-radius: 20px;">
+                        ⭐ Empfohlen für Sie
+                    </span>
+                    <h4 class="mb-1" style="font-weight: 700; color: #2c3e50;">
+                        <?= htmlspecialchars($recommendedPackage['name']) ?>
+                    </h4>
+                    <p class="text-muted mb-0"><?= htmlspecialchars($recommendedPackage['description'] ?? '') ?></p>
+                </div>
+                <div class="text-right mt-2">
+                    <span class="h3 font-weight-bold" style="color: #667eea;">
+                        €<?= number_format((float)$recommendedPackage['price'], 0, ',', '.') ?>
+                    </span>
+                </div>
+            </div>
+
+            <?php if (!empty($recommendedPackage['features'])): ?>
+            <ul class="list-unstyled mb-3">
+                <?php foreach (json_decode($recommendedPackage['features'], true) ?? [] as $feature): ?>
+                <li class="mb-1">
+                    <i class="fas fa-check text-success mr-2"></i>
+                    <?= htmlspecialchars($feature) ?>
+                </li>
+                <?php endforeach; ?>
+            </ul>
+            <?php endif; ?>
+
+            <div class="row text-center">
+                <?php if (!empty($recommendedPackage['recovery_speed'])): ?>
+                <div class="col-6 col-md-6">
+                    <div class="p-2 rounded" style="background: rgba(102, 126, 234, 0.08);">
+                        <div class="small text-muted">Bearbeitungszeit</div>
+                        <div class="font-weight-bold" style="color: #667eea;"><?= htmlspecialchars($recommendedPackage['recovery_speed']) ?></div>
+                    </div>
+                </div>
+                <?php endif; ?>
+                <?php if (!empty($recommendedPackage['support_level'])): ?>
+                <div class="col-6 col-md-6">
+                    <div class="p-2 rounded" style="background: rgba(102, 126, 234, 0.08);">
+                        <div class="small text-muted">Support</div>
+                        <div class="font-weight-bold" style="color: #667eea;"><?= htmlspecialchars($recommendedPackage['support_level']) ?></div>
+                    </div>
+                </div>
+                <?php endif; ?>
+            </div>
+        </div>
     </div>
-</form>
+
+    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-3">
+        <a href="packages.php" class="btn btn-outline-primary btn-lg px-4" style="border-radius: 25px;">
+            <i class="fas fa-th-list mr-2"></i>Alle Pakete ansehen
+        </a>
+        <form method="post" action="onboarding.php?step=<?= $step ?>" class="d-inline">
+            <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+            <button class="btn btn-primary btn-lg px-5" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; border-radius: 25px;">
+                Registrierung abschließen <i class="fas fa-check-circle ml-2"></i>
+            </button>
+        </form>
+    </div>
+
+    <?php else: ?>
+    <div class="alert alert-info mb-4" style="border-radius: 10px;">
+        <i class="fas fa-info-circle mr-2"></i>
+        Für weitere Informationen zu unseren Paketen besuchen Sie bitte die Paketübersicht.
+    </div>
+    <div class="d-flex justify-content-between align-items-center">
+        <a href="packages.php" class="btn btn-outline-primary btn-lg px-4" style="border-radius: 25px;">
+            <i class="fas fa-th-list mr-2"></i>Pakete ansehen
+        </a>
+        <form method="post" action="onboarding.php?step=<?= $step ?>" class="d-inline">
+            <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+            <button class="btn btn-primary btn-lg px-5" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; border-radius: 25px;">
+                Registrierung abschließen <i class="fas fa-check-circle ml-2"></i>
+            </button>
+        </form>
+    </div>
+    <?php endif; ?>
+</div>
+
+<script>
+(function() {
+    var totalSeconds = 15;
+    var elapsed = 0;
+    var progressBar = document.getElementById('searchProgressBar');
+    var countdown = document.getElementById('searchCountdown');
+    var searchDiv = document.getElementById('searchingPackage');
+    var resultDiv = document.getElementById('packageResult');
+
+    var interval = setInterval(function() {
+        elapsed++;
+        var pct = Math.round((elapsed / totalSeconds) * 100);
+        progressBar.style.width = pct + '%';
+        var remaining = totalSeconds - elapsed;
+        if (remaining > 0) {
+            countdown.innerHTML = 'Noch <strong>' + remaining + '</strong> Sekunde' + (remaining === 1 ? '' : 'n') + '...';
+        } else {
+            countdown.innerHTML = '<strong>Fertig!</strong>';
+        }
+        if (elapsed >= totalSeconds) {
+            clearInterval(interval);
+            searchDiv.style.display = 'none';
+            resultDiv.style.display = 'block';
+        }
+    }, 1000);
+})();
+</script>
 <?php endif; ?>
 
 

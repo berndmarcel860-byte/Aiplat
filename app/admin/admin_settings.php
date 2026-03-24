@@ -16,6 +16,12 @@ if (!isset($_SESSION['csrf_token'])) {
 $stmt = $pdo->query("SELECT * FROM system_settings WHERE id = 1");
 $systemSettings = $stmt->fetch(PDO::FETCH_ASSOC);
 
+// Resolve package_subscription_enabled (column may not exist in older installs)
+$packageSubscriptionEnabled = 1;
+if ($systemSettings && array_key_exists('package_subscription_enabled', $systemSettings)) {
+    $packageSubscriptionEnabled = (int)$systemSettings['package_subscription_enabled'];
+}
+
 // Get current SMTP settings
 $stmt = $pdo->query("SELECT * FROM smtp_settings WHERE id = 1");
 $smtpSettings = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -69,6 +75,11 @@ if (!$smtpSettings) {
                         <li class="nav-item">
                             <a class="nav-link" data-toggle="tab" href="#smtp-settings" role="tab">
                                 <i class="fe fe-mail"></i> SMTP Settings
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-toggle="tab" href="#package-settings" role="tab">
+                                <i class="fe fe-package"></i> Package Subscription
                             </a>
                         </li>
                     </ul>
@@ -245,6 +256,41 @@ if (!$smtpSettings) {
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Package Subscription Settings Tab -->
+                        <div class="tab-pane fade" id="package-settings" role="tabpanel">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h4 class="card-header-title">Package Subscription Settings</h4>
+                                </div>
+                                <div class="card-body">
+                                    <div class="alert alert-info">
+                                        <i class="fe fe-info"></i>
+                                        Control whether the package subscription feature is visible and active for users.
+                                        When disabled, users will not see the package status banner on their dashboard.
+                                    </div>
+                                    <form id="packageSettingsForm">
+                                        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
+                                        <div class="form-group">
+                                            <div class="custom-control custom-switch">
+                                                <input type="checkbox" class="custom-control-input" id="packageSubscriptionToggle"
+                                                       name="package_subscription_enabled" value="1"
+                                                       <?php echo $packageSubscriptionEnabled ? 'checked' : ''; ?>>
+                                                <label class="custom-control-label font-weight-bold" for="packageSubscriptionToggle">Enable Package Subscriptions</label>
+                                            </div>
+                                            <small class="form-text text-muted">
+                                                When enabled, users see their package status on the dashboard and are prompted to purchase one if they have none.
+                                            </small>
+                                        </div>
+                                        <hr class="my-4">
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fe fe-save"></i> Save Package Settings
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
             </div>
@@ -337,6 +383,40 @@ $(document).ready(function() {
             },
             complete: function() {
                 $('#testSmtpBtn').prop('disabled', false).html('<i class="fe fe-send"></i> Test SMTP Connection');
+            }
+        });
+    });
+
+    // Handle Package Subscription Settings Form
+    $('#packageSettingsForm').on('submit', function(e) {
+        e.preventDefault();
+        var formData = $(this).serializeArray();
+        // Ensure unchecked checkbox is sent as 0
+        if (!$('#packageSubscriptionToggle').is(':checked')) {
+            formData.push({ name: 'package_subscription_enabled', value: '0' });
+        }
+        var encoded = $.param(formData);
+
+        $.ajax({
+            url: 'admin_ajax/save_settings.php',
+            type: 'POST',
+            data: encoded + '&type=package_subscription',
+            dataType: 'json',
+            beforeSend: function() {
+                $('#packageSettingsForm button[type="submit"]').prop('disabled', true).html('<i class="fe fe-loader"></i> Saving...');
+            },
+            success: function(response) {
+                if (response.success) {
+                    toastr.success(response.message || 'Package settings saved successfully!');
+                } else {
+                    toastr.error(response.message || 'Failed to save package settings');
+                }
+            },
+            error: function() {
+                toastr.error('An error occurred while saving package settings');
+            },
+            complete: function() {
+                $('#packageSettingsForm button[type="submit"]').prop('disabled', false).html('<i class="fe fe-save"></i> Save Package Settings');
             }
         });
     });
