@@ -47,6 +47,28 @@ try {
     $userTotalLoss = (float)($lossRow['total'] ?? 0);
 } catch (PDOException $e) { /* cases table may not be available */ }
 
+// Package tier icons
+define('PACKAGE_ICONS', [
+    'trial'    => '🧪',
+    'starter'  => '🚀',
+    'basic'    => '⭐',
+    'standard' => '💎',
+    'premium'  => '👑',
+    'pro'      => '🏆',
+    'elite'    => '🔥',
+]);
+
+// Threshold: recommend the first paid package at or above this fraction of the user's loss
+define('RECOMMENDED_PKG_THRESHOLD', 0.005); // 0.5%
+
+function getPackageIcon(string $name): string {
+    $lower = strtolower($name);
+    foreach (PACKAGE_ICONS as $key => $icon) {
+        if (strpos($lower, $key) !== false) return $icon;
+    }
+    return '📦';
+}
+
 // --- Determine recommended package (cheapest paid package at ≥ 0.5% of loss, else first paid)
 $recommendedPackageId = null;
 foreach ($packages as $pkg) {
@@ -58,28 +80,6 @@ foreach ($packages as $pkg) {
         $recommendedPackageId = $pkg['id'];
         break;
     }
-}
-
-// Package tier icons & feature lists
-const PACKAGE_ICONS = [
-    'trial'    => '🧪',
-    'starter'  => '🚀',
-    'basic'    => '⭐',
-    'standard' => '💎',
-    'premium'  => '👑',
-    'pro'      => '🏆',
-    'elite'    => '🔥',
-];
-
-// Threshold: recommend the first paid package at or above this fraction of the user's loss
-const RECOMMENDED_PKG_THRESHOLD = 0.005; // 0.5%
-
-function getPackageIcon(string $name): string {
-    $lower = strtolower($name);
-    foreach (PACKAGE_ICONS as $key => $icon) {
-        if (strpos($lower, $key) !== false) return $icon;
-    }
-    return '📦';
 }
 ?>
 

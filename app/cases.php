@@ -210,6 +210,15 @@ if ($casesSubscriptionEnabled && !empty($_SESSION['user_id'])) {
     background: rgba(41, 80, 168, 0.08);
     border-left-color: #2950a8;
 }
+
+/* Blurred rows for restricted package users */
+.cases-row-blurred td {
+    -webkit-filter: blur(5px);
+    filter: blur(5px);
+    pointer-events: none;
+    user-select: none;
+    opacity: 0.7;
+}
 </style>
 
 
@@ -291,9 +300,6 @@ $(document).ready(function() {
         return STATUS_MAP[key] || { cls: 'secondary', label: (key || '').replace(/_/g, ' ') };
     }
 
-    // Running counter of rows drawn on the current page (reset on each draw)
-    let caseRowIndex = 0;
-
     const casesTable = $('#casesTable').DataTable({
         processing: true,
         serverSide: true,
@@ -303,14 +309,6 @@ $(document).ready(function() {
         ajax: {
             url: 'ajax/cases.php',
             type: 'POST'
-        },
-        drawCallback: function() {
-            // Reset row counter on every draw (page change / reload)
-            caseRowIndex = 0;
-        },
-        rowCallback: function(row, data, displayIndex) {
-            // Track per-page index for blur decision
-            row._caseDisplayIndex = displayIndex;
         },
         columns: [
             { data: 'case_number' },
@@ -386,36 +384,42 @@ $(document).ready(function() {
                 }
             }
         ],
-        // Apply blur overlay to rows beyond the free limit after each draw
-        createdRow: function(row, data, dataIndex) {
+        // After every draw: apply CSS blur to rows beyond the free limit (safe — never modifies DOM structure)
+        drawCallback: function() {
             if (!CASES_NEEDS_BLUR) return;
-            // dataIndex is the display index within the current page
-            if (dataIndex >= CASES_BLUR_LIMIT) {
-                // Replace all cells with a single blurred row
-                $(row).addClass('cases-blur-row').html(
-                    '<td colspan="9" style="padding:0;border:none;" aria-label="Weiterer Fall gesperrt – Upgrade erforderlich">' +
-                    '<div style="position:relative;overflow:hidden;min-height:54px;">' +
-                      '<div style="-webkit-filter:blur(5px);filter:blur(5px);pointer-events:none;padding:12px 16px;display:flex;gap:16px;align-items:center;user-select:none;" aria-hidden="true">' +
-                        '<span style="font-family:monospace;color:#2950a8;white-space:nowrap;">SCM-????-????</span>' +
-                        '<span style="color:#666;white-space:nowrap;">████████████</span>' +
-                        '<span style="white-space:nowrap;color:#555;">€ ██████</span>' +
-                        '<div style="flex:1;height:6px;border-radius:3px;background:#eee;max-width:160px;"><div style="width:60%;height:100%;background:linear-gradient(90deg,#2950a8,#2da9e3);border-radius:3px;"></div></div>' +
-                        '<span class="badge" style="background:#6c757d;color:#fff;border-radius:12px;padding:3px 10px;">███</span>' +
-                      '</div>' +
-                      '<div style="position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;z-index:5;background:rgba(255,255,255,0.7);">' +
-                        '<a href="packages.php" class="btn btn-sm btn-warning" style="border-radius:8px;font-weight:600;font-size:.8rem;box-shadow:0 2px 8px rgba(255,193,7,.4);">' +
-                          '<i class="anticon anticon-lock mr-1"></i>Upgrade für alle Fälle' +
-                        '</a>' +
-                      '</div>' +
-                    '</div></td>'
+
+            const $tbody = $('#casesTable tbody');
+            $tbody.find('tr').each(function(idx) {
+                if (idx >= CASES_BLUR_LIMIT) {
+                    $(this).addClass('cases-row-blurred');
+                }
+            });
+
+            // Show upgrade CTA once below the table (remove stale one first on redraw)
+            $('#casesBlurCta').remove();
+            if ($tbody.find('tr.cases-row-blurred').length > 0) {
+                $('#casesTable').closest('.table-responsive').after(
+                    '<div id="casesBlurCta" class="text-center p-3 mt-2" style="background:linear-gradient(135deg,rgba(41,80,168,.07),rgba(45,169,227,.04));border-radius:10px;">' +
+                    '<i class="anticon anticon-lock mr-2 text-warning" style="font-size:18px;"></i>' +
+                    '<span style="color:#2c3e50;font-size:.9rem;">Weitere Fälle sind verfügbar – </span>' +
+                    '<a href="packages.php" class="btn btn-sm btn-warning ml-2" style="border-radius:8px;font-weight:700;">' +
+                    '<i class="anticon anticon-rise mr-1"></i>Jetzt upgraden</a>' +
+                    '</div>'
                 );
             }
         }
     });
 
+    // View Case Details
+    $('#casesTable').on('click', '.view-case', function() {
+        const caseId = $(this).data('id');
+        loadCaseDetails(caseId);
+    });
 
-    // Open document upload modal
-    $('#casesTable').on('click', '.upload-docs', function() {
+    // Refresh button
+    $('#refreshCases').on('click', function() {
+        casesTable.ajax.reload();
+    });
         $('#documentCaseId').val($(this).data('id'));
         $('#documentCaseNumber').text($(this).data('case-number'));
         new bootstrap.Modal(document.getElementById('documentModal')).show();
