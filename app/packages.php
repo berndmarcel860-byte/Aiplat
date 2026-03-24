@@ -321,6 +321,7 @@ foreach ($packages as $pkg) {
             </div>
             <form id="subscribeForm" enctype="multipart/form-data">
                 <input type="hidden" name="package_id" id="packageId">
+                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
                 <div class="modal-body p-4">
                     <p id="subscriptionText" class="mb-3" style="color:#2c3e50;font-size:.95rem;"></p>
 

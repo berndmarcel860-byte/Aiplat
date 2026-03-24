@@ -62,7 +62,7 @@ try {
     $totalRecords = $stmt->fetchColumn();
     
     $orderColumn = isset($_POST['order'][0]['column']) ? (int)$_POST['order'][0]['column'] : 0;
-    $orderDirection = isset($_POST['order'][0]['dir']) ? $_POST['order'][0]['dir'] : 'desc';
+    $orderDirection = (isset($_POST['order'][0]['dir']) && strtoupper($_POST['order'][0]['dir']) === 'ASC') ? 'ASC' : 'DESC';
     
     $columns = ['n.id', 'admin_name', 'n.title', 'n.type', 'n.is_read', 'n.created_at'];
     

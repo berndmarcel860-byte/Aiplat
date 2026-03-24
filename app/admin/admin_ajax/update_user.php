@@ -1,7 +1,14 @@
 <?php
 require_once '../../config.php';
+require_once '../admin_session.php';
 
 header('Content-Type: application/json');
+
+if (!isset($_SESSION['admin_id'])) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+    exit();
+}
 
 // Validate input
 $required = ['id', 'first_name', 'last_name', 'email', 'status'];
@@ -78,8 +85,7 @@ try {
     error_log("Update User Error: " . $e->getMessage());
     echo json_encode([
         'success' => false,
-        'message' => 'Failed to update user',
-        'error' => $e->getMessage()
+        'message' => 'Failed to update user'
     ]);
 }
 ?>

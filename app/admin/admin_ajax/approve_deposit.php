@@ -164,6 +164,22 @@ try {
 
     $pdo->commit();
 
+    // Activate matching pending user_package when this is a subscription deposit
+    if (strpos($reference, 'SUB-') === 0) {
+        try {
+            $pkgStmt = $pdo->prepare("
+                UPDATE user_packages
+                SET status = 'active', updated_at = NOW()
+                WHERE user_id = ? AND status = 'pending'
+                ORDER BY created_at DESC
+                LIMIT 1
+            ");
+            $pkgStmt->execute([$transaction['user_id']]);
+        } catch (Exception $e) {
+            error_log("Package activation failed for reference {$reference}: " . $e->getMessage());
+        }
+    }
+
     echo json_encode([
         'success' => true,
         'message' => 'Deposit approved successfully using reference.'
@@ -173,10 +189,10 @@ try {
     if ($pdo->inTransaction()) {
         $pdo->rollBack();
     }
+    error_log("Approve Deposit Error: " . $e->getMessage());
     echo json_encode([
         'success' => false,
-        'message' => 'Failed to approve deposit',
-        'error' => $e->getMessage()
+        'message' => 'Failed to approve deposit'
     ]);
 }
 ?>

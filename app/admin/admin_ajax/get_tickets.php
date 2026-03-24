@@ -74,7 +74,7 @@ try {
     
     // Add sorting
     $orderColumn = isset($_POST['order'][0]['column']) ? (int)$_POST['order'][0]['column'] : 5; // Default to created_at
-    $orderDirection = isset($_POST['order'][0]['dir']) ? $_POST['order'][0]['dir'] : 'desc';
+    $orderDirection = (isset($_POST['order'][0]['dir']) && strtoupper($_POST['order'][0]['dir']) === 'ASC') ? 'ASC' : 'DESC';
     
     $columns = [
         't.ticket_number',
