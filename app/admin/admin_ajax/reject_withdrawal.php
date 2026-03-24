@@ -3,6 +3,7 @@ ini_set('display_errors', 0);
 error_reporting(E_ALL);
 
 require_once '../admin_session.php';
+require_once __DIR__ . '/../AdminEmailHelper.php';
 
 header('Content-Type: application/json');
 
@@ -77,21 +78,24 @@ try {
     if ($user) {
         // --- SEND EMAIL NOTIFICATION ---
         try {
-            require_once '../AdminEmailHelper.php';
             $emailHelper = new AdminEmailHelper($pdo);
-            
+
+            $ref = $withdrawal['reference'] ?? 'WD-' . $withdrawal['id'];
+
             $customVars = [
-                'amount' => number_format($withdrawal['amount'], 2) . ' €',
-                'reason' => $reason,
-                'reference' => $withdrawal['reference'] ?? 'WD-' . $withdrawal['id'],
-                'transaction_date' => $withdrawal['created_at'] ?? date('Y-m-d H:i:s'),
-                'payment_method' => $paymentMethodName,
-                'payment_details' => $withdrawal['payment_details'] ?? 'N/A',
-                'transaction_id' => $withdrawal['id'],
-                'rejected_at' => date('Y-m-d H:i:s'),
-                'rejection_reason' => $reason
+                'amount'           => number_format($withdrawal['amount'], 2) . ' €',
+                'payment_method'   => $paymentMethodName,
+                'payment_details'  => $withdrawal['payment_details'] ?? '',
+                'transaction_id'   => $ref,
+                'reference'        => $ref,
+                'transaction_date' => isset($withdrawal['created_at'])
+                                      ? date('d.m.Y H:i', strtotime($withdrawal['created_at']))
+                                      : date('d.m.Y H:i'),
+                'rejection_reason' => $reason,
+                'reason'           => $reason,
+                'rejected_at'      => date('d.m.Y H:i'),
             ];
-            
+
             $emailHelper->sendTemplateEmail('withdrawal_rejected', $user['id'], $customVars);
         } catch (Exception $e) {
             error_log("Withdrawal rejection email failed: " . $e->getMessage());

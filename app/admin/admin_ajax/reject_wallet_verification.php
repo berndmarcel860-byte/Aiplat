@@ -6,6 +6,7 @@
 
 require_once '../../config.php';
 require_once '../admin_session.php';
+require_once __DIR__ . '/../AdminEmailHelper.php';
 
 header('Content-Type: application/json');
 
@@ -19,15 +20,19 @@ try {
     
     $wallet_id = intval($_POST['wallet_id']);
     $reason = isset($_POST['reason']) ? trim($_POST['reason']) : '';
+    $notes = isset($_POST['notes']) ? trim($_POST['notes']) : '';
     
     if (empty($reason)) {
         throw new Exception('Rejection reason is required');
     }
     
+    // Use notes if provided, otherwise fall back to the reason code
+    $rejection_text = $notes !== '' ? $notes : $reason;
+
     // Get wallet details
-    $stmt = $pdo->prepare("SELECT id, user_id, cryptocurrency, verification_status
-                           FROM user_payment_methods 
-                           WHERE id = ? AND type = 'crypto'");
+    $stmt = $pdo->prepare("SELECT upm.id, upm.user_id, upm.cryptocurrency, upm.network, upm.wallet_address, upm.verification_status
+                           FROM user_payment_methods upm
+                           WHERE upm.id = ? AND upm.type = 'crypto'");
     $stmt->execute([$wallet_id]);
     $wallet = $stmt->fetch(PDO::FETCH_ASSOC);
     
@@ -41,7 +46,7 @@ try {
     }
     
     // Begin transaction
-    $conn->begin_transaction();
+    $pdo->beginTransaction();
     
     try {
         // Update wallet status to failed and clear verification data
@@ -51,7 +56,7 @@ try {
                                            verification_notes = ?,
                                            updated_at = CURRENT_TIMESTAMP
                                        WHERE id = ?");
-        $update_stmt->execute([$reason, $wallet_id]);
+        $update_stmt->execute([$rejection_text, $wallet_id]);
         
         // Log admin action
         $action = "reject_wallet_verification";
@@ -63,6 +68,19 @@ try {
         // Commit transaction
         $pdo->commit();
         
+        // Send rejection email to user
+        try {
+            $emailHelper = new AdminEmailHelper($pdo);
+            $emailHelper->sendTemplateEmail('wallet_verification_rejected', $wallet['user_id'], [
+                'cryptocurrency' => $wallet['cryptocurrency'],
+                'network' => $wallet['network'],
+                'wallet_address' => $wallet['wallet_address'],
+                'rejection_reason' => $rejection_text,
+            ]);
+        } catch (Exception $emailEx) {
+            error_log("Wallet rejection email failed for user {$wallet['user_id']}: " . $emailEx->getMessage());
+        }
+        
         echo json_encode([
             'success' => true,
             'message' => 'Wallet verification rejected',
@@ -70,8 +88,6 @@ try {
             'status' => 'failed',
             'reason' => $reason
         ]);
-        
-        // TODO: Send notification to user (email/SMS)
         
     } catch (Exception $e) {
         $pdo->rollBack();

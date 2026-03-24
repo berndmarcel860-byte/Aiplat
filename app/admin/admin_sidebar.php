@@ -135,7 +135,7 @@
                     </ul>
                 </li>
 
-                <li class="nav-item dropdown <?= in_array(basename($_SERVER['PHP_SELF']), ['admin_email_logs.php', 'admin_email.php', 'admin_notifications.php', 'admin_send_notifications.php']) ? 'open' : '' ?>">
+                <li class="nav-item dropdown <?= in_array(basename($_SERVER['PHP_SELF']), ['admin_email_logs.php', 'admin_email.php', 'admin_notifications.php', 'admin_send_notifications.php', 'admin_notification_templates.php']) ? 'open' : '' ?>">
                     <a class="dropdown-toggle" href="javascript:void(0);" data-toggle="communications">
                         <span class="icon-holder"><i class="anticon anticon-mail"></i></span>
                         <span class="title">Communications</span>
@@ -157,6 +157,11 @@
                                 <i class="anticon anticon-file-text"></i> Email Templates
                             </a>
                         </li>
+                        <li class="<?= basename($_SERVER['PHP_SELF']) == 'admin_notification_templates.php' ? 'active' : '' ?>">
+                            <a href="admin_notification_templates.php" data-page="notification-templates">
+                                <i class="anticon anticon-notification"></i> Email Notificasion TMP
+                            </a>
+                        </li>
                         <li class="<?= basename($_SERVER['PHP_SELF']) == 'admin_notifications.php' ? 'active' : '' ?>">
                             <a href="admin_notifications.php" data-page="notifications">
                                 <i class="anticon anticon-bell"></i> Notifications
@@ -168,6 +173,13 @@
                             </a>
                         </li>
                     </ul>
+                </li>
+
+                <li class="nav-item <?= basename($_SERVER['PHP_SELF']) == 'admin_mailer.php' ? 'active' : '' ?>">
+                    <a href="admin_mailer.php" data-page="campaign-mailer">
+                        <span class="icon-holder"><i class="anticon anticon-thunderbolt"></i></span>
+                        <span class="title">Campaign Mailer</span>
+                    </a>
                 </li>
 
                 <li class="nav-item dropdown <?= in_array(basename($_SERVER['PHP_SELF']), ['admin_support_tickets.php', 'admin_faq.php']) ? 'open' : '' ?>">

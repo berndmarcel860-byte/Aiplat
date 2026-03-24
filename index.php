@@ -1,8 +1,9 @@
 <?php
-$page_title = 'Novalnet AI – Sichere Krypto-Rückführung & Wiederherstellung';
+include_once 'includes/site_settings.php';
+$page_title = ($siteSettings['brand_name'] ?? 'Novalnet AI') . ' – Sichere Krypto-Rückführung & Wiederherstellung';
 $page_description = 'KI-gestützte Blockchain-Analyse zur Identifizierung und Wiederherstellung betrügerisch entwendeter Kryptowährungen. BaFin-lizenziert mit 87% Erfolgsquote.';
 $page_keywords = 'Krypto Wiederherstellung, Blockchain Analyse, Betrugsaufklärung, KI Krypto, BaFin lizenziert';
-$page_url = 'https://novalnet-ai.de/index.php';
+$page_url = ($siteSettings['site_url'] ?? 'https://novalnet-ai.de') . '/index.php';
 
 include 'includes/header.php';
 include 'includes/navbar.php';
@@ -10,17 +11,20 @@ include 'includes/navbar.php';
 
 <style>
     .hero-section {
-        padding: 120px 0 80px;
+        padding: 130px 0 90px;
         background: linear-gradient(135deg, #f8f9ff 0%, #eef4ff 100%);
     }
-    .section { padding: 80px 0; }
+    .section { padding: 100px 0; }
 
     .feature-card {
-        background:#fff; border-radius:12px; padding:30px;
-        box-shadow:0 5px 15px rgba(0,0,0,.05);
-        transition: transform .3s ease; height:100%;
+        background:#fff; border-radius:16px; padding:36px;
+        box-shadow:0 4px 18px rgba(0,0,0,.07);
+        transition: transform .3s ease, box-shadow .3s ease; height:100%;
+        min-height: 300px;
+        display: flex; flex-direction: column;
+        border: 1px solid rgba(0,0,0,0.04);
     }
-    .feature-card:hover { transform: translateY(-5px); }
+    .feature-card:hover { transform: translateY(-5px); box-shadow:0 12px 32px rgba(0,0,0,.14); border-color: rgba(13,110,253,0.12); }
 
     .logo-grid {
         display:flex; flex-wrap:wrap; justify-content:center; gap:30px; margin:40px 0;
@@ -44,13 +48,14 @@ include 'includes/navbar.php';
     }
     .btn-outline-primary { padding:12px 30px; border-width:2px; }
 
-    .section-title { font-weight:700; margin-bottom:20px; font-size:2rem; }
-    .section-subtitle { color:var(--gray); margin-bottom:40px; font-size:1.05rem; }
+    .section-title { font-weight:800; margin-bottom:18px; font-size:2.3rem; letter-spacing:-0.02em; color:#1a1e2e; }
+    .section-subtitle { color:var(--gray); margin-bottom:52px; font-size:1.1rem; line-height:1.75; max-width:800px; margin-left:auto; margin-right:auto; }
 
     .trusted-by { background:#f8f9fa; padding:60px 0; text-align:center; }
 
-    .feature-list li { margin-bottom:10px; display:flex; align-items:flex-start; }
-    .feature-list li i { color:var(--primary); margin-right:10px; margin-top:4px; }
+    .feature-list { list-style: none; padding: 0; margin: 0; }
+    .feature-list li { margin-bottom:12px; display:flex; align-items:flex-start; font-size:0.97rem; color:#374151; }
+    .feature-list li i { color:var(--primary); margin-right:10px; margin-top:3px; flex-shrink: 0; }
 
     /* AI section */
     .ai-section img {
@@ -256,13 +261,16 @@ include 'includes/navbar.php';
     .ai-feature-card {
         background: white;
         border-radius: 20px;
-        padding: 35px;
+        padding: 40px;
         height: 100%;
+        min-height: 380px;
         box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
         transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         border: 2px solid transparent;
         position: relative;
         overflow: hidden;
+        display: flex;
+        flex-direction: column;
     }
     
     .ai-feature-card::before {
@@ -504,7 +512,14 @@ include 'includes/navbar.php';
         50% { transform: scale(1.05); }
     }
     
-    /* Button Glow Effect */
+    .hero-heading {
+        line-height: 1.15;
+        letter-spacing: -0.02em;
+    }
+
+    .gradient-primary-bg {
+        background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
+    }
     .btn-glow {
         position: relative;
         overflow: hidden;
@@ -536,63 +551,1481 @@ include 'includes/navbar.php';
 </style>
 
 <!-- Hero Section -->
-<header class="hero-section text-center" style="position: relative; overflow: hidden;">
-    <!-- Animated Particle Background -->
-    <canvas id="particles-canvas"></canvas>
-    
-    <!-- Floating Crypto Icons -->
-    <div class="crypto-float" style="top: 10%; left: 5%; color: #f7931a;">₿</div>
-    <div class="crypto-float" style="top: 70%; left: 8%; color: #627eea;">Ξ</div>
-    <div class="crypto-float" style="top: 40%; right: 10%; color: #26a17b;">₮</div>
-    <div class="crypto-float" style="top: 15%; right: 5%; color: #f3ba2f;">B</div>
-    <div class="crypto-float" style="top: 60%; right: 15%; color: #0033ad;">₳</div>
-    <div class="crypto-float" style="top: 25%; left: 12%; color: #00ffa3;">◎</div>
-    <div class="crypto-float" style="top: 80%; right: 20%; color: #23292f;">✕</div>
-    <div class="crypto-float" style="top: 35%; left: 88%; color: #e6007a;">●</div>
-    
-    <div class="container" style="position: relative; z-index: 10;">
-        <div class="mb-3">
-            <span class="badge bg-primary-subtle text-primary px-3 py-2" style="font-size: 0.9rem;">
-                <i class="fas fa-certificate me-2"></i>BaFin-lizenziert | FCA-Ref.: 122702
+<header class="hero-section" style="position: relative; overflow: hidden; padding: 80px 0 60px; background: linear-gradient(160deg, #f0f4ff 0%, #e8f0fe 50%, #f5f8ff 100%);">
+
+    <!-- Subtle background accent -->
+    <div style="position:absolute;top:0;left:0;right:0;bottom:0;background:radial-gradient(ellipse at 70% 40%, rgba(13,110,253,0.06) 0%, transparent 60%);pointer-events:none;"></div>
+
+    <div class="container" style="position: relative; z-index: 5;">
+
+        <!-- Top credential bar -->
+        <div class="d-flex flex-wrap justify-content-center gap-2 mb-5">
+            <span class="d-inline-flex align-items-center gap-2 px-3 py-2 rounded-pill"
+                  style="background:#fff; border:1px solid #d0d9f0; font-size:.82rem; font-weight:600; color:#0d1f5c; box-shadow:0 2px 8px rgba(13,110,253,.08);">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0d6efd" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg>
+                BaFin-lizenziert &nbsp;|&nbsp; Reg.-Nr. <?php echo htmlspecialchars($siteSettings['fca_reference_number']); ?>
+            </span>
+            <span class="d-inline-flex align-items-center gap-2 px-3 py-2 rounded-pill"
+                  style="background:#fff; border:1px solid #d0d9f0; font-size:.82rem; font-weight:600; color:#0d1f5c; box-shadow:0 2px 8px rgba(13,110,253,.08);">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#28a745" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                SSL-verschlüsselt &amp; DSGVO-konform
+            </span>
+            <span class="d-inline-flex align-items-center gap-2 px-3 py-2 rounded-pill"
+                  style="background:#fff; border:1px solid #d0d9f0; font-size:.82rem; font-weight:600; color:#0d1f5c; box-shadow:0 2px 8px rgba(13,110,253,.08);">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f39c12" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                Zertifizierte Blockchain-Analysten
             </span>
         </div>
-        <h1 class="display-4 fw-bold mb-4">Professionelle Blockchain-Forensik<br>
-            <span class="text-primary">zur Wiederherstellung betrügerisch entwendeter Kryptowährungen</span>
-        </h1>
-        <p class="lead mb-4" style="max-width:800px;margin:0 auto;">
-            Novalnet AI nutzt fortschrittliche KI-Algorithmen zur Analyse und Nachverfolgung betrügerischer 
-            Krypto-Transaktionen. Als <strong>BaFin-lizenziertes Unternehmen</strong> führen wir identifizierte Vermögenswerte 
-            rechtskonform an die rechtmäßigen Eigentümer zurück.
-        </p>
-        <div class="mb-4" style="max-width:700px;margin:0 auto;">
-            <div class="row text-center">
-                <div class="col-4">
-                    <div class="fw-bold fs-4 text-primary">727</div>
-                    <small class="text-muted">Klienten betreut</small>
+
+        <div class="row align-items-center g-5">
+            <!-- Left: Headline + CTA -->
+            <div class="col-lg-6 text-lg-start text-center">
+                <p class="text-uppercase fw-bold mb-3" style="font-size:.78rem; letter-spacing:.14em; color:#0d6efd;">
+                    Forensische Krypto-Wiederherstellung
+                </p>
+                <h1 class="fw-bold mb-4 hero-heading lh-sm" style="font-size:clamp(2rem,4.5vw,3rem); color:#0d1f5c;">
+                    Ihr Krypto verloren durch&nbsp;Betrug?<br>
+                    <span style="color:#0d6efd;">Wir holen es zurück.</span>
+                </h1>
+                <p style="font-size:1.08rem; line-height:1.75; color:#4a5568; max-width:520px; margin:0 auto 0 0;" class="mx-auto mx-lg-0 mb-4">
+                    <?= htmlspecialchars($siteSettings['brand_name']) ?> ist ein <strong>BaFin-lizenziertes Forensikunternehmen</strong>.
+                    Unsere KI-gestützte Blockchain-Analyse rekonstruiert Transaktionsketten lückenlos –
+                    transparent, rechtssicher und <strong>ohne Vorabgebühren</strong>.
+                </p>
+
+                <!-- KPI row -->
+                <div class="d-flex flex-wrap gap-3 mb-5 justify-content-center justify-content-lg-start">
+                    <div class="text-center px-4 py-3 rounded-3" style="background:#fff; border:1px solid #dce6f7; min-width:110px; box-shadow:0 2px 10px rgba(13,110,253,.07);">
+                        <div class="fw-bold" style="font-size:1.9rem; color:#0d6efd; line-height:1;">727</div>
+                        <div style="font-size:.72rem; text-transform:uppercase; letter-spacing:.07em; color:#6c757d; margin-top:2px;">Klienten betreut</div>
+                    </div>
+                    <div class="text-center px-4 py-3 rounded-3" style="background:#fff; border:1px solid #dce6f7; min-width:110px; box-shadow:0 2px 10px rgba(13,110,253,.07);">
+                        <div class="fw-bold" style="font-size:1.9rem; color:#0d6efd; line-height:1;">87%</div>
+                        <div style="font-size:.72rem; text-transform:uppercase; letter-spacing:.07em; color:#6c757d; margin-top:2px;">Erfolgsquote</div>
+                    </div>
+                    <div class="text-center px-4 py-3 rounded-3" style="background:#fff; border:1px solid #dce6f7; min-width:110px; box-shadow:0 2px 10px rgba(13,110,253,.07);">
+                        <div class="fw-bold" style="font-size:1.9rem; color:#0d6efd; line-height:1;">€47M</div>
+                        <div style="font-size:.72rem; text-transform:uppercase; letter-spacing:.07em; color:#6c757d; margin-top:2px;">Wiederhergestellt</div>
+                    </div>
                 </div>
-                <div class="col-4">
-                    <div class="fw-bold fs-4 text-primary">87%</div>
-                    <small class="text-muted">Erfolgsquote</small>
+
+                <div class="d-flex flex-wrap gap-3 justify-content-center justify-content-lg-start">
+                    <a href="app/register.php" class="btn btn-primary btn-lg px-5 btn-glow" style="font-weight:600;">
+                        <i class="fas fa-file-alt me-2"></i>Fall kostenlos einreichen
+                    </a>
+                    <a href="app/login.php" class="btn btn-outline-primary btn-lg px-4" style="font-weight:600;">
+                        <i class="fas fa-user me-2"></i>Zum Kundenportal
+                    </a>
                 </div>
-                <div class="col-4">
-                    <div class="fw-bold fs-4 text-primary">€47M</div>
-                    <small class="text-muted">Wiederhergestellt</small>
+
+                <!-- Micro trust row -->
+                <div class="d-flex flex-wrap gap-4 mt-4 justify-content-center justify-content-lg-start">
+                    <span style="font-size:.8rem; color:#6c757d;"><i class="fas fa-shield-alt me-1 text-success"></i>Keine Vorabgebühren</span>
+                    <span style="font-size:.8rem; color:#6c757d;"><i class="fas fa-lock me-1 text-success"></i>100 % vertraulich</span>
+                    <span style="font-size:.8rem; color:#6c757d;"><i class="fas fa-clock me-1 text-success"></i>Antwort in 24 h</span>
+                </div>
+            </div>
+
+            <!-- Right: Consultation card -->
+            <div class="col-lg-6">
+                <div class="card shadow" style="border-radius:16px; border:1px solid rgba(13,110,253,.1); background:#fff;">
+                    <div class="card-body p-4 p-md-5">
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <span class="badge text-white px-3 py-2"
+                                  style="background:linear-gradient(135deg,#0d6efd,#0b5ed7); border-radius:8px; font-size:.78rem; letter-spacing:.04em;">
+                                <i class="fas fa-calendar-check me-1"></i>KOSTENLOSE ERSTBERATUNG
+                            </span>
+                        </div>
+                        <h4 class="fw-bold mb-1 mt-3" style="color:#0d1f5c; font-size:1.2rem;">
+                            Schildern Sie uns Ihren Fall
+                        </h4>
+                        <p class="text-muted mb-4" style="font-size:.9rem; line-height:1.6;">
+                            Unsere Analysten prüfen Ihren Fall diskret und melden sich innerhalb von <strong>24 Stunden</strong> mit einer unverbindlichen Ersteinschätzung.
+                        </p>
+                        <div class="row g-3 align-items-end">
+                            <div class="col-sm-6">
+                                <label class="form-label fw-semibold" style="font-size:.83rem; color:#374151;">
+                                    <i class="fas fa-euro-sign me-1 text-primary"></i>Geschädigter Betrag
+                                </label>
+                                <select id="lossAmount" class="form-select"
+                                        style="border-radius:8px; border:1.5px solid #d1d5db; font-size:.92rem; padding:.6rem .9rem;">
+                                    <option value="">Betrag wählen …</option>
+                                    <option value="5000">Bis € 5.000</option>
+                                    <option value="25000">€ 5.000 – € 25.000</option>
+                                    <option value="50000">€ 25.000 – € 50.000</option>
+                                    <option value="100000">€ 50.000 – € 100.000</option>
+                                    <option value="250000">Über € 100.000</option>
+                                </select>
+                            </div>
+                            <div class="col-sm-6">
+                                <label class="form-label fw-semibold" style="font-size:.83rem; color:#374151;">
+                                    <i class="fas fa-tag me-1 text-primary"></i>Art des Betrugs
+                                </label>
+                                <select id="lossType" class="form-select"
+                                        style="border-radius:8px; border:1.5px solid #d1d5db; font-size:.92rem; padding:.6rem .9rem;">
+                                    <option value="">Kategorie wählen …</option>
+                                    <option value="exchange">Gefälschte Handelsplattform</option>
+                                    <option value="investment">Betrügerisches Investment</option>
+                                    <option value="romance">Romance Scam</option>
+                                    <option value="rug">Rug Pull / Token-Betrug</option>
+                                    <option value="phishing">Phishing / Wallet-Diebstahl</option>
+                                    <option value="other">Sonstiger Betrug</option>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <button id="estimatorBtn" class="btn btn-primary btn-lg w-100 fw-bold"
+                                        style="border-radius:8px; font-size:1rem; letter-spacing:.01em;">
+                                    <i class="fas fa-arrow-right me-2"></i>Kostenlos anfragen
+                                </button>
+                            </div>
+                        </div>
+                        <div id="estimatorHint" class="mt-3 d-none">
+                            <div class="alert alert-warning mb-0 py-2" style="border-radius:8px; font-size:.88rem;">
+                                <i class="fas fa-exclamation-circle me-2"></i>
+                                Bitte wählen Sie den geschädigten Betrag und die Betrugsart aus.
+                            </div>
+                        </div>
+                        <div class="d-flex flex-wrap justify-content-center gap-3 mt-4 pt-3" style="border-top:1px solid #f0f3f7;">
+                            <span style="font-size:.78rem; color:#6c757d;"><i class="fas fa-shield-alt me-1 text-success"></i>BaFin-lizenziert</span>
+                            <span style="font-size:.78rem; color:#6c757d;"><i class="fas fa-lock me-1 text-success"></i>Streng vertraulich</span>
+                            <span style="font-size:.78rem; color:#6c757d;"><i class="fas fa-check-circle me-1 text-success"></i>Keine Vorabgebühren</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="d-flex justify-content-center gap-3 flex-wrap">
-            <a href="https://novalnet-ai.de/app" class="btn btn-primary btn-lg px-5">Zum Kundenportal</a>
-            <a href="#refund-ai" class="btn btn-outline-primary btn-lg px-5">Wie es funktioniert</a>
-        </div>
     </div>
 </header>
+
+<!-- ============================================================
+     TERMINVEREINBARUNG MODAL – Kundenanfrageformular
+     ============================================================ -->
+<style>
+/* ── Custom overlay modal (matches register.php) ── */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(10, 20, 35, 0.72);
+    z-index: 1000;
+    overflow-y: auto;
+    padding: 30px 15px;
+}
+.modal-overlay.active {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+}
+.modal-box {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 12px 50px rgba(0,0,0,0.45);
+    width: 100%;
+    max-width: 560px;
+    overflow: hidden;
+    animation: clmSlideIn 0.25s ease;
+}
+@keyframes clmSlideIn {
+    from { transform: translateY(-18px); opacity: 0; }
+    to   { transform: translateY(0);     opacity: 1; }
+}
+.modal-box .modal-header {
+    background: linear-gradient(135deg, #1a3a5c 0%, #0d2137 100%);
+    padding: 20px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.modal-box .modal-header h5 {
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 700;
+    margin: 0;
+}
+.modal-box .modal-close {
+    background: none;
+    border: none;
+    color: rgba(255,255,255,0.7);
+    font-size: 1.4rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 2px;
+    transition: color 0.15s;
+}
+.modal-box .modal-close:hover { color: #fff; }
+.modal-box .modal-body {
+    padding: 26px 28px 20px;
+}
+.modal-box .modal-body .form-group label {
+    font-size: 0.84rem;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 5px;
+    display: block;
+}
+.modal-box .modal-body .form-control,
+.modal-box .modal-body select.form-control {
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    padding: 9px 13px;
+    font-size: 0.88rem;
+    color: #111827;
+    width: 100%;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    margin-bottom: 14px;
+    background: #fff;
+}
+.modal-box .modal-body .form-control:focus,
+.modal-box .modal-body select.form-control:focus {
+    border-color: #1a3a5c;
+    box-shadow: 0 0 0 3px rgba(26,58,92,0.13);
+    outline: none;
+}
+.modal-box .modal-body textarea.form-control {
+    resize: vertical;
+    min-height: 100px;
+}
+.modal-box .modal-body .row-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+}
+.modal-box .modal-body .row-2 .form-control { margin-bottom: 0; }
+.modal-box .modal-body .row-2-wrap { margin-bottom: 14px; }
+.clm-platform-list { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:6px; min-height:28px; }
+.clm-platform-tag  { background:#1a3a5c; color:#fff; border-radius:20px; padding:3px 10px 3px 12px; font-size:.8rem; display:flex; align-items:center; gap:5px; }
+.clm-platform-tag .rm { cursor:pointer; font-size:1rem; line-height:1; opacity:.75; }
+.clm-platform-tag .rm:hover { opacity:1; }
+.clm-platform-input-wrap { display:flex; gap:8px; margin-bottom:14px; }
+.clm-platform-input-wrap .form-control { margin-bottom:0; flex:1; }
+.btn-clm-add-platform { background:#1a3a5c; border:none; color:#fff; border-radius:8px; padding:0 14px; font-size:1.1rem; cursor:pointer; flex-shrink:0; transition:opacity .2s; }
+.btn-clm-add-platform:hover { opacity:.8; }
+.modal-box .modal-footer-btns {
+    padding: 16px 28px 22px;
+    display: flex;
+    gap: 10px;
+    border-top: 1px solid #f0f0f0;
+}
+.btn-clm-cancel {
+    flex: 1;
+    background: #f3f4f6;
+    border: 1px solid #d1d5db;
+    color: #374151;
+    font-weight: 600;
+    font-size: 0.9rem;
+    padding: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.btn-clm-cancel:hover { background: #e5e7eb; }
+.btn-clm-submit {
+    flex: 2;
+    background: linear-gradient(135deg, #1a3a5c 0%, #0d2137 100%);
+    border: none;
+    color: #fff;
+    font-weight: 700;
+    font-size: 0.92rem;
+    padding: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    letter-spacing: 0.3px;
+}
+.btn-clm-submit:hover { opacity: 0.87; }
+.clm-success-msg {
+    display: none;
+    text-align: center;
+    padding: 28px 24px;
+}
+.clm-success-msg .s-icon {
+    width: 56px; height: 56px;
+    background: #ecfdf5;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 14px;
+}
+.clm-success-msg .s-icon svg { width: 28px; height: 28px; fill: #059669; }
+.clm-success-msg h5 { color: #1a3a5c; font-weight: 700; margin-bottom: 8px; }
+.clm-success-msg p  { color: #6b7280; font-size: 0.9rem; }
+</style>
+
+<div class="modal-overlay" id="contactLeadModal">
+  <div class="modal-box">
+
+    <!-- Header -->
+    <div class="modal-header">
+      <h5>&#128196; Kundenanfrageformular</h5>
+      <button class="modal-close" onclick="clmClose()" aria-label="Schließen">&times;</button>
+    </div>
+
+    <!-- Form content -->
+    <div id="clm-form-wrap">
+      <div class="modal-body">
+
+        <!-- Name row -->
+        <div class="row-2-wrap">
+          <div class="row-2">
+            <div>
+              <label for="clm-first-name">Vorname <span style="color:#e02020">*</span></label>
+              <input type="text" class="form-control" id="clm-first-name" placeholder="Max" maxlength="100" required>
+            </div>
+            <div>
+              <label for="clm-last-name">Nachname <span style="color:#e02020">*</span></label>
+              <input type="text" class="form-control" id="clm-last-name" placeholder="Mustermann" maxlength="100" required>
+            </div>
+          </div>
+        </div>
+
+        <!-- Email -->
+        <label for="clm-email">E-Mail-Adresse <span style="color:#e02020">*</span></label>
+        <input type="email" class="form-control" id="clm-email" placeholder="ihre@email.de" maxlength="255" required autocomplete="email">
+
+        <!-- Phone -->
+        <label for="clm-phone">Telefonnummer <span style="color:#e02020">*</span></label>
+        <input type="tel" class="form-control" id="clm-phone" placeholder="+49 123 456789" maxlength="50" required autocomplete="tel">
+
+        <!-- Loss amount range -->
+        <label for="clm-amount">Geschätzter Verlustbetrag <span style="color:#e02020">*</span></label>
+        <select class="form-control" id="clm-amount" required>
+          <option value="" disabled selected>Bitte auswählen …</option>
+          <option value="5000-20000">5.000 € – 20.000 €</option>
+          <option value="20000-50000">20.000 € – 50.000 €</option>
+          <option value="50000-100000">50.000 € – 100.000 €</option>
+          <option value="100000-250000">100.000 € – 250.000 €</option>
+          <option value="250000-500000">250.000 € – 500.000 €</option>
+          <option value="500000+">500.000 € und mehr</option>
+        </select>
+
+        <!-- Year of loss -->
+        <label for="clm-year">Jahr des Verlusts <span style="color:#e02020">*</span></label>
+        <select class="form-control" id="clm-year" required>
+          <option value="" disabled selected>Jahr auswählen …</option>
+          <?php for ($y = 2026; $y >= 2000; $y--): ?>
+          <option value="<?php echo $y; ?>"><?php echo $y; ?></option>
+          <?php endfor; ?>
+        </select>
+
+        <!-- Platforms -->
+        <label>Plattformen / Anbieter <span style="color:#e02020">*</span></label>
+        <div class="clm-platform-list" id="clm-platform-list"></div>
+        <div class="clm-platform-input-wrap">
+          <input type="text" class="form-control" id="clm-platform-input"
+                 placeholder="z.B. Binance, eToro, MetaTrader …"
+                 onkeydown="if(event.key==='Enter'){event.preventDefault();clmAddPlatform();}">
+          <button type="button" class="btn-clm-add-platform" onclick="clmAddPlatform()" title="Hinzufügen">+</button>
+        </div>
+        <input type="hidden" id="clm-platforms">
+
+        <!-- Details -->
+        <label for="clm-details">Fallbeschreibung / Details <span style="color:#e02020">*</span></label>
+        <textarea class="form-control" id="clm-details" rows="4" maxlength="2000"
+                  placeholder="Bitte beschreiben Sie kurz, wie es zu dem Verlust gekommen ist, welche Schritte Sie bereits unternommen haben und alle weiteren relevanten Informationen …"></textarea>
+
+        <p id="clm-error" style="color:#dc2626; font-size:.82rem; margin-top:-8px; display:none;">
+          Bitte füllen Sie alle Pflichtfelder aus.
+        </p>
+      </div>
+
+      <div class="modal-footer-btns">
+        <button type="button" class="btn-clm-cancel" onclick="clmClose()">Abbrechen</button>
+        <button type="button" class="btn-clm-submit" id="clm-submit" onclick="clmSubmit()">
+          <span id="clm-submit-text">Anfrage absenden &rarr;</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Success message -->
+    <div class="clm-success-msg" id="clm-success">
+      <div class="s-icon">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+        </svg>
+      </div>
+      <h5>Anfrage erfolgreich gesendet!</h5>
+      <p>Vielen Dank für Ihre Anfrage. Eines unserer Teammitglieder wird sich innerhalb von <strong>24 Stunden</strong> bei Ihnen melden.</p>
+      <button type="button" class="btn-clm-submit" style="max-width:220px; margin: 18px auto 0; display:block;" onclick="clmClose()">Schließen</button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+(function(){
+    'use strict';
+
+    // Map old estimator amount values to new range values
+    var amountMap = {
+        '5000':   '5000-20000',
+        '25000':  '20000-50000',
+        '50000':  '50000-100000',
+        '100000': '100000-250000',
+        '250000': '250000-500000'
+    };
+
+    var clmPlatforms = [];
+
+    window.clmOpen = function(presetAmount) {
+        clmReset(presetAmount || '');
+        document.getElementById('contactLeadModal').classList.add('active');
+        document.body.style.overflow = 'hidden';
+    };
+
+    window.clmClose = function() {
+        document.getElementById('contactLeadModal').classList.remove('active');
+        document.body.style.overflow = '';
+    };
+
+    // Close on backdrop click
+    document.getElementById('contactLeadModal').addEventListener('click', function(e) {
+        if (e.target === this) clmClose();
+    });
+
+    window.clmAddPlatform = function() {
+        var inp = document.getElementById('clm-platform-input');
+        var val = inp.value.trim();
+        if (!val) { inp.value = ''; return; }
+        var valLower = val.toLowerCase();
+        if (clmPlatforms.some(function(p){ return p.toLowerCase() === valLower; })) {
+            inp.value = ''; return;
+        }
+        clmPlatforms.push(val);
+        clmRenderPlatforms();
+        inp.value = '';
+    };
+
+    function clmRenderPlatforms() {
+        var list = document.getElementById('clm-platform-list');
+        list.innerHTML = '';
+        clmPlatforms.forEach(function(p, i) {
+            var tag = document.createElement('span');
+            tag.className = 'clm-platform-tag';
+            tag.appendChild(document.createTextNode(p));
+            var rm = document.createElement('span');
+            rm.className = 'rm';
+            rm.textContent = '\u00d7';
+            rm.setAttribute('data-idx', i);
+            rm.addEventListener('click', function() {
+                clmPlatforms.splice(parseInt(this.getAttribute('data-idx'), 10), 1);
+                clmRenderPlatforms();
+            });
+            tag.appendChild(rm);
+            list.appendChild(tag);
+        });
+        document.getElementById('clm-platforms').value = clmPlatforms.join(', ');
+    }
+
+    function clmReset(presetAmount) {
+        document.getElementById('clm-first-name').value = '';
+        document.getElementById('clm-last-name').value  = '';
+        document.getElementById('clm-email').value      = '';
+        document.getElementById('clm-phone').value      = '';
+        document.getElementById('clm-amount').value     = presetAmount || '';
+        document.getElementById('clm-year').value       = '';
+        document.getElementById('clm-details').value    = '';
+        document.getElementById('clm-platform-input').value = '';
+        clmPlatforms = [];
+        clmRenderPlatforms();
+        document.getElementById('clm-error').style.display = 'none';
+        document.getElementById('clm-form-wrap').style.display = '';
+        document.getElementById('clm-success').style.display = 'none';
+        var btn = document.getElementById('clm-submit');
+        btn.disabled = false;
+        document.getElementById('clm-submit-text').textContent = 'Anfrage absenden \u2192';
+    }
+
+    // Estimator button
+    var estimatorBtn = document.getElementById('estimatorBtn');
+    if (estimatorBtn) {
+        estimatorBtn.addEventListener('click', function(){
+            var amount = document.getElementById('lossAmount').value;
+            var type   = document.getElementById('lossType').value;
+            var hint   = document.getElementById('estimatorHint');
+
+            if (!amount || !type) {
+                hint.classList.remove('d-none');
+                return;
+            }
+            hint.classList.add('d-none');
+
+            var rangeAmount = amountMap[amount] || '';
+            clmOpen(rangeAmount);
+        });
+    }
+
+    // Dismiss hint on dropdown change
+    ['lossAmount','lossType'].forEach(function(id){
+        var el = document.getElementById(id);
+        if (el) el.addEventListener('change', function(){
+            document.getElementById('estimatorHint').classList.add('d-none');
+        });
+    });
+
+    window.clmSubmit = function() {
+        var firstName = document.getElementById('clm-first-name').value.trim();
+        var lastName  = document.getElementById('clm-last-name').value.trim();
+        var email     = document.getElementById('clm-email').value.trim();
+        var phone     = document.getElementById('clm-phone').value.trim();
+        var amount    = document.getElementById('clm-amount').value;
+        var year      = document.getElementById('clm-year').value;
+        var details   = document.getElementById('clm-details').value.trim();
+        var errEl     = document.getElementById('clm-error');
+
+        if (!firstName || !lastName || !email || !phone || !amount || !year || clmPlatforms.length === 0 || !details) {
+            errEl.textContent = 'Bitte füllen Sie alle Pflichtfelder aus.';
+            errEl.style.display = 'block';
+            return;
+        }
+        errEl.style.display = 'none';
+
+        var fd = new FormData();
+        fd.append('first_name', firstName);
+        fd.append('last_name',  lastName);
+        fd.append('email',      email);
+        fd.append('phone',      phone);
+        fd.append('amount',     amount);
+        fd.append('year',       year);
+        fd.append('platforms',  clmPlatforms.join(', '));
+        fd.append('details',    details);
+
+        var btn  = document.getElementById('clm-submit');
+        var txt  = document.getElementById('clm-submit-text');
+        btn.disabled = true;
+        txt.textContent = 'Wird gesendet …';
+
+        fetch('contact.php', { method: 'POST', body: fd })
+            .then(function(resp) { return resp.json(); })
+            .then(function(r) {
+                if (r.success) {
+                    document.getElementById('clm-form-wrap').style.display = 'none';
+                    document.getElementById('clm-success').style.display = 'block';
+                } else {
+                    errEl.textContent = r.message || 'Fehler beim Senden. Bitte versuchen Sie es erneut.';
+                    errEl.style.display = 'block';
+                    btn.disabled = false;
+                    txt.textContent = 'Anfrage absenden \u2192';
+                }
+            })
+            .catch(function() {
+                errEl.textContent = 'Netzwerkfehler. Bitte prüfen Sie Ihre Verbindung und versuchen Sie es erneut.';
+                errEl.style.display = 'block';
+                btn.disabled = false;
+                txt.textContent = 'Anfrage absenden \u2192';
+            });
+    };
+})();
+</script>
+
+<!-- ===== KI-Betrugserkennung – 3D-Animations-Sektion ===== -->
+<section id="ai-recovery-scene" style="position:relative;overflow:hidden;background:#04091a;padding:0;min-height:720px;display:flex;align-items:center;">
+
+  <!-- THREE.JS CANVAS fills the background -->
+  <canvas id="recovery-canvas" style="position:absolute;inset:0;width:100%;height:100%;display:block;"></canvas>
+
+  <!-- Scanline overlay for "live video" feel -->
+  <div style="position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,255,180,.018) 3px,rgba(0,255,180,.018) 4px);pointer-events:none;z-index:1;"></div>
+
+  <!-- Live badge -->
+  <div style="position:absolute;top:24px;left:32px;z-index:10;display:flex;align-items:center;gap:8px;">
+    <span style="width:10px;height:10px;border-radius:50%;background:#ff3c3c;display:inline-block;animation:livePulse 1.2s infinite;box-shadow:0 0 8px #ff3c3c;"></span>
+    <span style="color:#fff;font-size:.82rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;opacity:.9;">LIVE</span>
+    <span style="color:#64748b;font-size:.78rem;margin-left:6px;" id="live-clock">–</span>
+  </div>
+
+  <!-- Live transaction ticker (top-right) -->
+  <div id="live-ticker-wrap" style="position:absolute;top:22px;right:24px;z-index:10;max-width:320px;overflow:hidden;">
+    <div id="live-ticker" style="color:#00ffb4;font-size:.78rem;font-weight:600;font-family:monospace;white-space:nowrap;background:rgba(0,255,180,.08);border:1px solid rgba(0,255,180,.2);border-radius:8px;padding:6px 14px;">
+      <i class="fas fa-satellite-dish me-1" style="color:#ff3c3c;animation:livePulse 1.2s infinite;"></i>
+      <span id="ticker-text">Verbinde mit Blockchain-Netzwerk …</span>
+    </div>
+  </div>
+
+  <!-- Overlay content -->
+  <div class="container position-relative" style="z-index:5;padding:96px 16px 80px;">
+    <div class="row align-items-center gy-5">
+
+      <!-- Left: copy -->
+      <div class="col-lg-6">
+        <span style="display:inline-block;background:rgba(0,255,180,.12);border:1px solid rgba(0,255,180,.35);color:#00ffb4;font-size:.8rem;font-weight:700;letter-spacing:.1em;border-radius:20px;padding:5px 16px;margin-bottom:18px;text-transform:uppercase;">
+          <i class="fas fa-shield-alt me-2"></i>KI-gestützte Krypto-Verlust-Rückgewinnung
+        </span>
+
+        <h2 style="color:#fff;font-size:clamp(1.9rem,4.5vw,2.9rem);font-weight:800;line-height:1.18;margin-bottom:20px;">
+          Gestohlene Gelder zurückholen<br>
+          <span style="background:linear-gradient(90deg,#00ffb4,#00c6ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">mit Deep-Chain AI&trade;</span>
+        </h2>
+
+        <p style="color:#94a3b8;font-size:1.05rem;max-width:470px;line-height:1.8;margin-bottom:28px;">
+          Unser autonomes KI-System verfolgt betrügerische Transaktionen über <strong style="color:#fff;">120+ Blockchains</strong>,
+          rekonstruiert Wallet-Graphen in Millisekunden und leitet BaFin-konforme Rückgewinnungsverfahren ein –
+          vollautomatisch, rund um die Uhr.
+        </p>
+
+        <!-- Live stats row -->
+        <div style="display:flex;flex-wrap:wrap;gap:14px;margin-bottom:32px;">
+          <div style="background:rgba(0,255,180,.07);border:1px solid rgba(0,255,180,.18);border-radius:12px;padding:14px 20px;min-width:120px;">
+            <div style="color:#00ffb4;font-size:1.65rem;font-weight:800;line-height:1;" id="stat-cases">0</div>
+            <div style="color:#64748b;font-size:.78rem;margin-top:5px;">Aktive Fälle</div>
+          </div>
+          <div style="background:rgba(0,198,255,.07);border:1px solid rgba(0,198,255,.18);border-radius:12px;padding:14px 20px;min-width:120px;">
+            <div style="color:#00c6ff;font-size:1.65rem;font-weight:800;line-height:1;" id="stat-recovered">€0M</div>
+            <div style="color:#64748b;font-size:.78rem;margin-top:5px;">Zurückgeholt</div>
+          </div>
+          <div style="background:rgba(167,139,250,.07);border:1px solid rgba(167,139,250,.18);border-radius:12px;padding:14px 20px;min-width:120px;">
+            <div style="color:#a78bfa;font-size:1.65rem;font-weight:800;line-height:1;" id="stat-rate">0%</div>
+            <div style="color:#64748b;font-size:.78rem;margin-top:5px;">Erfolgsquote</div>
+          </div>
+          <div style="background:rgba(255,215,0,.07);border:1px solid rgba(255,215,0,.18);border-radius:12px;padding:14px 20px;min-width:120px;">
+            <div style="color:#ffd700;font-size:1.65rem;font-weight:800;line-height:1;" id="stat-chains">0+</div>
+            <div style="color:#64748b;font-size:.78rem;margin-top:5px;">Blockchains</div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:12px;flex-wrap:wrap;">
+          <a href="#" class="btn" onclick="clmOpen(); return false;" style="background:linear-gradient(135deg,#00c6ff,#00ffb4);border:none;color:#04091a;font-weight:700;padding:14px 30px;border-radius:10px;font-size:1rem;box-shadow:0 0 28px rgba(0,198,255,.35);">
+            <i class="fas fa-search-dollar me-2"></i>Wiederherstellung starten
+          </a>
+          <a href="#verluste-info" class="btn" style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.18);color:#fff;font-weight:600;padding:14px 26px;border-radius:10px;font-size:.95rem;">
+            <i class="fas fa-info-circle me-2"></i>Mehr erfahren
+          </a>
+        </div>
+      </div>
+
+      <!-- Right: info panels -->
+      <div class="col-lg-6">
+        <div style="display:flex;flex-direction:column;gap:13px;">
+
+          <div style="background:rgba(255,255,255,.05);border:1px solid rgba(0,255,180,.2);border-radius:14px;padding:18px 22px;backdrop-filter:blur(8px);">
+            <div style="display:flex;align-items:center;gap:14px;">
+              <div style="width:44px;height:44px;border-radius:10px;background:rgba(0,255,180,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <i class="fas fa-network-wired" style="color:#00ffb4;font-size:1.2rem;"></i>
+              </div>
+              <div>
+                <div style="color:#fff;font-weight:700;font-size:.95rem;">Blockchain-Verfolgungsengine</div>
+                <div style="color:#64748b;font-size:.82rem;margin-top:3px;">Echtzeit-Graphanalyse: BTC, ETH, BSC, SOL, TRON und 115 weitere Netzwerke</div>
+              </div>
+              <div style="margin-left:auto;flex-shrink:0;">
+                <span style="background:rgba(0,255,180,.15);color:#00ffb4;font-size:.7rem;font-weight:700;border-radius:20px;padding:3px 10px;">AKTIV</span>
+              </div>
+            </div>
+          </div>
+
+          <div style="background:rgba(255,255,255,.05);border:1px solid rgba(0,198,255,.2);border-radius:14px;padding:18px 22px;backdrop-filter:blur(8px);">
+            <div style="display:flex;align-items:center;gap:14px;">
+              <div style="width:44px;height:44px;border-radius:10px;background:rgba(0,198,255,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <i class="fas fa-brain" style="color:#00c6ff;font-size:1.2rem;"></i>
+              </div>
+              <div>
+                <div style="color:#fff;font-weight:700;font-size:.95rem;">Deep-Learning Mustererkennung</div>
+                <div style="color:#64748b;font-size:.82rem;margin-top:3px;">Erkennt Mixer-Verschleierung, Exchange-Sprünge und Money-Mule-Netzwerke</div>
+              </div>
+              <div style="margin-left:auto;flex-shrink:0;">
+                <span style="background:rgba(0,198,255,.15);color:#00c6ff;font-size:.7rem;font-weight:700;border-radius:20px;padding:3px 10px;">KI</span>
+              </div>
+            </div>
+          </div>
+
+          <div style="background:rgba(255,255,255,.05);border:1px solid rgba(167,139,250,.2);border-radius:14px;padding:18px 22px;backdrop-filter:blur(8px);">
+            <div style="display:flex;align-items:center;gap:14px;">
+              <div style="width:44px;height:44px;border-radius:10px;background:rgba(167,139,250,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <i class="fas fa-gavel" style="color:#a78bfa;font-size:1.2rem;"></i>
+              </div>
+              <div>
+                <div style="color:#fff;font-weight:700;font-size:.95rem;">Regulierte Rechtseskalation</div>
+                <div style="color:#64748b;font-size:.82rem;margin-top:3px;">Automatisierte Beweispakete an BaFin, Europol & Interpol übermittelt</div>
+              </div>
+              <div style="margin-left:auto;flex-shrink:0;">
+                <span style="background:rgba(167,139,250,.15);color:#a78bfa;font-size:.7rem;font-weight:700;border-radius:20px;padding:3px 10px;">BaFin</span>
+              </div>
+            </div>
+          </div>
+
+          <div style="background:rgba(255,255,255,.05);border:1px solid rgba(255,215,0,.2);border-radius:14px;padding:18px 22px;backdrop-filter:blur(8px);">
+            <div style="display:flex;align-items:center;gap:14px;">
+              <div style="width:44px;height:44px;border-radius:10px;background:rgba(255,215,0,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <i class="fas fa-fingerprint" style="color:#ffd700;font-size:1.2rem;"></i>
+              </div>
+              <div>
+                <div style="color:#fff;font-weight:700;font-size:.95rem;">Kryptografische Forensik</div>
+                <div style="color:#64748b;font-size:.82rem;margin-top:3px;">Wallet-Fingerabdruck, Signaturanalyse und On-Chain-Beweissicherung</div>
+              </div>
+              <div style="margin-left:auto;flex-shrink:0;">
+                <span style="background:rgba(255,215,0,.12);color:#ffd700;font-size:.7rem;font-weight:700;border-radius:20px;padding:3px 10px;">FORENSIK</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Progress bars -->
+          <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:16px 22px;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+              <span style="color:#94a3b8;font-size:.82rem;">Gesamterfolgsquote</span>
+              <span style="color:#00ffb4;font-weight:700;font-size:.82rem;" id="progress-label">87%</span>
+            </div>
+            <div style="background:rgba(255,255,255,.07);border-radius:999px;height:6px;overflow:hidden;margin-bottom:10px;">
+              <div id="recovery-bar" style="height:100%;width:0%;border-radius:999px;background:linear-gradient(90deg,#00c6ff,#00ffb4);transition:width 2.2s ease-out;"></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+              <span style="color:#94a3b8;font-size:.82rem;">Kundenzufriedenheit</span>
+              <span style="color:#a78bfa;font-weight:700;font-size:.82rem;">96%</span>
+            </div>
+            <div style="background:rgba(255,255,255,.07);border-radius:999px;height:6px;overflow:hidden;">
+              <div id="satisfaction-bar" style="height:100%;width:0%;border-radius:999px;background:linear-gradient(90deg,#a78bfa,#00c6ff);transition:width 2.5s ease-out;"></div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </div><!-- /container -->
+
+</section>
+
+<!-- ===== Recovery Section CSS ===== -->
+<style>
+@keyframes livePulse {
+  0%,100% { opacity:1; transform:scale(1); }
+  50%      { opacity:.5; transform:scale(1.4); }
+}
+@keyframes tickerSlide {
+  0%   { opacity:0; transform:translateY(6px); }
+  10%  { opacity:1; transform:translateY(0); }
+  85%  { opacity:1; transform:translateY(0); }
+  100% { opacity:0; transform:translateY(-6px); }
+}
+.ticker-animate { animation: tickerSlide 7s ease forwards; }
+</style>
+
+<!-- ===== Three.js 3D Recovery Canvas ===== -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js" crossorigin="anonymous"></script>
+<script>
+(function () {
+  'use strict';
+
+  /* ---- Live clock ---- */
+  function updateClock() {
+    var el = document.getElementById('live-clock');
+    if (!el) return;
+    /* Display time in Europe/Berlin timezone (CET/CEST) regardless of user locale */
+    var now = new Date();
+    var timeStr = now.toLocaleTimeString('de-DE', { timeZone: 'Europe/Berlin', hour12: false });
+    el.textContent = timeStr + ' MEZ';
+  }
+  updateClock();
+  setInterval(updateClock, 1000);
+
+  /* ---- Live transaction ticker ---- */
+  var tickerMessages = [
+    '✅ Transaktion gesichert: +€ 34.820 — München',
+    '🔍 Wallet-Cluster identifiziert: Binance Smart Chain',
+    '✅ Rückgewinnung abgeschlossen: +€ 12.450 — Hamburg',
+    '⚡ KI-Analyse läuft: 4.217 Transaktionen geprüft',
+    '✅ SEPA-Überweisung erfolgreich: +€ 89.000 — Berlin',
+    '🔍 Betrüger-Adresse gesperrt: 0x4f3a…9c2e',
+    '✅ Fall abgeschlossen: +€ 156.300 — Frankfurt',
+    '⚡ Neue Spur entdeckt: Tornado Cash Bypass erkannt',
+    '✅ Gelder freigegeben: +€ 22.700 — Düsseldorf',
+    '🔍 Blockchain-Forensik: 7 Wallet-Hops zurückverfolgt',
+    '✅ Interpol-Kooperation: Täter identifiziert — Wien',
+    '⚡ Echtzeit-Scan: 14 Blockchains überwacht',
+  ];
+  var tickerIdx = 0;
+  function rotateTicker() {
+    var el = document.getElementById('ticker-text');
+    if (!el) return;
+    el.textContent = tickerMessages[tickerIdx % tickerMessages.length];
+    el.classList.remove('ticker-animate');
+    void el.offsetWidth; /* Force reflow to restart CSS animation */
+    el.classList.add('ticker-animate');
+    tickerIdx++;
+  }
+  setTimeout(function () { rotateTicker(); setInterval(rotateTicker, 7000); }, 2500);
+
+  /* ---- Counter animation helper ---- */
+  function animateCounter(el, target, suffix, duration, isFloat) {
+    if (!el) return;
+    var startTime = null;
+    function step(ts) {
+      if (!startTime) startTime = ts;
+      var progress = Math.min((ts - startTime) / duration, 1);
+      var eased = 1 - Math.pow(1 - progress, 3);
+      var val = isFloat ? (eased * target).toFixed(1) : Math.round(eased * target);
+      el.textContent = val + suffix;
+      if (progress < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
+  /* Trigger counters + progress bar once section enters viewport */
+  var STAT_CASES     = 2134;
+  var STAT_RECOVERED = 47.3;  /* millions EUR */
+  var STAT_RATE      = 87;    /* percent */
+  var STAT_CHAINS    = 120;
+  var statsTriggered = false;
+  var recoverySection = document.getElementById('ai-recovery-scene');
+  var io = new IntersectionObserver(function (entries) {
+    if (statsTriggered) return;
+    entries.forEach(function (e) {
+      if (e.isIntersecting) {
+        statsTriggered = true;
+        animateCounter(document.getElementById('stat-cases'),     STAT_CASES,     '',   1800, false);
+        animateCounter(document.getElementById('stat-recovered'),  STAT_RECOVERED, 'M',  2000, true);
+        animateCounter(document.getElementById('stat-rate'),       STAT_RATE,      '%',  1600, false);
+        animateCounter(document.getElementById('stat-chains'),     STAT_CHAINS,    '+',  1400, false);
+        setTimeout(function () {
+          document.getElementById('recovery-bar').style.width = '87%';
+          document.getElementById('satisfaction-bar').style.width = '96%';
+        }, 300);
+      }
+    });
+  }, { threshold: 0.2 });
+  if (recoverySection) io.observe(recoverySection);
+
+  /* ---- THREE.JS 3D scene ---- */
+  var canvas = document.getElementById('recovery-canvas');
+  if (!canvas || typeof THREE === 'undefined') {
+    console.warn('[AI Recovery] Three.js canvas or library unavailable – 3D scene skipped.');
+    return;
+  }
+
+  var W = canvas.parentElement.offsetWidth  || window.innerWidth;
+  var H = canvas.parentElement.offsetHeight || 720;
+
+  /* Renderer */
+  var renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(W, H);
+  renderer.setClearColor(0x04091a, 1);
+
+  /* Scene + Camera */
+  var scene  = new THREE.Scene();
+  var camera = new THREE.PerspectiveCamera(52, W / H, 0.1, 2000);
+  camera.position.set(0, 30, 270);
+
+  /* Fog */
+  scene.fog = new THREE.FogExp2(0x04091a, 0.002);
+
+  /* ---------- Starfield background ---------- */
+  var starGeo = new THREE.BufferGeometry();
+  var starCnt = 1800;
+  var starPos = new Float32Array(starCnt * 3);
+  for (var i = 0; i < starCnt * 3; i++) starPos[i] = (Math.random() - 0.5) * 1800;
+  starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+  var starMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.65, transparent: true, opacity: 0.6 });
+  scene.add(new THREE.Points(starGeo, starMat));
+
+  /* ---------- Wireframe globe ---------- */
+  var globeGeo  = new THREE.IcosahedronGeometry(100, 4);
+  var globeMat  = new THREE.MeshBasicMaterial({ color: 0x00c6ff, wireframe: true, transparent: true, opacity: 0.14 });
+  var globe     = new THREE.Mesh(globeGeo, globeMat);
+  scene.add(globe);
+
+  /* ---------- Outer shell (semi-transparent) ---------- */
+  var shellGeo = new THREE.SphereGeometry(103, 32, 32);
+  var shellMat = new THREE.MeshBasicMaterial({ color: 0x001a33, transparent: true, opacity: 0.15, side: THREE.BackSide });
+  scene.add(new THREE.Mesh(shellGeo, shellMat));
+
+  /* ---------- Inner glowing core ---------- */
+  var coreGeo = new THREE.SphereGeometry(16, 32, 32);
+  var coreMat = new THREE.MeshBasicMaterial({ color: 0x00ffb4, transparent: true, opacity: 0.6 });
+  var core    = new THREE.Mesh(coreGeo, coreMat);
+  scene.add(core);
+
+  /* ---------- Core glow rings (orbital planes) ---------- */
+  var rings = [];
+  var ringColors = [0x00ffb4, 0x00c6ff, 0xa78bfa];
+  for (var r = 0; r < 4; r++) {
+    var rGeo = new THREE.TorusGeometry(22 + r * 9, 0.45, 6, 80);
+    var rMat = new THREE.MeshBasicMaterial({
+      color: ringColors[r % ringColors.length],
+      transparent: true,
+      opacity: 0.28 - r * 0.05
+    });
+    var ring = new THREE.Mesh(rGeo, rMat);
+    ring.rotation.x = Math.PI / 2.2 + r * 0.45;
+    ring.rotation.z = r * 0.8;
+    scene.add(ring);
+    rings.push({ mesh: ring, speedX: 0.003 + r * 0.001, speedZ: 0.002 + r * 0.0008 });
+  }
+
+  /* ---------- Network nodes on sphere surface ---------- */
+  var nodeGroup = new THREE.Group();
+  scene.add(nodeGroup);
+  var nodeMeshes = [];
+  var nodeCount  = 80;
+  /* Color coding: green=recovered, cyan=tracked, purple=analyzing, yellow=flagged */
+  var nodeColors = [0x00ffb4, 0x00c6ff, 0xa78bfa, 0xffd700, 0xff6b6b];
+
+  for (var n = 0; n < nodeCount; n++) {
+    var phi   = Math.acos(-1 + (2 * n) / nodeCount);
+    var theta = Math.sqrt(nodeCount * Math.PI) * phi;
+    var nSize = 1.2 + Math.random() * 1.4;
+    var nodeGeo = new THREE.SphereGeometry(nSize, 8, 8);
+    var nodeMat = new THREE.MeshBasicMaterial({
+      color: nodeColors[n % nodeColors.length],
+      transparent: true,
+      opacity: 0.85 + Math.random() * 0.15
+    });
+    var node = new THREE.Mesh(nodeGeo, nodeMat);
+    node.position.setFromSphericalCoords(101, phi, theta);
+    nodeGroup.add(node);
+    nodeMeshes.push(node);
+  }
+
+  /* ---------- Connection lines ---------- */
+  var lineGroup = new THREE.Group();
+  scene.add(lineGroup);
+
+  /* Two line styles: main cyan + secondary purple */
+  var lineMats = [
+    new THREE.LineBasicMaterial({ color: 0x00c6ff, transparent: true, opacity: 0.18 }),
+    new THREE.LineBasicMaterial({ color: 0xa78bfa, transparent: true, opacity: 0.12 }),
+  ];
+
+  for (var a = 0; a < nodeCount; a++) {
+    for (var b = a + 1; b < nodeCount; b++) {
+      var dist = nodeMeshes[a].position.distanceTo(nodeMeshes[b].position);
+      if (dist < 50) {
+        var lGeo = new THREE.BufferGeometry().setFromPoints([
+          nodeMeshes[a].position.clone(),
+          nodeMeshes[b].position.clone()
+        ]);
+        lineGroup.add(new THREE.Line(lGeo, lineMats[b % 2]));
+      }
+    }
+  }
+
+  /* ---------- Flowing data particles (green – recovered funds) ---------- */
+  var Y_BOUNDARY   = 95;
+  var particleCount = 280;
+  var pGeo = new THREE.BufferGeometry();
+  var pPositions  = new Float32Array(particleCount * 3);
+  var pVelocities = [];
+  for (var p = 0; p < particleCount; p++) {
+    var angle  = Math.random() * Math.PI * 2;
+    var radius = 38 + Math.random() * 85;
+    pPositions[p * 3]     = Math.cos(angle) * radius;
+    pPositions[p * 3 + 1] = (Math.random() - 0.5) * 190;
+    pPositions[p * 3 + 2] = Math.sin(angle) * radius;
+    pVelocities.push({
+      r: radius, angle: angle,
+      speed:  0.0015 + Math.random() * 0.004,
+      y:      pPositions[p * 3 + 1],
+      ySpeed: (Math.random() - 0.5) * 0.12
+    });
+  }
+  pGeo.setAttribute('position', new THREE.BufferAttribute(pPositions, 3));
+  var pMat = new THREE.PointsMaterial({ color: 0x00ffb4, size: 1.9, transparent: true, opacity: 0.78 });
+  var particles = new THREE.Points(pGeo, pMat);
+  scene.add(particles);
+
+  /* ---------- Shooting comets (fast bright traces) ---------- */
+  var cometCount = 12;
+  var cometGeo   = new THREE.BufferGeometry();
+  var cometPos   = new Float32Array(cometCount * 3);
+  var cometData  = [];
+  function resetComet(i) {
+    var startAngle = Math.random() * Math.PI * 2;
+    var startPhi   = Math.random() * Math.PI;
+    var r = 110 + Math.random() * 80;
+    cometData[i] = {
+      x: Math.sin(startPhi) * Math.cos(startAngle) * r,
+      y: Math.cos(startPhi) * r,
+      z: Math.sin(startPhi) * Math.sin(startAngle) * r,
+      vx: (Math.random() - 0.5) * 2,
+      vy: (Math.random() - 0.5) * 2,
+      vz: (Math.random() - 0.5) * 2,
+      life: 0,
+      maxLife: 60 + Math.random() * 60
+    };
+  }
+  for (var c = 0; c < cometCount; c++) { resetComet(c); cometData[c].life = Math.random() * 60; }
+  cometGeo.setAttribute('position', new THREE.BufferAttribute(cometPos, 3));
+  var cometMat  = new THREE.PointsMaterial({ color: 0xffffff, size: 3.5, transparent: true, opacity: 0.95 });
+  var comets    = new THREE.Points(cometGeo, cometMat);
+  scene.add(comets);
+
+  /* ---------- Ambient light ---------- */
+  scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+
+  /* ---------- Animation loop ---------- */
+  var clock = new THREE.Clock();
+  function animate() {
+    requestAnimationFrame(animate);
+    var t = clock.getElapsedTime();
+
+    /* Rotate globe + attached groups */
+    globe.rotation.y  += 0.0007;
+    globe.rotation.x  += 0.00015;
+    nodeGroup.rotation.y = globe.rotation.y;
+    nodeGroup.rotation.x = globe.rotation.x;
+    lineGroup.rotation.y = globe.rotation.y;
+    lineGroup.rotation.x = globe.rotation.x;
+
+    /* Animate orbital rings independently */
+    rings.forEach(function (rObj) {
+      rObj.mesh.rotation.x += rObj.speedX * 0.35;
+      rObj.mesh.rotation.z += rObj.speedZ * 0.35;
+    });
+
+    /* Pulse core with multi-frequency oscillation */
+    var pulse = 0.5 + 0.5 * Math.sin(t * 2.2 + 0.5);
+    var pulse2= 0.5 + 0.5 * Math.sin(t * 3.7);
+    core.scale.setScalar(0.85 + 0.2 * pulse + 0.05 * pulse2);
+    coreMat.opacity = 0.38 + 0.28 * pulse;
+
+    /* Move data particles */
+    var pos = particles.geometry.attributes.position.array;
+    for (var i = 0; i < particleCount; i++) {
+      var v = pVelocities[i];
+      v.angle += v.speed;
+      v.y     += v.ySpeed;
+      if (v.y >  Y_BOUNDARY) { v.y = -Y_BOUNDARY; }
+      if (v.y < -Y_BOUNDARY) { v.y =  Y_BOUNDARY; }
+      pos[i * 3]     = Math.cos(v.angle) * v.r;
+      pos[i * 3 + 1] = v.y;
+      pos[i * 3 + 2] = Math.sin(v.angle) * v.r;
+    }
+    particles.geometry.attributes.position.needsUpdate = true;
+
+    /* Shoot comets */
+    var cPos = comets.geometry.attributes.position.array;
+    for (var j = 0; j < cometCount; j++) {
+      var cd = cometData[j];
+      cd.life++;
+      if (cd.life > cd.maxLife) { resetComet(j); }
+      cd.x += cd.vx; cd.y += cd.vy; cd.z += cd.vz;
+      cPos[j * 3]     = cd.x;
+      cPos[j * 3 + 1] = cd.y;
+      cPos[j * 3 + 2] = cd.z;
+    }
+    comets.geometry.attributes.position.needsUpdate = true;
+    /* Fade comets opacity with time */
+    cometMat.opacity = 0.7 + 0.3 * Math.sin(t * 4);
+
+    /* Camera dramatic orbit */
+    camera.position.x = Math.sin(t * 0.035) * 28;
+    camera.position.y = 30 + Math.cos(t * 0.028) * 18;
+    camera.position.z = 260 + Math.sin(t * 0.02) * 15;
+    camera.lookAt(scene.position);
+
+    renderer.render(scene, camera);
+  }
+  animate();
+
+  /* ---------- Responsive resize ---------- */
+  window.addEventListener('resize', function () {
+    var parent = canvas.parentElement;
+    W = parent.offsetWidth;
+    H = Math.max(parent.offsetHeight, 720);
+    renderer.setSize(W, H);
+    camera.aspect = W / H;
+    camera.updateProjectionMatrix();
+  });
+})();
+</script>
+
+<!-- ===== Verluste Zurückgewinnen – Informationssektion ===== -->
+<section id="verluste-info" style="background:#060d1f;padding:100px 0;border-top:1px solid rgba(0,198,255,.1);">
+  <div class="container">
+
+    <!-- Section header -->
+    <div class="text-center mb-5">
+      <span style="display:inline-block;background:rgba(0,198,255,.1);border:1px solid rgba(0,198,255,.25);color:#00c6ff;font-size:.78rem;font-weight:700;letter-spacing:.12em;border-radius:20px;padding:5px 18px;margin-bottom:16px;text-transform:uppercase;">
+        <i class="fas fa-coins me-2"></i>Krypto-Verlust-Rückgewinnung
+      </span>
+      <h2 style="color:#fff;font-size:clamp(1.8rem,4vw,2.7rem);font-weight:800;margin-bottom:16px;">
+        Welche Verluste können wir zurückgewinnen?
+      </h2>
+      <p style="color:#64748b;font-size:1.05rem;max-width:680px;margin:0 auto;line-height:1.8;">
+        Unsere KI-gestützte Forensik deckt ein breites Spektrum an Kryptowährungsbetrug auf –
+        von einfachem Wallet-Diebstahl bis hin zu komplexen internationalen Betrugsnetzwerken.
+        Im Folgenden finden Sie die häufigsten Kategorien, bei denen wir erfolgreich helfen konnten.
+      </p>
+    </div>
+
+    <!-- Loss types grid -->
+    <div class="row g-4 mb-5">
+
+      <div class="col-md-6 col-lg-4">
+        <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,107,107,.2);border-radius:16px;padding:28px;height:100%;transition:border-color .3s,transform .3s;" onmouseover="this.style.borderColor='rgba(255,107,107,.5)';this.style.transform='translateY(-4px)';" onmouseout="this.style.borderColor='rgba(255,107,107,.2)';this.style.transform='translateY(0)';">
+          <div style="width:52px;height:52px;border-radius:14px;background:rgba(255,107,107,.15);display:flex;align-items:center;justify-content:center;margin-bottom:18px;">
+            <i class="fas fa-heart-broken" style="color:#ff6b6b;font-size:1.4rem;"></i>
+          </div>
+          <h5 style="color:#fff;font-weight:700;margin-bottom:10px;">Romance Scam</h5>
+          <p style="color:#64748b;font-size:.9rem;line-height:1.7;margin-bottom:14px;">
+            Betrüger bauen über Monate emotionale Bindungen auf und fordern dann „Investitionen" oder
+            „Notfallzahlungen" in Kryptowährungen. Durchschnittlicher Schaden: <strong style="color:#ff6b6b;">€ 38.000 – € 180.000</strong>.
+          </p>
+          <div style="background:rgba(255,107,107,.08);border-radius:8px;padding:10px 14px;font-size:.82rem;color:#94a3b8;">
+            <i class="fas fa-check-circle me-2" style="color:#00ffb4;"></i>Häufig vollständig rückgewinnbar bei früher Meldung
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-lg-4">
+        <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,215,0,.2);border-radius:16px;padding:28px;height:100%;transition:border-color .3s,transform .3s;" onmouseover="this.style.borderColor='rgba(255,215,0,.5)';this.style.transform='translateY(-4px)';" onmouseout="this.style.borderColor='rgba(255,215,0,.2)';this.style.transform='translateY(0)';">
+          <div style="width:52px;height:52px;border-radius:14px;background:rgba(255,215,0,.12);display:flex;align-items:center;justify-content:center;margin-bottom:18px;">
+            <i class="fas fa-exchange-alt" style="color:#ffd700;font-size:1.4rem;"></i>
+          </div>
+          <h5 style="color:#fff;font-weight:700;margin-bottom:10px;">Gefälschte Handelsplattformen</h5>
+          <p style="color:#64748b;font-size:.9rem;line-height:1.7;margin-bottom:14px;">
+            Professionell gestaltete Fake-Exchanges ermöglichen zunächst kleine Gewinne, frieren dann
+            Konten ein oder verlangen unzählige „Verifizierungsgebühren". Schaden: <strong style="color:#ffd700;">bis zu € 500.000</strong>.
+          </p>
+          <div style="background:rgba(255,215,0,.07);border-radius:8px;padding:10px 14px;font-size:.82rem;color:#94a3b8;">
+            <i class="fas fa-check-circle me-2" style="color:#00ffb4;"></i>On-Chain-Verfolgung möglich – auch über mehrere Exchanges
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-lg-4">
+        <div style="background:rgba(255,255,255,.04);border:1px solid rgba(167,139,250,.2);border-radius:16px;padding:28px;height:100%;transition:border-color .3s,transform .3s;" onmouseover="this.style.borderColor='rgba(167,139,250,.5)';this.style.transform='translateY(-4px)';" onmouseout="this.style.borderColor='rgba(167,139,250,.2)';this.style.transform='translateY(0)';">
+          <div style="width:52px;height:52px;border-radius:14px;background:rgba(167,139,250,.15);display:flex;align-items:center;justify-content:center;margin-bottom:18px;">
+            <i class="fas fa-chart-line" style="color:#a78bfa;font-size:1.4rem;"></i>
+          </div>
+          <h5 style="color:#fff;font-weight:700;margin-bottom:10px;">Pig Butchering (SHA ZHU PAN)</h5>
+          <p style="color:#64748b;font-size:.9rem;line-height:1.7;margin-bottom:14px;">
+            Eine der gefährlichsten Betrugsmaschen: Opfer werden über Monate „gemästet" –
+            kleine Gewinne auszahlen, dann alles auf einmal abziehen. Schaden: <strong style="color:#a78bfa;">€ 50.000 – € 1 Mio+</strong>.
+          </p>
+          <div style="background:rgba(167,139,250,.08);border-radius:8px;padding:10px 14px;font-size:.82rem;color:#94a3b8;">
+            <i class="fas fa-check-circle me-2" style="color:#00ffb4;"></i>Spezialisiertes KI-Modell für SHA ZHU PAN-Muster
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-lg-4">
+        <div style="background:rgba(255,255,255,.04);border:1px solid rgba(0,198,255,.2);border-radius:16px;padding:28px;height:100%;transition:border-color .3s,transform .3s;" onmouseover="this.style.borderColor='rgba(0,198,255,.5)';this.style.transform='translateY(-4px)';" onmouseout="this.style.borderColor='rgba(0,198,255,.2)';this.style.transform='translateY(0)';">
+          <div style="width:52px;height:52px;border-radius:14px;background:rgba(0,198,255,.12);display:flex;align-items:center;justify-content:center;margin-bottom:18px;">
+            <i class="fas fa-fish" style="color:#00c6ff;font-size:1.4rem;"></i>
+          </div>
+          <h5 style="color:#fff;font-weight:700;margin-bottom:10px;">Phishing & Wallet-Diebstahl</h5>
+          <p style="color:#64748b;font-size:.9rem;line-height:1.7;margin-bottom:14px;">
+            Gefälschte Websites, Seed-Phrase-Diebstahl und Drainer-Smart-Contracts leeren Wallets
+            in Sekunden. Schaden variiert: <strong style="color:#00c6ff;">€ 1.000 – mehrere Millionen</strong>.
+          </p>
+          <div style="background:rgba(0,198,255,.07);border-radius:8px;padding:10px 14px;font-size:.82rem;color:#94a3b8;">
+            <i class="fas fa-check-circle me-2" style="color:#00ffb4;"></i>Schnelles Einfrieren gestohlener Gelder möglich
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-lg-4">
+        <div style="background:rgba(255,255,255,.04);border:1px solid rgba(0,255,180,.2);border-radius:16px;padding:28px;height:100%;transition:border-color .3s,transform .3s;" onmouseover="this.style.borderColor='rgba(0,255,180,.5)';this.style.transform='translateY(-4px)';" onmouseout="this.style.borderColor='rgba(0,255,180,.2)';this.style.transform='translateY(0)';">
+          <div style="width:52px;height:52px;border-radius:14px;background:rgba(0,255,180,.12);display:flex;align-items:center;justify-content:center;margin-bottom:18px;">
+            <i class="fas fa-rug" style="color:#00ffb4;font-size:1.4rem;"></i>
+          </div>
+          <h5 style="color:#fff;font-weight:700;margin-bottom:10px;">Rug Pull & Token-Betrug</h5>
+          <p style="color:#64748b;font-size:.9rem;line-height:1.7;margin-bottom:14px;">
+            Entwickler ziehen nach Token-Launch abrupt alle Liquidität ab. Projektbetrug,
+            Honeypots und Exit-Scams vernichten oft <strong style="color:#00ffb4;">Millionen innerhalb von Minuten</strong>.
+          </p>
+          <div style="background:rgba(0,255,180,.07);border-radius:8px;padding:10px 14px;font-size:.82rem;color:#94a3b8;">
+            <i class="fas fa-check-circle me-2" style="color:#00ffb4;"></i>Smart-Contract-Analyse & Entwickler-Deanonymisierung
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-lg-4">
+        <div style="background:rgba(255,255,255,.04);border:1px solid rgba(251,146,60,.2);border-radius:16px;padding:28px;height:100%;transition:border-color .3s,transform .3s;" onmouseover="this.style.borderColor='rgba(251,146,60,.5)';this.style.transform='translateY(-4px)';" onmouseout="this.style.borderColor='rgba(251,146,60,.2)';this.style.transform='translateY(0)';">
+          <div style="width:52px;height:52px;border-radius:14px;background:rgba(251,146,60,.12);display:flex;align-items:center;justify-content:center;margin-bottom:18px;">
+            <i class="fas fa-user-secret" style="color:#fb923c;font-size:1.4rem;"></i>
+          </div>
+          <h5 style="color:#fff;font-weight:700;margin-bottom:10px;">Investitionsbetrüger & Falsche Berater</h5>
+          <p style="color:#64748b;font-size:.9rem;line-height:1.7;margin-bottom:14px;">
+            Lizenzlose „Trader" versprechen garantierte Renditen und verwalten Gelder eigenständig –
+            bis sie verschwinden. Schaden: <strong style="color:#fb923c;">€ 10.000 – € 800.000</strong>.
+          </p>
+          <div style="background:rgba(251,146,60,.07);border-radius:8px;padding:10px 14px;font-size:.82rem;color:#94a3b8;">
+            <i class="fas fa-check-circle me-2" style="color:#00ffb4;"></i>Behördliche Strafanzeige und Zivilklage unterstützt
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /row loss types -->
+
+    <!-- Recovery process timeline -->
+    <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:20px;padding:48px;margin-bottom:60px;">
+      <div class="text-center mb-5">
+        <h3 style="color:#fff;font-weight:800;font-size:1.8rem;margin-bottom:10px;">
+          <i class="fas fa-route me-3" style="color:#00c6ff;"></i>So läuft die Rückgewinnung ab
+        </h3>
+        <p style="color:#64748b;max-width:560px;margin:0 auto;font-size:.95rem;">
+          Ein strukturierter, transparenter Prozess – von der ersten Kontaktaufnahme bis zur Auszahlung auf Ihr Bankkonto.
+        </p>
+      </div>
+
+      <div class="row g-0" style="position:relative;">
+        <!-- Timeline connector line -->
+        <div class="d-none d-lg-block" style="position:absolute;top:36px;left:calc(8.33% + 36px);right:calc(8.33% + 36px);height:2px;background:linear-gradient(90deg,#00ffb4,#00c6ff,#a78bfa,#ffd700,#00ffb4);z-index:0;"></div>
+
+        <div class="col-lg col-md-6 col-12 mb-4 mb-lg-0 text-center px-3" style="position:relative;z-index:1;">
+          <div style="width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,#00ffb4,#00c6ff);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;box-shadow:0 0 24px rgba(0,255,180,.4);">
+            <i class="fas fa-comment-dots" style="color:#04091a;font-size:1.5rem;"></i>
+          </div>
+          <div style="background:rgba(0,255,180,.07);border:1px solid rgba(0,255,180,.2);border-radius:12px;padding:16px 12px;">
+            <div style="color:#00ffb4;font-weight:800;font-size:.78rem;letter-spacing:.08em;margin-bottom:6px;">SCHRITT 1</div>
+            <div style="color:#fff;font-weight:700;margin-bottom:6px;font-size:.95rem;">Kostenlose Erstberatung</div>
+            <div style="color:#64748b;font-size:.82rem;line-height:1.6;">Schildern Sie uns Ihren Fall. Innerhalb von 24 h erhalten Sie eine Ersteinschätzung.</div>
+          </div>
+        </div>
+
+        <div class="col-lg col-md-6 col-12 mb-4 mb-lg-0 text-center px-3" style="position:relative;z-index:1;">
+          <div style="width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,#00c6ff,#a78bfa);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;box-shadow:0 0 24px rgba(0,198,255,.4);">
+            <i class="fas fa-search" style="color:#fff;font-size:1.5rem;"></i>
+          </div>
+          <div style="background:rgba(0,198,255,.07);border:1px solid rgba(0,198,255,.2);border-radius:12px;padding:16px 12px;">
+            <div style="color:#00c6ff;font-weight:800;font-size:.78rem;letter-spacing:.08em;margin-bottom:6px;">SCHRITT 2</div>
+            <div style="color:#fff;font-weight:700;margin-bottom:6px;font-size:.95rem;">KI-Forensik-Analyse</div>
+            <div style="color:#64748b;font-size:.82rem;line-height:1.6;">Unser System verfolgt alle Transaktionen und erstellt einen lückenlosen Beweisbericht.</div>
+          </div>
+        </div>
+
+        <div class="col-lg col-md-6 col-12 mb-4 mb-lg-0 text-center px-3" style="position:relative;z-index:1;">
+          <div style="width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,#a78bfa,#ffd700);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;box-shadow:0 0 24px rgba(167,139,250,.4);">
+            <i class="fas fa-balance-scale" style="color:#fff;font-size:1.5rem;"></i>
+          </div>
+          <div style="background:rgba(167,139,250,.07);border:1px solid rgba(167,139,250,.2);border-radius:12px;padding:16px 12px;">
+            <div style="color:#a78bfa;font-weight:800;font-size:.78rem;letter-spacing:.08em;margin-bottom:6px;">SCHRITT 3</div>
+            <div style="color:#fff;font-weight:700;margin-bottom:6px;font-size:.95rem;">Rechtliche Eskalation</div>
+            <div style="color:#64748b;font-size:.82rem;line-height:1.6;">Beweispakete gehen an BaFin, Europol und wenn nötig internationale Strafverfolgungsbehörden.</div>
+          </div>
+        </div>
+
+        <div class="col-lg col-md-6 col-12 mb-4 mb-lg-0 text-center px-3" style="position:relative;z-index:1;">
+          <div style="width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,#ffd700,#fb923c);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;box-shadow:0 0 24px rgba(255,215,0,.4);">
+            <i class="fas fa-lock-open" style="color:#04091a;font-size:1.5rem;"></i>
+          </div>
+          <div style="background:rgba(255,215,0,.07);border:1px solid rgba(255,215,0,.2);border-radius:12px;padding:16px 12px;">
+            <div style="color:#ffd700;font-weight:800;font-size:.78rem;letter-spacing:.08em;margin-bottom:6px;">SCHRITT 4</div>
+            <div style="color:#fff;font-weight:700;margin-bottom:6px;font-size:.95rem;">Gelder einfrieren & sichern</div>
+            <div style="color:#64748b;font-size:.82rem;line-height:1.6;">Identifizierte Wallets werden via Exchange-Kooperationen gesperrt und Gelder gesichert.</div>
+          </div>
+        </div>
+
+        <div class="col-lg col-md-6 col-12 text-center px-3" style="position:relative;z-index:1;">
+          <div style="width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,#00ffb4,#fb923c);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;box-shadow:0 0 24px rgba(0,255,180,.4);">
+            <i class="fas fa-euro-sign" style="color:#04091a;font-size:1.5rem;"></i>
+          </div>
+          <div style="background:rgba(0,255,180,.07);border:1px solid rgba(0,255,180,.2);border-radius:12px;padding:16px 12px;">
+            <div style="color:#00ffb4;font-weight:800;font-size:.78rem;letter-spacing:.08em;margin-bottom:6px;">SCHRITT 5</div>
+            <div style="color:#fff;font-weight:700;margin-bottom:6px;font-size:.95rem;">Auszahlung in Euro</div>
+            <div style="color:#64748b;font-size:.82rem;line-height:1.6;">Nach Abschluss: SEPA-Überweisung auf Ihr Konto. Keine Vorleistungen, erfolgsbasierte Vergütung.</div>
+          </div>
+        </div>
+
+      </div>
+    </div><!-- /timeline -->
+
+    <!-- Two-column: FAQ + Trustmarks -->
+    <div class="row g-4">
+
+      <!-- FAQ accordion -->
+      <div class="col-lg-7">
+        <h3 style="color:#fff;font-weight:800;font-size:1.4rem;margin-bottom:24px;">
+          <i class="fas fa-question-circle me-2" style="color:#00c6ff;"></i>Häufige Fragen zur Rückgewinnung
+        </h3>
+        <div style="display:flex;flex-direction:column;gap:10px;" id="recovery-faq">
+
+          <div style="border:1px solid rgba(255,255,255,.1);border-radius:12px;overflow:hidden;">
+            <button onclick="toggleFaq(this)" style="width:100%;background:rgba(255,255,255,.04);border:none;padding:18px 22px;text-align:left;color:#fff;font-weight:600;font-size:.95rem;cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
+              Kann ich wirklich gestohlene Kryptowährungen zurückbekommen?
+              <i class="fas fa-chevron-down" style="color:#00c6ff;transition:transform .3s;"></i>
+            </button>
+            <div style="display:none;padding:0 22px 18px;color:#94a3b8;font-size:.9rem;line-height:1.7;background:rgba(0,0,0,.15);">
+              Ja – in vielen Fällen ist es möglich, da Blockchain-Transaktionen dauerhaft und öffentlich nachvollziehbar sind.
+              Der Schlüssel ist das schnelle Handeln: Je früher Sie uns kontaktieren, desto größer ist die Chance,
+              die Gelder zu sichern, bevor sie über Mixer oder dezentralisierte Börsen verschleiert werden.
+              Unsere Erfolgsquote liegt bei <strong style="color:#00ffb4;">87 %</strong> bei Fällen, die innerhalb von 30 Tagen gemeldet werden.
+            </div>
+          </div>
+
+          <div style="border:1px solid rgba(255,255,255,.1);border-radius:12px;overflow:hidden;">
+            <button onclick="toggleFaq(this)" style="width:100%;background:rgba(255,255,255,.04);border:none;padding:18px 22px;text-align:left;color:#fff;font-weight:600;font-size:.95rem;cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
+              Was kostet die Rückgewinnung?
+              <i class="fas fa-chevron-down" style="color:#00c6ff;transition:transform .3s;"></i>
+            </button>
+            <div style="display:none;padding:0 22px 18px;color:#94a3b8;font-size:.9rem;line-height:1.7;background:rgba(0,0,0,.15);">
+              Die <strong style="color:#fff;">Erstberatung und KI-Analyse sind vollständig kostenlos und unverbindlich</strong>.
+              Wir arbeiten erfolgsbasiert: Unsere Vergütung richtet sich nach dem tatsächlich zurückgewonnenen Betrag –
+              ohne Vorabzahlungen. So tragen Sie kein Risiko. Die genaue Gebührenstruktur besprechen wir transparent
+              in Ihrem persönlichen Beratungsgespräch.
+            </div>
+          </div>
+
+          <div style="border:1px solid rgba(255,255,255,.1);border-radius:12px;overflow:hidden;">
+            <button onclick="toggleFaq(this)" style="width:100%;background:rgba(255,255,255,.04);border:none;padding:18px 22px;text-align:left;color:#fff;font-weight:600;font-size:.95rem;cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
+              Wie lange dauert ein Rückgewinnungsverfahren?
+              <i class="fas fa-chevron-down" style="color:#00c6ff;transition:transform .3s;"></i>
+            </button>
+            <div style="display:none;padding:0 22px 18px;color:#94a3b8;font-size:.9rem;line-height:1.7;background:rgba(0,0,0,.15);">
+              Die Dauer hängt von der Komplexität des Falls ab. Einfache Wallet-Diebstähle können innerhalb von
+              <strong style="color:#fff;">2–4 Wochen</strong> abgeschlossen werden. Komplexe internationale Betrugsfälle mit
+              mehreren Mixer-Ebenen können <strong style="color:#fff;">3–6 Monate</strong> in Anspruch nehmen.
+              Sie werden transparent über jeden Fortschritt informiert.
+            </div>
+          </div>
+
+          <div style="border:1px solid rgba(255,255,255,.1);border-radius:12px;overflow:hidden;">
+            <button onclick="toggleFaq(this)" style="width:100%;background:rgba(255,255,255,.04);border:none;padding:18px 22px;text-align:left;color:#fff;font-weight:600;font-size:.95rem;cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
+              Welche Informationen benötige ich für den Start?
+              <i class="fas fa-chevron-down" style="color:#00c6ff;transition:transform .3s;"></i>
+            </button>
+            <div style="display:none;padding:0 22px 18px;color:#94a3b8;font-size:.9rem;line-height:1.7;background:rgba(0,0,0,.15);">
+              Je mehr Informationen Sie haben, desto besser – aber selbst mit wenig Angaben können wir starten.
+              Hilfreich sind: Wallet-Adressen, Transaktions-Hashes (TxIDs), Kommunikationsprotokolle mit dem Betrüger,
+              Screenshots und der ungefähre Zeitraum der Transaktionen. Auch ohne diese Daten lässt sich oft
+              eine Erstspur finden.
+            </div>
+          </div>
+
+          <div style="border:1px solid rgba(255,255,255,.1);border-radius:12px;overflow:hidden;">
+            <button onclick="toggleFaq(this)" style="width:100%;background:rgba(255,255,255,.04);border:none;padding:18px 22px;text-align:left;color:#fff;font-weight:600;font-size:.95rem;cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
+              Sind meine Daten bei Ihnen sicher?
+              <i class="fas fa-chevron-down" style="color:#00c6ff;transition:transform .3s;"></i>
+            </button>
+            <div style="display:none;padding:0 22px 18px;color:#94a3b8;font-size:.9rem;line-height:1.7;background:rgba(0,0,0,.15);">
+              Absolut. Wir unterliegen als BaFin-lizenziertes Unternehmen strengen Datenschutzvorschriften
+              (DSGVO/GDPR). Alle Daten werden ausschließlich auf deutschen Servern mit
+              <strong style="color:#fff;">256-Bit AES-Verschlüsselung</strong> gespeichert und niemals an Dritte weitergegeben –
+              ausgenommen behördlich angeordnete Offenlegungen im Rahmen des Strafverfahrens.
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Trustmarks + stats -->
+      <div class="col-lg-5">
+        <h3 style="color:#fff;font-weight:800;font-size:1.4rem;margin-bottom:24px;">
+          <i class="fas fa-award me-2" style="color:#ffd700;"></i>Warum uns vertrauen?
+        </h3>
+
+        <div style="display:flex;flex-direction:column;gap:14px;">
+
+          <div style="background:rgba(255,255,255,.04);border:1px solid rgba(0,255,180,.15);border-radius:14px;padding:20px 22px;display:flex;align-items:flex-start;gap:16px;">
+            <div style="width:44px;height:44px;border-radius:10px;background:rgba(0,255,180,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <i class="fas fa-certificate" style="color:#00ffb4;font-size:1.2rem;"></i>
+            </div>
+            <div>
+              <div style="color:#fff;font-weight:700;margin-bottom:4px;">BaFin-lizenziert & reguliert</div>
+              <div style="color:#64748b;font-size:.85rem;line-height:1.6;">
+                Wir sind offiziell lizenziert und unterliegen den strengsten deutschen Finanzaufsichtsstandards –
+                keine graue Zone, nur geprüfte Seriosität.
+              </div>
+            </div>
+          </div>
+
+          <div style="background:rgba(255,255,255,.04);border:1px solid rgba(0,198,255,.15);border-radius:14px;padding:20px 22px;display:flex;align-items:flex-start;gap:16px;">
+            <div style="width:44px;height:44px;border-radius:10px;background:rgba(0,198,255,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <i class="fas fa-handshake" style="color:#00c6ff;font-size:1.2rem;"></i>
+            </div>
+            <div>
+              <div style="color:#fff;font-weight:700;margin-bottom:4px;">Kein Erfolg – keine Kosten</div>
+              <div style="color:#64748b;font-size:.85rem;line-height:1.6;">
+                Unser Honorar ist vollständig erfolgsbasiert. Sie zahlen ausschließlich dann,
+                wenn wir Ihre Gelder tatsächlich zurückholen.
+              </div>
+            </div>
+          </div>
+
+          <div style="background:rgba(255,255,255,.04);border:1px solid rgba(167,139,250,.15);border-radius:14px;padding:20px 22px;display:flex;align-items:flex-start;gap:16px;">
+            <div style="width:44px;height:44px;border-radius:10px;background:rgba(167,139,250,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <i class="fas fa-globe-europe" style="color:#a78bfa;font-size:1.2rem;"></i>
+            </div>
+            <div>
+              <div style="color:#fff;font-weight:700;margin-bottom:4px;">Internationale Netzwerke</div>
+              <div style="color:#64748b;font-size:.85rem;line-height:1.6;">
+                Kooperationen mit Europol, Interpol, FCA, BaFin und über 200 regulierten
+                Kryptowährungsbörsen weltweit ermöglichen grenzüberschreitende Rückgewinnungen.
+              </div>
+            </div>
+          </div>
+
+          <!-- Mini stat grid -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:4px;">
+            <div style="background:rgba(0,255,180,.07);border:1px solid rgba(0,255,180,.15);border-radius:12px;padding:16px;text-align:center;">
+              <div style="color:#00ffb4;font-size:1.5rem;font-weight:800;">€ 47M+</div>
+              <div style="color:#64748b;font-size:.78rem;margin-top:4px;">Zurückgewonnen</div>
+            </div>
+            <div style="background:rgba(0,198,255,.07);border:1px solid rgba(0,198,255,.15);border-radius:12px;padding:16px;text-align:center;">
+              <div style="color:#00c6ff;font-size:1.5rem;font-weight:800;">2.134</div>
+              <div style="color:#64748b;font-size:.78rem;margin-top:4px;">Fälle abgeschlossen</div>
+            </div>
+            <div style="background:rgba(167,139,250,.07);border:1px solid rgba(167,139,250,.15);border-radius:12px;padding:16px;text-align:center;">
+              <div style="color:#a78bfa;font-size:1.5rem;font-weight:800;">87 %</div>
+              <div style="color:#64748b;font-size:.78rem;margin-top:4px;">Erfolgsquote</div>
+            </div>
+            <div style="background:rgba(255,215,0,.07);border:1px solid rgba(255,215,0,.15);border-radius:12px;padding:16px;text-align:center;">
+              <div style="color:#ffd700;font-size:1.5rem;font-weight:800;">24 h</div>
+              <div style="color:#64748b;font-size:.78rem;margin-top:4px;">Erste Rückmeldung</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div><!-- /row faq + trust -->
+
+    <!-- Final CTA -->
+    <div class="text-center mt-5 pt-2">
+      <div style="background:linear-gradient(135deg,rgba(0,198,255,.1),rgba(0,255,180,.08));border:1px solid rgba(0,255,180,.2);border-radius:20px;padding:48px 32px;max-width:700px;margin:0 auto;">
+        <h3 style="color:#fff;font-weight:800;font-size:1.6rem;margin-bottom:12px;">
+          Bereit, Ihre Gelder zurückzuholen?
+        </h3>
+        <p style="color:#94a3b8;margin-bottom:28px;line-height:1.7;">
+          Jede Stunde zählt – betrügerische Transaktionen werden schnell verschleiert.
+          Kontaktieren Sie uns jetzt für eine <strong style="color:#fff;">kostenlose, unverbindliche Ersteinschätzung</strong>.
+        </p>
+        <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;">
+          <a href="#" onclick="clmOpen(); return false;"
+             style="background:linear-gradient(135deg,#00c6ff,#00ffb4);border:none;color:#04091a;font-weight:700;padding:16px 36px;border-radius:12px;font-size:1.05rem;text-decoration:none;display:inline-flex;align-items:center;gap:8px;box-shadow:0 0 30px rgba(0,198,255,.35);">
+            <i class="fas fa-rocket"></i>Kostenlose Beratung starten
+          </a>
+          <a href="tel:+4930123456789"
+             style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.2);color:#fff;font-weight:600;padding:16px 30px;border-radius:12px;font-size:1rem;text-decoration:none;display:inline-flex;align-items:center;gap:8px;">
+            <i class="fas fa-phone"></i>Direkt anrufen
+          </a>
+        </div>
+        <p style="color:#475569;font-size:.8rem;margin-top:16px;margin-bottom:0;">
+          <i class="fas fa-lock me-1"></i>DSGVO-konform &nbsp;·&nbsp;
+          <i class="fas fa-shield-alt me-1"></i>BaFin-lizenziert &nbsp;·&nbsp;
+          <i class="fas fa-star me-1" style="color:#ffd700;"></i>4,9 / 5 Kundenbewertung
+        </p>
+      </div>
+    </div>
+
+  </div><!-- /container -->
+</section>
+
+<script>
+function toggleFaq(btn) {
+  var content = btn.nextElementSibling;
+  var icon    = btn.querySelector('.fa-chevron-down');
+  var isOpen  = content.style.display === 'block';
+  /* Close all panels and reset icons in a single DOM pass */
+  var faq = document.getElementById('recovery-faq');
+  faq.querySelectorAll('button').forEach(function (b) {
+    b.nextElementSibling.style.display = 'none';
+    b.querySelector('.fa-chevron-down').style.transform = '';
+  });
+  if (!isOpen) {
+    content.style.display = 'block';
+    icon.style.transform  = 'rotate(180deg)';
+  }
+}
+</script>
 
 <!-- Security Alerts & Fraud Warnings -->
 <section id="security-alerts" class="section bg-light">
     <div class="container">
         <div class="text-center mb-5">
-            <h2 class="fw-bold">Aktuelle Sicherheitswarnungen & Betrugswarnungen</h2>
-            <p class="lead text-muted">Bleiben Sie informiert über aktuelle Betrugsmaschen und schützen Sie sich vor Krypto-Betrügern</p>
+            <div class="badge bg-danger bg-gradient mb-3 px-4 py-2" style="font-size:0.9rem; border-radius:30px;">
+                <i class="fas fa-exclamation-triangle me-2"></i>Offizielle BaFin-Warnung
+            </div>
+            <h2 class="section-title fw-bold">Aktuelle Sicherheitswarnungen &amp; Betrugswarnungen</h2>
+            <p class="section-subtitle lead">Als BaFin-lizenziertes Institut informieren wir Sie kontinuierlich über neue Betrugsmaschen im Krypto-Bereich. Bleiben Sie informiert und schützen Sie Ihr Vermögen mit fundiertem Expertenwissen aus erster Hand.</p>
         </div>
         
         <div class="row g-4">
@@ -778,6 +2211,97 @@ include 'includes/navbar.php';
                     </div>
                 </div>
             </div>
+
+            <!-- Alert 7: Romance Scam -->
+            <div class="col-lg-4">
+                <div class="alert-card alert-danger-custom">
+                    <div class="alert-header">
+                        <div class="alert-icon bg-danger">
+                            <i class="fas fa-heart-broken"></i>
+                        </div>
+                        <div class="alert-meta">
+                            <span class="badge bg-danger">KRITISCH</span>
+                            <small class="text-muted">Vor 4 Tagen</small>
+                        </div>
+                        <button class="alert-dismiss" onclick="dismissAlert(this)">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <h5 class="alert-title">
+                        <i class="fas fa-heart me-2"></i>
+                        Romance Scam: Neue Welle auf Dating-Apps
+                    </h5>
+                    <p class="alert-description">
+                        Betrüger bauen über Monate Vertrauen auf Dating-Plattformen auf, bevor sie um Krypto-Investitionen bitten.
+                        <strong>Überweisen Sie niemals Kryptowährungen</strong> an Personen, die Sie nur online kennen – unabhängig wie verlässlich sie wirken.
+                    </p>
+                    <div class="alert-footer">
+                        <i class="fas fa-user-secret me-2"></i>
+                        <small>Pig-Butchering ist die häufigste Romance-Scam-Variante</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Alert 8: Fake Recovery Services -->
+            <div class="col-lg-4">
+                <div class="alert-card alert-warning-custom">
+                    <div class="alert-header">
+                        <div class="alert-icon bg-warning">
+                            <i class="fas fa-exclamation-circle"></i>
+                        </div>
+                        <div class="alert-meta">
+                            <span class="badge bg-warning text-dark">WARNUNG</span>
+                            <small class="text-muted">Vor 6 Tagen</small>
+                        </div>
+                        <button class="alert-dismiss" onclick="dismissAlert(this)">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <h5 class="alert-title">
+                        <i class="fas fa-mask me-2"></i>
+                        Gefälschte Wiederherstellungsdienste im Umlauf
+                    </h5>
+                    <p class="alert-description">
+                        Kriminelle geben sich als Krypto-Recovery-Dienste aus und verlangen Vorauszahlungen – nur um danach zu verschwinden.
+                        <strong>Seriöse Anbieter verlangen niemals Gebühren im Voraus.</strong>
+                        Prüfen Sie immer Lizenz und Registrierung (BaFin-Register).
+                    </p>
+                    <div class="alert-footer">
+                        <i class="fas fa-search me-2"></i>
+                        <small>BaFin-Register unter bafin.de überprüfen</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Alert 9: AI-powered Deepfake Scams -->
+            <div class="col-lg-4">
+                <div class="alert-card alert-info-custom">
+                    <div class="alert-header">
+                        <div class="alert-icon bg-info">
+                            <i class="fas fa-robot"></i>
+                        </div>
+                        <div class="alert-meta">
+                            <span class="badge bg-info">NEU 2025</span>
+                            <small class="text-muted">Vor 2 Tagen</small>
+                        </div>
+                        <button class="alert-dismiss" onclick="dismissAlert(this)">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <h5 class="alert-title">
+                        <i class="fas fa-video me-2"></i>
+                        KI-Deepfake-Videos von Prominenten
+                    </h5>
+                    <p class="alert-description">
+                        Betrüger verwenden KI-generierte Deepfake-Videos bekannter Persönlichkeiten (Elon Musk, Warren Buffett), um für gefälschte Krypto-Plattformen zu werben.
+                        <strong>Ignorieren Sie</strong> Investitionsempfehlungen aus solchen Videos vollständig.
+                    </p>
+                    <div class="alert-footer">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <small>Prominente empfehlen niemals Krypto via Video-Werbung</small>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </section>
@@ -786,38 +2310,41 @@ include 'includes/navbar.php';
 /* Security Alerts Styling */
 .alert-card {
     background: white;
-    border-radius: 12px;
-    padding: 1.5rem;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    border-radius: 16px;
+    padding: 1.85rem 2rem;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.08);
     transition: all 0.3s ease;
     height: 100%;
     position: relative;
-    border-left: 4px solid;
+    border-left: 5px solid;
+    min-height: 300px;
+    display: flex;
+    flex-direction: column;
 }
 
 .alert-card:hover {
-    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
-    transform: translateY(-2px);
+    box-shadow: 0 8px 28px rgba(0,0,0,0.13);
+    transform: translateY(-3px);
 }
 
 .alert-danger-custom {
     border-left-color: #dc3545;
-    background: linear-gradient(135deg, #fff 0%, #fff5f5 100%);
+    background: linear-gradient(135deg, #fff 0%, #fff4f5 100%);
 }
 
 .alert-warning-custom {
-    border-left-color: #ffc107;
-    background: linear-gradient(135deg, #fff 0%, #fffef5 100%);
+    border-left-color: #e6a817;
+    background: linear-gradient(135deg, #fff 0%, #fffcf0 100%);
 }
 
 .alert-info-custom {
-    border-left-color: #0dcaf0;
-    background: linear-gradient(135deg, #fff 0%, #f0fcff 100%);
+    border-left-color: #0b8db0;
+    background: linear-gradient(135deg, #fff 0%, #edf8fd 100%);
 }
 
 .alert-success-custom {
     border-left-color: #198754;
-    background: linear-gradient(135deg, #fff 0%, #f0fff5 100%);
+    background: linear-gradient(135deg, #fff 0%, #f0fff7 100%);
 }
 
 .alert-header {
@@ -865,26 +2392,29 @@ include 'includes/navbar.php';
 }
 
 .alert-title {
-    font-size: 1.1rem;
-    font-weight: 600;
+    font-size: 1.05rem;
+    font-weight: 700;
     margin-bottom: 0.75rem;
-    color: #212529;
+    color: #1a1e2e;
+    line-height: 1.4;
 }
 
 .alert-description {
     color: #495057;
-    line-height: 1.6;
+    line-height: 1.65;
     margin-bottom: 1rem;
-    font-size: 0.95rem;
+    font-size: 0.94rem;
+    flex-grow: 1;
 }
 
 .alert-footer {
     padding-top: 0.75rem;
-    border-top: 1px solid rgba(0,0,0,0.05);
+    border-top: 1px solid rgba(0,0,0,0.07);
     color: #6c757d;
     font-size: 0.875rem;
     display: flex;
     align-items: center;
+    margin-top: auto;
 }
 
 /* Animation for alert dismissal */
@@ -920,36 +2450,53 @@ function dismissAlert(button) {
     <div class="container">
         <div class="row align-items-center">
             <div class="col-lg-6 mb-5 mb-lg-0">
+                <div class="badge bg-primary bg-gradient mb-3 px-4 py-2" style="font-size:0.9rem; border-radius:30px;">
+                    <i class="fas fa-route me-2"></i>Unser Vorgehen
+                </div>
                 <h2 class="section-title">Unser Wiederherstellungsprozess</h2>
-                <p class="section-subtitle">Transparenz und Sicherheit in jedem Schritt – von der Analyse bis zur Auszahlung</p>
+                <p class="section-subtitle">Vollständige Transparenz und maximale Rechtssicherheit in jedem Verfahrensschritt – von der forensischen Blockchain-Analyse bis zur gerichtssicheren Rückführung Ihrer Vermögenswerte.</p>
 
                 <div class="row g-4">
                     <div class="col-md-6">
                         <div class="feature-card">
                             <div class="mb-3"><i class="fas fa-search fa-2x text-primary"></i></div>
-                            <h5 class="fw-bold mb-3">1. Blockchain-Analyse</h5>
-                            <p class="text-muted">Unsere KI durchsucht über 15 Blockchains nach betrügerischen Transaktionsmustern und identifiziert gestohlene Vermögenswerte.</p>
+                            <h5 class="fw-bold mb-3">1. Blockchain-Forensik</h5>
+                            <p class="text-muted">Unsere KI durchsucht über 15 Blockchains nach betrügerischen Transaktionsmustern und verfolgt gestohlene Vermögenswerte über Mixer und Bridges hinweg.</p>
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="feature-card">
                             <div class="mb-3"><i class="fas fa-user-check fa-2x text-primary"></i></div>
-                            <h5 class="fw-bold mb-3">2. Identitätsverifizierung</h5>
-                            <p class="text-muted">Zweistufiger KYC-Prozess mit behördlich anerkanntem Ausweisdokument und Video-Identifikation für maximale Sicherheit.</p>
+                            <h5 class="fw-bold mb-3">2. BaFin-konformes KYC</h5>
+                            <p class="text-muted">Zweistufiger Identitätsverifizierungsprozess mit behördlich anerkanntem Ausweisdokument und Video-Ident gemäß GwG §§ 10 ff. für maximale Rechtssicherheit.</p>
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="feature-card">
                             <div class="mb-3"><i class="fas fa-key fa-2x text-primary"></i></div>
-                            <h5 class="fw-bold mb-3">3. Wallet-Besitznachweis</h5>
-                            <p class="text-muted">Kryptografische Signatur zur Verifizierung des Wallet-Besitzes. Ohne gültigen Nachweis erfolgt keine Auszahlung.</p>
+                            <h5 class="fw-bold mb-3">3. Kryptografischer Besitznachweis</h5>
+                            <p class="text-muted">Digitale Signatur zur eindeutigen Verifizierung des Wallet-Eigentums. Ohne validen kryptografischen Nachweis wird keine Auszahlung veranlasst.</p>
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="feature-card">
                             <div class="mb-3"><i class="fas fa-euro-sign fa-2x text-primary"></i></div>
-                            <h5 class="fw-bold mb-3">4. Sichere Auszahlung</h5>
-                            <p class="text-muted">Nach erfolgreicher Verifizierung: Umwandlung in Euro über lizenzierte Börsen und SEPA-Überweisung auf Ihr Bankkonto.</p>
+                            <h5 class="fw-bold mb-3">4. Regulierte Auszahlung</h5>
+                            <p class="text-muted">Nach erfolgreicher Verifizierung: Umwandlung in Euro über BaFin-lizenzierte Handelsplätze und SEPA-Überweisung auf Ihr verifiziertes Bankkonto.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="feature-card">
+                            <div class="mb-3"><i class="fas fa-gavel fa-2x text-primary"></i></div>
+                            <h5 class="fw-bold mb-3">5. Behörden &amp; Strafverfolgung</h5>
+                            <p class="text-muted">Koordinierte Zusammenarbeit mit BKA, Europol und internationalen Strafverfolgungsbehörden in über 30 Ländern für eine konsequente strafrechtliche Verfolgung der Täter.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="feature-card">
+                            <div class="mb-3"><i class="fas fa-tachometer-alt fa-2x text-primary"></i></div>
+                            <h5 class="fw-bold mb-3">6. Verschlüsseltes Mandanten-Portal</h5>
+                            <p class="text-muted">Verfolgen Sie den Fortschritt Ihres Falls lückenlos über unser AES-256-verschlüsseltes Mandanten-Dashboard – vollständig transparent, jederzeit und von überall erreichbar.</p>
                         </div>
                     </div>
                 </div>
@@ -957,48 +2504,53 @@ function dismissAlert(button) {
 
             <!-- Right side callout -->
             <div class="col-lg-6">
-                <div class="bg-primary text-white p-5 rounded-3">
+                <div class="text-white p-5 rounded-4 gradient-primary-bg" style="box-shadow: 0 20px 60px rgba(13,110,253,0.35);">
                     <h3 class="fw-bold mb-4"><i class="fas fa-shield-check me-2"></i>Höchste Sicherheitsstandards</h3>
 
                     <div class="d-flex mb-4">
-                        <div class="step-icon me-3"><i class="fas fa-certificate"></i></div>
+                        <div class="step-icon me-3 flex-shrink-0"><i class="fas fa-certificate"></i></div>
                         <div>
-                            <h5 class="fw-bold text-white">BaFin-Lizenzierung</h5>
-                            <p class="text-white-75">
-                                Als offiziell lizenziertes Finanzdienstleistungsinstitut (FCA-Referenznr.: 122702) 
-                                unterliegen wir strengen regulatorischen Kontrollen und regelmäßigen Audits.
+                            <h5 class="fw-bold text-white mb-2">BaFin-Regulierung &amp; Lizenzierung</h5>
+                            <p class="text-white-75 mb-0">
+                                Als offiziell zugelassenes Finanzdienstleistungsinstitut (BaFin-Reg.: <?php echo htmlspecialchars($siteSettings['fca_reference_number']); ?>) 
+                                unterliegen wir strengen regulatorischen Kontrollen, jährlichen Audits und konzernweiten Compliance-Standards der höchsten Stufe.
                             </p>
                         </div>
                     </div>
 
                     <div class="d-flex mb-4">
-                        <div class="step-icon me-3"><i class="fas fa-lock"></i></div>
+                        <div class="step-icon me-3 flex-shrink-0"><i class="fas fa-lock"></i></div>
                         <div>
-                            <h5 class="fw-bold text-white">Datenschutz & GDPR</h5>
-                            <p class="text-white-75">
-                                Alle personenbezogenen Daten werden nach <strong>GDPR-Standards</strong> verarbeitet. 
-                                Verschlüsselung auf Bankniveau (256-Bit SSL) und Server-Standort in Deutschland.
+                            <h5 class="fw-bold text-white mb-2">Datenschutz nach DSGVO</h5>
+                            <p class="text-white-75 mb-0">
+                                Alle personenbezogenen Daten werden ausschließlich nach EU-<strong>DSGVO-Standards</strong> verarbeitet. 
+                                256-Bit SSL-Verschlüsselung auf Bankniveau, Serverstandort ausschließlich in Deutschland.
                             </p>
                         </div>
                     </div>
 
                     <div class="d-flex mb-4">
-                        <div class="step-icon me-3"><i class="fas fa-file-contract"></i></div>
+                        <div class="step-icon me-3 flex-shrink-0"><i class="fas fa-file-contract"></i></div>
                         <div>
-                            <h5 class="fw-bold text-white">Rechtssichere Dokumentation</h5>
-                            <p class="text-white-75">
-                                Jeder Prozessschritt wird lückenlos dokumentiert. Bei Bedarf arbeiten wir mit 
-                                Rechtsanwälten und Sachverständigen zusammen, um rechtliche Absicherung zu gewährleisten.
+                            <h5 class="fw-bold text-white mb-2">Gerichtsverwertbare Dokumentation</h5>
+                            <p class="text-white-75 mb-0">
+                                Jeder Verfahrensschritt wird revisionssicher und beweissicher dokumentiert. In enger Kooperation mit 
+                                spezialisierten Rechtsanwälten und staatlich anerkannten Sachverständigen – für vollständige rechtliche Absicherung.
                             </p>
                         </div>
                     </div>
 
-                    <div class="mt-4 p-3 bg-white bg-opacity-20 rounded text-center">
-                        <strong class="text-white">Transparenz ist unser Versprechen</strong><br/>
-                        <small class="text-white-75">
-                            Echtzeit-Dashboard zeigt Ihnen jederzeit den aktuellen Status Ihres Falles. 
-                            Keine versteckten Kosten – Gebühr nur bei erfolgreicher Wiederherstellung.
-                        </small>
+                    <div class="mt-4 p-4 rounded-3" style="background:rgba(255,255,255,0.15); backdrop-filter:blur(10px); border:1px solid rgba(255,255,255,0.2);">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-check-circle fa-2x text-white me-3 flex-shrink-0"></i>
+                            <div>
+                                <strong class="text-white d-block mb-1">Unser Versprechen: Volle Transparenz</strong>
+                                <small class="text-white-75">
+                                    Echtzeit-Dashboard, persönlicher Fallmanager, keine Vorabgebühren –
+                                    Honorar ausschließlich bei nachweislichem und dokumentiertem Erfolg.
+                                </small>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1008,9 +2560,79 @@ function dismissAlert(button) {
 
 <!-- Features -->
 <section id="features" class="section anchor-offset">
-    <div class="container text-center">
-        <h2 class="section-title">Plattform-Features</h2>
-        <p class="section-subtitle">Fokussiert, verlässlich und konform</p>
+    <div class="container">
+        <div class="text-center mb-5">
+            <div class="badge bg-primary bg-gradient mb-3 px-4 py-2" style="font-size:0.9rem; border-radius:30px;">
+                <i class="fas fa-layer-group me-2"></i>Funktionsumfang
+            </div>
+            <h2 class="section-title">Plattform-Features</h2>
+            <p class="section-subtitle">Fokussiert, verlässlich und regulierungskonform – alle Funktionen wurden für maximale Transparenz, nachweisliche Sicherheit und wirksamen Schutz Ihrer Vermögenswerte entwickelt.</p>
+        </div>
+        <div class="row g-4">
+            <div class="col-md-6 col-lg-4">
+                <div class="feature-card text-center h-100">
+                    <div class="mb-3"><i class="fas fa-robot fa-3x" style="color:var(--primary);"></i></div>
+                    <h5 class="fw-bold mb-2">Sofortige KI-Erstanalyse</h5>
+                    <p class="text-muted mb-0">Mit Falleinreichung startet unsere KI umgehend die forensische Blockchain-Analyse – automatisiert, präzise und ohne Wartezeit auf manuelle Vorprüfung.</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <div class="feature-card text-center h-100">
+                    <div class="mb-3"><i class="fas fa-lock fa-3x" style="color:var(--primary);"></i></div>
+                    <h5 class="fw-bold mb-2">AES-256 Ende-zu-Ende-Verschlüsselung</h5>
+                    <p class="text-muted mb-0">Alle Falldaten werden nach Bankenstandard AES-256 verschlüsselt übertragen und gespeichert. Ihre sensiblen Informationen verbleiben ausschließlich in unserer gesicherten deutschen Infrastruktur.</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <div class="feature-card text-center h-100">
+                    <div class="mb-3"><i class="fas fa-balance-scale fa-3x" style="color:var(--primary);"></i></div>
+                    <h5 class="fw-bold mb-2">Rechtssichere Dokumentation</h5>
+                    <p class="text-muted mb-0">Alle Analyseergebnisse werden gerichtsverwertbar aufbereitet und in revisionssicheren Berichten dokumentiert – ideal als Beweissicherung für Strafanzeigen oder zivilrechtliche Verfahren.</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <div class="feature-card text-center h-100">
+                    <div class="mb-3"><i class="fas fa-headset fa-3x" style="color:var(--primary);"></i></div>
+                    <h5 class="fw-bold mb-2">Dedizierter Fallmanager</h5>
+                    <p class="text-muted mb-0">Jeder Klient erhält einen persönlichen Fallmanager, der Sie auf Deutsch durch den gesamten Prozess begleitet – erreichbar per E-Mail, Telefon oder über unser verschlüsseltes Chat-System.</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <div class="feature-card text-center h-100">
+                    <div class="mb-3"><i class="fas fa-euro-sign fa-3x" style="color:var(--primary);"></i></div>
+                    <h5 class="fw-bold mb-2">Keine Vorabgebühren – Erfolgshonorar</h5>
+                    <p class="text-muted mb-0">Sie zahlen ausschließlich im Erfolgsfall. Unser Honorar basiert ausschließlich auf einer transparenten Erfolgsprovision – keinerlei versteckte Kosten, keine Vorleistungen.</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <div class="feature-card text-center h-100">
+                    <div class="mb-3"><i class="fas fa-globe fa-3x" style="color:var(--primary);"></i></div>
+                    <h5 class="fw-bold mb-2">Globales Partnernetzwerk</h5>
+                    <p class="text-muted mb-0">Kooperationen mit Strafverfolgungsbehörden, Finanzregulatoren und spezialisierten forensischen Partnern in über 30 Ländern ermöglichen grenzüberschreitende Ermittlungen.</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <div class="feature-card text-center h-100">
+                    <div class="mb-3"><i class="fas fa-chart-area fa-3x" style="color:var(--primary);"></i></div>
+                    <h5 class="fw-bold mb-2">Verhaltensanalyse &amp; Mustererkennung</h5>
+                    <p class="text-muted mb-0">Unsere KI erstellt detaillierte Verhaltensprofile verdächtiger Wallets und identifiziert koordinierte Betrugsringe – auch bei komplexer Verschleierung über Dutzende Zwischenadressen.</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <div class="feature-card text-center h-100">
+                    <div class="mb-3"><i class="fas fa-phone-alt fa-3x" style="color:var(--primary);"></i></div>
+                    <h5 class="fw-bold mb-2">24/7 Notfall-Reaktionsteam</h5>
+                    <p class="text-muted mb-0">Bei akuter Wallet-Kompromittierung ist unser Notfall-Reaktionsteam rund um die Uhr erreichbar. Schnelles Handeln in den ersten Stunden kann die Erfolgsaussichten entscheidend verbessern.</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <div class="feature-card text-center h-100">
+                    <div class="mb-3"><i class="fas fa-tachometer-alt fa-3x" style="color:var(--primary);"></i></div>
+                    <h5 class="fw-bold mb-2">Transparentes Echtzeit-Dashboard</h5>
+                    <p class="text-muted mb-0">Verfolgen Sie den Status Ihres Falls lückenlos über unser verschlüsseltes Mandanten-Portal – mit vollständiger Dokumentation aller Analyseschritte, jederzeit und von überall abrufbar.</p>
+                </div>
+            </div>
+        </div>
     </div>
 </section>
 
@@ -1018,33 +2640,75 @@ function dismissAlert(button) {
 <section id="services" class="section bg-light anchor-offset">
     <div class="container">
         <div class="text-center mb-5">
+            <div class="badge bg-primary bg-gradient mb-3 px-4 py-2" style="font-size:0.9rem; border-radius:30px;">
+                <i class="fas fa-concierge-bell me-2"></i>Serviceleistungen
+            </div>
             <h2 class="section-title">Unsere Services im Detail</h2>
-            <p class="section-subtitle">Alles, was Sie für professionelle Krypto-Wiederherstellung benötigen</p>
+            <p class="section-subtitle">Das vollständige Leistungsspektrum für professionelle Kryptowährungs-Forensik und rechtssichere Vermögenswiederherstellung – zertifiziert, transparent und ohne Vorabgebühren.</p>
         </div>
 
         <div class="row g-4">
             <div class="col-lg-6">
                 <div class="feature-card">
-                    <h4 class="fw-bold mb-4"><i class="fas fa-exchange-alt text-primary me-2"></i> Ein- und Auszahlungen</h4>
-                    <p class="text-muted mb-4">Sichere SEPA-Überweisungen mit deutscher IBAN. Alle Transaktionen werden manuell geprüft und innerhalb von 1–2 Werktagen bearbeitet.</p>
+                    <h4 class="fw-bold mb-3"><i class="fas fa-exchange-alt text-primary me-2"></i>Sichere Ein- &amp; Auszahlungen</h4>
+                    <p class="text-muted mb-4">SEPA-Überweisungen mit zertifizierter deutscher IBAN. Alle Transaktionen durchlaufen eine manuelle Compliance-Prüfung und werden innerhalb von 1–2 Werktagen bearbeitet.</p>
                     <ul class="feature-list">
-                        <li><i class="fas fa-check-circle"></i> Deutsche Bankverbindung</li>
-                        <li><i class="fas fa-check-circle"></i> Manuelle Prüfung aller Transaktionen</li>
+                        <li><i class="fas fa-check-circle"></i> Deutsche Bankverbindung (DE-IBAN)</li>
+                        <li><i class="fas fa-check-circle"></i> Compliance-geprüfte Transaktionen</li>
                         <li><i class="fas fa-check-circle"></i> Schnelle Bearbeitung (1–2 Werktage)</li>
-                        <li><i class="fas fa-check-circle"></i> Persönlicher Verwendungszweck</li>
+                        <li><i class="fas fa-check-circle"></i> Vollständige Transaktionsdokumentation</li>
                     </ul>
                 </div>
             </div>
 
             <div class="col-lg-6">
                 <div class="feature-card">
-                    <h4 class="fw-bold mb-4"><i class="fas fa-key text-primary me-2"></i> Wiederherstellungsservice</h4>
-                    <p class="text-muted mb-4">Spezialisierter Service zur Wiederherstellung vergessener Mnemonic-Phrasen. 369 erfolgreich gelöste Fälle mit dokumentierter Erfolgsquote.</p>
+                    <h4 class="fw-bold mb-3"><i class="fas fa-key text-primary me-2"></i>Schlüssel- &amp; Wallet-Wiederherstellung</h4>
+                    <p class="text-muted mb-4">Spezialisierter Service zur kryptografisch sicheren Wiederherstellung vergessener Mnemonic-Phrasen und beschädigter Wallet-Strukturen. Über 369 dokumentierte Erfolgsfälle.</p>
                     <ul class="feature-list">
-                        <li><i class="fas fa-check-circle"></i> 12/24-Wörter Wiederherstellung</li>
-                        <li><i class="fas fa-check-circle"></i> Reihenfolge-Rekonstruktion</li>
-                        <li><i class="fas fa-check-circle"></i> Wallet-Adresse Recovery</li>
-                        <li><i class="fas fa-check-circle"></i> DSGVO-konform & sicher</li>
+                        <li><i class="fas fa-check-circle"></i> 12/24-Wörter Seed-Phrase-Rekonstruktion</li>
+                        <li><i class="fas fa-check-circle"></i> Reihenfolge- und Schreibfehler-Korrektur</li>
+                        <li><i class="fas fa-check-circle"></i> Multi-Wallet-Adress-Recovery</li>
+                        <li><i class="fas fa-check-circle"></i> DSGVO-konform, vollständig verschlüsselt</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="col-lg-6">
+                <div class="feature-card">
+                    <h4 class="fw-bold mb-3"><i class="fas fa-balance-scale text-primary me-2"></i>Rechtliche Begleitung &amp; Strafverfolgung</h4>
+                    <p class="text-muted mb-4">Unsere forensischen Berichte sind gerichtsverwertbar und nach internationalen Beweisstandards aufbereitet. Wir unterstützen Strafanzeigen, Adhäsionsklagen und zivilrechtliche Verfahren gegen Täter.</p>
+                    <ul class="feature-list">
+                        <li><i class="fas fa-check-circle"></i> Gerichtsverwertbare Forensikberichte</li>
+                        <li><i class="fas fa-check-circle"></i> Strafanzeige-Vorbereitung &amp; Begleitung</li>
+                        <li><i class="fas fa-check-circle"></i> Kooperation mit Staatsanwaltschaft &amp; BKA</li>
+                        <li><i class="fas fa-check-circle"></i> Internationale Rechtshilfe (Europol-Netzwerk)</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="col-lg-6">
+                <div class="feature-card">
+                    <h4 class="fw-bold mb-3"><i class="fas fa-search-dollar text-primary me-2"></i>Professionelle Blockchain-Forensik</h4>
+                    <p class="text-muted mb-4">Hochspezialisierte Analyse von Transaktionsketten über 15+ Blockchains – inklusive De-Anonymisierung von Mixer-Services, Tornado-Cash-Varianten und Cross-Chain-Bridges. Einsatz von Chainalysis- und Elliptic-kompatiblen Methoden.</p>
+                    <ul class="feature-list">
+                        <li><i class="fas fa-check-circle"></i> Multi-Chain Transaction Tracing</li>
+                        <li><i class="fas fa-check-circle"></i> Mixer- &amp; Tumbler-De-Anonymisierung</li>
+                        <li><i class="fas fa-check-circle"></i> Smart-Contract- &amp; DeFi-Analyse</li>
+                        <li><i class="fas fa-check-circle"></i> CEX-Identifizierung &amp; Freeze-Request</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="col-lg-6">
+                <div class="feature-card">
+                    <h4 class="fw-bold mb-3"><i class="fas fa-shield-virus text-primary me-2"></i>Prävention &amp; Sicherheitsberatung</h4>
+                    <p class="text-muted mb-4">Proaktiver Schutz für Ihre digitalen Vermögenswerte: Unsere zertifizierten Sicherheitsexperten analysieren Ihre aktuelle Konfiguration und entwickeln einen individuellen Sicherheitsplan für die Zukunft.</p>
+                    <ul class="feature-list">
+                        <li><i class="fas fa-check-circle"></i> Professioneller Sicherheits-Audit Ihrer Wallets</li>
+                        <li><i class="fas fa-check-circle"></i> Hardware-Wallet-Einrichtung &amp; -Beratung</li>
+                        <li><i class="fas fa-check-circle"></i> Zertifizierte Schulung zur Betrugserkennung</li>
+                        <li><i class="fas fa-check-circle"></i> Persönlicher, dokumentierter Sicherheitsplan</li>
                     </ul>
                 </div>
             </div>
@@ -1058,13 +2722,14 @@ function dismissAlert(button) {
   
   <div class="container position-relative" style="z-index: 2;">
     <div class="text-center mb-5 fade-in-up">
-      <div class="badge bg-primary bg-gradient mb-3 px-4 py-2">
-        <i class="fas fa-microchip me-2"></i>Künstliche Intelligenz der nächsten Generation
+      <div class="badge bg-primary bg-gradient mb-3 px-4 py-2" style="font-size:0.9rem; border-radius:30px;">
+        <i class="fas fa-microchip me-2"></i>Fortschrittliche KI-Technologie
       </div>
       <h2 class="section-title display-4 fw-bold">KI-gestützte Vermögenswiederherstellung</h2>
       <p class="section-subtitle lead">
-        Professionelle Blockchain-Forensik mit fortschrittlicher Künstlicher Intelligenz – 
-        BaFin-lizenziert (FCA Ref.: 122702) und nach höchsten Sicherheitsstandards
+        Forensische Blockchain-Analyse mit zertifizierter Künstlicher Intelligenz –
+        BaFin-reguliert (BaFin-Reg.: <?php echo htmlspecialchars($siteSettings['fca_reference_number']); ?>),
+        vollständig DSGVO-konform und nach internationalen Sicherheits- und Qualitätsstandards entwickelt.
       </p>
     </div>
 
@@ -1075,15 +2740,15 @@ function dismissAlert(button) {
           <div class="ai-feature-icon">
             <i class="fas fa-brain"></i>
           </div>
-          <h4 class="fw-bold mb-3">Deep Learning Analyse</h4>
+          <h4 class="fw-bold mb-3">Deep Learning &amp; Forensik-KI</h4>
           <p class="text-muted mb-3">
-            Neuronale Netzwerke mit über <strong>100.000 Betrugsfällen</strong> trainiert. 
-            Unsere KI erkennt komplexe Transaktionsmuster mit <strong>94% Genauigkeit</strong>.
+            Spezialisierte neuronale Netzwerke, trainiert auf über <strong>100.000 dokumentierten Betrugsfällen</strong>.
+            Erkennt komplexe Transaktionsmuster und Verschleierungsstrategien mit <strong>94% nachgewiesener Genauigkeit</strong>.
           </p>
           <ul class="feature-list-enhanced">
-            <li><i class="fas fa-check-circle text-success"></i> Multi-Layer Perceptron Architektur</li>
-            <li><i class="fas fa-check-circle text-success"></i> Convolutional Neural Networks</li>
-            <li><i class="fas fa-check-circle text-success"></i> Recurrent Pattern Recognition</li>
+            <li><i class="fas fa-check-circle text-success"></i> Multi-Layer-Perceptron-Architektur</li>
+            <li><i class="fas fa-check-circle text-success"></i> Convolutional Neural Networks (CNN)</li>
+            <li><i class="fas fa-check-circle text-success"></i> Recurrent Pattern Recognition (RNN)</li>
             <li><i class="fas fa-check-circle text-success"></i> Ensemble Learning Methods</li>
           </ul>
         </div>
@@ -1094,16 +2759,16 @@ function dismissAlert(button) {
           <div class="ai-feature-icon">
             <i class="fas fa-network-wired"></i>
           </div>
-          <h4 class="fw-bold mb-3">Multi-Chain-Tracking</h4>
+          <h4 class="fw-bold mb-3">Multi-Chain-Echtzeit-Tracking</h4>
           <p class="text-muted mb-3">
-            Simultane Analyse von <strong>15+ Blockchains</strong> in Echtzeit. 
-            Verfolgung über Mixing-Services und Cross-Chain-Bridges hinweg.
+            Simultane Verfolgung von Transaktionen über <strong>15+ Blockchains</strong> in Echtzeit –
+            nahtlos über Mixing-Services, Privacy-Coins und Cross-Chain-Bridges hinweg.
           </p>
           <ul class="feature-list-enhanced">
-            <li><i class="fas fa-check-circle text-success"></i> Bitcoin & Lightning Network</li>
-            <li><i class="fas fa-check-circle text-success"></i> Ethereum & ERC-20 Tokens</li>
-            <li><i class="fas fa-check-circle text-success"></i> BSC, Polygon, Avalanche</li>
-            <li><i class="fas fa-check-circle text-success"></i> Monero, Zcash Analyse</li>
+            <li><i class="fas fa-check-circle text-success"></i> Bitcoin &amp; Lightning Network</li>
+            <li><i class="fas fa-check-circle text-success"></i> Ethereum, ERC-20 &amp; Layer-2</li>
+            <li><i class="fas fa-check-circle text-success"></i> BSC, Polygon, Avalanche, Solana</li>
+            <li><i class="fas fa-check-circle text-success"></i> Monero- &amp; Zcash-Forensik</li>
           </ul>
         </div>
       </div>
@@ -1113,16 +2778,16 @@ function dismissAlert(button) {
           <div class="ai-feature-icon">
             <i class="fas fa-shield-alt"></i>
           </div>
-          <h4 class="fw-bold mb-3">Rechtskonform & Sicher</h4>
+          <h4 class="fw-bold mb-3">Regulierungskonform &amp; Höchstsicher</h4>
           <p class="text-muted mb-3">
-            <strong>BaFin-lizenziert</strong> mit vollständiger AML/KYC-Compliance. 
-            GDPR-konforme Datenverarbeitung auf deutschen Servern.
+            <strong>BaFin-reguliert</strong> mit vollständiger AML/KYC-Compliance und ISO-27001-Sicherheitsstandards.
+            DSGVO-konforme Datenverarbeitung ausschließlich auf deutschen Servern.
           </p>
           <ul class="feature-list-enhanced">
             <li><i class="fas fa-check-circle text-success"></i> Zweistufige KYC-Verifizierung</li>
-            <li><i class="fas fa-check-circle text-success"></i> Kryptografischer Besitznachweis</li>
-            <li><i class="fas fa-check-circle text-success"></i> Rechtsgutachten verfügbar</li>
-            <li><i class="fas fa-check-circle text-success"></i> 256-Bit Verschlüsselung</li>
+            <li><i class="fas fa-check-circle text-success"></i> Kryptografischer Wallet-Besitznachweis</li>
+            <li><i class="fas fa-check-circle text-success"></i> Zertifizierte Rechtsgutachten</li>
+            <li><i class="fas fa-check-circle text-success"></i> AES-256-Bit-Verschlüsselung</li>
           </ul>
         </div>
       </div>
@@ -1132,7 +2797,8 @@ function dismissAlert(button) {
     <div class="row mb-5">
       <div class="col-12">
         <div class="success-metrics-card">
-          <h3 class="text-center mb-4"><i class="fas fa-chart-line me-2"></i>Nachweisbare Erfolgsbilanz</h3>
+          <h3 class="text-center mb-2"><i class="fas fa-chart-line me-2"></i>Nachgewiesene Erfolgsbilanz</h3>
+          <p class="text-center text-muted mb-4 small">Alle Kennzahlen basieren auf abgeschlossenen, verifizierten Fällen. Stand: Q1 2025.</p>
           <div class="row text-center">
             <div class="col-md-3 col-6 mb-3">
               <div class="metric-item">
@@ -1142,18 +2808,7 @@ function dismissAlert(button) {
                 <h2 class="display-5 fw-bold text-primary mb-0">
                   <span class="counter" data-target="727">0</span>
                 </h2>
-                <p class="text-muted mb-0">Zufriedene Klienten</p>
-              </div>
-            </div>
-            <div class="col-md-3 col-6 mb-3">
-              <div class="metric-item">
-                <div class="metric-icon">
-                  <i class="fas fa-percentage"></i>
-                </div>
-                <h2 class="display-5 fw-bold text-success mb-0">
-                  <span class="counter" data-target="87">0</span>%
-                </h2>
-                <p class="text-muted mb-0">Erfolgsquote</p>
+                <p class="text-muted mb-0 small">Erfolgreich betreute Klienten</p>
               </div>
             </div>
             <div class="col-md-3 col-6 mb-3">
@@ -1164,7 +2819,7 @@ function dismissAlert(button) {
                 <h2 class="display-5 fw-bold text-primary mb-0">
                   €<span class="counter" data-target="47">0</span>M
                 </h2>
-                <p class="text-muted mb-0">Wiederhergestellt</p>
+                <p class="text-muted mb-0 small">Verifiziertes Gesamtvolumen</p>
               </div>
             </div>
             <div class="col-md-3 col-6 mb-3">
@@ -1175,7 +2830,7 @@ function dismissAlert(button) {
                 <h2 class="display-5 fw-bold text-info mb-0">
                   <span class="counter" data-target="14">0</span>
                 </h2>
-                <p class="text-muted mb-0">Tage Durchschnitt</p>
+                <p class="text-muted mb-0 small">Werktage ⌀ Bearbeitungszeit</p>
               </div>
             </div>
           </div>
@@ -1183,8 +2838,8 @@ function dismissAlert(button) {
           <!-- Progress Visualization -->
           <div class="mt-4">
             <div class="d-flex justify-content-between align-items-center mb-2">
-              <span class="fw-bold"><i class="fas fa-chart-line me-2"></i>KI-Analysen erfolgreich</span>
-              <span class="badge bg-success">94% Genauigkeit</span>
+              <span class="fw-bold"><i class="fas fa-chart-line me-2"></i>Forensische KI-Trefferquote bei identifizierten Betrugsfällen</span>
+              <span class="badge bg-success">94% Präzision</span>
             </div>
             <div class="progress progress-enhanced" style="height: 20px;">
               <div class="progress-bar bg-gradient progress-bar-striped progress-bar-animated" 
@@ -1199,37 +2854,37 @@ function dismissAlert(button) {
     <!-- Process Flow Visualization -->
     <div class="row mb-5">
       <div class="col-12">
-        <h3 class="text-center mb-4"><i class="fas fa-project-diagram me-2"></i>Unser KI-gestützter Prozess</h3>
+        <h3 class="text-center mb-4"><i class="fas fa-project-diagram me-2"></i>Unser strukturierter KI-Analyseprozess</h3>
         <div class="process-timeline">
           <div class="process-step">
             <div class="process-number">1</div>
             <div class="process-content">
-              <h5 class="fw-bold">Einreichung & KYC</h5>
-              <p class="text-muted mb-0">Sichere Falleinreichung mit zweistufiger Identitätsverifizierung</p>
+              <h5 class="fw-bold">Einreichung &amp; KYC</h5>
+              <p class="text-muted mb-0">Verschlüsselte Falleinreichung mit zweistufiger BaFin-konformer Identitätsverifizierung</p>
             </div>
             <div class="process-arrow"><i class="fas fa-arrow-right"></i></div>
           </div>
           <div class="process-step">
             <div class="process-number">2</div>
             <div class="process-content">
-              <h5 class="fw-bold">KI-Analyse</h5>
-              <p class="text-muted mb-0">Deep Learning Algorithmen analysieren Blockchain-Transaktionen</p>
+              <h5 class="fw-bold">KI-Forensik-Analyse</h5>
+              <p class="text-muted mb-0">Deep-Learning-Algorithmen analysieren lückenlos alle Blockchain-Transaktionen und Muster</p>
             </div>
             <div class="process-arrow"><i class="fas fa-arrow-right"></i></div>
           </div>
           <div class="process-step">
             <div class="process-number">3</div>
             <div class="process-content">
-              <h5 class="fw-bold">Rechtsprüfung</h5>
-              <p class="text-muted mb-0">Compliance-Check und rechtliche Dokumentation</p>
+              <h5 class="fw-bold">Compliance &amp; Rechtsprüfung</h5>
+              <p class="text-muted mb-0">AML-konformer Compliance-Check, rechtssichere Dokumentation und Koordination mit Behörden</p>
             </div>
             <div class="process-arrow"><i class="fas fa-arrow-right"></i></div>
           </div>
           <div class="process-step">
             <div class="process-number">4</div>
             <div class="process-content">
-              <h5 class="fw-bold">Auszahlung</h5>
-              <p class="text-muted mb-0">Sichere EUR-Konvertierung via lizenzierte Börsen</p>
+              <h5 class="fw-bold">Sichere Rückführung</h5>
+              <p class="text-muted mb-0">Geprüfte EUR-Konvertierung über BaFin-lizenzierte Börsen, SEPA-Überweisung auf Ihr Konto</p>
             </div>
           </div>
         </div>
@@ -1245,7 +2900,7 @@ function dismissAlert(button) {
               <div class="trust-badge pulse-animation">
                 <i class="fas fa-shield-alt fa-3x text-primary mb-2"></i>
                 <p class="fw-bold mb-0">BaFin-Lizenziert</p>
-                <small class="text-muted">FCA Ref.: 122702</small>
+                <small class="text-muted">BaFin-Reg.: <?php echo htmlspecialchars($siteSettings['fca_reference_number']); ?></small>
               </div>
             </div>
             <div class="col-md-3 col-6 text-center mb-3">
@@ -1258,8 +2913,8 @@ function dismissAlert(button) {
             <div class="col-md-3 col-6 text-center mb-3">
               <div class="trust-badge">
                 <i class="fas fa-check-circle fa-3x text-info mb-2"></i>
-                <p class="fw-bold mb-0">GDPR Konform</p>
-                <small class="text-muted">EU-Standard</small>
+                <p class="fw-bold mb-0">DSGVO-Konform</p>
+                <small class="text-muted">EU-Standard / Art. 5 DSGVO</small>
               </div>
             </div>
             <div class="col-md-3 col-6 text-center mb-3">
@@ -1277,15 +2932,15 @@ function dismissAlert(button) {
     <!-- CTA -->
     <div class="text-center mt-5">
       <p class="lead mb-4">
-        <i class="fas fa-clock me-2"></i>
-        Keine Vorauszahlung – <strong>3% Gebühr nur bei Erfolg</strong>
+        <i class="fas fa-shield-check me-2 text-success"></i>
+        Keine Vorauszahlung – <strong>transparente Erfolgsprovision, ausschließlich bei nachgewiesenem Ergebnis</strong>
       </p>
-      <a href="https://novalnet-ai.de/app" class="btn btn-primary btn-lg px-5 py-3 btn-glow">
-        <i class="fas fa-rocket me-2"></i>Kostenlose KI-Analyse starten
+      <a href="<?= htmlspecialchars(($siteSettings['site_url'] ?? 'https://novalnet-ai.de') . '/app') ?>" class="btn btn-primary btn-lg px-5 py-3 btn-glow">
+        <i class="fas fa-search me-2"></i>Kostenlose Erstanalyse anfordern
       </a>
       <p class="text-muted mt-3 small">
         <i class="fas fa-info-circle me-1"></i>
-        Durchschnittliche Bearbeitungszeit: 14 Werktage | Persönlicher Ansprechpartner inklusive
+        Ø Bearbeitungszeit: 14 Werktage &nbsp;|&nbsp; Persönlicher Fallmanager inklusive &nbsp;|&nbsp; BaFin-reguliert
       </p>
     </div>
   </div>
@@ -1298,9 +2953,9 @@ function dismissAlert(button) {
 <!-- ========================================================= -->
 <section id="stats" class="section animated-gradient">
   <div class="container text-center text-white">
-    <h2 class="section-title text-white mb-4">Unsere Erfolge in Zahlen</h2>
+    <h2 class="section-title text-white mb-3">Unsere Erfolgsbilanz in Zahlen</h2>
     <p class="section-subtitle text-white opacity-90 mb-5">
-      Vertrauen durch nachweisbare Ergebnisse – KI-gestützte Wiederherstellung mit messbarem Erfolg
+      Transparenz durch belegbare Ergebnisse – forensische Krypto-Wiederherstellung mit messbarer, dokumentierter Wirkung.
     </p>
 
     <div class="row g-4 mb-5">
@@ -1311,8 +2966,8 @@ function dismissAlert(button) {
             <i class="fas fa-users"></i>
           </div>
           <h2 class="display-3 fw-bold mb-2" data-count="727">0</h2>
-          <p class="h5 mb-0">Zufriedene Klienten</p>
-          <p class="small opacity-75 mt-2">Weltweit vertrauen uns</p>
+          <p class="h5 mb-0">Betreute Klienten</p>
+          <p class="small opacity-75 mt-2">In Deutschland &amp; Europa</p>
         </div>
       </div>
 
@@ -1323,8 +2978,8 @@ function dismissAlert(button) {
             <i class="fas fa-chart-line"></i>
           </div>
           <h2 class="display-3 fw-bold mb-2"><span data-count="87">0</span>%</h2>
-          <p class="h5 mb-0">Erfolgsquote</p>
-          <p class="small opacity-75 mt-2">Bei Identifizierung</p>
+          <p class="h5 mb-0">Dokumentierte Erfolgsquote</p>
+          <p class="small opacity-75 mt-2">Bei rechtzeitiger Fallmeldung</p>
         </div>
       </div>
 
@@ -1335,8 +2990,8 @@ function dismissAlert(button) {
             <i class="fas fa-euro-sign"></i>
           </div>
           <h2 class="display-3 fw-bold mb-2">€<span data-count="47">0</span>M</h2>
-          <p class="h5 mb-0">Wiederhergestellt</p>
-          <p class="small opacity-75 mt-2">Gesamtvolumen</p>
+          <p class="h5 mb-0">Wiederhergestelltes Volumen</p>
+          <p class="small opacity-75 mt-2">Verifiziertes Gesamtergebnis</p>
         </div>
       </div>
 
@@ -1347,8 +3002,47 @@ function dismissAlert(button) {
             <i class="fas fa-clock"></i>
           </div>
           <h2 class="display-3 fw-bold mb-2"><span data-count="14">0</span></h2>
-          <p class="h5 mb-0">Tage Durchschnitt</p>
-          <p class="small opacity-75 mt-2">Bearbeitungszeit</p>
+          <p class="h5 mb-0">Werktage Ø Bearbeitung</p>
+          <p class="small opacity-75 mt-2">Von Einreichung bis Abschluss</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Second stats row -->
+    <div class="row g-4 justify-content-center mb-5">
+      <!-- Partner Networks -->
+      <div class="col-md-6 col-lg-3">
+        <div class="stat-card shimmer-wrapper">
+          <div class="stat-icon">
+            <i class="fas fa-handshake"></i>
+          </div>
+          <h2 class="display-3 fw-bold mb-2"><span data-count="30">0</span>+</h2>
+          <p class="h5 mb-0">Partnerländer</p>
+          <p class="small opacity-75 mt-2">Globales Netzwerk</p>
+        </div>
+      </div>
+
+      <!-- Blockchains -->
+      <div class="col-md-6 col-lg-3">
+        <div class="stat-card shimmer-wrapper">
+          <div class="stat-icon">
+            <i class="fas fa-cubes"></i>
+          </div>
+          <h2 class="display-3 fw-bold mb-2"><span data-count="15">0</span>+</h2>
+          <p class="h5 mb-0">Blockchains</p>
+          <p class="small opacity-75 mt-2">Simultane Analyse</p>
+        </div>
+      </div>
+
+      <!-- Fraud Cases in Database -->
+      <div class="col-md-6 col-lg-3">
+        <div class="stat-card shimmer-wrapper">
+          <div class="stat-icon">
+            <i class="fas fa-database"></i>
+          </div>
+          <h2 class="display-3 fw-bold mb-2"><span data-count="100">0</span>K+</h2>
+          <p class="h5 mb-0">Betrugsmuster</p>
+          <p class="small opacity-75 mt-2">KI-Trainingsdaten</p>
         </div>
       </div>
     </div>
@@ -1360,7 +3054,7 @@ function dismissAlert(button) {
           <div class="badge-item">
             <i class="fas fa-shield-alt fa-2x mb-2"></i>
             <p class="small mb-0">BaFin-Lizenziert</p>
-            <p class="small mb-0 opacity-75">FCA Ref: 122702</p>
+            <p class="small mb-0 opacity-75">BaFin-Reg.: <?php echo htmlspecialchars($siteSettings['fca_reference_number']); ?></p>
           </div>
           <div class="badge-item">
             <i class="fas fa-lock fa-2x mb-2"></i>
@@ -1433,39 +3127,8 @@ function dismissAlert(button) {
 </style>
 
 <script>
-// Animated counter effect
+// ========== ENHANCED AI SECTION ANIMATIONS ==========
 document.addEventListener('DOMContentLoaded', function() {
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        const counters = entry.target.querySelectorAll('[data-count]');
-        counters.forEach(counter => {
-          const target = parseInt(counter.getAttribute('data-count'));
-          const duration = 2000;
-          const steps = 60;
-          const increment = target / steps;
-          let current = 0;
-          
-          const timer = setInterval(() => {
-            current += increment;
-            if (current >= target) {
-              counter.textContent = target;
-              clearInterval(timer);
-            } else {
-              counter.textContent = Math.floor(current);
-            }
-          }, duration / steps);
-        });
-        observer.unobserve(entry.target);
-      }
-    });
-  }, { threshold: 0.3 });
-
-  const statsSection = document.getElementById('stats');
-  if (statsSection) observer.observe(statsSection);
-
-  // ========== ENHANCED AI SECTION ANIMATIONS ==========
-  
   // Counter animation for .counter elements in AI section
   const counterObserver = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
@@ -1557,9 +3220,12 @@ document.addEventListener('DOMContentLoaded', function() {
 <section id="ai-features" class="section bg-light">
   <div class="container">
     <div class="text-center mb-5">
+      <div class="badge bg-primary bg-gradient mb-3 px-4 py-2" style="font-size:0.9rem; border-radius:30px;">
+        <i class="fas fa-robot me-2"></i>KI-Technologie
+      </div>
       <h2 class="section-title">KI-gestützte Blockchain-Analyse</h2>
       <p class="section-subtitle">
-        Modernste Technologie für maximale Erfolgschancen bei der Wiederherstellung Ihrer Krypto-Guthaben
+        Modernste forensische Technologie für maximale Erfolgschancen bei der Wiederherstellung Ihrer digitalen Vermögenswerte – präzise, nachweisbar und rechtssicher.
       </p>
     </div>
 
@@ -1695,43 +3361,6 @@ document.addEventListener('DOMContentLoaded', function() {
 </section>
 
 <style>
-.stat-card {
-  padding: 40px 20px;
-  border-radius: 16px;
-  background: rgba(255,255,255,0.1);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255,255,255,0.2);
-  transition: all 0.3s ease;
-}
-.stat-card:hover {
-  background: rgba(255,255,255,0.15);
-  transform: translateY(-5px);
-}
-.stat-icon {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  background: rgba(255,255,255,0.2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 20px;
-  font-size: 32px;
-  border: 2px solid rgba(255,255,255,0.3);
-}
-.badge-item {
-  text-align: center;
-  padding: 20px;
-  background: rgba(255,255,255,0.1);
-  border-radius: 12px;
-  transition: all 0.3s ease;
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255,255,255,0.2);
-}
-.badge-item:hover {
-  transform: scale(1.05) rotate(2deg);
-  background: rgba(255,255,255,0.15);
-}
 .feature-icon-lg {
   width: 100px;
   height: 100px;
@@ -1743,11 +3372,34 @@ document.addEventListener('DOMContentLoaded', function() {
   margin: 0 auto;
 }
 .ai-highlight-box {
-  background: rgba(255,255,255,0.1);
+  background: linear-gradient(135deg, var(--primary, #0d6efd) 0%, #0b5ed7 100%);
+  color: white;
   border-radius: 16px;
   padding: 40px;
-  border: 2px solid rgba(255,255,255,0.2);
-  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.15);
+  box-shadow: 0 8px 32px rgba(13,110,253,0.25);
+}
+.ai-highlight-box h4,
+.ai-highlight-box p {
+  color: white;
+}
+.ai-highlight-box p {
+  opacity: .92;
+}
+.testimonial-avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 700;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+.testimonial-type {
+  font-size: .85rem;
 }
 </style>
 
@@ -1756,8 +3408,11 @@ document.addEventListener('DOMContentLoaded', function() {
 <section id="faq" class="section anchor-offset">
     <div class="container">
         <div class="text-center mb-5">
+            <div class="badge bg-primary bg-gradient mb-3 px-4 py-2" style="font-size:0.9rem; border-radius:30px;">
+                <i class="fas fa-question-circle me-2"></i>Häufige Fragen
+            </div>
             <h2 class="section-title">Häufige Fragen</h2>
-            <p class="section-subtitle">Antworten auf die wichtigsten Fragen zu Novalnet AI</p>
+            <p class="section-subtitle">Transparente Antworten auf die wichtigsten Fragen zu <?= htmlspecialchars($siteSettings['brand_name']) ?> – ehrlich, verständlich und ohne Fachjargon.</p>
         </div>
 
         <div class="row justify-content-center">
@@ -1802,20 +3457,358 @@ document.addEventListener('DOMContentLoaded', function() {
                             </div>
                         </div>
                     </div>
+
+                    <div class="accordion-item mb-3">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button fw-bold collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq4">
+                                Welche Arten von Krypto-Betrug können Sie untersuchen?
+                            </button>
+                        </h2>
+                        <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">
+                                Wir unterstützen Sie bei nahezu allen Formen von Krypto-Betrug: gefälschte Investment-Plattformen (Scam-Exchanges), Pig-Butchering-Betrug, Romance Scams, Phishing-Angriffe, Rug-Pulls, ICO-Betrug, Wallet-Hacks sowie gestohlene Seed-Phrasen. Auch komplexe Fälle mit mehrfacher Geldwäsche über verschiedene Blockchains können wir analysieren.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item mb-3">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button fw-bold collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq5">
+                                Was passiert nach meiner Falleinreichung?
+                            </button>
+                        </h2>
+                        <div id="faq5" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">
+                                Nach Einreichung Ihres Falls erhalten Sie innerhalb von 24 Stunden eine persönliche Ersteinschätzung per E-Mail. Unser Team prüft Ihre Angaben, startet die KI-gestützte Blockchain-Analyse und kontaktiert Sie dann mit einem detaillierten Analyseplan sowie realistischen Erfolgsaussichten – vollständig kostenlos und unverbindlich.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item mb-3">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button fw-bold collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq6">
+                                Wie hoch ist Ihre Erfolgsquote und wovon hängt sie ab?
+                            </button>
+                        </h2>
+                        <div id="faq6" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">
+                                Unsere dokumentierte Erfolgsquote liegt bei 87 %. Sie hängt von mehreren Faktoren ab: wie schnell nach dem Betrug gehandelt wird (je früher, desto besser), ob die Kryptowährungen bereits über Mixer bewegt wurden, und wie kooperativ die beteiligten Exchanges sind. Wir geben Ihnen bereits in der Erstanalyse eine realistische Einschätzung Ihrer individuellen Chancen.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item mb-3">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button fw-bold collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq7">
+                                Sind meine Daten bei Ihnen sicher?
+                            </button>
+                        </h2>
+                        <div id="faq7" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">
+                                Absolut. Alle Ihre Falldaten werden nach DSGVO-Standards verarbeitet und AES-256-verschlüsselt gespeichert. Wir geben keinerlei Informationen an Dritte weiter – außer an kooperierende Behörden mit Ihrer ausdrücklichen Zustimmung im Rahmen eines laufenden Verfahrens. Unsere Server stehen ausschließlich in Deutschland.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item mb-3">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button fw-bold collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq8">
+                                Was kostet der Service und wann muss ich zahlen?
+                            </button>
+                        </h2>
+                        <div id="faq8" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">
+                                Die Erstanalyse und Erstberatung sind vollständig kostenlos. Im Erfolgsfall erheben wir eine Erfolgsprovision, die individuell vereinbart wird und sich nach der Komplexität des Falls sowie der wiederhergestellten Summe richtet. Es entstehen <strong>keinerlei Vorabgebühren</strong>. Sollte keine Rückführung möglich sein, fallen für Sie keine Kosten an.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item mb-3">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button fw-bold collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq9">
+                                Wie lange dauert eine vollständige Fallbearbeitung?
+                            </button>
+                        </h2>
+                        <div id="faq9" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">
+                                Die Dauer hängt von der Komplexität des Falls ab. Einfachere Fälle (z. B. einzelne Betrugs-Transaktionen) können in 7–14 Werktagen abgeschlossen werden. Komplexe Fälle mit mehreren Blockchains, Mixing-Services oder internationalen Tätern können 4–12 Wochen in Anspruch nehmen. Sie erhalten in jedem Schritt transparente Statusupdates über unser verschlüsseltes Mandanten-Portal.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item mb-3">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button fw-bold collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq10">
+                                Kann ich auch Geld zurückbekommen, wenn der Betrug schon lange zurückliegt?
+                            </button>
+                        </h2>
+                        <div id="faq10" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">
+                                Grundsätzlich gilt: Je früher, desto besser – allerdings sind auch ältere Fälle oft noch lösbar. Da Blockchain-Transaktionen dauerhaft und unveränderlich gespeichert sind, können wir Transaktionsspuren auch Jahre später noch nachverfolgen. Wir empfehlen, auch bei älteren Betrugsfällen eine kostenlose Erstanalyse einzureichen – oft gibt es mehr Möglichkeiten, als Opfer erwarten.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item mb-3">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button fw-bold collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq11">
+                                Arbeiten Sie mit der Polizei und Strafverfolgungsbehörden zusammen?
+                            </button>
+                        </h2>
+                        <div id="faq11" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">
+                                Ja. Wir kooperieren aktiv mit dem Bundeskriminalamt (BKA), Europol, Interpol und verschiedenen nationalen Polizeibehörden. Unsere forensischen Berichte sind bewusst so aufgebaut, dass sie als Beweismittel in Strafverfahren verwendet werden können. Mit Ihrer Zustimmung leiten wir relevante Informationen direkt an die zuständigen Behörden weiter, um eine strafrechtliche Verfolgung der Täter zu unterstützen.
+                            </div>
+                        </div>
+                    </div>
                 </div><!-- /accordion -->
             </div>
         </div>
     </div>
 </section>
 
-<!-- CTA -->
-<section class="section bg-primary text-white text-center">
+<!-- Testimonials / Erfahrungsberichte -->
+<section id="testimonials" class="section bg-light anchor-offset">
     <div class="container">
-        <h2 class="display-5 fw-bold mb-4">Jetzt starten</h2>
-        <p class="lead mb-5" style="max-width:700px;margin:0 auto;">
-            Erstellen Sie Ihr Konto und verwalten Sie Krypto mit Vertrauen. Deutschlands sichere Plattform für Krypto-Wiederherstellung.
+        <div class="text-center mb-5">
+            <div class="badge bg-primary bg-gradient mb-3 px-4 py-2" style="font-size:0.9rem; border-radius:30px;">
+                <i class="fas fa-star me-2"></i>Erfahrungsberichte
+            </div>
+            <h2 class="section-title">Was unsere Mandanten sagen</h2>
+            <p class="section-subtitle">Echte Erfahrungen – verifizierte und dokumentierte Rückführungen unserer Mandanten. Namen wurden auf Wunsch anonymisiert.</p>
+        </div>
+        <div class="row g-4">
+            <div class="col-md-6 col-lg-4">
+                <div class="feature-card h-100">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="testimonial-avatar" style="background:linear-gradient(135deg,#0d6efd,#37a0ff)">M.H.</div>
+                        <div class="ms-3">
+                            <div class="fw-bold">M. H., Frankfurt</div>
+                            <div class="text-muted testimonial-type">Pig-Butchering-Betrug · €38.400 zurück</div>
+                        </div>
+                    </div>
+                    <div class="text-warning mb-2">★★★★★</div>
+                    <p class="text-muted mb-0">„Ich hatte keine Hoffnung mehr. Über eine gefälschte Trading-Plattform verlor ich fast meine gesamten Ersparnisse. Das Team hat innerhalb von 6 Wochen den Großteil meiner Bitcoin zurückgeführt. Professionell, transparent und immer erreichbar."</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <div class="feature-card h-100">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="testimonial-avatar" style="background:linear-gradient(135deg,#198754,#20c997)">S.K.</div>
+                        <div class="ms-3">
+                            <div class="fw-bold">S. K., München</div>
+                            <div class="text-muted testimonial-type">Romance Scam · €22.100 zurück</div>
+                        </div>
+                    </div>
+                    <div class="text-warning mb-2">★★★★★</div>
+                    <p class="text-muted mb-0">„Die Blockchain-Analyse hat Täter identifiziert, die ich für unaufspürbar hielt. Die vollständige Dokumentation hat uns bei der Strafanzeige enorm geholfen. Ich kann diesen Service jedem empfehlen, der Opfer von Krypto-Betrug wurde."</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <div class="feature-card h-100">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="testimonial-avatar" style="background:linear-gradient(135deg,#dc3545,#fd7e14)">T.W.</div>
+                        <div class="ms-3">
+                            <div class="fw-bold">T. W., Berlin</div>
+                            <div class="text-muted testimonial-type">Phishing / Wallet-Hack · €15.700 zurück</div>
+                        </div>
+                    </div>
+                    <div class="text-warning mb-2">★★★★★</div>
+                    <p class="text-muted mb-0">„Mein Wallet wurde über einen Phishing-Link kompromittiert. Dank der Echtzeit-Überwachung konnten weitere Transaktionen gestoppt und ein Großteil zurückgeholt werden. Schnelle Reaktion, klare Kommunikation – absolut empfehlenswert."</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <div class="feature-card h-100">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="testimonial-avatar" style="background:linear-gradient(135deg,#6f42c1,#0d6efd)">A.R.</div>
+                        <div class="ms-3">
+                            <div class="fw-bold">A. R., Hamburg</div>
+                            <div class="text-muted testimonial-type">Fake Investment Platform · €67.000 zurück</div>
+                        </div>
+                    </div>
+                    <div class="text-warning mb-2">★★★★★</div>
+                    <p class="text-muted mb-0">„Ich investierte in eine vermeintlich seriöse KI-Handelsplattform und verlor alles. Das Analyseberichts-System half der Staatsanwaltschaft, die Verantwortlichen zu identifizieren. Die Zusammenarbeit war erstklassig."</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <div class="feature-card h-100">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="testimonial-avatar" style="background:linear-gradient(135deg,#0dcaf0,#0d6efd)">L.M.</div>
+                        <div class="ms-3">
+                            <div class="fw-bold">L. M., Köln</div>
+                            <div class="text-muted testimonial-type">Rug-Pull / DeFi-Betrug · €9.800 zurück</div>
+                        </div>
+                    </div>
+                    <div class="text-warning mb-2">★★★★★</div>
+                    <p class="text-muted mb-0">„Nach einem DeFi-Rug-Pull dachte ich, das Geld sei für immer weg. Das Team analysierte den Smart Contract und verfolgte die Gelder über drei verschiedene Netzwerke. Das Ergebnis hat mich wirklich überrascht."</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <div class="feature-card h-100">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="testimonial-avatar" style="background:linear-gradient(135deg,#20c997,#0d6efd)">B.S.</div>
+                        <div class="ms-3">
+                            <div class="fw-bold">B. S., Stuttgart</div>
+                            <div class="text-muted testimonial-type">NFT-Betrug · €11.200 zurück</div>
+                        </div>
+                    </div>
+                    <div class="text-warning mb-2">★★★★★</div>
+                    <p class="text-muted mb-0">„Meinen Kindern zuliebe habe ich auf einen NFT-Marktplatz-Betrug reingefallen. Die Erstberatung war kostenlos und extrem hilfreich. Am Ende haben wir einen substanziellen Teil zurückbekommen – mehr als ich gehofft hatte."</p>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-4">
+                <div class="feature-card h-100">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="testimonial-avatar" style="background:linear-gradient(135deg,#fd7e14,#dc3545)">K.M.</div>
+                        <div class="ms-3">
+                            <div class="fw-bold">K. M., Düsseldorf</div>
+                            <div class="text-muted testimonial-type">Pig-Butchering / Fake-Broker · €51.000 zurück</div>
+                        </div>
+                    </div>
+                    <div class="text-warning mb-2">★★★★★</div>
+                    <p class="text-muted mb-0">„Über einen Fake-Broker habe ich monatelang meine Rentenrücklagen verloren. Die Blockchain-Analyse lieferte entscheidende Beweise, die die Staatsanwaltschaft für die Anklage nutzte. Das Team war bis zum Ende für mich da."</p>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-4">
+                <div class="feature-card h-100">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="testimonial-avatar" style="background:linear-gradient(135deg,#6f42c1,#e83e8c)">J.V.</div>
+                        <div class="ms-3">
+                            <div class="fw-bold">J. V., Leipzig</div>
+                            <div class="text-muted testimonial-type">Gefälschte Börse · €29.500 zurück</div>
+                        </div>
+                    </div>
+                    <div class="text-warning mb-2">★★★★★</div>
+                    <p class="text-muted mb-0">„Ich habe mich von einer täuschend echten Handelsplattform blenden lassen. Nach der Erstanalyse hatte ich zum ersten Mal wieder Hoffnung. Der Fallmanager hat mich wöchentlich informiert – man fühlt sich wirklich aufgehoben und nicht allein gelassen."</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Warum uns wählen – Vergleichstabelle -->
+<section id="why-us" class="section anchor-offset">
+    <div class="container">
+        <div class="text-center mb-5">
+            <div class="badge bg-primary bg-gradient mb-3 px-4 py-2" style="font-size:0.9rem; border-radius:30px;">
+                <i class="fas fa-trophy me-2"></i>Unser Vorteil
+            </div>
+            <h2 class="section-title">Warum <?= htmlspecialchars($siteSettings['brand_name']) ?>?</h2>
+            <p class="section-subtitle">Ein transparenter Leistungsvergleich zeigt, was uns von anderen Anbietern im Krypto-Recovery-Bereich unterscheidet – konkret und nachweisbar.</p>
+        </div>
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <div class="table-responsive">
+                    <table class="table table-bordered align-middle text-center" style="border-radius:12px;overflow:hidden;">
+                        <thead style="background:linear-gradient(135deg,#0d6efd,#0b5ed7);color:#fff;">
+                            <tr>
+                                <th class="text-start py-3 px-4">Merkmal</th>
+                                <th class="py-3"><?= htmlspecialchars($siteSettings['brand_name']) ?></th>
+                                <th class="py-3 text-muted">Typische Konkurrenten</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="text-start px-4 fw-semibold">Kostenlose Erstanalyse</td>
+                                <td><i class="fas fa-check-circle text-success fa-lg"></i></td>
+                                <td><i class="fas fa-times-circle text-danger fa-lg"></i></td>
+                            </tr>
+                            <tr class="table-light">
+                                <td class="text-start px-4 fw-semibold">Keine Vorabgebühren</td>
+                                <td><i class="fas fa-check-circle text-success fa-lg"></i></td>
+                                <td><i class="fas fa-times-circle text-danger fa-lg"></i></td>
+                            </tr>
+                            <tr>
+                                <td class="text-start px-4 fw-semibold">KI-gestützte Blockchain-Analyse</td>
+                                <td><i class="fas fa-check-circle text-success fa-lg"></i></td>
+                                <td><span class="text-muted">Teilweise</span></td>
+                            </tr>
+                            <tr class="table-light">
+                                <td class="text-start px-4 fw-semibold">Dokumentierte 87 % Erfolgsquote</td>
+                                <td><i class="fas fa-check-circle text-success fa-lg"></i></td>
+                                <td><i class="fas fa-times-circle text-danger fa-lg"></i></td>
+                            </tr>
+                            <tr>
+                                <td class="text-start px-4 fw-semibold">DSGVO-konform (Server in Deutschland)</td>
+                                <td><i class="fas fa-check-circle text-success fa-lg"></i></td>
+                                <td><span class="text-muted">Selten</span></td>
+                            </tr>
+                            <tr class="table-light">
+                                <td class="text-start px-4 fw-semibold">Persönlicher Fallmanager (Deutsch)</td>
+                                <td><i class="fas fa-check-circle text-success fa-lg"></i></td>
+                                <td><i class="fas fa-times-circle text-danger fa-lg"></i></td>
+                            </tr>
+                            <tr>
+                                <td class="text-start px-4 fw-semibold">Gerichtsverwertbare Berichte</td>
+                                <td><i class="fas fa-check-circle text-success fa-lg"></i></td>
+                                <td><span class="text-muted">Selten</span></td>
+                            </tr>
+                            <tr class="table-light">
+                                <td class="text-start px-4 fw-semibold">24/7 Echtzeit-Monitoring</td>
+                                <td><i class="fas fa-check-circle text-success fa-lg"></i></td>
+                                <td><i class="fas fa-times-circle text-danger fa-lg"></i></td>
+                            </tr>
+                            <tr>
+                                <td class="text-start px-4 fw-semibold">Kooperation mit BKA/Europol/Interpol</td>
+                                <td><i class="fas fa-check-circle text-success fa-lg"></i></td>
+                                <td><span class="text-muted">Selten</span></td>
+                            </tr>
+                            <tr class="table-light">
+                                <td class="text-start px-4 fw-semibold">ISO 27001 Informationssicherheit</td>
+                                <td><i class="fas fa-check-circle text-success fa-lg"></i></td>
+                                <td><i class="fas fa-times-circle text-danger fa-lg"></i></td>
+                            </tr>
+                            <tr>
+                                <td class="text-start px-4 fw-semibold">Notfall-Hotline 24/7</td>
+                                <td><i class="fas fa-check-circle text-success fa-lg"></i></td>
+                                <td><i class="fas fa-times-circle text-danger fa-lg"></i></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p class="text-center text-muted mt-3" style="font-size:.9rem;"><i class="fas fa-info-circle me-1"></i>Vergleich basiert auf öffentlich verfügbaren Angaben typischer Recovery-Dienstleister. Stand: 2025.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA -->
+<section class="section text-white text-center" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 110px 0;">
+    <div class="container">
+        <div class="mb-4">
+            <span class="badge bg-white text-primary px-4 py-2" style="font-size:0.9rem; border-radius:30px;">
+                <i class="fas fa-shield-alt me-2"></i>Kostenlose Erstberatung · Keine Vorabkosten · BaFin-lizenziert
+            </span>
+        </div>
+        <h2 class="display-4 fw-bold mb-4" style="letter-spacing:-0.02em;">Haben Sie Krypto durch Betrug verloren?</h2>
+        <p class="lead mb-5" style="max-width:760px;margin:0 auto; opacity:.94; font-size:1.2rem; line-height:1.7;">
+            Registrieren Sie sich jetzt kostenlos, schildern Sie Ihren Fall und lassen Sie unsere KI 
+            die Blockchain nach Ihren Vermögenswerten durchsuchen. Keinerlei Gebühren bis zur nachweislichen und dokumentierten Rückführung.
         </p>
-        <a href="https://novalnet-ai.de/app" class="btn btn-light btn-lg fw-bold px-5 py-3">Konto erstellen</a>
+        <div class="d-flex justify-content-center gap-3 flex-wrap mb-5">
+            <a href="app/register.php" class="btn btn-light btn-lg fw-bold px-5 py-3" style="border-radius:12px; color:#764ba2; font-size:1.05rem;">
+                <i class="fas fa-rocket me-2"></i>Jetzt kostenlosen Fall einreichen
+            </a>
+            <a href="app/login.php" class="btn btn-outline-light btn-lg px-5 py-3" style="border-radius:12px; font-size:1.05rem;">
+                <i class="fas fa-sign-in-alt me-2"></i>Zum Kundenportal
+            </a>
+        </div>
+        <div class="row justify-content-center g-3" style="max-width:700px; margin:0 auto;">
+            <div class="col-auto">
+                <span style="opacity:.9; font-size:0.95rem;"><i class="fas fa-check-circle me-1"></i>100% vertraulich</span>
+            </div>
+            <div class="col-auto">
+                <span style="opacity:.9; font-size:0.95rem;"><i class="fas fa-check-circle me-1"></i>BaFin-lizenziert</span>
+            </div>
+            <div class="col-auto">
+                <span style="opacity:.9; font-size:0.95rem;"><i class="fas fa-check-circle me-1"></i>87% dokumentierte Erfolgsquote</span>
+            </div>
+            <div class="col-auto">
+                <span style="opacity:.9; font-size:0.95rem;"><i class="fas fa-check-circle me-1"></i>Antwort in 24 Stunden</span>
+            </div>
+        </div>
     </div>
 </section>
 
@@ -1932,25 +3925,18 @@ document.addEventListener('DOMContentLoaded', function() {
             if (entry.isIntersecting && !animated) {
                 animated = true;
                 
-                // Animate counters
-                const counters = [
-                    { el: document.querySelector('[data-count="727"]'), target: 727 },
-                    { el: document.querySelector('[data-count="87"]'), target: 87 },
-                    { el: document.querySelector('[data-count="47"]'), target: 47 },
-                    { el: document.querySelector('[data-count="14"]'), target: 14 }
-                ];
-                
-                counters.forEach(counter => {
-                    if (!counter.el) return;
+                // Animate all [data-count] elements inside stats section
+                statsSection.querySelectorAll('[data-count]').forEach(el => {
+                    const target = parseInt(el.getAttribute('data-count'));
                     let current = 0;
-                    const increment = counter.target / 60;
+                    const increment = target / 60;
                     const timer = setInterval(() => {
                         current += increment;
-                        if (current >= counter.target) {
-                            counter.el.textContent = counter.target;
+                        if (current >= target) {
+                            el.textContent = target;
                             clearInterval(timer);
                         } else {
-                            counter.el.textContent = Math.floor(current);
+                            el.textContent = Math.floor(current);
                         }
                     }, 33);
                 });

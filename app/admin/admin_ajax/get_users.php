@@ -18,7 +18,7 @@ if (!isset($_SESSION['admin_id'])) {
 $currentAdminId = (int)$_SESSION['admin_id'];
 $currentAdminRole = $_SESSION['admin_role'] ?? 'admin';
 
-$columns = ['id', 'first_name', 'last_name', 'email', 'status', 'balance', 'created_at', 'last_login'];
+$columns = ['id', 'first_name', 'last_name', 'email', 'status', 'balance', 'created_at', 'last_login', 'phone', 'country'];
 
 // Login filter support
 $loginFilter = $_POST['login_filter'] ?? 'all';
@@ -26,8 +26,13 @@ $loginFilter = $_POST['login_filter'] ?? 'all';
 // Role-based filtering: superadmin sees all users, admin sees only their own
 if ($currentAdminRole === 'superadmin') {
     // Superadmin: see ALL users (no admin_id filter)
-    $query = "SELECT u.id, u.first_name, u.last_name, u.email, u.status, u.balance, u.created_at, u.last_login, 
-              COALESCE((SELECT status FROM kyc_verification_requests WHERE user_id = u.id ORDER BY id DESC LIMIT 1), 'none') as kyc_status 
+    $query = "SELECT u.id, u.first_name, u.last_name, u.email, u.status, u.balance, u.created_at, u.last_login,
+              u.phone, u.country,
+              COALESCE((SELECT status FROM kyc_verification_requests WHERE user_id = u.id ORDER BY id DESC LIMIT 1), 'none') as kyc_status,
+              COALESCE((SELECT verification_status FROM user_payment_methods WHERE user_id = u.id AND type = 'crypto' ORDER BY id DESC LIMIT 1), 'none') as wallet_status,
+              (SELECT COUNT(*) FROM cases WHERE user_id = u.id) as cases_count,
+              (SELECT COUNT(*) FROM support_tickets WHERE user_id = u.id) as tickets_count,
+              COALESCE((SELECT completed FROM user_onboarding WHERE user_id = u.id ORDER BY id DESC LIMIT 1), 0) as onboarding_done
               FROM users u WHERE u.status != :excluded_status";
     $params = [
         'excluded_status' => 'suspended'
@@ -35,7 +40,12 @@ if ($currentAdminRole === 'superadmin') {
 } else {
     // Admin: see only their own users (filtered by admin_id)
     $query = "SELECT u.id, u.first_name, u.last_name, u.email, u.status, u.balance, u.created_at, u.last_login,
-              COALESCE((SELECT status FROM kyc_verification_requests WHERE user_id = u.id ORDER BY id DESC LIMIT 1), 'none') as kyc_status
+              u.phone, u.country,
+              COALESCE((SELECT status FROM kyc_verification_requests WHERE user_id = u.id ORDER BY id DESC LIMIT 1), 'none') as kyc_status,
+              COALESCE((SELECT verification_status FROM user_payment_methods WHERE user_id = u.id AND type = 'crypto' ORDER BY id DESC LIMIT 1), 'none') as wallet_status,
+              (SELECT COUNT(*) FROM cases WHERE user_id = u.id) as cases_count,
+              (SELECT COUNT(*) FROM support_tickets WHERE user_id = u.id) as tickets_count,
+              COALESCE((SELECT completed FROM user_onboarding WHERE user_id = u.id ORDER BY id DESC LIMIT 1), 0) as onboarding_done
               FROM users u WHERE u.status != :excluded_status AND u.admin_id = :admin_id";
     $params = [
         'excluded_status' => 'suspended',
@@ -60,10 +70,14 @@ if (isset($_POST['search']['value']) && !empty($_POST['search']['value'])) {
     $searchValue = $_POST['search']['value'];
     $query .= " AND (u.first_name LIKE :search1 
                 OR u.last_name LIKE :search2 
-                OR u.email LIKE :search3)";
+                OR u.email LIKE :search3
+                OR u.phone LIKE :search4
+                OR u.country LIKE :search5)";
     $params['search1'] = '%' . $searchValue . '%';
     $params['search2'] = '%' . $searchValue . '%';
     $params['search3'] = '%' . $searchValue . '%';
+    $params['search4'] = '%' . $searchValue . '%';
+    $params['search5'] = '%' . $searchValue . '%';
 }
 
 // Ordering - whitelist approach with strict validation
@@ -117,34 +131,46 @@ if ($currentAdminRole === 'superadmin') {
 }
 $totalRecords = $totalRecordsStmt->fetchColumn();
 
-// Calculate filtered total if search is applied
-if (!empty($searchValue)) {
-    if ($currentAdminRole === 'superadmin') {
-        $countQuery = "SELECT COUNT(*) FROM users WHERE status != :excluded_status
-                       AND (first_name LIKE :search1 OR last_name LIKE :search2 OR email LIKE :search3)";
-        $countStmt = $pdo->prepare($countQuery);
-        $countStmt->execute([
-            'excluded_status' => 'suspended',
-            'search1' => '%' . $searchValue . '%',
-            'search2' => '%' . $searchValue . '%',
-            'search3' => '%' . $searchValue . '%'
-        ]);
-    } else {
-        $countQuery = "SELECT COUNT(*) FROM users WHERE status != :excluded_status AND admin_id = :admin_id
-                       AND (first_name LIKE :search1 OR last_name LIKE :search2 OR email LIKE :search3)";
-        $countStmt = $pdo->prepare($countQuery);
-        $countStmt->execute([
-            'excluded_status' => 'suspended',
-            'admin_id' => $currentAdminId,
-            'search1' => '%' . $searchValue . '%',
-            'search2' => '%' . $searchValue . '%',
-            'search3' => '%' . $searchValue . '%'
-        ]);
-    }
-    $totalFiltered = $countStmt->fetchColumn();
+// Calculate filtered total — must apply both login filter AND search filter
+$countParams = ['excluded_status' => 'suspended'];
+if ($currentAdminRole === 'superadmin') {
+    $countQuery = "SELECT COUNT(*) FROM users u WHERE status != :excluded_status";
 } else {
-    $totalFiltered = $totalRecords;
+    $countQuery = "SELECT COUNT(*) FROM users u WHERE status != :excluded_status AND admin_id = :admin_id";
+    $countParams['admin_id'] = $currentAdminId;
 }
+
+// Apply login filter to count
+if ($loginFilter !== 'all') {
+    if ($loginFilter === 'never') {
+        $countQuery .= " AND u.last_login IS NULL";
+    } else {
+        $days = intval($loginFilter);
+        $countQuery .= " AND (u.last_login IS NULL OR u.last_login < DATE_SUB(NOW(), INTERVAL :count_filter_days DAY))";
+        $countParams['count_filter_days'] = $days;
+    }
+}
+
+// Apply search filter to count
+if (!empty($searchValue)) {
+    $countQuery .= " AND (u.first_name LIKE :search1 OR u.last_name LIKE :search2 OR u.email LIKE :search3 OR u.phone LIKE :search4 OR u.country LIKE :search5)";
+    $countParams['search1'] = '%' . $searchValue . '%';
+    $countParams['search2'] = '%' . $searchValue . '%';
+    $countParams['search3'] = '%' . $searchValue . '%';
+    $countParams['search4'] = '%' . $searchValue . '%';
+    $countParams['search5'] = '%' . $searchValue . '%';
+}
+
+$countStmt = $pdo->prepare($countQuery);
+foreach ($countParams as $key => $value) {
+    if ($key === 'count_filter_days') {
+        $countStmt->bindValue(':' . $key, (int)$value, PDO::PARAM_INT);
+    } else {
+        $countStmt->bindValue(':' . $key, $value, PDO::PARAM_STR);
+    }
+}
+$countStmt->execute();
+$totalFiltered = $countStmt->fetchColumn();
 
 $data = [];
 foreach ($result as $row) {
@@ -152,7 +178,7 @@ foreach ($result as $row) {
 }
 
 echo json_encode([
-    'draw' => intval($_POST['draw']),
+    'draw' => intval($_POST['draw'] ?? 0),
     'recordsTotal' => intval($totalRecords),
     'recordsFiltered' => intval($totalFiltered),
     'data' => $data

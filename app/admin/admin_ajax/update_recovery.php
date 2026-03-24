@@ -62,8 +62,8 @@ try {
 
     // === 5️⃣ Send recovery update email ===
     try {
-        require_once '../AdminEmailHelper.php';
-        $emailHelper = new AdminEmailHelper($pdo);
+        require_once '../../EmailHelper.php';
+        $emailHelper = new EmailHelper($pdo);
         
         $customVars = [
             'recovered_amount' => number_format($newAmount, 2) . ' €',
@@ -75,7 +75,7 @@ try {
 'case_number' => $case['case_number']
         ];
         
-        $emailSent = $emailHelper->sendTemplateEmail('recovery_amount_updated', $case['user_id'], $customVars);
+        $emailSent = $emailHelper->sendEmail('recovery_amount_updated', $case['user_id'], $customVars);
     } catch (Exception $e) {
         error_log("Recovery update email failed: " . $e->getMessage());
         $emailSent = false;

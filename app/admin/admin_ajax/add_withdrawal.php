@@ -1,5 +1,6 @@
 <?php
 require_once '../admin_session.php';
+require_once __DIR__ . '/../AdminEmailHelper.php';
 
 header('Content-Type: application/json');
 
@@ -75,27 +76,28 @@ try {
     
     // Send email notification to user
     try {
-        require_once '../mail_functions.php';
-        
-        $userStmt = $pdo->prepare("SELECT email, first_name, last_name FROM users WHERE id = ?");
-        $userStmt->execute([$userId]);
-        $user = $userStmt->fetch(PDO::FETCH_ASSOC);
-        
-        if ($user) {
-            $emailContent = "
-                <h2>Withdrawal Request Created</h2>
-                <p>Dear {$user['first_name']} {$user['last_name']},</p>
-                <p>A withdrawal request has been created for your account:</p>
-                <ul>
-                    <li><strong>Amount:</strong> €" . number_format($amount, 2) . "</li>
-                    <li><strong>Reference:</strong> {$reference}</li>
-                    <li><strong>Status:</strong> Pending</li>
-                </ul>
-                <p>You will receive another notification when your withdrawal is processed.</p>
-            ";
-            
-            sendEmail($user['email'], 'Withdrawal Request Created', $emailContent);
+        $emailHelper = new AdminEmailHelper($pdo);
+
+        // Lookup payment method display name
+        $methodName = $methodCode;
+        $stmt2 = $pdo->prepare("SELECT method_name FROM payment_methods WHERE method_code = ? LIMIT 1");
+        $stmt2->execute([$methodCode]);
+        $method = $stmt2->fetch(PDO::FETCH_ASSOC);
+        if ($method && !empty($method['method_name'])) {
+            $methodName = $method['method_name'];
         }
+
+        $customVars = [
+            'amount'             => number_format($amount, 2, ',', '.') . ' €',
+            'reference'          => $reference,
+            'transaction_id'     => $reference,
+            'payment_method'     => $methodName,
+            'payment_details'    => $paymentDetails,
+            'transaction_date'   => date('d.m.Y H:i'),
+            'transaction_status' => 'Ausstehend',
+        ];
+
+        $emailHelper->sendTemplateEmail('withdrawal_pending', $userId, $customVars);
     } catch (Exception $e) {
         // Log email error but don't fail the withdrawal creation
         error_log('Email notification failed: ' . $e->getMessage());

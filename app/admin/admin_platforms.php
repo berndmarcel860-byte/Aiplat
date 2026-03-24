@@ -98,6 +98,15 @@ $platform_types = [
                         <input type="file" class="form-control" name="logo" accept="image/*">
                         <small class="form-text text-muted">Upload logo image (JPG, PNG, GIF - Max 2MB)</small>
                     </div>
+                    <div class="form-group">
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" class="custom-control-input" id="notifyUsersCheck" name="notify_users" value="1">
+                            <label class="custom-control-label" for="notifyUsersCheck">
+                                Notify all users via email alert
+                            </label>
+                        </div>
+                        <small class="form-text text-muted">If checked, an alert email will be sent to all active verified users about this new platform.</small>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
