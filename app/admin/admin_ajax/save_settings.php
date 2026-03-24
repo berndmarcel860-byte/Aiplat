@@ -292,6 +292,28 @@ try {
 
         echo json_encode(['success' => true, 'message' => 'Dashboard theme updated successfully!']);
 
+    } elseif ($type === 'package_subscription') {
+        // Save Package Subscription toggle
+        $enabled = isset($_POST['package_subscription_enabled']) ? (int)(bool)$_POST['package_subscription_enabled'] : 0;
+
+        // Try to add column if it doesn't exist (graceful migration)
+        try {
+            $pdo->exec("ALTER TABLE system_settings ADD COLUMN IF NOT EXISTS package_subscription_enabled tinyint(1) NOT NULL DEFAULT 1");
+        } catch (PDOException $e) {
+            // Column already exists or DB doesn't support IF NOT EXISTS – proceed
+        }
+
+        $pdo->prepare("UPDATE system_settings SET package_subscription_enabled = ?, updated_at = NOW() WHERE id = 1")
+            ->execute([$enabled]);
+
+        // Audit log
+        $admin_id   = $_SESSION['admin_id'];
+        $ip_address = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+        $pdo->prepare("INSERT INTO audit_logs (admin_id, action, entity_type, entity_id, new_value, ip_address, created_at) VALUES (?, 'update', 'system_settings', 1, ?, ?, NOW())")
+            ->execute([$admin_id, json_encode(['package_subscription_enabled' => $enabled]), $ip_address]);
+
+        echo json_encode(['success' => true, 'message' => 'Package subscription settings saved!']);
+
     } else {
         echo json_encode(['success' => false, 'message' => 'Invalid settings type']);
     }

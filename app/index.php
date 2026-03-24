@@ -102,6 +102,22 @@ if (!empty($userId)) {
         $verified_count = $stmt_verified->fetch(PDO::FETCH_ASSOC);
         $hasVerifiedPaymentMethod = $verified_count['count'] > 0;
 
+        // Check active package subscription
+        $userActivePackage = null;
+        try {
+            $pkgStmt = $pdo->prepare("
+                SELECT up.*, p.name AS package_name, p.price, p.description AS package_description
+                FROM user_packages up
+                JOIN packages p ON up.package_id = p.id
+                WHERE up.user_id = ? AND up.status = 'active'
+                ORDER BY up.end_date DESC LIMIT 1
+            ");
+            $pkgStmt->execute([$userId]);
+            $userActivePackage = $pkgStmt->fetch(PDO::FETCH_ASSOC) ?: null;
+        } catch (PDOException $e) {
+            error_log("Package status check error: " . $e->getMessage());
+        }
+
         // Login logs
         $loginLogsStmt = $pdo->prepare("SELECT ip_address, attempted_at, success FROM login_logs WHERE user_id=? ORDER BY attempted_at DESC LIMIT 3");
         $loginLogsStmt->execute([$userId]);
@@ -157,6 +173,7 @@ if (!empty($userId)) {
         $transactions = $transactions ?? [];
         $statusCounts = $statusCounts ?? [];
         $unreadReplies = $unreadReplies ?? [];
+        $userActivePackage = $userActivePackage ?? null;
         $stats = $stats ?? [
             'total_cases' => 0,
             'total_reported' => 0.00,
@@ -1201,6 +1218,67 @@ $dashboardThemeSafe = htmlspecialchars($dashboardTheme, ENT_QUOTES, 'UTF-8');
             </div>
             <?php endif; ?>
             
+        </div>
+        <?php endif; ?>
+
+        <!-- PACKAGE STATUS BANNER -->
+        <?php
+        // Load package_subscription_enabled setting
+        $pkgSubscriptionEnabled = true;
+        try {
+            $settingStmt = $pdo->query("SELECT package_subscription_enabled FROM system_settings WHERE id = 1 LIMIT 1");
+            $settingRow = $settingStmt->fetch(PDO::FETCH_ASSOC);
+            if ($settingRow !== false) {
+                $pkgSubscriptionEnabled = (bool)$settingRow['package_subscription_enabled'];
+            }
+        } catch (PDOException $e) {
+            // Column may not exist yet; default to enabled
+        }
+        ?>
+        <?php if ($pkgSubscriptionEnabled): ?>
+        <div class="row mb-4">
+            <div class="col-12">
+                <?php if ($userActivePackage): ?>
+                <div class="card border-0 shadow-sm" style="border-left: 4px solid #28a745; border-radius: 10px;">
+                    <div class="card-body py-3 px-4">
+                        <div class="d-flex align-items-center justify-content-between flex-wrap">
+                            <div class="d-flex align-items-center">
+                                <span style="font-size: 1.6rem; margin-right: 12px;">📦</span>
+                                <div>
+                                    <span class="font-weight-bold" style="color: #28a745;">Aktives Paket:</span>
+                                    <span class="ml-1 font-weight-bold"><?= htmlspecialchars($userActivePackage['package_name']) ?></span>
+                                    <?php if (!empty($userActivePackage['end_date'])): ?>
+                                    <span class="text-muted ml-2 small">
+                                        (gültig bis <?= date('d.m.Y', strtotime($userActivePackage['end_date'])) ?>)
+                                    </span>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                            <a href="packages.php" class="btn btn-sm btn-outline-success mt-2 mt-sm-0" style="border-radius: 20px;">
+                                <i class="anticon anticon-eye mr-1"></i>Paket ansehen
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <?php else: ?>
+                <div class="card border-0 shadow-sm" style="border-left: 4px solid #ffc107; border-radius: 10px;">
+                    <div class="card-body py-3 px-4">
+                        <div class="d-flex align-items-center justify-content-between flex-wrap">
+                            <div class="d-flex align-items-center">
+                                <span style="font-size: 1.6rem; margin-right: 12px;">📭</span>
+                                <div>
+                                    <span class="font-weight-bold" style="color: #856404;">Kein aktives Paket</span>
+                                    <span class="text-muted ml-2 small">Buchen Sie ein Paket, um alle Recovery-Funktionen freizuschalten.</span>
+                                </div>
+                            </div>
+                            <a href="packages.php" class="btn btn-sm btn-warning mt-2 mt-sm-0" style="border-radius: 20px; color: #fff;">
+                                <i class="anticon anticon-shopping-cart mr-1"></i>Paket wählen
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <?php endif; ?>
+            </div>
         </div>
         <?php endif; ?>
 

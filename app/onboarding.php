@@ -340,6 +340,47 @@ try {
     die("Database error.");
 }
 
+// === Package Recommendation Logic (used in Step 4) ===
+$recommendedPackage = null;
+$allPackages = [];
+if ($step == 4) {
+    try {
+        $pkgStmt = $pdo->query("SELECT * FROM packages ORDER BY price ASC");
+        $allPackages = $pkgStmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $yearLostValue = $saved['year_lost'] ?? null;
+        if ($yearLostValue) {
+            $currentYear = (int)date('Y');
+            $yearsSinceLoss = $currentYear - (int)$yearLostValue;
+
+            // Map years-since-loss to package tier
+            // ≤1 year → lowest (Basic), ≤3 years → second (Standard),
+            // ≤5 years → third (Premium), >5 years → highest/unlimited (VIP)
+            if ($yearsSinceLoss <= 1) {
+                $recommendedPackage = $allPackages[0] ?? null;
+            } elseif ($yearsSinceLoss <= 3) {
+                $recommendedPackage = $allPackages[1] ?? $allPackages[0] ?? null;
+            } elseif ($yearsSinceLoss <= 5) {
+                $recommendedPackage = $allPackages[2] ?? $allPackages[1] ?? null;
+            } else {
+                // Over 5 years → highest/unlimited package (most expensive non-free)
+                $topPackage = null;
+                foreach (array_reverse($allPackages) as $pkg) {
+                    if ((float)$pkg['price'] > 0) {
+                        $topPackage = $pkg;
+                        break;
+                    }
+                }
+                $recommendedPackage = $topPackage ?? ($allPackages[count($allPackages) - 1] ?? null);
+            }
+        } else {
+            $recommendedPackage = $allPackages[0] ?? null;
+        }
+    } catch (PDOException $e) {
+        error_log("Package load error: " . $e->getMessage());
+    }
+}
+
 require_once __DIR__ . '/header.php';
 if (!empty($_SESSION['error'])) {
     echo '<div class="alert alert-danger alert-dismissible fade show mx-3 mt-3" role="alert">
@@ -751,6 +792,14 @@ textarea.ob-control {
     .ob-platforms { grid-template-columns: 1fr 1fr; }
     .ob-step-label { font-size: 0.7rem; }
 }
+@keyframes ob-spin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+}
+@keyframes ob-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(41,80,168,.3); }
+    50%       { box-shadow: 0 0 0 14px rgba(41,80,168,0); }
+}
 </style>
 
 <div class="main-content">
@@ -1115,38 +1164,138 @@ textarea.ob-control {
 
     <?php elseif ($step == 4): ?>
     <!-- ============================================================
-     SCHRITT 4: Registrierung abschließen
+     SCHRITT 4: Bestes Paket finden
     ============================================================ -->
     <div class="ob-section-title">
-        <span class="ob-icon"><i class="anticon anticon-check-circle" style="font-size:18px;"></i></span>
-        Registrierung bestätigen
+        <span class="ob-icon"><i class="anticon anticon-gift" style="font-size:18px;"></i></span>
+        Wir finden das beste Paket für Sie
     </div>
-    <p class="ob-section-desc">Alle Angaben wurden erfasst. Bitte bestätigen Sie den Abschluss Ihrer Kontoeinrichtung.</p>
+    <p class="ob-section-desc">Basierend auf Ihrem Verlustjahr ermitteln wir das optimale Recovery-Paket für Ihren Fall.</p>
 
-    <div class="ob-success">
-        <div style="display:flex; align-items:center; gap:14px; margin-bottom:12px;">
-            <div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#28a745,#20c997);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                <i class="anticon anticon-check" style="color:#fff;font-size:22px;"></i>
+    <!-- Searching animation (shown for 15 seconds) -->
+    <div id="searchingPackage" style="text-align:center; padding: 40px 20px;">
+        <div style="margin-bottom: 24px;">
+            <div style="width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--ob-primary),var(--ob-accent));display:flex;align-items:center;justify-content:center;margin:0 auto 16px;animation:ob-pulse 1.5s infinite;">
+                <i class="anticon anticon-loading" style="color:#fff;font-size:32px;animation:ob-spin 1s linear infinite;"></i>
             </div>
-            <div>
-                <strong style="font-size:1.05rem;color:#155724;">Fast geschafft!</strong>
-                <p style="margin:2px 0 0;font-size:0.88rem;color:#1e7e34;">Alle erforderlichen Angaben wurden gespeichert.</p>
+            <strong style="font-size:1.1rem;color:var(--ob-text);">Analyse läuft...</strong>
+            <p style="color:var(--ob-muted);margin:6px 0 24px;font-size:0.9rem;">Wir analysieren Ihren Fall und suchen das passende Paket.</p>
+        </div>
+        <div style="background:#e9ecef;border-radius:10px;height:10px;max-width:420px;margin:0 auto 10px;overflow:hidden;">
+            <div id="searchProgressBar" style="height:100%;width:0%;border-radius:10px;background:linear-gradient(90deg,var(--ob-primary),var(--ob-accent));transition:width 1s linear;"></div>
+        </div>
+        <p style="color:var(--ob-muted);font-size:0.85rem;" id="searchCountdown">Noch <strong>15</strong> Sekunden...</p>
+    </div>
+
+    <!-- Recommended package (hidden initially, shown after 15 sec) -->
+    <div id="packageResult" style="display:none;">
+        <?php if ($recommendedPackage): ?>
+        <div class="ob-success" style="margin-bottom:20px;">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+                <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#28a745,#20c997);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                    <i class="anticon anticon-check" style="color:#fff;font-size:18px;"></i>
+                </div>
+                <div>
+                    <strong style="font-size:1rem;color:#155724;">Empfohlenes Paket gefunden!</strong>
+                    <p style="margin:2px 0 0;font-size:0.85rem;color:#1e7e34;">Basierend auf Ihrem Verlustjahr empfehlen wir Ihnen:</p>
+                </div>
             </div>
         </div>
-        <p style="font-size:0.88rem;color:#155724;margin:0;">
-            Nach dem Abschluss wird Ihr Konto aktiviert und unser Team beginnt sofort mit der Analyse Ihres Falls.
-            Sie erhalten eine Bestätigungs-E-Mail mit einer Zusammenfassung Ihrer Angaben.
-        </p>
+
+        <div style="border:2px solid var(--ob-primary);border-radius:14px;padding:24px;margin-bottom:24px;background:#f7f9ff;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
+                <div>
+                    <span style="display:inline-block;background:linear-gradient(135deg,var(--ob-primary),var(--ob-accent));color:#fff;font-size:0.75rem;padding:4px 12px;border-radius:20px;margin-bottom:8px;font-weight:600;">
+                        ⭐ Empfohlen für Sie
+                    </span>
+                    <h5 style="margin:0 0 4px;color:var(--ob-text);font-weight:700;"><?= htmlspecialchars($recommendedPackage['name']) ?></h5>
+                    <p style="margin:0;color:var(--ob-muted);font-size:0.88rem;"><?= htmlspecialchars($recommendedPackage['description'] ?? '') ?></p>
+                </div>
+                <div style="text-align:right;">
+                    <span style="font-size:1.8rem;font-weight:700;color:var(--ob-primary);">€<?= number_format((float)$recommendedPackage['price'], 0, ',', '.') ?></span>
+                </div>
+            </div>
+
+            <?php if (!empty($recommendedPackage['features'])): ?>
+            <ul style="list-style:none;padding:0;margin:0 0 16px;">
+                <?php foreach (json_decode($recommendedPackage['features'], true) ?? [] as $feature): ?>
+                <li style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:0.88rem;color:var(--ob-text);">
+                    <i class="anticon anticon-check-circle" style="color:#28a745;flex-shrink:0;"></i>
+                    <?= htmlspecialchars($feature) ?>
+                </li>
+                <?php endforeach; ?>
+            </ul>
+            <?php endif; ?>
+
+            <div style="display:flex;gap:12px;flex-wrap:wrap;">
+                <?php if (!empty($recommendedPackage['recovery_speed'])): ?>
+                <div style="flex:1;min-width:120px;background:#fff;border-radius:8px;padding:10px;text-align:center;border:1px solid var(--ob-border);">
+                    <div style="font-size:0.75rem;color:var(--ob-muted);">Bearbeitungszeit</div>
+                    <div style="font-weight:600;color:var(--ob-primary);font-size:0.88rem;"><?= htmlspecialchars($recommendedPackage['recovery_speed']) ?></div>
+                </div>
+                <?php endif; ?>
+                <?php if (!empty($recommendedPackage['support_level'])): ?>
+                <div style="flex:1;min-width:120px;background:#fff;border-radius:8px;padding:10px;text-align:center;border:1px solid var(--ob-border);">
+                    <div style="font-size:0.75rem;color:var(--ob-muted);">Support</div>
+                    <div style="font-weight:600;color:var(--ob-primary);font-size:0.88rem;"><?= htmlspecialchars($recommendedPackage['support_level']) ?></div>
+                </div>
+                <?php endif; ?>
+            </div>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+            <a href="packages.php" class="ob-btn" style="background:#fff;border:2px solid var(--ob-primary);color:var(--ob-primary);padding:12px 24px;">
+                <i class="anticon anticon-unordered-list mr-1"></i>Alle Pakete ansehen
+            </a>
+            <form method="post" action="onboarding.php?step=<?= $step ?>" style="display:inline;">
+                <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+                <button type="submit" class="ob-btn ob-btn-primary" style="padding:12px 32px;">
+                    <i class="anticon anticon-check-circle mr-1"></i> Registrierung abschließen
+                </button>
+            </form>
+        </div>
+
+        <?php else: ?>
+        <div style="background:#e8f4fd;border-radius:10px;padding:18px;margin-bottom:20px;border-left:4px solid var(--ob-accent);">
+            <p style="margin:0;color:#0c5460;font-size:0.9rem;"><i class="anticon anticon-info-circle mr-2"></i>Bitte besuchen Sie die Paketübersicht für weitere Informationen.</p>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+            <a href="packages.php" class="ob-btn" style="background:#fff;border:2px solid var(--ob-primary);color:var(--ob-primary);padding:12px 24px;">
+                <i class="anticon anticon-unordered-list mr-1"></i>Pakete ansehen
+            </a>
+            <form method="post" action="onboarding.php?step=<?= $step ?>" style="display:inline;">
+                <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+                <button type="submit" class="ob-btn ob-btn-primary" style="padding:12px 32px;">
+                    <i class="anticon anticon-check-circle mr-1"></i> Registrierung abschließen
+                </button>
+            </form>
+        </div>
+        <?php endif; ?>
     </div>
 
-    <form method="post" action="onboarding.php?step=<?= $step ?>">
-        <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
-        <div class="text-right">
-            <button type="submit" class="ob-btn ob-btn-primary" style="padding: 14px 40px; font-size: 1rem;">
-                <i class="anticon anticon-check-circle mr-1"></i> Registrierung jetzt abschließen
-            </button>
-        </div>
-    </form>
+    <script>
+    (function () {
+        var total = 15, elapsed = 0;
+        var bar  = document.getElementById('searchProgressBar');
+        var cd   = document.getElementById('searchCountdown');
+        var sDiv = document.getElementById('searchingPackage');
+        var rDiv = document.getElementById('packageResult');
+
+        var iv = setInterval(function () {
+            elapsed++;
+            bar.style.width = Math.round((elapsed / total) * 100) + '%';
+            var rem = total - elapsed;
+            if (rem > 0) {
+                cd.innerHTML = 'Noch <strong>' + rem + '</strong> Sekunde' + (rem === 1 ? '' : 'n') + '...';
+            } else {
+                cd.innerHTML = '<strong>Fertig!</strong>';
+                clearInterval(iv);
+                sDiv.style.display = 'none';
+                rDiv.style.display  = 'block';
+            }
+        }, 1000);
+    }());
+    </script>
 
     <?php endif; ?>
 
