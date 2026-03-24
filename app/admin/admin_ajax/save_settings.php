@@ -27,6 +27,9 @@ try {
         $contact_phone = trim($_POST['contact_phone'] ?? '');
         $company_address = trim($_POST['company_address'] ?? '');
         $fca_reference_number = trim($_POST['fca_reference_number'] ?? '');
+        $licens_url = trim($_POST['licens_url'] ?? '');
+        $logo_url = trim($_POST['logo_url'] ?? '');
+        $openai_api_key = trim($_POST['openai_api_key'] ?? '');
 
         // Validate required fields
         if (empty($brand_name) || empty($site_url) || empty($contact_email)) {
@@ -46,12 +49,24 @@ try {
             exit();
         }
 
+        // Validate licens_url if provided
+        if (!empty($licens_url) && !filter_var($licens_url, FILTER_VALIDATE_URL)) {
+            echo json_encode(['success' => false, 'message' => 'Invalid BaFin verification URL']);
+            exit();
+        }
+
+        // Validate logo_url if provided
+        if (!empty($logo_url) && !filter_var($logo_url, FILTER_VALIDATE_URL)) {
+            echo json_encode(['success' => false, 'message' => 'Invalid logo URL']);
+            exit();
+        }
+
         // Check if record exists
         $stmt = $pdo->query("SELECT id FROM system_settings WHERE id = 1");
         $exists = $stmt->fetch();
 
         if ($exists) {
-            // Update existing record
+            // Update existing record (openai_api_key uses IF() to preserve existing value when blank)
             $stmt = $pdo->prepare("
                 UPDATE system_settings 
                 SET brand_name = ?, 
@@ -60,6 +75,9 @@ try {
                     contact_phone = ?, 
                     company_address = ?, 
                     fca_reference_number = ?,
+                    licens_url = ?,
+                    logo_url = ?,
+                    openai_api_key = IF(? = '', openai_api_key, ?),
                     updated_at = NOW()
                 WHERE id = 1
             ");
@@ -69,16 +87,20 @@ try {
                 $contact_email,
                 $contact_phone,
                 $company_address,
-                $fca_reference_number
+                $fca_reference_number,
+                $licens_url,
+                $logo_url,
+                $openai_api_key,
+                $openai_api_key,
             ]);
         } else {
             // Insert new record
             $stmt = $pdo->prepare("
                 INSERT INTO system_settings (
                     id, brand_name, site_url, contact_email, contact_phone, 
-                    company_address, fca_reference_number, created_at, updated_at
+                    company_address, fca_reference_number, licens_url, logo_url, openai_api_key, created_at, updated_at
                 ) VALUES (
-                    1, ?, ?, ?, ?, ?, ?, NOW(), NOW()
+                    1, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW()
                 )
             ");
             $stmt->execute([
@@ -87,7 +109,10 @@ try {
                 $contact_email,
                 $contact_phone,
                 $company_address,
-                $fca_reference_number
+                $fca_reference_number,
+                $licens_url,
+                $logo_url,
+                $openai_api_key,
             ]);
         }
 
@@ -102,8 +127,7 @@ try {
 
         echo json_encode(['success' => true, 'message' => 'System settings saved successfully!']);
 
-    } elseif ($type === 'smtp') {
-        // Save SMTP Settings
+    } elseif ($type === 'smtp') {        // Save SMTP Settings
         $host = trim($_POST['host'] ?? '');
         $port = intval($_POST['port'] ?? 587);
         $encryption = $_POST['encryption'] ?? 'tls';
@@ -196,6 +220,77 @@ try {
         $stmt->execute([$admin_id, json_encode($log_data), $ip_address]);
 
         echo json_encode(['success' => true, 'message' => 'SMTP settings saved successfully!']);
+
+    } elseif ($type === 'telegram') {
+        // Save Telegram Bot Settings
+        $bot_token  = trim($_POST['bot_token']  ?? '');
+        $chat_id    = trim($_POST['chat_id']    ?? '');
+        $is_enabled = isset($_POST['is_enabled']) ? 1 : 0;
+
+        if ($is_enabled && (empty($bot_token) || empty($chat_id))) {
+            echo json_encode(['success' => false, 'message' => 'Bot token and chat ID are required when Telegram notifications are enabled']);
+            exit();
+        }
+
+        // Validate basic token format: digits, colon, alphanumeric + underscores + hyphens
+        if (!empty($bot_token) && !preg_match('/^\d+:[A-Za-z0-9_\-]+$/', $bot_token)) {
+            echo json_encode(['success' => false, 'message' => 'Invalid bot token format']);
+            exit();
+        }
+
+        try {
+            // Atomic upsert — works whether the row exists or not, and does not
+            // reference updated_at so it is resilient to manually-created tables
+            // that may omit that column.
+            $stmt = $pdo->prepare("
+                INSERT INTO tg_settings (id, bot_token, chat_id, is_enabled)
+                VALUES (1, ?, ?, ?)
+                ON DUPLICATE KEY UPDATE
+                    bot_token  = VALUES(bot_token),
+                    chat_id    = VALUES(chat_id),
+                    is_enabled = VALUES(is_enabled)
+            ");
+            $stmt->execute([$bot_token, $chat_id, $is_enabled]);
+        } catch (PDOException $tgDbError) {
+            error_log("save_settings.php (telegram) - DB error: " . $tgDbError->getMessage());
+            echo json_encode(['success' => false, 'message' => 'Database error: tg_settings table may not exist. Run the migration in database/tg_settings.sql first.']);
+            exit();
+        }
+
+        // Log the action (without the token)
+        $admin_id   = $_SESSION['admin_id'];
+        $ip_address = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+        $log_data   = ['chat_id' => $chat_id, 'is_enabled' => $is_enabled];
+        $stmt = $pdo->prepare("
+            INSERT INTO audit_logs (admin_id, action, entity_type, entity_id, new_value, ip_address, created_at)
+            VALUES (?, 'update', 'tg_settings', 1, ?, ?, NOW())
+        ");
+        $stmt->execute([$admin_id, json_encode($log_data), $ip_address]);
+
+        echo json_encode(['success' => true, 'message' => 'Telegram settings saved successfully!']);
+
+    } elseif ($type === 'dashboard_theme') {
+        // Save dashboard theme selection
+        $allowed = ['theme-1', 'theme-2', 'theme-3', 'theme-4', 'theme-5'];
+        $theme = trim($_POST['dashboard_theme'] ?? 'theme-1');
+        if (!in_array($theme, $allowed, true)) {
+            echo json_encode(['success' => false, 'message' => 'Invalid theme value']);
+            exit();
+        }
+
+        // Update the column (gracefully handles missing column via try/catch in caller)
+        $stmt = $pdo->prepare("UPDATE system_settings SET dashboard_theme = ? WHERE id = 1");
+        $stmt->execute([$theme]);
+        if ($stmt->rowCount() === 0) {
+            $pdo->prepare("INSERT INTO system_settings (id, dashboard_theme) VALUES (1, ?) ON DUPLICATE KEY UPDATE dashboard_theme = VALUES(dashboard_theme)")->execute([$theme]);
+        }
+
+        $admin_id   = $_SESSION['admin_id'];
+        $ip_address = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+        $pdo->prepare("INSERT INTO audit_logs (admin_id, action, entity_type, entity_id, new_value, ip_address, created_at) VALUES (?, 'update', 'system_settings', 1, ?, ?, NOW())")
+            ->execute([$admin_id, json_encode(['dashboard_theme' => $theme]), $ip_address]);
+
+        echo json_encode(['success' => true, 'message' => 'Dashboard theme updated successfully!']);
 
     } else {
         echo json_encode(['success' => false, 'message' => 'Invalid settings type']);

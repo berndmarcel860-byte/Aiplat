@@ -9,7 +9,7 @@ error_reporting(E_ALL);
 // Include admin session and email helper
 // =======================================================
 require_once '../admin_session.php';
-require_once '../AdminEmailHelper.php';
+require_once __DIR__ . '/../AdminEmailHelper.php';
 header('Content-Type: application/json');
 
 // =======================================================

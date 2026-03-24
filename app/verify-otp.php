@@ -1,5 +1,6 @@
 <?php
 require_once 'config.php';
+require_once __DIR__ . '/EmailHelper.php';
 session_start();
 
 // Check if user has OTP session
@@ -38,7 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 unset($_SESSION['login_otp']);
                 unset($_SESSION['otp_expire']);
                 
-                // Track successful OTP verification for 1-hour window
+                // Track successful OTP verification for 1-hour window (session + DB for persistence)
                 $_SESSION['last_otp_verified_at'] = time();
                 
                 // Set user session
@@ -47,8 +48,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['user_name'] = $user['first_name'] . ' ' . $user['last_name'];
                 $_SESSION['last_activity'] = time();
                 
-                // Update last login
-                $pdo->prepare("UPDATE users SET last_login = NOW() WHERE id = ?")->execute([$user['id']]);
+                // Update last login and persist OTP grace period to DB
+                $pdo->prepare("UPDATE users SET last_login = NOW(), last_otp_verified_at = NOW() WHERE id = ?")->execute([$user['id']]);
                 
                 // Log successful OTP verification
                 $pdo->prepare("UPDATE otp_logs SET is_verified = 1 WHERE user_id = ? AND otp_code = ? AND purpose = 'login' ORDER BY created_at DESC LIMIT 1")
@@ -96,86 +97,16 @@ if (isset($_GET['resend']) && $_GET['resend'] === '1') {
             $stmt = $pdo->prepare("INSERT INTO otp_logs (user_id, otp_code, purpose, ip_address, expires_at) VALUES (?, ?, 'login', ?, ?)");
             $stmt->execute([$userId, $otp, $ip, $expires]);
             
-            // Send email
-            try {
-                require_once __DIR__ . '/vendor/autoload.php';
-                
-                // Get SMTP settings
-                $stmt_smtp = $pdo->query("SELECT * FROM smtp_settings WHERE id = 1");
-                $smtp = $stmt_smtp->fetch();
-                
-                if ($smtp) {
-                    $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
-                    
-                    $mail->isSMTP();
-                    $mail->Host = $smtp['host'];
-                    $mail->SMTPAuth = !empty($smtp['username']);
-                    $mail->Username = $smtp['username'];
-                    $mail->Password = $smtp['password'];
-                    $mail->SMTPSecure = $smtp['encryption'];
-                    $mail->Port = $smtp['port'];
-                    
-                    $mail->setFrom($smtp['from_email'], $smtp['from_name']);
-                    $mail->addAddress($user['email'], $user['first_name']);
-                    
-                    $mail->isHTML(true);
-                    $mail->CharSet = 'UTF-8';
-                    $mail->Subject = "Ihr Anmeldecode für Crypto Finanz";
-                    
-                    $mail->Body = "
-                    <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f8f9fa; padding: 20px;'>
-                        <div style='background: linear-gradient(135deg, #2950a8, #2da9e3); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;'>
-                            <h1 style='color: white; margin: 0;'>Crypto Finanz</h1>
-                        </div>
-                        
-                        <div style='background: white; padding: 40px; border-radius: 0 0 10px 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);'>
-                            <h2 style='color: #2c3e50; margin-top: 0;'>Ihr Einmalcode</h2>
-                            
-                            <p style='color: #555; font-size: 16px; line-height: 1.6;'>
-                                Hallo {$user['first_name']},
-                            </p>
-                            
-                            <p style='color: #555; font-size: 16px; line-height: 1.6;'>
-                                Verwenden Sie diesen Code, um sich bei Ihrem Konto anzumelden:
-                            </p>
-                            
-                            <div style='background: #f8f9fa; padding: 25px; border-radius: 8px; text-align: center; margin: 30px 0; border: 2px dashed #2950a8;'>
-                                <div style='font-size: 36px; font-weight: bold; letter-spacing: 10px; color: #2950a8;'>
-                                    {$otp}
-                                </div>
-                            </div>
-                            
-                            <div style='background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; border-radius: 4px;'>
-                                <p style='margin: 0; color: #856404; font-size: 14px;'>
-                                    <strong>⏱️ Gültigkeit:</strong> Dieser Code ist 5 Minuten gültig.
-                                </p>
-                            </div>
-                            
-                            <div style='background: #d1ecf1; border-left: 4px solid #17a2b8; padding: 15px; margin: 20px 0; border-radius: 4px;'>
-                                <p style='margin: 0; color: #0c5460; font-size: 14px;'>
-                                    <strong>🔒 Sicherheit:</strong> Teilen Sie diesen Code niemals mit anderen.
-                                </p>
-                            </div>
-                            
-                            <hr style='margin: 30px 0; border: none; border-top: 1px solid #dee2e6;'>
-                            
-                            <p style='font-size: 12px; color: #999; margin-bottom: 0;'>
-                                Wenn Sie sich nicht angemeldet haben, ignorieren Sie diese E-Mail bitte.
-                            </p>
-                            
-                            <p style='font-size: 12px; color: #999; margin-top: 10px;'>
-                                Mit freundlichen Grüßen,<br>
-                                Ihr Crypto Finanz Team
-                            </p>
-                        </div>
-                    </div>
-                    ";
-                    
-                    $mail->send();
-                    $success = "Ein neuer OTP-Code wurde an Ihre E-Mail gesendet.";
-                }
-            } catch (Exception $e) {
-                error_log("Failed to resend OTP: " . $e->getMessage());
+            // Send email via EmailHelper (uses login_otp DB template when available)
+            $emailHelper = new EmailHelper($pdo);
+            $sent = $emailHelper->sendLoginOtpEmail($userId, [
+                'otp_code'            => $otp,
+                'otp_expires_minutes' => '5',
+            ]);
+
+            if ($sent) {
+                $success = "Ein neuer OTP-Code wurde an Ihre E-Mail gesendet.";
+            } else {
                 $error = "Fehler beim Senden des OTP-Codes. Bitte versuchen Sie es später erneut.";
             }
         }
@@ -190,97 +121,133 @@ if (isset($_GET['resend']) && $_GET['resend'] === '1') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OTP-Verifizierung | Crypto Finanz</title>
+    <title>OTP-Verifizierung | Fund Recovery Services</title>
     <link href="assets/css/app.min.css" rel="stylesheet">
     <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0d1b2a 0%, #1b2a3b 60%, #102030 100%);
+            min-height: 100vh;
+        }
         .otp-container {
             min-height: 100vh;
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 20px;
+            padding: 30px 15px;
         }
         .otp-card {
-            max-width: 500px;
+            border-radius: 12px;
+            box-shadow: 0 8px 40px rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255,255,255,0.07);
+            background: #ffffff;
+            max-width: 460px;
             width: 100%;
-            border-radius: 15px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
-            border: none;
-            overflow: hidden;
         }
         .otp-header {
-            background: linear-gradient(135deg, #2950a8, #2da9e3);
-            color: white;
-            padding: 40px 30px;
+            background: linear-gradient(135deg, #1a3a5c 0%, #0d2137 100%);
+            border-radius: 12px 12px 0 0;
+            padding: 28px 32px 22px;
             text-align: center;
         }
-        .otp-header h2 {
-            margin: 0 0 10px 0;
-            font-size: 28px;
-            font-weight: 600;
+        .otp-header img {
+            height: 56px;
+            margin-bottom: 14px;
         }
-        .otp-header p {
+        .otp-header .header-title {
+            color: #ffffff;
+            font-size: 1.1rem;
+            font-weight: 600;
             margin: 0;
-            opacity: 0.9;
-            font-size: 14px;
+            letter-spacing: 0.3px;
+        }
+        .otp-header .header-subtitle {
+            color: rgba(255,255,255,0.65);
+            font-size: 0.82rem;
+            margin-top: 4px;
         }
         .otp-body {
-            padding: 40px 30px;
+            padding: 30px 32px 28px;
             background: white;
+            border-radius: 0 0 12px 12px;
+        }
+        .form-group label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 6px;
         }
         .otp-input {
-            font-size: 32px;
+            font-size: 28px;
             text-align: center;
-            letter-spacing: 15px;
+            letter-spacing: 12px;
             font-weight: bold;
-            padding: 20px;
-            border: 2px solid #dee2e6;
-            border-radius: 10px;
-            transition: all 0.3s;
+            padding: 14px 20px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            color: #111827;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            width: 100%;
         }
         .otp-input:focus {
-            border-color: #2950a8;
-            box-shadow: 0 0 0 0.2rem rgba(41, 80, 168, 0.25);
+            border-color: #1a3a5c;
+            box-shadow: 0 0 0 3px rgba(26, 58, 92, 0.15);
+            outline: none;
         }
         .btn-verify {
-            background: linear-gradient(135deg, #2950a8, #2da9e3);
+            background: linear-gradient(135deg, #1a3a5c 0%, #0d2137 100%);
             border: none;
-            padding: 15px 30px;
-            font-size: 16px;
+            color: #ffffff;
             font-weight: 600;
-            border-radius: 10px;
-            transition: all 0.3s;
+            font-size: 0.95rem;
+            padding: 11px;
+            border-radius: 8px;
+            width: 100%;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            letter-spacing: 0.3px;
         }
         .btn-verify:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(41, 80, 168, 0.3);
+            opacity: 0.88;
+            color: #ffffff;
         }
         .info-box {
             background: #f8f9fa;
-            border-left: 4px solid #17a2b8;
-            padding: 15px;
-            border-radius: 5px;
-            margin: 20px 0;
+            border-left: 4px solid #1a3a5c;
+            padding: 12px 14px;
+            border-radius: 6px;
+            margin: 18px 0;
         }
         .info-box p {
             margin: 0;
             color: #555;
-            font-size: 14px;
+            font-size: 0.82rem;
         }
         .resend-link {
-            color: #2950a8;
+            color: #1a3a5c;
             text-decoration: none;
             font-weight: 500;
-            transition: all 0.3s;
+            font-size: 0.85rem;
         }
         .resend-link:hover {
-            color: #1e3a7a;
             text-decoration: underline;
         }
         .timer-text {
-            font-size: 13px;
-            color: #999;
+            font-size: 0.78rem;
+            color: #9ca3af;
+        }
+        .otp-footer {
+            border-top: 1px solid #f0f0f0;
+            padding: 14px 32px 18px;
+            text-align: center;
+            font-size: 0.8rem;
+            color: #9ca3af;
+        }
+        .otp-footer a {
+            font-size: 0.8rem;
+        }
+        .resend-hint {
+            font-size: 0.85rem;
         }
     </style>
 </head>
@@ -288,84 +255,70 @@ if (isset($_GET['resend']) && $_GET['resend'] === '1') {
     <div class="otp-container">
         <div class="otp-card">
             <div class="otp-header">
-                <i class="anticon anticon-mail" style="font-size: 48px; margin-bottom: 15px;"></i>
-                <h2>E-Mail-Verifizierung</h2>
-                <p>Geben Sie den 6-stelligen Code ein, den wir an Ihre E-Mail gesendet haben</p>
+                <img src="assets/images/logo/logo.png" alt="Fund Recovery Services">
+                <p class="header-title">E-Mail-Verifizierung</p>
+                <p class="header-subtitle">Geben Sie den 6-stelligen Code ein, den wir an Ihre E-Mail gesendet haben</p>
             </div>
-            
+
             <div class="otp-body">
                 <?php if ($error): ?>
                 <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                    <i class="anticon anticon-close-circle mr-2"></i>
                     <?= htmlspecialchars($error, ENT_QUOTES) ?>
                     <button type="button" class="close" data-dismiss="alert" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
                 <?php endif; ?>
-                
+
                 <?php if ($success): ?>
                 <div class="alert alert-success alert-dismissible fade show" role="alert">
-                    <i class="anticon anticon-check-circle mr-2"></i>
                     <?= htmlspecialchars($success, ENT_QUOTES) ?>
                     <button type="button" class="close" data-dismiss="alert" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
                 <?php endif; ?>
-                
+
                 <form method="POST" action="" id="otpForm">
                     <div class="form-group">
-                        <label for="otp" class="font-weight-bold" style="color: #2c3e50;">
-                            <i class="anticon anticon-lock mr-2"></i>Einmalcode (OTP)
-                        </label>
-                        <input type="text" 
-                               class="form-control otp-input" 
-                               id="otp" 
-                               name="otp" 
-                               maxlength="6" 
-                               pattern="[0-9]{6}" 
+                        <label for="otp">Einmalcode (OTP)</label>
+                        <input type="text"
+                               class="form-control otp-input"
+                               id="otp"
+                               name="otp"
+                               maxlength="6"
+                               pattern="[0-9]{6}"
                                placeholder="000000"
-                               required 
+                               required
                                autofocus
                                autocomplete="off">
                         <small class="form-text text-muted text-center mt-2">
-                            <i class="anticon anticon-clock-circle mr-1"></i>
                             Der Code ist 5 Minuten gültig
                         </small>
                     </div>
-                    
+
                     <div class="info-box">
-                        <p>
-                            <i class="anticon anticon-info-circle mr-2" style="color: #17a2b8;"></i>
-                            Überprüfen Sie Ihren Posteingang und Spam-Ordner auf eine E-Mail von <strong>Crypto Finanz</strong>.
-                        </p>
+                        <p>Überprüfen Sie Ihren Posteingang und Spam-Ordner auf eine E-Mail von unserem System.</p>
                     </div>
-                    
-                    <button type="submit" class="btn btn-primary btn-verify btn-block">
-                        <i class="anticon anticon-check-circle mr-2"></i>Code verifizieren
+
+                    <button type="submit" class="btn btn-verify">
+                        Code verifizieren
                     </button>
                 </form>
-                
+
                 <div class="text-center mt-4">
-                    <p class="text-muted mb-2">Code nicht erhalten?</p>
-                    <a href="?resend=1" class="resend-link">
-                        <i class="anticon anticon-reload mr-1"></i>Neuen Code senden
-                    </a>
+                    <p class="text-muted mb-2 resend-hint">Code nicht erhalten?</p>
+                    <a href="?resend=1" class="resend-link">Neuen Code senden</a>
                     <p class="timer-text mt-2">
                         <?php if (isset($_SESSION['last_otp_sent'])): ?>
                             Letzter Code gesendet vor <?= time() - $_SESSION['last_otp_sent'] ?> Sekunden
                         <?php endif; ?>
                     </p>
                 </div>
-                
-                <hr class="my-4">
-                
-                <div class="text-center">
-                    <a href="logout.php" class="text-muted" style="font-size: 14px;">
-                        <i class="anticon anticon-arrow-left mr-1"></i>Zurück zur Anmeldung
-                    </a>
-                </div>
+            </div>
+
+            <div class="otp-footer">
+                <a href="logout.php" class="text-muted">&#8592; Zurück zur Anmeldung</a>
             </div>
         </div>
     </div>

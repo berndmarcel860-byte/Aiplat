@@ -101,11 +101,18 @@ class AdminEmailHelper {
             $subject = $this->replaceVariables($template['subject'], $variables);
             $htmlBody = $this->replaceVariables($template['content'], $variables);
             
-            // Wrap in professional template if not already a complete HTML document
-            // Templates from database contain only content HTML, so they need wrapping
-            if (strpos($htmlBody, '<!DOCTYPE') === false && strpos($htmlBody, '<html') === false) {
-                $htmlBody = $this->wrapInTemplate($subject, $htmlBody, $variables);
+            // Always wrap template content in the professional HTML wrapper.
+            // DB templates must contain only partial HTML (no DOCTYPE/html/head);
+            // they are converted to partial HTML by the database migration scripts.
+            // If a legacy full-HTML template is still in the DB, strip the outer
+            // document shell so it is properly re-wrapped below.
+            if (strpos($htmlBody, '<!DOCTYPE') !== false || strpos($htmlBody, '<html') !== false) {
+                // Extract just the body content from a full-HTML document
+                if (preg_match('/<body[^>]*>(.*?)<\/body>/is', $htmlBody, $matches)) {
+                    $htmlBody = trim($matches[1]);
+                }
             }
+            $htmlBody = $this->wrapInTemplate($subject, $htmlBody, $variables);
             
             // Send email
             return $this->sendEmail($userId, $subject, $htmlBody, $variables);
@@ -243,17 +250,48 @@ class AdminEmailHelper {
                 'case_title' => htmlspecialchars($latestCase['title'] ?? ''),
                 'case_amount' => isset($latestCase['amount']) ? number_format($latestCase['amount'], 2, ',', '.') . ' €' : '',
                 
-                // System/Dynamic (5 variables)
-                'current_year' => date('Y'),
-                'current_date' => date('d.m.Y'),
-                'current_time' => date('H:i'),
-                'dashboard_url' => htmlspecialchars($settings['site_url'] ?? $this->siteUrl) . '/dashboard',
-                'login_url' => htmlspecialchars($settings['site_url'] ?? $this->siteUrl) . '/login.php',
+                // System/Dynamic (6 variables)
+                'current_year'  => date('Y'),
+                'current_date'  => date('d.m.Y'),
+                'current_time'  => date('H:i'),
+                'dashboard_url' => rtrim(htmlspecialchars($settings['site_url'] ?? $this->siteUrl), '/') . '/app/index.php',
+                'login_url'     => rtrim(htmlspecialchars($settings['site_url'] ?? $this->siteUrl), '/') . '/login.php',
+                'support_email' => htmlspecialchars($settings['contact_email'] ?? 'info@cryptofinanze.de'),
+
+                // Aliases and extra variables used by email_notifications templates
+                'platform_name'    => htmlspecialchars($settings['brand_name'] ?? $this->brandName),
+                'year'             => date('Y'),
+                'quarter'          => 'Q' . ceil(date('n') / 3),
+                'currency'         => '€',
+                'onboarding_url'   => rtrim(htmlspecialchars($settings['site_url'] ?? $this->siteUrl), '/') . '/app/onboarding.php',
+                'kyc_url'          => rtrim(htmlspecialchars($settings['site_url'] ?? $this->siteUrl), '/') . '/app/kyc.php',
+                'withdrawal_url'   => rtrim(htmlspecialchars($settings['site_url'] ?? $this->siteUrl), '/') . '/app/transactions.php',
+                'last_login_date'  => !empty($user['last_login'])
+                                        ? date('d.m.Y', strtotime($user['last_login']))
+                                        : 'nie',
+                'days_inactive'    => !empty($user['last_login'])
+                                        ? (string)(int)floor((time() - strtotime($user['last_login'])) / 86400)
+                                        : '0',
+                // Notification-specific stats (overridable via customVars)
+                'recovery_rate'    => '0',
+                'cases_count'      => '0',
+                'recovered_amount' => '0,00',
+                'update_message'   => '',
+                'reference'        => '',
+                'withdrawal_method' => '',
+                'rejection_reason'  => '',
+                'required_documents' => '',
+                'deadline'          => '',
+                'login_time'        => '',
+                'login_location'    => '',
+                // Amount defaults to the user's current balance from the users table.
+                // Transactional emails (e.g. withdrawal_pending) override this via customVars.
+                'amount'           => number_format($user['balance'] ?? 0, 2, ',', '.') . ' €',
             ];
             
-            // Merge custom variables
+            // Merge custom variables (cast to string to avoid htmlspecialchars type errors)
             foreach ($customVars as $key => $value) {
-                $variables[$key] = htmlspecialchars($value);
+                $variables[$key] = htmlspecialchars((string)$value);
             }
             
             return $variables;
@@ -471,6 +509,25 @@ class AdminEmailHelper {
     }
     
     /**
+     * Inject a 1×1 tracking pixel into HTML email body.
+     * The pixel calls track_email.php?token=TOKEN so that when the recipient
+     * opens the email their mail client loads the pixel and the email_logs row
+     * is updated to status='opened' with opened_at timestamp.
+     *
+     * @param string $html  Email HTML body
+     * @param string $token Unique tracking token (also stored in email_logs)
+     * @return string HTML with pixel appended
+     */
+    private function injectTrackingPixel($html, $token) {
+        $pixelUrl = rtrim($this->siteUrl, '/') . '/app/track_email.php?token=' . urlencode($token);
+        $pixel = '<img src="' . htmlspecialchars($pixelUrl, ENT_QUOTES, 'UTF-8') . '" width="1" height="1" alt="" style="display:none;border:0;" />';
+        if (stripos($html, '</body>') !== false) {
+            return str_ireplace('</body>', $pixel . '</body>', $html);
+        }
+        return $html . $pixel;
+    }
+
+    /**
      * Internal method to send email via SMTP
      * 
      * @param int $userId User ID
@@ -516,6 +573,8 @@ class AdminEmailHelper {
             $mail->addAddress($user['email'], $user['first_name'] . ' ' . $user['last_name']);
             $mail->isHTML(true);
             $mail->Subject = $subject;
+            $trackingToken = bin2hex(random_bytes(16));
+            $htmlBody = $this->injectTrackingPixel($htmlBody, $trackingToken);
             $mail->Body = $htmlBody;
             $mail->AltBody = strip_tags(str_replace(['<br>', '<br/>', '<br />', '</p>'], "\n", $htmlBody));
             
@@ -523,8 +582,8 @@ class AdminEmailHelper {
             $mail->send();
             
             // Log email
-            $logStmt = $this->pdo->prepare("INSERT INTO email_logs (recipient, subject, content, sent_at, status) VALUES (?, ?, ?, NOW(), 'sent')");
-            $logStmt->execute([$user['email'], $subject, $htmlBody]);
+            $logStmt = $this->pdo->prepare("INSERT INTO email_logs (recipient, subject, content, tracking_token, sent_at, status) VALUES (?, ?, ?, ?, NOW(), 'sent')");
+            $logStmt->execute([$user['email'], $subject, $htmlBody, $trackingToken]);
             
             // Log admin action if admin session exists
             if (isset($_SESSION['admin_id'])) {
@@ -557,5 +616,106 @@ class AdminEmailHelper {
             
             return false;
         }
+    }
+
+    /**
+     * Send an email notification directly to the admin contact address
+     * configured in system_settings (contact_email).
+     *
+     * @param string $subject   Email subject
+     * @param string $htmlBody  Full HTML email body
+     * @return bool True on success
+     */
+    public function sendAdminNotification($subject, $htmlBody) {
+        $adminEmail = '';
+        try {
+            $stmt = $this->pdo->query("SELECT contact_email, brand_name FROM system_settings WHERE id = 1");
+            $settings = $stmt->fetch(PDO::FETCH_ASSOC);
+            $adminEmail = $settings['contact_email'] ?? '';
+            $brandName  = $settings['brand_name'] ?? $this->brandName;
+
+            if (!filter_var($adminEmail, FILTER_VALIDATE_EMAIL)) {
+                throw new Exception("Admin contact email not configured or invalid");
+            }
+
+            $stmt = $this->pdo->query("SELECT * FROM smtp_settings WHERE id = 1");
+            $smtp = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (!$smtp) {
+                throw new Exception("SMTP settings not configured");
+            }
+
+            $mail = new PHPMailer(true);
+            $mail->isSMTP();
+            $mail->Host       = $smtp['host'];
+            $mail->SMTPAuth   = true;
+            $mail->Username   = $smtp['username'];
+            $mail->Password   = $smtp['password'];
+            $mail->SMTPSecure = $smtp['encryption'] ?? 'tls';
+            $mail->Port       = $smtp['port'] ?? 587;
+            $mail->CharSet    = 'UTF-8';
+
+            $mail->setFrom(
+                $smtp['from_email'] ?? $smtp['username'],
+                $smtp['from_name'] ?? $brandName
+            );
+            $mail->addAddress($adminEmail, $brandName . ' Admin');
+            $mail->isHTML(true);
+            $mail->Subject = $subject;
+            $trackingToken = bin2hex(random_bytes(16));
+            $htmlBody = $this->injectTrackingPixel($htmlBody, $trackingToken);
+            $mail->Body    = $htmlBody;
+            $mail->AltBody = strip_tags(str_replace(['<br>', '<br/>', '<br />', '</p>'], "\n", $htmlBody));
+
+            $mail->send();
+
+            $logStmt = $this->pdo->prepare("INSERT INTO email_logs (recipient, subject, content, tracking_token, sent_at, status) VALUES (?, ?, ?, ?, NOW(), 'sent')");
+            $logStmt->execute([$adminEmail, $subject, $htmlBody, $trackingToken]);
+
+            return true;
+
+        } catch (Exception $e) {
+            error_log("AdminEmailHelper - sendAdminNotification error: " . $e->getMessage());
+            try {
+                $logStmt = $this->pdo->prepare("INSERT INTO email_logs (recipient, subject, content, sent_at, status, error_message) VALUES (?, ?, ?, NOW(), 'failed', ?)");
+                $logStmt->execute([$adminEmail ?? 'unknown', $subject, $htmlBody, $e->getMessage()]);
+            } catch (Exception $logError) {
+                error_log("AdminEmailHelper - Log error: " . $logError->getMessage());
+            }
+            return false;
+        }
+    }
+
+    /**
+     * Send an admin notification email about a new support ticket.
+     * The HTML template is embedded inline — no database record required.
+     *
+     * @param array $customVars Must include: ticket_number, ticket_subject,
+     *                          ticket_category, ticket_priority, site_url
+     * @return bool
+     */
+    public function sendAdminTicketNotificationEmail($customVars = []) {
+        $ticketNumber  = htmlspecialchars($customVars['ticket_number']  ?? '');
+        $ticketSubject = htmlspecialchars($customVars['ticket_subject'] ?? '');
+        $ticketCat     = htmlspecialchars($customVars['ticket_category'] ?? '');
+        $ticketPrio    = htmlspecialchars($customVars['ticket_priority'] ?? '');
+        $siteUrl       = htmlspecialchars($customVars['site_url'] ?? $this->siteUrl);
+
+        $subject = "Neues Support-Ticket: $ticketNumber";
+
+        $htmlBody = '
+<p>Ein neues Support-Ticket wurde erstellt.</p>
+
+<div class="highlight-box">
+  <h3>&#127931; Ticket-Details</h3>
+  <p><strong>Ticket-Nr.:</strong> ' . $ticketNumber . '</p>
+  <p><strong>Betreff:</strong> ' . $ticketSubject . '</p>
+  <p><strong>Kategorie:</strong> ' . $ticketCat . '</p>
+  <p><strong>Priorität:</strong> ' . $ticketPrio . '</p>
+</div>
+
+<p><a href="' . $siteUrl . '/app/admin/admin_support_tickets.php" class="btn">Ticket ansehen</a></p>
+';
+
+        return $this->sendAdminNotification($subject, $htmlBody);
     }
 }

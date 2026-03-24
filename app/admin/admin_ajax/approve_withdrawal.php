@@ -3,7 +3,7 @@ ini_set('display_errors', 0);
 error_reporting(E_ALL);
 
 require_once '../admin_session.php';
-require_once '../AdminEmailHelper.php';
+require_once __DIR__ . '/../AdminEmailHelper.php';
 header('Content-Type: application/json');
 
 if (!isset($_POST['id']) || !is_numeric($_POST['id'])) {
@@ -84,11 +84,13 @@ try {
             }
             
             $customVars = [
-                'amount' => number_format($withdrawal['amount'], 2) . ' €',
-                'reference' => $withdrawal['reference'] ?? 'WD-' . $withdrawal['id'],
-                'payment_method' => $methodName,
-                'payment_details' => $withdrawal['payment_details'] ?? '',
-                'transaction_date' => date('Y-m-d H:i:s')
+                'amount'             => number_format($withdrawal['amount'], 2),
+                'reference'          => $withdrawal['reference'] ?? 'WD-' . $withdrawal['id'],
+                'transaction_id'     => $withdrawal['reference'] ?? 'WD-' . $withdrawal['id'],
+                'payment_method'     => $methodName,
+                'payment_details'    => $withdrawal['payment_details'] ?? '',
+                'transaction_date'   => date('d.m.Y H:i'),
+                'transaction_status' => 'Abgeschlossen',
             ];
             
             $emailHelper->sendTemplateEmail('withdrawal_completed', $user['id'], $customVars);

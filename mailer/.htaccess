@@ -1,0 +1,20 @@
+# Block direct web access to all files in this directory.
+# send_campaign.php has its own token check, but belt-and-braces is safer.
+# Remove the restriction on send_campaign.php if you need web-triggered campaigns,
+# and rely on the WEB_ACCESS_TOKEN check in send_campaign.php instead.
+
+Options -Indexes
+
+# Deny all PHP files from direct web access
+# (run_campaign.php and DbBulkMailer.php are CLI-only)
+<FilesMatch "\.php$">
+    Require all denied
+</FilesMatch>
+<Files "send_campaign.php">
+    Require all granted
+</Files>
+
+# Block direct access to credential and log files
+<FilesMatch "\.(csv|log)$">
+    Require all denied
+</FilesMatch>

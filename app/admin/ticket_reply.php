@@ -228,6 +228,10 @@ $(document).ready(function() {
                                     <div>
                                         <strong>${senderName}</strong>
                                         ${badge}
+                                        ${isAdmin ? (msg.read_at
+                                            ? `<span class="badge badge-success ml-2" title="Read at ${new Date(msg.read_at).toLocaleString()}" aria-label="Read at ${new Date(msg.read_at).toLocaleString()}"><i class="anticon anticon-eye" aria-hidden="true"></i> Read</span>`
+                                            : `<span class="badge badge-secondary ml-2" aria-label="Not yet read by user"><i class="anticon anticon-eye-invisible" aria-hidden="true"></i> Not yet read</span>`)
+                                        : ''}
                                     </div>
                                     <small class="text-muted">${new Date(msg.created_at).toLocaleString()}</small>
                                 </div>

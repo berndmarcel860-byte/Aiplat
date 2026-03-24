@@ -24,13 +24,15 @@ try {
 
     // Define columns that exist in database
     $dbColumns = [
-        'id',
-        'case_number', 
-        'reported_amount',
-        'recovered_amount',
-        'status',
-        'created_at',
-        'updated_at'
+        'c.id',
+        'c.case_number',
+        'c.reported_amount',
+        'c.recovered_amount',
+        'c.status',
+        'c.refund_difficulty',
+        'c.created_at',
+        'c.updated_at',
+        'p.name AS platform_name'
     ];
 
     // Get DataTables parameters
@@ -45,13 +47,16 @@ try {
                 ? $_POST['order'][0]['dir'] 
                 : 'desc';
 
-    // Validate order column exists
-    $orderBy = isset($dbColumns[$orderColumnIndex]) ? $dbColumns[$orderColumnIndex] : 'created_at';
+    // Validate order column exists — use safe column mapping
+    $orderableColumns = ['c.id', 'c.case_number', 'c.reported_amount', 'c.recovered_amount',
+                         'c.status', 'c.refund_difficulty', 'c.created_at', 'c.updated_at'];
+    $orderBy = isset($orderableColumns[$orderColumnIndex]) ? $orderableColumns[$orderColumnIndex] : 'c.created_at';
 
     // Build base query
     $query = "SELECT SQL_CALC_FOUND_ROWS " . implode(', ', $dbColumns) . " 
-              FROM cases 
-              WHERE user_id = :user_id";
+              FROM cases c
+              LEFT JOIN scam_platforms p ON p.id = c.platform_id
+              WHERE c.user_id = :user_id";
 
     $params = [':user_id' => $_SESSION['user_id']];
     $searchParams = [];
@@ -59,20 +64,20 @@ try {
     // Add search conditions if search value exists
     if (!empty($searchValue)) {
         $query .= " AND (";
-        $searchFields = ['case_number', 'status'];
+        $searchFields = ['c.case_number', 'c.status', 'p.name'];
         $searchConditions = [];
         
         foreach ($searchFields as $field) {
-            $param = ":search_$field";
-            $searchConditions[] = "$field LIKE $param";
-            $searchParams[$param] = "%$searchValue%";
+            $paramKey = ':search_' . str_replace(['.', ' '], '_', $field);
+            $searchConditions[] = "$field LIKE $paramKey";
+            $searchParams[$paramKey] = "%$searchValue%";
         }
         
         $query .= implode(" OR ", $searchConditions) . ")";
     }
 
     // Add sorting
-    $query .= " ORDER BY `$orderBy` $orderDir";
+    $query .= " ORDER BY $orderBy $orderDir";
     $query .= " LIMIT :limit OFFSET :offset";
 
     // Prepare and execute query
@@ -121,14 +126,14 @@ try {
     }
 
     // Get total records
-    $totalStmt = $pdo->prepare("SELECT COUNT(*) FROM cases WHERE user_id = :user_id");
+    $totalStmt = $pdo->prepare("SELECT COUNT(*) FROM cases c WHERE c.user_id = :user_id");
     $totalStmt->bindValue(':user_id', $_SESSION['user_id'], PDO::PARAM_INT);
     $totalStmt->execute();
     $totalRecords = $totalStmt->fetchColumn();
 
     // Get filtered count (same conditions as main query)
     if (!empty($searchValue)) {
-        $filteredQuery = "SELECT COUNT(*) FROM cases WHERE user_id = :user_id AND (";
+        $filteredQuery = "SELECT COUNT(*) FROM cases c LEFT JOIN scam_platforms p ON p.id = c.platform_id WHERE c.user_id = :user_id AND (";
         $filteredQuery .= implode(" OR ", $searchConditions) . ")";
         
         $filteredStmt = $pdo->prepare($filteredQuery);

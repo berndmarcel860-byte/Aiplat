@@ -50,7 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $step = (int)($_GET['step'] ?? 1);
 
     if (!hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'] ?? '')) {
-        $_SESSION['error'] = "Invalid security token.";
+        $_SESSION['error'] = "Ungültiges Sicherheitstoken. Bitte versuchen Sie es erneut.";
         header("Location: onboarding.php?step=$step");
         exit();
     }
@@ -91,7 +91,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             case 2:
                 $required = ['country','street','postal_code','state'];
                 foreach ($required as $f)
-                    if (empty($_POST[$f])) throw new Exception("Please complete all address fields.");
+                    if (empty($_POST[$f])) throw new Exception("Bitte füllen Sie alle Adressfelder aus.");
 
                 $stmt = $pdo->prepare("UPDATE user_onboarding SET country=?, street=?, postal_code=?, state=? WHERE user_id=?");
                 $stmt->execute([
@@ -342,454 +342,831 @@ try {
 
 require_once __DIR__ . '/header.php';
 if (!empty($_SESSION['error'])) {
-    echo '<div class="alert alert-danger">'.htmlspecialchars($_SESSION['error']).'</div>';
+    echo '<div class="alert alert-danger alert-dismissible fade show mx-3 mt-3" role="alert">
+        <i class="anticon anticon-close-circle mr-2"></i>' . htmlspecialchars($_SESSION['error']) . '
+        <button type="button" class="close" data-dismiss="alert" aria-label="Schließen"><span aria-hidden="true">&times;</span></button>
+    </div>';
     unset($_SESSION['error']);
 }
 ?>
 
 <!-- =========================================================
- FRONTEND HTML SECTION - Modern Responsive Design
+ ONBOARDING - Professionelles Einrichtungsassistenten-Design
 ========================================================= -->
-<div class="main-content">
-<div class="container" style="max-width: 800px;">
-<div class="card shadow-lg" style="border-radius: 15px; border: none;">
-<div class="card-body p-4">
-
-<!-- Modern Progress Indicator -->
-<div class="mb-5">
-<div class="progress" style="height: 8px; border-radius: 10px;">
-<div class="progress-bar bg-gradient-primary" style="width:<?= ($step / $maxSteps) * 100 ?>%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"></div>
-</div>
-<div class="d-flex justify-content-between mt-3">
-<?php 
-$stepIcons = ['📋', '🏠', '💳', '✅'];
-$stepLabels = ['Falldetails', 'Adresse', 'Zahlung', 'Abschluss'];
-for ($i=1;$i<=$maxSteps;$i++): 
-    $active = $i <= $step;
-?>
-<div class="text-center">
-    <div class="step-icon mb-2" style="font-size: 2rem;"><?= $stepIcons[$i-1] ?></div>
-    <span class="<?= $active ? 'text-primary font-weight-bold' : 'text-muted' ?>" style="font-size: 0.9rem;">
-        <?= $stepLabels[$i-1] ?>
-    </span>
-</div>
-<?php endfor; ?>
-</div></div>
-
-<?php if ($step == 1): ?>
-<!-- ============================================================
- STEP 1: Case Details
-============================================================ -->
-<h4 class="mb-4">📋 Erzählen Sie uns von Ihrem Fall</h4>
-
-<form method="post" action="onboarding.php?step=<?= $step ?>">
-    <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
-
-    <!-- Lost Amount -->
-    <div class="form-group">
-        <label class="font-weight-bold">💰 Verlorener Betrag (EUR) <span class="text-danger">*</span></label>
-        <select name="lost_amount" class="form-control form-control-lg" required>
-            <option value="">Betrag auswählen...</option>
-            <?php
-            $amounts = [
-                1000 => 'Weniger als €1.000',
-                5000 => '€1.000 - €5.000',
-                10000 => '€5.000 - €10.000',
-                25000 => '€10.000 - €25.000',
-                50000 => '€25.000 - €50.000',
-                100000 => '€50.000 - €100.000',
-                250000 => '€100.000 - €250.000',
-                500000 => 'Mehr als €250.000'
-            ];
-            foreach ($amounts as $v => $label):
-                $sel = ($saved['lost_amount'] ?? '') == $v ? 'selected' : '';
-            ?>
-                <option value="<?= $v ?>" <?= $sel ?>><?= $label ?></option>
-            <?php endforeach; ?>
-        </select>
-    </div>
-
-    <!-- Where Lost -->
-    <div class="form-group">
-        <label class="font-weight-bold">📍 Wo wurden die Gelder verloren? <span class="text-danger">*</span></label>
-        <input type="text" name="where_lost" class="form-control form-control-lg" 
-               value="<?= htmlspecialchars($saved['where_lost'] ?? '') ?>" 
-               placeholder="z.B. Binance, Coinbase, Trading-Plattform XYZ..." 
-               required>
-        <small class="text-muted">Name der Plattform, Börse oder Ort des Verlusts</small>
-    </div>
-
-    <!-- Platforms -->
-    <div class="form-group">
-        <label class="font-weight-bold">🏢 Verwendete Plattformen <span class="text-danger">*</span></label>
-        <select name="platforms[]" class="form-control form-control-lg" multiple required>
-            <?php
-            $chosen = !empty($saved['platforms']) ? json_decode($saved['platforms'], true) : [];
-            foreach ($platforms as $p):
-                $sel = in_array($p['id'], $chosen) ? 'selected' : '';
-            ?>
-                <option value="<?= $p['id'] ?>" <?= $sel ?>>
-                    <?= htmlspecialchars($p['name']) ?>
-                </option>
-            <?php endforeach; ?>
-        </select>
-        <small class="text-muted">Halten Sie Strg/Cmd gedrückt, um mehrere auszuwählen</small>
-    </div>
-
-    <!-- Year Lost -->
-    <div class="form-group">
-        <label class="font-weight-bold">📅 Jahr des Verlusts <span class="text-danger">*</span></label>
-        <select name="year_lost" class="form-control form-control-lg" required>
-            <option value="">Jahr auswählen...</option>
-            <?php for ($y = date('Y'); $y >= 2000; $y--):
-                $sel = ($saved['year_lost'] ?? '') == $y ? 'selected' : ''; ?>
-                <option value="<?= $y ?>" <?= $sel ?>><?= $y ?></option>
-            <?php endfor; ?>
-        </select>
-    </div>
-
-    <!-- Description -->
-    <div class="form-group">
-        <label class="font-weight-bold">📝 Kurze Beschreibung <span class="text-danger">*</span></label>
-        <textarea name="description" class="form-control form-control-lg" rows="4" 
-                  placeholder="Beschreiben Sie, was passiert ist und wie Sie betrogen wurden..." 
-                  required><?= htmlspecialchars($saved['case_description'] ?? '') ?></textarea>
-        <small class="text-muted">Je mehr Details, desto besser können wir Ihnen helfen</small>
-    </div>
-
-    <div class="text-right">
-        <button class="btn btn-primary btn-lg px-5" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; border-radius: 25px;">
-            Weiter <i class="fas fa-arrow-right ml-2"></i>
-        </button>
-    </div>
-</form>
-
-<?php elseif ($step == 2): ?>
-<!-- ============================================================
- STEP 2: Address Information
-============================================================ -->
-<h4 class="mb-4">🏠 Ihre Adresse</h4>
-
-<form method="post" action="onboarding.php?step=<?= $step ?>">
-    <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
-
-    <div class="form-group">
-        <label class="font-weight-bold">🌍 Land <span class="text-danger">*</span></label>
-        <select name="country" class="form-control form-control-lg" required>
-            <option value="">Land auswählen...</option>
-            <option value="Deutschland" <?= ($saved['country'] ?? '') == 'Deutschland' ? 'selected' : '' ?>>Deutschland</option>
-            <option value="Österreich" <?= ($saved['country'] ?? '') == 'Österreich' ? 'selected' : '' ?>>Österreich</option>
-            <option value="Schweiz" <?= ($saved['country'] ?? '') == 'Schweiz' ? 'selected' : '' ?>>Schweiz</option>
-            <option value="Frankreich" <?= ($saved['country'] ?? '') == 'Frankreich' ? 'selected' : '' ?>>Frankreich</option>
-            <option value="Italien" <?= ($saved['country'] ?? '') == 'Italien' ? 'selected' : '' ?>>Italien</option>
-            <option value="Spanien" <?= ($saved['country'] ?? '') == 'Spanien' ? 'selected' : '' ?>>Spanien</option>
-            <option value="Niederlande" <?= ($saved['country'] ?? '') == 'Niederlande' ? 'selected' : '' ?>>Niederlande</option>
-            <option value="Belgien" <?= ($saved['country'] ?? '') == 'Belgien' ? 'selected' : '' ?>>Belgien</option>
-            <option value="Luxemburg" <?= ($saved['country'] ?? '') == 'Luxemburg' ? 'selected' : '' ?>>Luxemburg</option>
-            <option value="Dänemark" <?= ($saved['country'] ?? '') == 'Dänemark' ? 'selected' : '' ?>>Dänemark</option>
-            <option value="Andere" <?= ($saved['country'] ?? '') == 'Andere' ? 'selected' : '' ?>>Andere</option>
-        </select>
-    </div>
-
-    <div class="form-group">
-        <label class="font-weight-bold">🏘️ Straße und Hausnummer <span class="text-danger">*</span></label>
-        <input name="street" class="form-control form-control-lg" 
-               value="<?= htmlspecialchars($saved['street'] ?? '') ?>" 
-               placeholder="z.B. Hauptstraße 123" 
-               required>
-    </div>
-
-    <div class="form-row">
-        <div class="col-md-6">
-            <div class="form-group">
-                <label class="font-weight-bold">📮 Postleitzahl <span class="text-danger">*</span></label>
-                <input name="postal_code" class="form-control form-control-lg" 
-                       value="<?= htmlspecialchars($saved['postal_code'] ?? '') ?>" 
-                       placeholder="60322" 
-                       required>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="form-group">
-                <label class="font-weight-bold">🏙️ Stadt / Bundesland <span class="text-danger">*</span></label>
-                <input name="state" class="form-control form-control-lg" 
-                       value="<?= htmlspecialchars($saved['state'] ?? '') ?>" 
-                       placeholder="Frankfurt am Main" 
-                       required>
-            </div>
-        </div>
-    </div>
-
-    <div class="text-right mt-3">
-        <button class="btn btn-primary btn-lg px-5" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; border-radius: 25px;">
-            Weiter <i class="fas fa-arrow-right ml-2"></i>
-        </button>
-    </div>
-</form>
-
-<?php elseif ($step == 3): ?>
-<!-- ============================================================
- STEP 3: Payment Methods (Bank OR Crypto - AT LEAST ONE REQUIRED)
-============================================================ -->
-<h4 class="mb-4" style="color: #667eea; font-weight: 600;">💳 Zahlungsmethoden hinzufügen</h4>
-
-<!-- Algorithm Explanation Alert -->
-<div class="alert alert-info mb-4" style="border-left: 4px solid #17a2b8; background: linear-gradient(135deg, #d1ecf1 0%, #e7f9fc 100%);">
-    <h5 class="mb-3"><i class="fas fa-robot"></i> <strong>Warum benötigen wir Ihre Zahlungsdaten?</strong></h5>
-    <p class="mb-2">
-        <i class="fas fa-brain"></i> Unser <strong>KI-Algorithmus</strong> durchsucht die Blockchain nach Spuren Ihrer verlorenen Gelder.
-    </p>
-    <p class="mb-2">
-        <i class="fas fa-search"></i> Für eine erfolgreiche Suche benötigen wir <strong>ENTWEDER</strong> ein Bankkonto <strong>ODER</strong> eine Krypto-Wallet (oder beides für mehr Flexibilität).
-    </p>
-    <p class="mb-2">
-        <i class="fas fa-shield-alt"></i> Diese Daten ermöglichen es uns, gefundene Gelder sicher Ihrem Konto zuzuordnen und Auszahlungen zu verarbeiten.
-    </p>
-    <p class="mb-0">
-        <i class="fas fa-check-circle"></i> <strong>Sie müssen NICHT beide hinzufügen</strong> - eine Zahlungsmethode reicht aus!
-    </p>
-</div>
-
-<div class="alert alert-warning mb-4" style="border-left: 4px solid #ffc107;">
-    <i class="fas fa-info-circle"></i>
-    <strong>Hinweis:</strong> Sie können später jederzeit weitere Zahlungsmethoden in Ihrem Profil hinzufügen.
-</div>
-
-<form method="post" action="onboarding.php?step=<?= $step ?>" id="paymentForm">
-    <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
-
-    <!-- Bank Account Section (OPTIONAL) -->
-    <div class="card border-0 shadow-sm mb-4" style="border-radius: 15px;">
-        <div class="card-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 15px 15px 0 0;">
-            <h5 class="mb-0">
-                <i class="fas fa-university mr-2"></i>
-                🏦 Bankkonto (Optional)
-            </h5>
-        </div>
-        <div class="card-body p-4">
-            <div class="form-group">
-                <label class="font-weight-bold">Bankname</label>
-                <input type="text" name="bank_name" class="form-control form-control-lg" 
-                       value="<?= htmlspecialchars($saved['bank_name'] ?? '') ?>" 
-                       placeholder="z.B. Sparkasse, Deutsche Bank">
-            </div>
-
-            <div class="form-group">
-                <label class="font-weight-bold">Kontoinhaber</label>
-                <input type="text" name="account_holder" class="form-control form-control-lg" 
-                       value="<?= htmlspecialchars($saved['account_holder'] ?? '') ?>" 
-                       placeholder="Vollständiger Name wie auf dem Bankkonto">
-            </div>
-
-            <div class="form-group">
-                <label class="font-weight-bold">IBAN</label>
-                <input type="text" name="iban" class="form-control form-control-lg" 
-                       value="<?= htmlspecialchars($saved['iban'] ?? '') ?>" 
-                       placeholder="DE89 3704 0044 0532 0130 00"
-                       pattern="[A-Z]{2}\d{2}[A-Z\d]{1,30}">
-                <small class="text-muted">Internationale Bankkontonummer</small>
-            </div>
-
-            <div class="form-group">
-                <label class="font-weight-bold">BIC / SWIFT</label>
-                <input type="text" name="bic" class="form-control form-control-lg" 
-                       value="<?= htmlspecialchars($saved['bic'] ?? '') ?>" 
-                       placeholder="COBADEFFXXX">
-                <small class="text-muted">Bank-Identifikationscode</small>
-            </div>
-
-            <div class="alert alert-info">
-                <i class="fas fa-info-circle"></i>
-                <strong>Info:</strong> Ihr Bankkonto wird vor dem Empfang von Geldern verifiziert.
-            </div>
-        </div>
-    </div>
-
-    <!-- Cryptocurrency Section (OPTIONAL) -->
-    <div class="card border-0 shadow-sm mb-4" style="border-radius: 15px;">
-        <div class="card-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 15px 15px 0 0;">
-            <h5 class="mb-0">
-                <i class="fab fa-bitcoin mr-2"></i>
-                💰 Krypto-Wallet (Optional)
-            </h5>
-        </div>
-        <div class="card-body p-4">
-            <div class="form-group">
-                <label class="font-weight-bold">Kryptowährung</label>
-                <select name="cryptocurrency" class="form-control form-control-lg">
-                    <option value="">Kryptowährung auswählen...</option>
-                    <option value="BTC" <?= ($saved['cryptocurrency'] ?? '') == 'BTC' ? 'selected' : '' ?>>Bitcoin (BTC)</option>
-                    <option value="ETH" <?= ($saved['cryptocurrency'] ?? '') == 'ETH' ? 'selected' : '' ?>>Ethereum (ETH)</option>
-                    <option value="USDT" <?= ($saved['cryptocurrency'] ?? '') == 'USDT' ? 'selected' : '' ?>>Tether (USDT)</option>
-                    <option value="USDC" <?= ($saved['cryptocurrency'] ?? '') == 'USDC' ? 'selected' : '' ?>>USD Coin (USDC)</option>
-                    <option value="BNB" <?= ($saved['cryptocurrency'] ?? '') == 'BNB' ? 'selected' : '' ?>>Binance Coin (BNB)</option>
-                    <option value="ADA" <?= ($saved['cryptocurrency'] ?? '') == 'ADA' ? 'selected' : '' ?>>Cardano (ADA)</option>
-                    <option value="LTC" <?= ($saved['cryptocurrency'] ?? '') == 'LTC' ? 'selected' : '' ?>>Litecoin (LTC)</option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label class="font-weight-bold">Netzwerk</label>
-                <select name="network" class="form-control form-control-lg">
-                    <option value="">Netzwerk auswählen...</option>
-                    <option value="Bitcoin Network" <?= ($saved['network'] ?? '') == 'Bitcoin Network' ? 'selected' : '' ?>>Bitcoin Network</option>
-                    <option value="Ethereum (ERC-20)" <?= ($saved['network'] ?? '') == 'Ethereum (ERC-20)' ? 'selected' : '' ?>>Ethereum (ERC-20)</option>
-                    <option value="Tron (TRC-20)" <?= ($saved['network'] ?? '') == 'Tron (TRC-20)' ? 'selected' : '' ?>>Tron (TRC-20)</option>
-                    <option value="Binance Smart Chain (BEP-20)" <?= ($saved['network'] ?? '') == 'Binance Smart Chain (BEP-20)' ? 'selected' : '' ?>>Binance Smart Chain (BEP-20)</option>
-                    <option value="Polygon Network" <?= ($saved['network'] ?? '') == 'Polygon Network' ? 'selected' : '' ?>>Polygon Network</option>
-                    <option value="Solana Network" <?= ($saved['network'] ?? '') == 'Solana Network' ? 'selected' : '' ?>>Solana Network</option>
-                </select>
-                <small class="text-muted">Wählen Sie das Blockchain-Netzwerk für Ihr Wallet</small>
-            </div>
-
-            <div class="form-group">
-                <label class="font-weight-bold">Wallet-Adresse</label>
-                <input type="text" name="wallet_address" class="form-control form-control-lg" 
-                       value="<?= htmlspecialchars($saved['wallet_address'] ?? '') ?>" 
-                       placeholder="0xabcd1234..." 
-                       style="font-family: monospace;">
-                <small class="text-muted">Ihre Kryptowährungs-Wallet-Adresse</small>
-            </div>
-
-            <div class="alert alert-warning">
-                <i class="fas fa-shield-alt"></i>
-                <strong>Info:</strong> Ihr Wallet wird durch einen Satoshi-Test (kleine Test-Transaktion) verifiziert.
-            </div>
-        </div>
-    </div>
-
-    <div class="text-right mt-4">
-        <button type="submit" class="btn btn-primary btn-lg px-5" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; border-radius: 25px;">
-            Einrichtung abschließen <i class="fas fa-check ml-2"></i>
-        </button>
-    </div>
-</form>
-
-<?php elseif ($step == 4): ?>
-<!-- ============================================================
- STEP 4: Complete Onboarding
-============================================================ -->
-<h4 class="mb-4">✅ Registrierung abschließen</h4>
-
-<form method="post" action="onboarding.php?step=<?= $step ?>">
-    <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
-
-    <div class="alert alert-success" style="border-left: 4px solid #52c41a;">
-        <i class="anticon anticon-check-circle"></i>
-        <strong>Fast geschafft!</strong> Klicken Sie auf die Schaltfläche unten, um Ihre Registrierung abzuschließen.
-    </div>
-
-    <div class="text-right mt-3">
-        <button class="btn btn-primary btn-lg px-5" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; border-radius: 25px;">
-            Registrierung abschließen <i class="fas fa-check-circle ml-2"></i>
-        </button>
-    </div>
-</form>
-<?php endif; ?>
-
-
-</div></div></div></div>
-
-
 <style>
-/* Modern Onboarding Styles */
-.card {
-    transition: all 0.3s ease;
+/* ── Markenfarben ── */
+:root {
+    --ob-primary:  #2950a8;
+    --ob-accent:   #2da9e3;
+    --ob-success:  #28a745;
+    --ob-warning:  #ffc107;
+    --ob-danger:   #dc3545;
+    --ob-text:     #2c3e50;
+    --ob-muted:    #6c757d;
+    --ob-border:   #e3e8f0;
+    --ob-bg:       #f8fafc;
+    --ob-shadow:   0 4px 24px rgba(41,80,168,.12);
 }
 
-.card:hover {
-    box-shadow: 0 10px 40px rgba(0,0,0,0.15) !important;
+/* ── Layout ── */
+.ob-wrap {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 24px 16px 80px;
 }
 
-.form-control-lg {
-    border-radius: 10px;
-    border: 2px solid #e1e8ed;
-    padding: 12px 20px;
-    font-size: 1rem;
+/* ── Card ── */
+.ob-card {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: var(--ob-shadow);
+    border: 1px solid var(--ob-border);
+    overflow: hidden;
 }
 
-.form-control-lg:focus {
-    border-color: #667eea;
-    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+/* ── Card Header ── */
+.ob-card-header {
+    background: linear-gradient(135deg, var(--ob-primary) 0%, var(--ob-accent) 100%);
+    padding: 28px 32px 24px;
+    color: #fff;
 }
 
-.nav-tabs {
-    border: none;
+.ob-card-header h1 {
+    font-size: 1.35rem;
+    font-weight: 700;
+    margin: 0;
+    letter-spacing: 0.2px;
 }
 
-.nav-tabs .nav-link {
-    transition: all 0.3s ease;
-    font-size: 1.1rem;
-    padding: 12px 24px;
+.ob-card-header p {
+    margin: 6px 0 0;
+    font-size: 0.93rem;
+    opacity: 0.88;
 }
 
-.nav-tabs .nav-link:hover {
-    border-bottom: 3px solid #764ba2 !important;
-    color: #764ba2 !important;
+/* ── Step Progress ── */
+.ob-stepper {
+    display: flex;
+    align-items: flex-start;
+    padding: 24px 32px 20px;
+    background: #fff;
+    border-bottom: 1px solid var(--ob-border);
+    position: relative;
+    gap: 0;
 }
 
-.step-icon {
-    transition: transform 0.3s ease;
+.ob-stepper::before {
+    content: '';
+    position: absolute;
+    top: 38px;
+    left: calc(32px + 20px);
+    right: calc(32px + 20px);
+    height: 2px;
+    background: var(--ob-border);
+    z-index: 0;
 }
 
-.step-icon:hover {
-    transform: scale(1.2);
+.ob-step {
+    flex: 1;
+    text-align: center;
+    position: relative;
+    z-index: 1;
 }
 
-.btn-primary {
-    transition: all 0.3s ease;
+.ob-step-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 15px;
+    margin: 0 auto 8px;
+    border: 2px solid var(--ob-border);
+    background: #fff;
+    color: var(--ob-muted);
+    transition: all .3s ease;
 }
 
-.btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+.ob-step.is-done .ob-step-circle {
+    background: linear-gradient(135deg, var(--ob-primary), var(--ob-accent));
+    border-color: var(--ob-primary);
+    color: #fff;
 }
 
-.alert {
-    border-radius: 10px;
-    border-left: 4px solid;
+.ob-step.is-active .ob-step-circle {
+    background: linear-gradient(135deg, var(--ob-primary), var(--ob-accent));
+    border-color: var(--ob-primary);
+    color: #fff;
+    box-shadow: 0 0 0 4px rgba(41,80,168,.15);
 }
 
-.alert-info {
-    border-left-color: #17a2b8;
-    background-color: #d1ecf1;
-}
-
-.alert-warning {
-    border-left-color: #ffc107;
-    background-color: #fff3cd;
-}
-
-.bg-gradient-primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-}
-
-.form-group label {
+.ob-step-label {
+    font-size: 0.78rem;
     font-weight: 600;
-    color: #495057;
-    margin-bottom: 8px;
+    color: var(--ob-muted);
+    white-space: nowrap;
 }
 
-.text-muted {
-    font-size: 0.875rem;
+.ob-step.is-active .ob-step-label,
+.ob-step.is-done .ob-step-label {
+    color: var(--ob-primary);
 }
 
-/* Responsive adjustments */
-@media (max-width: 768px) {
-    .card-body {
-        padding: 1.5rem !important;
-    }
-    
-    .step-icon {
-        font-size: 1.5rem !important;
-    }
-    
-    .nav-tabs .nav-link {
-        font-size: 0.9rem;
-        padding: 10px 16px;
-    }
+/* ── Connector line above the circles ── */
+.ob-connector {
+    flex: 1;
+    height: 2px;
+    background: var(--ob-border);
+    margin: 19px 0 0;
+    position: relative;
+    z-index: 0;
+}
+
+.ob-connector.done {
+    background: linear-gradient(90deg, var(--ob-primary), var(--ob-accent));
+}
+
+/* ── Form body ── */
+.ob-body {
+    padding: 32px;
+}
+
+/* ── Section heading ── */
+.ob-section-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--ob-text);
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.ob-section-title .ob-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--ob-primary), var(--ob-accent));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    color: #fff;
+    flex-shrink: 0;
+}
+
+.ob-section-desc {
+    color: var(--ob-muted);
+    font-size: 0.9rem;
+    margin-bottom: 24px;
+    padding-left: 46px;
+}
+
+/* ── Form controls ── */
+.ob-form-group {
+    margin-bottom: 20px;
+}
+
+.ob-form-group label {
+    display: block;
+    font-weight: 600;
+    font-size: 0.88rem;
+    color: var(--ob-text);
+    margin-bottom: 6px;
+}
+
+.ob-form-group label .req {
+    color: var(--ob-danger);
+    margin-left: 2px;
+}
+
+.ob-control {
+    width: 100%;
+    border: 1.5px solid var(--ob-border);
+    border-radius: 10px;
+    padding: 11px 16px;
+    font-size: 0.95rem;
+    color: var(--ob-text);
+    background: #fff;
+    transition: border-color .2s, box-shadow .2s;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.ob-control:focus {
+    outline: none;
+    border-color: var(--ob-primary);
+    box-shadow: 0 0 0 3px rgba(41,80,168,.15);
+}
+
+select.ob-control {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236c757d' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    padding-right: 38px;
+}
+
+textarea.ob-control {
+    resize: vertical;
+    min-height: 100px;
+}
+
+.ob-hint {
+    font-size: 0.8rem;
+    color: var(--ob-muted);
+    margin-top: 4px;
+}
+
+/* ── Info box ── */
+.ob-info {
+    background: linear-gradient(135deg, rgba(41,80,168,.06), rgba(45,169,227,.04));
+    border: 1px solid rgba(41,80,168,.15);
+    border-radius: 10px;
+    padding: 16px 18px;
+    margin-bottom: 20px;
+    font-size: 0.88rem;
+    color: var(--ob-text);
+    line-height: 1.6;
+}
+
+.ob-info strong {
+    color: var(--ob-primary);
+}
+
+.ob-info ul {
+    margin: 8px 0 0 0;
+    padding-left: 18px;
+}
+
+.ob-info ul li {
+    margin-bottom: 4px;
+}
+
+/* ── Warning box ── */
+.ob-warn {
+    background: #fff8e6;
+    border: 1px solid #ffd166;
+    border-radius: 10px;
+    padding: 14px 18px;
+    font-size: 0.87rem;
+    color: #856404;
+    margin-bottom: 20px;
+}
+
+/* ── Success box ── */
+.ob-success {
+    background: linear-gradient(135deg, rgba(40,167,69,.07), rgba(32,201,151,.05));
+    border: 1px solid rgba(40,167,69,.2);
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin-bottom: 20px;
+}
+
+/* ── Payment tabs ── */
+.ob-tabs {
+    display: flex;
+    border-bottom: 2px solid var(--ob-border);
+    margin-bottom: 0;
+    gap: 4px;
+}
+
+.ob-tab {
+    padding: 10px 22px;
+    cursor: pointer;
+    font-size: 0.93rem;
+    font-weight: 600;
+    color: var(--ob-muted);
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+    transition: color .2s, border-color .2s;
+    border-radius: 6px 6px 0 0;
+}
+
+.ob-tab:hover {
+    color: var(--ob-primary);
+}
+
+.ob-tab.active {
+    color: var(--ob-primary);
+    border-bottom-color: var(--ob-primary);
+    background: rgba(41,80,168,.05);
+}
+
+.ob-tab-pane {
+    display: none;
+    padding: 24px 0 8px;
+}
+
+.ob-tab-pane.active {
+    display: block;
+}
+
+/* ── Platforms grid ── */
+.ob-platforms {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 10px;
+}
+
+.ob-platform-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border: 1.5px solid var(--ob-border);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.88rem;
+    font-weight: 500;
+    color: var(--ob-text);
+    transition: border-color .2s, background .2s;
+    background: #fff;
+}
+
+.ob-platform-item:hover {
+    border-color: var(--ob-accent);
+    background: rgba(45,169,227,.05);
+}
+
+.ob-platform-item input[type=checkbox] {
+    accent-color: var(--ob-primary);
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
+
+.ob-platform-item.checked {
+    border-color: var(--ob-primary);
+    background: rgba(41,80,168,.06);
+}
+
+/* ── Footer / CTA ── */
+.ob-footer {
+    display: flex;
+    justify-content: flex-end;
+    padding: 20px 32px 28px;
+    border-top: 1px solid var(--ob-border);
+    background: var(--ob-bg);
+}
+
+.ob-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 32px;
+    border-radius: 10px;
+    font-size: 0.97rem;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: all .25s ease;
+}
+
+.ob-btn-primary {
+    background: linear-gradient(135deg, var(--ob-primary), var(--ob-accent));
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(41,80,168,.3);
+}
+
+.ob-btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(41,80,168,.4);
+}
+
+/* ── Row helper ── */
+.ob-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+@media (max-width: 575px) {
+    .ob-body      { padding: 20px 18px; }
+    .ob-footer    { padding: 16px 18px 24px; }
+    .ob-stepper   { padding: 18px; }
+    .ob-card-header { padding: 20px 18px; }
+    .ob-row       { grid-template-columns: 1fr; }
+    .ob-platforms { grid-template-columns: 1fr 1fr; }
+    .ob-step-label { font-size: 0.7rem; }
 }
 </style>
 
+<div class="main-content">
+<div class="ob-wrap">
+
+<!-- ── Card ── -->
+<div class="ob-card">
+
+    <!-- Card Header -->
+    <div class="ob-card-header">
+        <h1><i class="anticon anticon-safety-certificate mr-2"></i> Konto einrichten</h1>
+        <p>Schritt <?= $step ?> von <?= $maxSteps ?> &#x2013; Bitte füllen Sie alle Angaben vollständig aus</p>
+    </div>
+
+    <!-- Step Progress Indicator -->
+    <div class="ob-stepper" role="navigation" aria-label="Fortschritt">
+        <?php
+        $stepDefs = [
+            1 => ['label' => 'Falldetails',   'icon' => 'anticon-file-text'],
+            2 => ['label' => 'Adresse',         'icon' => 'anticon-home'],
+            3 => ['label' => 'Zahlung',         'icon' => 'anticon-wallet'],
+            4 => ['label' => 'Abschluss',       'icon' => 'anticon-check-circle'],
+        ];
+        foreach ($stepDefs as $n => $def):
+            $isDone   = $n < $step;
+            $isActive = $n === $step;
+            $cls      = $isDone ? 'is-done' : ($isActive ? 'is-active' : '');
+        ?>
+        <?php if ($n > 1): ?>
+        <div class="ob-connector <?= $isDone ? 'done' : '' ?>"></div>
+        <?php endif; ?>
+        <div class="ob-step <?= $cls ?>" aria-current="<?= $isActive ? 'step' : 'false' ?>">
+            <div class="ob-step-circle">
+                <?php if ($isDone): ?>
+                    <i class="anticon anticon-check" style="font-size:16px;"></i>
+                <?php else: ?>
+                    <?= $n ?>
+                <?php endif; ?>
+            </div>
+            <div class="ob-step-label"><?= $def['label'] ?></div>
+        </div>
+        <?php endforeach; ?>
+    </div>
+
+    <!-- Form body -->
+    <div class="ob-body">
+
+    <?php if ($step == 1): ?>
+    <!-- ============================================================
+     SCHRITT 1: Falldetails
+    ============================================================ -->
+    <div class="ob-section-title">
+        <span class="ob-icon"><i class="anticon anticon-file-text" style="font-size:18px;"></i></span>
+        Erzählen Sie uns von Ihrem Fall
+    </div>
+    <p class="ob-section-desc">Diese Angaben helfen uns, Ihren Fall zu analysieren und die Wiederherstellung Ihrer Gelder einzuleiten.</p>
+
+    <form method="post" action="onboarding.php?step=<?= $step ?>">
+        <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+
+        <!-- Verlorener Betrag -->
+        <div class="ob-form-group">
+            <label>Verlorener Betrag (EUR) <span class="req">*</span></label>
+            <select name="lost_amount" class="ob-control" required>
+                <option value="">Betrag auswählen …</option>
+                <?php
+                $amounts = [
+                    1000   => 'Weniger als €1.000',
+                    5000   => '€1.000 – €5.000',
+                    10000  => '€5.000 – €10.000',
+                    25000  => '€10.000 – €25.000',
+                    50000  => '€25.000 – €50.000',
+                    100000 => '€50.000 – €100.000',
+                    250000 => '€100.000 – €250.000',
+                    500000 => 'Mehr als €250.000',
+                ];
+                foreach ($amounts as $v => $label):
+                    $sel = ($saved['lost_amount'] ?? '') == $v ? 'selected' : '';
+                ?>
+                <option value="<?= $v ?>" <?= $sel ?>><?= $label ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+
+        <!-- Wo verloren -->
+        <div class="ob-form-group">
+            <label>Wo wurden die Gelder verloren? <span class="req">*</span></label>
+            <input type="text" name="where_lost" class="ob-control"
+                   value="<?= htmlspecialchars($saved['where_lost'] ?? '') ?>"
+                   placeholder="z. B. Binance, Coinbase, Trading-Plattform XYZ …"
+                   required>
+            <p class="ob-hint">Name der Plattform, Börse oder des Handelshauses</p>
+        </div>
+
+        <!-- Plattformen -->
+        <div class="ob-form-group">
+            <label>Verwendete Plattformen <span class="req">*</span></label>
+            <?php
+            $chosen = !empty($saved['platforms']) ? json_decode($saved['platforms'], true) : [];
+            ?>
+            <div class="ob-platforms" role="group" aria-label="Plattformen">
+                <?php foreach ($platforms as $p):
+                    $checked = in_array($p['id'], $chosen) ? 'checked' : '';
+                    $checkedCls = $checked ? 'checked' : '';
+                ?>
+                <label class="ob-platform-item <?= $checkedCls ?>">
+                    <input type="checkbox" name="platforms[]" value="<?= $p['id'] ?>" <?= $checked ?>>
+                    <?= htmlspecialchars($p['name']) ?>
+                </label>
+                <?php endforeach; ?>
+            </div>
+            <p class="ob-hint">Wählen Sie alle betroffenen Plattformen aus</p>
+        </div>
+
+        <!-- Jahr -->
+        <div class="ob-form-group">
+            <label>Jahr des Verlusts <span class="req">*</span></label>
+            <select name="year_lost" class="ob-control" required>
+                <option value="">Jahr auswählen …</option>
+                <?php for ($y = date('Y'); $y >= 2000; $y--):
+                    $sel = ($saved['year_lost'] ?? '') == $y ? 'selected' : ''; ?>
+                <option value="<?= $y ?>" <?= $sel ?>><?= $y ?></option>
+                <?php endfor; ?>
+            </select>
+        </div>
+
+        <!-- Beschreibung -->
+        <div class="ob-form-group">
+            <label>Fallbeschreibung <span class="req">*</span></label>
+            <textarea name="description" class="ob-control"
+                      placeholder="Beschreiben Sie kurz, was passiert ist und wie Sie geschädigt wurden …"
+                      required><?= htmlspecialchars($saved['case_description'] ?? '') ?></textarea>
+            <p class="ob-hint">Je mehr Details Sie angeben, desto gezielter können wir Ihnen helfen.</p>
+        </div>
+
+        <div class="text-right">
+            <button type="submit" class="ob-btn ob-btn-primary">
+                Weiter <i class="anticon anticon-arrow-right"></i>
+            </button>
+        </div>
+    </form>
+
+    <?php elseif ($step == 2): ?>
+    <!-- ============================================================
+     SCHRITT 2: Adresse
+    ============================================================ -->
+    <div class="ob-section-title">
+        <span class="ob-icon"><i class="anticon anticon-home" style="font-size:18px;"></i></span>
+        Ihre Kontaktadresse
+    </div>
+    <p class="ob-section-desc">Wir benötigen Ihre Adresse für die offizielle Fallkorrespondenz und Dokumente.</p>
+
+    <form method="post" action="onboarding.php?step=<?= $step ?>">
+        <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+
+        <!-- Land -->
+        <div class="ob-form-group">
+            <label>Land <span class="req">*</span></label>
+            <select name="country" class="ob-control" required>
+                <option value="">Land auswählen …</option>
+                <?php
+                $countries = [
+                    'Deutschland', 'Österreich', 'Schweiz', 'Frankreich', 'Italien',
+                    'Spanien', 'Niederlande', 'Belgien', 'Luxemburg', 'Dänemark',
+                    'Schweden', 'Norwegen', 'Polen', 'Tschechien', 'Andere',
+                ];
+                foreach ($countries as $c):
+                    $sel = ($saved['country'] ?? '') === $c ? 'selected' : '';
+                ?>
+                <option value="<?= $c ?>" <?= $sel ?>><?= $c ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+
+        <!-- Straße -->
+        <div class="ob-form-group">
+            <label>Straße und Hausnummer <span class="req">*</span></label>
+            <input type="text" name="street" class="ob-control"
+                   value="<?= htmlspecialchars($saved['street'] ?? '') ?>"
+                   placeholder="Hauptstraße 42"
+                   required>
+        </div>
+
+        <!-- PLZ + Stadt -->
+        <div class="ob-row">
+            <div class="ob-form-group">
+                <label>Postleitzahl <span class="req">*</span></label>
+                <input type="text" name="postal_code" class="ob-control"
+                       value="<?= htmlspecialchars($saved['postal_code'] ?? '') ?>"
+                       placeholder="60322"
+                       required>
+            </div>
+            <div class="ob-form-group">
+                <label>Stadt / Bundesland <span class="req">*</span></label>
+                <input type="text" name="state" class="ob-control"
+                       value="<?= htmlspecialchars($saved['state'] ?? '') ?>"
+                       placeholder="Frankfurt am Main"
+                       required>
+            </div>
+        </div>
+
+        <div class="text-right">
+            <button type="submit" class="ob-btn ob-btn-primary">
+                Weiter <i class="anticon anticon-arrow-right"></i>
+            </button>
+        </div>
+    </form>
+
+    <?php elseif ($step == 3): ?>
+    <!-- ============================================================
+     SCHRITT 3: Zahlungsmethoden
+    ============================================================ -->
+    <div class="ob-section-title">
+        <span class="ob-icon"><i class="anticon anticon-wallet" style="font-size:18px;"></i></span>
+        Zahlungsmethode hinterlegen
+    </div>
+    <p class="ob-section-desc">Damit wir zurückgewonnene Gelder auszahlen können, benötigen wir mindestens eine Zahlungsmethode.</p>
+
+    <div class="ob-info">
+        <strong>Warum ist das notwendig?</strong>
+        <ul>
+            <li>Unser KI-System analysiert Blockchain-Transaktionen und ordnet gefundene Gelder Ihrem Konto zu.</li>
+            <li>Für die Auszahlung benötigen wir entweder ein Bankkonto <strong>oder</strong> eine Krypto-Wallet.</li>
+            <li>Alle Daten werden verschlüsselt gespeichert und ausschließlich für Rückzahlungen verwendet.</li>
+        </ul>
+    </div>
+
+    <div class="ob-warn">
+        <i class="anticon anticon-info-circle mr-1"></i>
+        <strong>Hinweis:</strong> Sie können jederzeit weitere Zahlungsmethoden in Ihrem Profil ergänzen.
+    </div>
+
+    <form method="post" action="onboarding.php?step=<?= $step ?>" id="paymentForm">
+        <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+
+        <!-- Tab Navigation -->
+        <div class="ob-tabs" role="tablist">
+            <div class="ob-tab active" role="tab" id="tab-bank" onclick="switchTab('bank')" tabindex="0">
+                <i class="anticon anticon-bank mr-1"></i> Bankkonto
+            </div>
+            <div class="ob-tab" role="tab" id="tab-crypto" onclick="switchTab('crypto')" tabindex="0">
+                <i class="anticon anticon-block mr-1"></i> Krypto-Wallet
+            </div>
+        </div>
+
+        <!-- Bank Tab -->
+        <div class="ob-tab-pane active" id="pane-bank" role="tabpanel" aria-labelledby="tab-bank">
+
+            <div class="ob-form-group">
+                <label>Bankname</label>
+                <input type="text" name="bank_name" class="ob-control"
+                       value="<?= htmlspecialchars($saved['bank_name'] ?? '') ?>"
+                       placeholder="z. B. Sparkasse, Deutsche Bank">
+            </div>
+
+            <div class="ob-form-group">
+                <label>Kontoinhaber</label>
+                <input type="text" name="account_holder" class="ob-control"
+                       value="<?= htmlspecialchars($saved['account_holder'] ?? '') ?>"
+                       placeholder="Vollständiger Name wie auf dem Bankkonto">
+            </div>
+
+            <div class="ob-form-group">
+                <label>IBAN</label>
+                <input type="text" name="iban" class="ob-control"
+                       value="<?= htmlspecialchars($saved['iban'] ?? '') ?>"
+                       placeholder="DE89 3704 0044 0532 0130 00"
+                       style="font-family: monospace; letter-spacing: 1px;">
+                <p class="ob-hint">Internationale Bankkontonummer (wird vor Nutzung verifiziert)</p>
+            </div>
+
+            <div class="ob-form-group">
+                <label>BIC / SWIFT</label>
+                <input type="text" name="bic" class="ob-control"
+                       value="<?= htmlspecialchars($saved['bic'] ?? '') ?>"
+                       placeholder="COBADEFFXXX"
+                       style="font-family: monospace; letter-spacing: 1px;">
+                <p class="ob-hint">Bank-Identifikationscode Ihrer Bank</p>
+            </div>
+        </div>
+
+        <!-- Crypto Tab -->
+        <div class="ob-tab-pane" id="pane-crypto" role="tabpanel" aria-labelledby="tab-crypto">
+
+            <div class="ob-form-group">
+                <label>Kryptowährung</label>
+                <select name="cryptocurrency" class="ob-control">
+                    <option value="">Kryptowährung auswählen …</option>
+                    <?php
+                    $coins = [
+                        'BTC' => 'Bitcoin (BTC)',   'ETH' => 'Ethereum (ETH)',
+                        'USDT'=> 'Tether (USDT)',    'USDC'=> 'USD Coin (USDC)',
+                        'BNB' => 'Binance Coin (BNB)','ADA'=> 'Cardano (ADA)',
+                        'LTC' => 'Litecoin (LTC)',   'XRP' => 'XRP (Ripple)',
+                        'SOL' => 'Solana (SOL)',      'TRX' => 'TRON (TRX)',
+                    ];
+                    $savedCoin = $saved['cryptocurrency'] ?? '';
+                    foreach ($coins as $val => $lbl):
+                        $sel = $savedCoin === $val ? 'selected' : '';
+                    ?>
+                    <option value="<?= $val ?>" <?= $sel ?>><?= $lbl ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+
+            <div class="ob-form-group">
+                <label>Blockchain-Netzwerk</label>
+                <select name="network" class="ob-control">
+                    <option value="">Netzwerk auswählen …</option>
+                    <?php
+                    $networks = [
+                        'Bitcoin Network'              => 'Bitcoin Network',
+                        'Ethereum (ERC-20)'            => 'Ethereum (ERC-20)',
+                        'Tron (TRC-20)'                => 'Tron (TRC-20)',
+                        'Binance Smart Chain (BEP-20)' => 'Binance Smart Chain (BEP-20)',
+                        'Polygon Network'              => 'Polygon Network',
+                        'Solana Network'               => 'Solana Network',
+                        'XRP Ledger'                   => 'XRP Ledger',
+                    ];
+                    $savedNet = $saved['network'] ?? '';
+                    foreach ($networks as $val => $lbl):
+                        $sel = $savedNet === $val ? 'selected' : '';
+                    ?>
+                    <option value="<?= $val ?>" <?= $sel ?>><?= $lbl ?></option>
+                    <?php endforeach; ?>
+                </select>
+                <p class="ob-hint">Wählen Sie das Netzwerk passend zu Ihrem Wallet</p>
+            </div>
+
+            <div class="ob-form-group">
+                <label>Wallet-Adresse</label>
+                <input type="text" name="wallet_address" class="ob-control"
+                       value="<?= htmlspecialchars($saved['wallet_address'] ?? '') ?>"
+                       placeholder="0xabcd1234efgh5678 …"
+                       style="font-family: monospace; font-size: 0.88rem; letter-spacing: 0.5px;">
+                <p class="ob-hint">Ihre öffentliche Wallet-Adresse (wird per Satoshi-Test verifiziert)</p>
+            </div>
+
+        </div><!-- /crypto-pane -->
+
+        <div class="text-right mt-3">
+            <button type="submit" class="ob-btn ob-btn-primary">
+                Einrichtung abschließen <i class="anticon anticon-check"></i>
+            </button>
+        </div>
+    </form>
+
+    <script>
+    function switchTab(tab) {
+        document.querySelectorAll('.ob-tab').forEach(function(t){ t.classList.remove('active'); });
+        document.querySelectorAll('.ob-tab-pane').forEach(function(p){ p.classList.remove('active'); });
+        document.getElementById('tab-' + tab).classList.add('active');
+        document.getElementById('pane-' + tab).classList.add('active');
+    }
+
+    // Auto-switch to crypto tab if previously saved
+    (function() {
+        var hasCrypto = <?= !empty($saved['cryptocurrency']) ? 'true' : 'false' ?>;
+        if (hasCrypto) switchTab('crypto');
+    })();
+    </script>
+
+    <?php elseif ($step == 4): ?>
+    <!-- ============================================================
+     SCHRITT 4: Registrierung abschließen
+    ============================================================ -->
+    <div class="ob-section-title">
+        <span class="ob-icon"><i class="anticon anticon-check-circle" style="font-size:18px;"></i></span>
+        Registrierung bestätigen
+    </div>
+    <p class="ob-section-desc">Alle Angaben wurden erfasst. Bitte bestätigen Sie den Abschluss Ihrer Kontoeinrichtung.</p>
+
+    <div class="ob-success">
+        <div style="display:flex; align-items:center; gap:14px; margin-bottom:12px;">
+            <div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#28a745,#20c997);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <i class="anticon anticon-check" style="color:#fff;font-size:22px;"></i>
+            </div>
+            <div>
+                <strong style="font-size:1.05rem;color:#155724;">Fast geschafft!</strong>
+                <p style="margin:2px 0 0;font-size:0.88rem;color:#1e7e34;">Alle erforderlichen Angaben wurden gespeichert.</p>
+            </div>
+        </div>
+        <p style="font-size:0.88rem;color:#155724;margin:0;">
+            Nach dem Abschluss wird Ihr Konto aktiviert und unser Team beginnt sofort mit der Analyse Ihres Falls.
+            Sie erhalten eine Bestätigungs-E-Mail mit einer Zusammenfassung Ihrer Angaben.
+        </p>
+    </div>
+
+    <form method="post" action="onboarding.php?step=<?= $step ?>">
+        <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+        <div class="text-right">
+            <button type="submit" class="ob-btn ob-btn-primary" style="padding: 14px 40px; font-size: 1rem;">
+                <i class="anticon anticon-check-circle mr-1"></i> Registrierung jetzt abschließen
+            </button>
+        </div>
+    </form>
+
+    <?php endif; ?>
+
+    </div><!-- /.ob-body -->
+</div><!-- /.ob-card -->
+
+</div><!-- /.ob-wrap -->
+</div><!-- /.main-content -->
+
+<script>
+// Initialise checkbox highlight for already-checked platform items (any step)
+document.querySelectorAll('.ob-platform-item input[type=checkbox]:checked').forEach(function(cb) {
+    cb.closest('.ob-platform-item').classList.add('checked');
+});
+// Listen for future changes (works on all steps that have the grid)
+document.querySelectorAll('.ob-platform-item input[type=checkbox]').forEach(function(cb) {
+    cb.addEventListener('change', function() {
+        this.closest('.ob-platform-item').classList.toggle('checked', this.checked);
+    });
+});
+</script>
 
 <?php require_once __DIR__ . '/footer.php'; ?>

@@ -1,15 +1,15 @@
 <?php
-$page_title = 'Kontakt – Novalnet AI Support';
+include_once 'includes/site_settings.php';
+$page_title = 'Kontakt – ' . ($siteSettings['brand_name'] ?? 'Novalnet AI') . ' Support';
 $page_description = 'Kontaktieren Sie unser Expertenteam für Krypto-Wiederherstellung. BaFin-lizenziert, kostenlose Erstberatung.';
 $page_keywords = 'Kontakt, Support, Krypto Beratung, BaFin lizenziert';
-$page_url = 'https://novalnet-ai.de/Frontend/kontakt.php';
-
+$page_url = ($siteSettings['site_url'] ?? 'https://novalnet-ai.de') . '/Frontend/kontakt.php';
 include 'includes/header.php';
 include 'includes/navbar.php';
 ?>
 
 <!-- SEO H1 -->
-<h1 class="visually-hidden">Kontakt – Novalnet AI Support</h1>
+<h1 class="visually-hidden">Kontakt – <?php echo htmlspecialchars($siteSettings['brand_name'] ?? 'Novalnet AI'); ?> Support</h1>
 
 <style>
   .section {
@@ -68,7 +68,7 @@ include 'includes/navbar.php';
       <div>
         <h5 class="mb-1">E-Mail Support</h5>
         <p class="mb-0 text-muted">Für allgemeine Anfragen und Support</p>
-        <a href="mailto:support@novalnet-ai.de" class="fw-bold text-decoration-none text-primary">support@novalnet-ai.de</a>
+        <a href="mailto:<?php echo htmlspecialchars($siteSettings['contact_email']); ?>" class="fw-bold text-decoration-none text-primary"><?php echo htmlspecialchars($siteSettings['contact_email']); ?></a>
         <p class="text-muted small mb-0">Antwortzeit: 1–2 Werktage</p>
       </div>
     </div>

@@ -178,10 +178,10 @@ try {
         error_log('In-app notification failed: ' . $e->getMessage());
     }
     
-    // Send email notification to user using AdminEmailHelper
+    // Send email notification to user using EmailHelper
     try {
-        require_once '../AdminEmailHelper.php';
-        $emailHelper = new AdminEmailHelper($pdo);
+        require_once '../../EmailHelper.php';
+        $emailHelper = new EmailHelper($pdo);
         
         $userStmt = $pdo->prepare("SELECT id, email, first_name, last_name FROM users WHERE id = ?");
         $userStmt->execute([$userId]);
@@ -227,7 +227,7 @@ try {
             $emailContent .= "<p>If you have any questions, please contact our support team at {contact_email}.</p>";
             $emailContent .= "<p><a href=\"{dashboard_url}\" style=\"display: inline-block; padding: 10px 20px; background-color: #007bff; color: #ffffff; text-decoration: none; border-radius: 5px;\">Go to Dashboard</a></p>";
             
-            // Send email using AdminEmailHelper with all 41+ variables automatically available
+            // Send email using EmailHelper with all variables automatically available
             $success = $emailHelper->sendDirectEmail($user['id'], $subject, $emailContent, $customVars);
             
             if ($success) {

@@ -31,38 +31,165 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <!DOCTYPE html>
 <html lang="de">
 <head>
-<meta charset="UTF-8">
-<title>Passwort zurücksetzen | Scam Recovery Dashboard</title>
-<link href="assets/css/app.min.css" rel="stylesheet">
-<style>
-.login-container{min-height:100vh;background:linear-gradient(135deg,#f5f7fa,#c3cfe2);}
-.login-card{border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,0.1);}
-.login-logo{text-align:center;margin-bottom:30px;}
-.login-logo img{height:60px;}
-.btn-primary{background:#5c6bc0;border-color:#5c6bc0;}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Passwort zurücksetzen | Fund Recovery Services</title>
+    <link href="assets/css/app.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0d1b2a 0%, #1b2a3b 60%, #102030 100%);
+            min-height: 100vh;
+        }
+        .reset-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 30px 15px;
+        }
+        .reset-card {
+            border-radius: 12px;
+            box-shadow: 0 8px 40px rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255,255,255,0.07);
+            background: #ffffff;
+            max-width: 460px;
+            width: 100%;
+        }
+        .reset-header {
+            background: linear-gradient(135deg, #1a3a5c 0%, #0d2137 100%);
+            border-radius: 12px 12px 0 0;
+            padding: 28px 32px 22px;
+            text-align: center;
+        }
+        .reset-header img {
+            height: 56px;
+            margin-bottom: 14px;
+        }
+        .reset-header .header-title {
+            color: #ffffff;
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin: 0;
+            letter-spacing: 0.3px;
+        }
+        .reset-header .header-subtitle {
+            color: rgba(255,255,255,0.65);
+            font-size: 0.82rem;
+            margin-top: 4px;
+        }
+        .reset-body {
+            padding: 30px 32px 28px;
+        }
+        .form-group label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 6px;
+        }
+        .form-control {
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 0.9rem;
+            color: #111827;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .form-control:focus {
+            border-color: #1a3a5c;
+            box-shadow: 0 0 0 3px rgba(26, 58, 92, 0.15);
+            outline: none;
+        }
+        .btn-submit {
+            background: linear-gradient(135deg, #1a3a5c 0%, #0d2137 100%);
+            border: none;
+            color: #ffffff;
+            font-weight: 600;
+            font-size: 0.95rem;
+            padding: 11px;
+            border-radius: 8px;
+            width: 100%;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            letter-spacing: 0.3px;
+        }
+        .btn-submit:hover {
+            opacity: 0.88;
+        }
+        .back-link {
+            font-size: 0.82rem;
+            color: #1a3a5c;
+            text-decoration: none;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        .reset-footer {
+            border-top: 1px solid #f0f0f0;
+            padding: 16px 32px 20px;
+            text-align: center;
+            font-size: 0.8rem;
+            color: #9ca3af;
+        }
+        .security-badge {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            font-size: 0.78rem;
+            color: #6b7280;
+            margin-top: 14px;
+        }
+        .security-badge svg {
+            width: 14px;
+            height: 14px;
+            fill: #6b7280;
+        }
+    </style>
 </head>
 <body>
-<div class="login-container d-flex align-items-center">
-<div class="container">
-<div class="row justify-content-center">
-<div class="col-md-5">
-<div class="card login-card">
-<div class="card-body p-4">
-<div class="login-logo"><img src="assets/images/logo/logo.png" alt="Scam Recovery"></div>
-<h4 class="text-center mb-4">Neues Passwort festlegen</h4>
-<?= $message ?>
-<?php if(empty($message) || str_contains($message,'Ungültig')===false): ?>
-<form method="POST">
-    <input type="hidden" name="token" value="<?= htmlspecialchars($token) ?>">
-    <div class="form-group">
-        <label>Neues Passwort</label>
-        <input type="password" name="password" class="form-control" required>
+    <div class="reset-container">
+        <div class="reset-card">
+            <div class="reset-header">
+                <img src="assets/images/logo/logo.png" alt="Fund Recovery Services">
+                <p class="header-title">Neues Passwort festlegen</p>
+                <p class="header-subtitle">Bitte wählen Sie ein sicheres neues Passwort</p>
+            </div>
+            <div class="reset-body">
+                <?php if ($message): ?>
+                    <?= $message ?>
+                    <div class="text-center mt-3">
+                        <a href="login.php" class="back-link">← Zurück zum Login</a>
+                    </div>
+                <?php endif; ?>
+
+                <?php if(empty($message) || str_contains($message,'Ungültig')===false): ?>
+                <form method="POST" action="reset-password.php">
+                    <input type="hidden" name="token" value="<?= htmlspecialchars($token) ?>">
+                    <div class="form-group mb-4">
+                        <label for="password">Neues Passwort</label>
+                        <input type="password" class="form-control" id="password" name="password"
+                               required placeholder="••••••••">
+                    </div>
+                    <button type="submit" class="btn-submit">Passwort ändern</button>
+                </form>
+
+                <div class="text-center mt-3">
+                    <a href="login.php" class="back-link">← Zurück zum Login</a>
+                </div>
+                <?php endif; ?>
+
+                <div class="security-badge">
+                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
+                    256-Bit SSL-verschlüsselt &amp; sichere Verbindung
+                </div>
+            </div>
+            <div class="reset-footer">
+                <a href="login.php" style="color:#9ca3af; text-decoration:none;">Anmelden</a>
+                &nbsp;&middot;&nbsp; <a href="../contact.php" style="color:#9ca3af; text-decoration:none;">Support kontaktieren</a>
+            </div>
+        </div>
     </div>
-    <button type="submit" class="btn btn-primary btn-block mt-3">Passwort ändern</button>
-</form>
-<?php endif; ?>
-</div></div></div></div></div></div>
 </body>
 </html>
 
