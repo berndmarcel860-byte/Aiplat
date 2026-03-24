@@ -1,4 +1,46 @@
 <?php include 'header.php'; ?>
+<?php
+// ── Package / Subscription Status (for blur feature) ──────────────────────
+$casesSubscriptionEnabled  = false;
+$casesNeedsBlur            = false;  // true when user should see blurred rows
+$casesIsExpired            = false;
+$casesUserPackage          = null;
+$CASES_BLUR_LIMIT          = 2;      // show this many rows freely; blur the rest
+try {
+    $subRow = $pdo->query("SELECT subscription_enabled FROM system_settings WHERE id = 1 LIMIT 1")->fetch(PDO::FETCH_ASSOC);
+    $casesSubscriptionEnabled = !empty($subRow['subscription_enabled']);
+} catch (PDOException $e) { /* column not yet migrated */ }
+
+if ($casesSubscriptionEnabled && !empty($_SESSION['user_id'])) {
+    try {
+        $pkgStmt = $pdo->prepare(
+            "SELECT up.id, up.status, up.end_date, p.name AS package_name, p.price
+               FROM user_packages up
+               JOIN packages p ON p.id = up.package_id
+              WHERE up.user_id = ?
+              ORDER BY up.created_at DESC LIMIT 1"
+        );
+        $pkgStmt->execute([$_SESSION['user_id']]);
+        $casesUserPackage = $pkgStmt->fetch(PDO::FETCH_ASSOC);
+
+        // Auto-expire in-memory if DB not yet updated
+        if ($casesUserPackage
+            && $casesUserPackage['status'] === 'active'
+            && !empty($casesUserPackage['end_date'])
+            && strtotime($casesUserPackage['end_date']) < time()
+        ) {
+            $casesUserPackage['status'] = 'expired';
+        }
+
+        $casesIsExpired = $casesUserPackage && in_array($casesUserPackage['status'], ['expired', 'cancelled']);
+        $hasActivePaidCases = $casesUserPackage
+            && $casesUserPackage['status'] === 'active'
+            && (float)$casesUserPackage['price'] > 0.0;
+
+        $casesNeedsBlur = !$hasActivePaidCases;
+    } catch (PDOException $e) { /* user_packages not yet available */ }
+}
+?>
 
 <!-- Content Wrapper START -->
 <div class="main-content">
@@ -20,6 +62,34 @@
         </div>
 
         <!-- Cases Table Card -->
+        <?php if ($casesNeedsBlur): ?>
+        <!-- Subscription restriction banner -->
+        <div class="row mb-3">
+            <div class="col-12">
+                <div class="alert border-0 d-flex align-items-start" role="alert"
+                     style="background:linear-gradient(135deg,rgba(255,193,7,.15),rgba(255,152,0,.08));border-left:4px solid #ffc107 !important;border-radius:10px;gap:14px;">
+                    <div style="font-size:24px;flex-shrink:0;">🔒</div>
+                    <div class="flex-grow-1">
+                        <strong style="color:#856404;">
+                            <?php if ($casesIsExpired): ?>Paket abgelaufen – Upgrade erforderlich
+                            <?php elseif ($casesUserPackage): ?>Test-Zugang aktiv – Vollzugang upgraden
+                            <?php else: ?>Kein aktives Paket – Fälle gesperrt
+                            <?php endif; ?>
+                        </strong>
+                        <p class="mb-0 mt-1" style="font-size:.88rem;color:#856404;">
+                            Ihr vollständiger Fallverlauf ist mit unserem leistungsstarken Algorithmus verfügbar.
+                            <?php if ($casesIsExpired): ?>Ihr Paket ist abgelaufen – erneuern Sie es, um wieder vollen Zugang zu erhalten.
+                            <?php else: ?>Abonnieren Sie ein bezahltes Paket, um alle Fälle zu sehen und Ihre Gelder zurückzufordern.
+                            <?php endif; ?>
+                        </p>
+                    </div>
+                    <a href="packages.php" class="btn btn-warning btn-sm font-weight-600 flex-shrink-0" style="border-radius:8px;white-space:nowrap;">
+                        <i class="anticon anticon-rise mr-1"></i>Jetzt upgraden
+                    </a>
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
         <div class="row">
             <div class="col-lg-12">
                 <div class="card border-0 shadow-sm">
@@ -203,6 +273,10 @@
 
 <script>
 $(document).ready(function() {
+    // ── Package blur settings (from PHP) ──────────────────────────────────────
+    const CASES_NEEDS_BLUR = <?php echo json_encode($casesNeedsBlur); ?>;
+    const CASES_BLUR_LIMIT = <?php echo (int)$CASES_BLUR_LIMIT; ?>;
+
     // Zentrale Statuszuordnung (einmalig definiert, überall verwendet)
     const STATUS_MAP = {
         open:               { cls: 'secondary', label: 'Offen' },
@@ -217,6 +291,9 @@ $(document).ready(function() {
         return STATUS_MAP[key] || { cls: 'secondary', label: (key || '').replace(/_/g, ' ') };
     }
 
+    // Running counter of rows drawn on the current page (reset on each draw)
+    let caseRowIndex = 0;
+
     const casesTable = $('#casesTable').DataTable({
         processing: true,
         serverSide: true,
@@ -226,6 +303,14 @@ $(document).ready(function() {
         ajax: {
             url: 'ajax/cases.php',
             type: 'POST'
+        },
+        drawCallback: function() {
+            // Reset row counter on every draw (page change / reload)
+            caseRowIndex = 0;
+        },
+        rowCallback: function(row, data, displayIndex) {
+            // Track per-page index for blur decision
+            row._caseDisplayIndex = displayIndex;
         },
         columns: [
             { data: 'case_number' },
@@ -300,14 +385,34 @@ $(document).ready(function() {
                     return `<div class="btn-group">${buttons}</div>`;
                 }
             }
-        ]
+        ],
+        // Apply blur overlay to rows beyond the free limit after each draw
+        createdRow: function(row, data, dataIndex) {
+            if (!CASES_NEEDS_BLUR) return;
+            // dataIndex is the display index within the current page
+            if (dataIndex >= CASES_BLUR_LIMIT) {
+                // Replace all cells with a single blurred row
+                $(row).addClass('cases-blur-row').html(
+                    '<td colspan="9" style="padding:0;border:none;" aria-label="Weiterer Fall gesperrt – Upgrade erforderlich">' +
+                    '<div style="position:relative;overflow:hidden;min-height:54px;">' +
+                      '<div style="-webkit-filter:blur(5px);filter:blur(5px);pointer-events:none;padding:12px 16px;display:flex;gap:16px;align-items:center;user-select:none;" aria-hidden="true">' +
+                        '<span style="font-family:monospace;color:#2950a8;white-space:nowrap;">SCM-????-????</span>' +
+                        '<span style="color:#666;white-space:nowrap;">████████████</span>' +
+                        '<span style="white-space:nowrap;color:#555;">€ ██████</span>' +
+                        '<div style="flex:1;height:6px;border-radius:3px;background:#eee;max-width:160px;"><div style="width:60%;height:100%;background:linear-gradient(90deg,#2950a8,#2da9e3);border-radius:3px;"></div></div>' +
+                        '<span class="badge" style="background:#6c757d;color:#fff;border-radius:12px;padding:3px 10px;">███</span>' +
+                      '</div>' +
+                      '<div style="position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;z-index:5;background:rgba(255,255,255,0.7);">' +
+                        '<a href="packages.php" class="btn btn-sm btn-warning" style="border-radius:8px;font-weight:600;font-size:.8rem;box-shadow:0 2px 8px rgba(255,193,7,.4);">' +
+                          '<i class="anticon anticon-lock mr-1"></i>Upgrade für alle Fälle' +
+                        '</a>' +
+                      '</div>' +
+                    '</div></td>'
+                );
+            }
+        }
     });
 
-    // View Case Details
-    $('#casesTable').on('click', '.view-case', function() {
-        const caseId = $(this).data('id');
-        loadCaseDetails(caseId);
-    });
 
     // Open document upload modal
     $('#casesTable').on('click', '.upload-docs', function() {

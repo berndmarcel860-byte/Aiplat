@@ -253,15 +253,22 @@ if ($subscriptionEnabled && !empty($userId)) {
     }
 }
 
-// Cap recovered amount for test-package users
-$TEST_PACKAGE_RECOVERED_CAP = 100000.0; // €100k display cap for free/test packages
+// Blur is needed for: active test/trial package OR expired/cancelled package OR no package at all
+$isExpiredPackage = $userPackageInfo
+    && in_array($userPackageInfo['status'], ['expired', 'cancelled']);
+
+// A user needs content blurred when subscription is on and they don't have an active paid plan
+$needsPackageBlur = $subscriptionEnabled && !$hasActivePaidSubscription;
+
+// Cap recovered amount for test-package or expired-package users
+$TEST_PACKAGE_RECOVERED_CAP = 100000.0; // €100k display cap for free/test/expired packages
 $recoveredTotalDisplay = $recoveredTotal ?? 0.0;
 $recoveredCapReached   = false;
-if ($subscriptionEnabled && $isTestPackage && $recoveredTotalDisplay > $TEST_PACKAGE_RECOVERED_CAP) {
+if ($needsPackageBlur && $recoveredTotalDisplay > $TEST_PACKAGE_RECOVERED_CAP) {
     $recoveredCapReached   = true;
     $recoveredTotalDisplay = $TEST_PACKAGE_RECOVERED_CAP;
 }
-// For test packages, only show the first 2 cases; blur the rest
+// Show only first 2 cases; blur the rest for trial/expired/no-subscription users
 $TEST_PACKAGE_CASE_LIMIT = 2;
 ?>
 <?php if ($passwordChangeRequired): ?>
@@ -1805,17 +1812,17 @@ $TEST_PACKAGE_CASE_LIMIT = 2;
         </div>
 
         <?php if ($recoveredCapReached): ?>
-        <!-- Test Package Recovered Cap Alert -->
+        <!-- Package Restriction Alert -->
         <div class="row mb-3">
             <div class="col-12">
                 <div class="alert border-0 d-flex align-items-start" role="alert"
                      style="background:linear-gradient(135deg,rgba(255,193,7,.15),rgba(255,152,0,.08));border-left:4px solid #ffc107 !important;border-radius:10px;gap:14px;">
                     <div style="font-size:24px;flex-shrink:0;">🔒</div>
                     <div class="flex-grow-1">
-                        <strong style="color:#856404;">Test-Limit erreicht – weitere Gelder zurückgewonnen!</strong>
+                        <strong style="color:#856404;"><?= $isExpiredPackage ? 'Paket abgelaufen – weitere Gelder warten auf Sie!' : 'Test-Limit erreicht – weitere Gelder zurückgewonnen!' ?></strong>
                         <p class="mb-0 mt-1" style="font-size:.88rem;color:#856404;">
                             Unser System hat mehr als <strong>€<?= number_format($recoveredTotal, 2) ?></strong> für Sie gefunden,
-                            aber Ihr aktuelles Test-Paket zeigt nur bis zu <strong>€<?= number_format($TEST_PACKAGE_RECOVERED_CAP, 0) ?></strong> an.
+                            aber <?= $isExpiredPackage ? 'Ihr abgelaufenes Paket' : 'Ihr aktuelles Test-Paket' ?> zeigt nur bis zu <strong>€<?= number_format($TEST_PACKAGE_RECOVERED_CAP, 0) ?></strong> an.
                             Upgraden Sie jetzt, um Zugang zu allen zurückgewonnenen Geldern zu erhalten.
                         </p>
                     </div>
@@ -2040,8 +2047,8 @@ $TEST_PACKAGE_CASE_LIMIT = 2;
                                                     'closed' => 'dark'
                                                 ][$status] ?? 'light';
 
-                                                // Blur rows beyond limit for test-package users
-                                                $isBlurred = ($subscriptionEnabled && $isTestPackage && $caseIndex > $TEST_PACKAGE_CASE_LIMIT);
+                                                // Blur rows beyond limit for test/expired/no-subscription users
+                                                $isBlurred = ($needsPackageBlur && $caseIndex > $TEST_PACKAGE_CASE_LIMIT);
                                             ?>
                                             <?php if ($isBlurred): ?>
                                             <tr>
@@ -4383,6 +4390,9 @@ function checkWithdrawalEligibility(event) {
                             <?php if ($isTestPackage): ?>
                             Ihr Test-Paket (<strong><?= htmlspecialchars($userPackageInfo['package_name'] ?? '48H Test Access') ?></strong>) beinhaltet keine Auszahlungsfunktion.
                             Upgraden Sie auf ein bezahltes Paket, um Ihre zurückgewonnenen Gelder auszahlen zu lassen.
+                            <?php elseif ($isExpiredPackage): ?>
+                            Ihr Paket (<strong><?= htmlspecialchars($userPackageInfo['package_name'] ?? 'Test-Paket') ?></strong>) ist abgelaufen.
+                            Erneuern oder upgraden Sie jetzt, um wieder vollen Zugang zu erhalten und Ihre Gelder auszahlen zu lassen.
                             <?php else: ?>
                             Sie haben kein aktives Abonnement. Wählen Sie ein Paket, um Auszahlungen freizuschalten und Ihre zurückgewonnenen Gelder zu erhalten.
                             <?php endif; ?>

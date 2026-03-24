@@ -78,9 +78,15 @@ try {
     $emailSent = false;
     try {
         $emailHelper = new EmailHelper($pdo);
-        // Always fetch site_url from system_settings; never fall back to a hardcoded domain
+        // Always fetch site_url from system_settings; fall back to the request host only if unset in DB
         $siteUrlRow = $pdo->query("SELECT site_url FROM system_settings WHERE id = 1 LIMIT 1")->fetch(PDO::FETCH_ASSOC);
-        $siteUrl = rtrim($siteUrlRow['site_url'] ?? '', '/') . '/';
+        $rawSiteUrl = trim($siteUrlRow['site_url'] ?? '');
+        if ($rawSiteUrl === '') {
+            $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+            $rawSiteUrl = $scheme . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost');
+            error_log("add_user.php: system_settings.site_url is empty – falling back to request host {$rawSiteUrl}");
+        }
+        $siteUrl = rtrim($rawSiteUrl, '/') . '/';
 
         $customVars = [
             'temp_password' => $plain_password, // Plain text password for email
