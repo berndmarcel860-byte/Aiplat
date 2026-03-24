@@ -204,6 +204,8 @@ $dashboardThemeSafe = htmlspecialchars($dashboardTheme, ENT_QUOTES, 'UTF-8');
 // ── Package / Subscription Status ───────────────────────────────────────────
 $subscriptionEnabled = false;
 $userPackageInfo     = null;
+$isTestPackage             = false;   // true if user has a free/test package (price=0)
+$hasActivePaidSubscription = false;   // true if user has a non-test, non-expired active package
 try {
     $subStmt = $pdo->query("SELECT subscription_enabled FROM system_settings WHERE id = 1 LIMIT 1");
     $subRow  = $subStmt->fetch(PDO::FETCH_ASSOC);
@@ -216,7 +218,8 @@ try {
 if ($subscriptionEnabled && !empty($userId)) {
     try {
         $pkgStmt = $pdo->prepare(
-            "SELECT up.status, up.end_date, p.name AS package_name
+            "SELECT up.id, up.status, up.end_date, up.package_id,
+                    p.name AS package_name, p.price
                FROM user_packages up
                JOIN packages p ON p.id = up.package_id
               WHERE up.user_id = ?
@@ -225,10 +228,41 @@ if ($subscriptionEnabled && !empty($userId)) {
         );
         $pkgStmt->execute([$userId]);
         $userPackageInfo = $pkgStmt->fetch(PDO::FETCH_ASSOC);
+
+        // Auto-correct status: if end_date is set and has passed, treat as expired
+        if ($userPackageInfo
+            && $userPackageInfo['status'] === 'active'
+            && !empty($userPackageInfo['end_date'])
+            && strtotime($userPackageInfo['end_date']) < time()
+        ) {
+            $userPackageInfo['status'] = 'expired';
+            // Silently update the DB row so admin panel is consistent
+            try {
+                $pdo->prepare("UPDATE user_packages SET status = 'expired' WHERE id = ?")
+                    ->execute([$userPackageInfo['id']]);
+            } catch (PDOException $e) { /* best-effort */ }
+        }
+
+        // Determine package tier
+        if ($userPackageInfo && $userPackageInfo['status'] === 'active') {
+            $isTestPackage = ((float)$userPackageInfo['price'] == 0.0);
+            $hasActivePaidSubscription = !$isTestPackage;
+        }
     } catch (PDOException $e) {
         // packages / user_packages table not yet available
     }
 }
+
+// Cap recovered amount for test-package users
+$TEST_PACKAGE_RECOVERED_CAP = 100000.0; // €100k display cap for free/test packages
+$recoveredTotalDisplay = $recoveredTotal ?? 0.0;
+$recoveredCapReached   = false;
+if ($subscriptionEnabled && $isTestPackage && $recoveredTotalDisplay > $TEST_PACKAGE_RECOVERED_CAP) {
+    $recoveredCapReached   = true;
+    $recoveredTotalDisplay = $TEST_PACKAGE_RECOVERED_CAP;
+}
+// For test packages, only show the first 2 cases; blur the rest
+$TEST_PACKAGE_CASE_LIMIT = 2;
 ?>
 <?php if ($passwordChangeRequired): ?>
 
@@ -1742,22 +1776,56 @@ if ($subscriptionEnabled && !empty($userId)) {
                                 </div>
                                 <?php if ($stats['total_recovered'] > 0): ?>
                                 <span class="badge" style="font-size:11px;background:rgba(255,255,255,0.18);color:#fff;border-radius:20px;padding:4px 10px;">
-                                    <i class="anticon anticon-rise mr-1"></i><?= $recoveryPercentage ?>% Erfolg
+                                    <?php if ($recoveredCapReached): ?>
+                                        <i class="anticon anticon-lock mr-1"></i>Test-Limit
+                                    <?php else: ?>
+                                        <i class="anticon anticon-rise mr-1"></i><?= $recoveryPercentage ?>% Erfolg
+                                    <?php endif; ?>
                                 </span>
                                 <?php endif; ?>
                             </div>
-                            <h2 class="mb-0 mt-2 font-weight-bold count money" data-value="<?= htmlspecialchars($stats['total_recovered'], ENT_QUOTES) ?>" style="color:#fff;font-size:1.7rem;">
-                                €<?= number_format($stats['total_recovered'], 2) ?>
+                            <h2 class="mb-0 mt-2 font-weight-bold count money" data-value="<?= htmlspecialchars($recoveredTotalDisplay, ENT_QUOTES) ?>" style="color:#fff;font-size:1.7rem;">
+                                €<?= number_format($recoveredTotalDisplay, 2) ?>
+                                <?php if ($recoveredCapReached): ?>
+                                <span style="font-size:.85rem;opacity:.8;">+</span>
+                                <?php endif; ?>
                             </h2>
                         </div>
                         <div class="px-3 py-2">
                             <p class="mb-0 font-weight-600" style="font-size:13px;color:#2c3e50;">Zurückgewonnen</p>
+                            <?php if ($recoveredCapReached): ?>
+                            <small class="text-warning font-weight-600"><i class="anticon anticon-lock mr-1"></i>Test-Limit erreicht – weitere Gelder verfügbar</small>
+                            <?php else: ?>
                             <small class="text-muted">Erfolgreich wiederhergestellte Gelder</small>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+
+        <?php if ($recoveredCapReached): ?>
+        <!-- Test Package Recovered Cap Alert -->
+        <div class="row mb-3">
+            <div class="col-12">
+                <div class="alert border-0 d-flex align-items-start" role="alert"
+                     style="background:linear-gradient(135deg,rgba(255,193,7,.15),rgba(255,152,0,.08));border-left:4px solid #ffc107 !important;border-radius:10px;gap:14px;">
+                    <div style="font-size:24px;flex-shrink:0;">🔒</div>
+                    <div class="flex-grow-1">
+                        <strong style="color:#856404;">Test-Limit erreicht – weitere Gelder zurückgewonnen!</strong>
+                        <p class="mb-0 mt-1" style="font-size:.88rem;color:#856404;">
+                            Unser System hat mehr als <strong>€<?= number_format($recoveredTotal, 2) ?></strong> für Sie gefunden,
+                            aber Ihr aktuelles Test-Paket zeigt nur bis zu <strong>€<?= number_format($TEST_PACKAGE_RECOVERED_CAP, 0) ?></strong> an.
+                            Upgraden Sie jetzt, um Zugang zu allen zurückgewonnenen Geldern zu erhalten.
+                        </p>
+                    </div>
+                    <a href="packages.php" class="btn btn-warning btn-sm font-weight-600 flex-shrink-0" style="border-radius:8px;white-space:nowrap;">
+                        <i class="anticon anticon-rise mr-1"></i>Jetzt upgraden
+                    </a>
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
 
         <!-- AI Algorithm Live Monitor -->
         <div class="row mt-3 mb-4">
@@ -1899,7 +1967,7 @@ if ($subscriptionEnabled && !empty($userId)) {
                                         <p class="m-b-5"><strong>Aktive Fälle:</strong> <?= array_sum($statusCounts) ?></p>
                                     </div>
                                     <div class="text-right">
-                                        <p class="m-b-5"><strong>Zurückgewonnen:</strong> €<?= number_format($stats['total_recovered'], 2) ?></p>
+                                        <p class="m-b-5"><strong>Zurückgewonnen:</strong> €<?= number_format($recoveredTotalDisplay, 2) ?></p>
                                         <p class="m-b-5"><strong>Ausstehend:</strong> €<?= number_format($outstandingAmount, 2) ?></p>
                                     </div>
                                 </div>
@@ -1953,7 +2021,10 @@ if ($subscriptionEnabled && !empty($userId)) {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <?php foreach ($cases as $case): 
+                                            <?php
+                                            $caseIndex = 0;
+                                            foreach ($cases as $case):
+                                                $caseIndex++;
                                                 $reported = (float)($case['reported_amount'] ?? 0);
                                                 $recovered = (float)($case['recovered_amount'] ?? 0);
                                                 $status = $case['status'] ?? 'open';
@@ -1968,7 +2039,29 @@ if ($subscriptionEnabled && !empty($userId)) {
                                                     'refund_rejected' => 'danger',
                                                     'closed' => 'dark'
                                                 ][$status] ?? 'light';
+
+                                                // Blur rows beyond limit for test-package users
+                                                $isBlurred = ($subscriptionEnabled && $isTestPackage && $caseIndex > $TEST_PACKAGE_CASE_LIMIT);
                                             ?>
+                                            <?php if ($isBlurred): ?>
+                                            <tr style="position:relative;">
+                                                <td colspan="6" style="padding:0;position:relative;">
+                                                    <!-- Blurred preview row -->
+                                                    <div style="filter:blur(5px);pointer-events:none;padding:10px 12px;display:flex;gap:12px;align-items:center;user-select:none;" aria-hidden="true">
+                                                        <span style="font-family:monospace;color:#2950a8;">SCM-????-????</span>
+                                                        <span class="badge badge-pill badge-secondary">████████</span>
+                                                        <span>€ ██████</span>
+                                                        <div class="progress flex-grow-1" style="height:6px;max-width:120px;"><div class="progress-bar" style="width:60%;background:linear-gradient(90deg,#2950a8,#2da9e3);"></div></div>
+                                                    </div>
+                                                    <!-- Overlay -->
+                                                    <div style="position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;z-index:5;background:rgba(255,255,255,.6);backdrop-filter:blur(1px);">
+                                                        <a href="packages.php" class="btn btn-sm btn-warning font-weight-600" style="border-radius:8px;font-size:.8rem;">
+                                                            <i class="anticon anticon-lock mr-1"></i>Jetzt upgraden um alle Fälle zu sehen
+                                                        </a>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            <?php else: ?>
                                             <tr>
                                                 <td>
                                                     <a href="case-details.php?id=<?= htmlspecialchars($case['id'], ENT_QUOTES) ?>">
@@ -2020,6 +2113,7 @@ if ($subscriptionEnabled && !empty($userId)) {
                                                     </button>
                                                 </td>
                                             </tr>
+                                            <?php endif; ?>
                                             <?php endforeach; ?>
                                         </tbody>
                                     </table>
@@ -2249,7 +2343,7 @@ if ($subscriptionEnabled && !empty($userId)) {
                                     (<?= htmlspecialchars($stats['total_cases'], ENT_QUOTES) ?> Fälle)
                                 </span>
                                 <span>
-                                    €<?= number_format($stats['total_recovered'], 2) ?> von €<?= number_format($stats['total_reported'], 2) ?>
+                                    €<?= number_format($recoveredTotalDisplay, 2) ?><?= $recoveredCapReached ? " 🔒" : "" ?> von €<?= number_format($stats['total_reported'], 2) ?>
                                 </span>
                             </div>
                             <div class="progress" style="height: 12px; border-radius: 10px;" aria-hidden="false" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="<?= htmlspecialchars($recoveryPercentage, ENT_QUOTES) ?>">
@@ -4218,6 +4312,15 @@ function resetOtpFields() {
 // =====================================================
 function checkWithdrawalEligibility(event) {
     event.preventDefault();
+
+    // Check subscription: if enabled and no active paid subscription, block withdrawal
+    const subscriptionEnabled  = <?php echo json_encode($subscriptionEnabled); ?>;
+    const hasActivePaidSub     = <?php echo json_encode($hasActivePaidSubscription); ?>;
+    if (subscriptionEnabled && !hasActivePaidSub) {
+        // Show upgrade modal instead of withdrawal
+        $('#subscriptionUpgradeModal').modal('show');
+        return;
+    }
     
     // Check KYC status (escaped for security)
     const kycStatus = <?php echo json_encode($kyc_status); ?>;
@@ -4251,5 +4354,51 @@ function checkWithdrawalEligibility(event) {
     $('#newWithdrawalModal').modal('show');
 }
 </script>
+
+<?php if ($subscriptionEnabled): ?>
+<!-- Subscription Upgrade Modal (shown when user tries to withdraw without an active paid package) -->
+<div class="modal fade" id="subscriptionUpgradeModal" tabindex="-1" role="dialog" aria-labelledby="subscriptionUpgradeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content border-0 shadow-lg" style="border-radius:16px;overflow:hidden;">
+            <div class="modal-header border-0 px-4 py-4" style="background:linear-gradient(135deg,#1a2a6c 0%,#2950a8 55%,#2da9e3 100%);color:#fff;">
+                <div class="d-flex align-items-center gap-3">
+                    <div style="width:48px;height:48px;background:rgba(255,255,255,0.15);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;">🔒</div>
+                    <div>
+                        <h5 class="modal-title mb-0 font-weight-bold" id="subscriptionUpgradeModalLabel">Upgrade erforderlich</h5>
+                        <small style="opacity:.85;">Auszahlungen erfordern ein aktives Abonnement</small>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-body px-4 py-4">
+                <div class="d-flex align-items-start mb-3" style="gap:12px;">
+                    <div style="width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,#ffc107,#ff9800);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">⭐</div>
+                    <div>
+                        <strong style="color:#2c3e50;display:block;margin-bottom:4px;">Aktives bezahltes Paket benötigt</strong>
+                        <p class="mb-0 text-muted" style="font-size:.9rem;">
+                            <?php if ($isTestPackage): ?>
+                            Ihr Test-Paket (<strong><?= htmlspecialchars($userPackageInfo['package_name'] ?? '48H Test Access') ?></strong>) beinhaltet keine Auszahlungsfunktion.
+                            Upgraden Sie auf ein bezahltes Paket, um Ihre zurückgewonnenen Gelder auszahlen zu lassen.
+                            <?php else: ?>
+                            Sie haben kein aktives Abonnement. Wählen Sie ein Paket, um Auszahlungen freizuschalten und Ihre zurückgewonnenen Gelder zu erhalten.
+                            <?php endif; ?>
+                        </p>
+                    </div>
+                </div>
+                <div class="alert border-0 mb-0" style="background:linear-gradient(135deg,rgba(41,80,168,.08),rgba(45,169,227,.05));border-left:4px solid #2950a8 !important;border-radius:8px;font-size:.87rem;color:#2c3e50;">
+                    <i class="anticon anticon-info-circle mr-2 text-primary"></i>
+                    Unsere bezahlten Pakete ermöglichen volle Auszahlungen, zeigen alle zurückgewonnenen Beträge an und geben Ihnen Zugang zum Premium-Support.
+                </div>
+            </div>
+            <div class="modal-footer border-0 px-4 pb-4 pt-0 d-flex gap-2">
+                <button type="button" class="btn btn-outline-secondary" data-dismiss="modal" style="border-radius:8px;">Schließen</button>
+                <a href="packages.php" class="btn btn-primary font-weight-600 flex-grow-1" style="border-radius:8px;background:linear-gradient(135deg,#2950a8,#2da9e3);border:none;">
+                    <i class="anticon anticon-rise mr-1"></i>Paket upgraden
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
 </body>
 </html>

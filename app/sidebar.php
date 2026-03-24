@@ -34,6 +34,30 @@
                     </a>
                 </li>
 
+                <?php
+                // Show Packages link when subscription feature is enabled
+                $sidebarSubEnabled = false;
+                try {
+                    $ssSt = $pdo->prepare("SELECT subscription_enabled FROM system_settings WHERE id = 1 LIMIT 1");
+                    $ssSt->execute();
+                    $ssRow = $ssSt->fetch(PDO::FETCH_ASSOC);
+                    if ($ssRow && !empty($ssRow['subscription_enabled'])) {
+                        $sidebarSubEnabled = true;
+                    }
+                } catch (PDOException $e) { /* column not yet migrated */ }
+                if ($sidebarSubEnabled):
+                ?>
+                <!-- Packages -->
+                <li class="nav-item">
+                    <a href="packages.php" title="Subscription Packages">
+                        <span class="icon-holder">
+                            <i class="anticon anticon-appstore"></i>
+                        </span>
+                        <span class="title">Pakete</span>
+                    </a>
+                </li>
+                <?php endif; ?>
+
                 <!-- Notifications -->
                 <li class="nav-item">
                     <a href="notifications.php" title="Benachrichtigungen">
