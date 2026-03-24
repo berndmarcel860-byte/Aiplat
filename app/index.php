@@ -200,6 +200,35 @@ try {
     error_log("dashboard_theme fetch: " . $e->getMessage());
 }
 $dashboardThemeSafe = htmlspecialchars($dashboardTheme, ENT_QUOTES, 'UTF-8');
+
+// ── Package / Subscription Status ───────────────────────────────────────────
+$subscriptionEnabled = false;
+$userPackageInfo     = null;
+try {
+    $subStmt = $pdo->query("SELECT subscription_enabled FROM system_settings WHERE id = 1 LIMIT 1");
+    $subRow  = $subStmt->fetch(PDO::FETCH_ASSOC);
+    if ($subRow !== false && isset($subRow['subscription_enabled'])) {
+        $subscriptionEnabled = (bool)$subRow['subscription_enabled'];
+    }
+} catch (PDOException $e) {
+    // Column not yet migrated – treat as disabled
+}
+if ($subscriptionEnabled && !empty($userId)) {
+    try {
+        $pkgStmt = $pdo->prepare(
+            "SELECT up.status, up.end_date, p.name AS package_name
+               FROM user_packages up
+               JOIN packages p ON p.id = up.package_id
+              WHERE up.user_id = ?
+              ORDER BY up.created_at DESC
+              LIMIT 1"
+        );
+        $pkgStmt->execute([$userId]);
+        $userPackageInfo = $pkgStmt->fetch(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        // packages / user_packages table not yet available
+    }
+}
 ?>
 <?php if ($passwordChangeRequired): ?>
 
@@ -1201,6 +1230,81 @@ $dashboardThemeSafe = htmlspecialchars($dashboardTheme, ENT_QUOTES, 'UTF-8');
             </div>
             <?php endif; ?>
             
+        </div>
+        <?php endif; ?>
+
+        <!-- PACKAGE STATUS ALERT (shown when subscription feature is enabled) -->
+        <?php if ($subscriptionEnabled): ?>
+        <div class="row mb-4">
+            <div class="col-12">
+                <?php if ($userPackageInfo && $userPackageInfo['status'] === 'active'): ?>
+                <div class="card border-0 shadow-sm" style="border-left:4px solid #28a745;">
+                    <div class="card-body py-3">
+                        <div class="d-flex align-items-center flex-wrap" style="gap:14px;">
+                            <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#28a745,#20c997);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">⭐</div>
+                            <div class="flex-grow-1">
+                                <div class="font-weight-bold" style="color:#2c3e50;">
+                                    <?= htmlspecialchars($userPackageInfo['package_name']) ?> – Aktiv
+                                </div>
+                                <div style="font-size:.85rem;color:#6c757d;">
+                                    <?= !empty($userPackageInfo['end_date']) ? 'Läuft ab: ' . date('d.m.Y', strtotime($userPackageInfo['end_date'])) : 'Unbefristetes Paket' ?>
+                                </div>
+                            </div>
+                            <a href="packages.php" class="btn btn-sm btn-outline-success font-weight-600" style="border-radius:8px;">
+                                <i class="anticon anticon-eye mr-1"></i>Paket ansehen
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <?php elseif ($userPackageInfo && $userPackageInfo['status'] === 'pending'): ?>
+                <div class="card border-0 shadow-sm" style="border-left:4px solid #ffc107;">
+                    <div class="card-body py-3">
+                        <div class="d-flex align-items-center flex-wrap" style="gap:14px;">
+                            <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#ffc107,#ffdb4d);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">⏳</div>
+                            <div class="flex-grow-1">
+                                <div class="font-weight-bold" style="color:#2c3e50;">
+                                    <?= htmlspecialchars($userPackageInfo['package_name']) ?> – Wird aktiviert
+                                </div>
+                                <div style="font-size:.85rem;color:#6c757d;">Ihr Paket wartet auf Freischaltung durch unser Team.</div>
+                            </div>
+                            <a href="packages.php" class="btn btn-sm btn-outline-warning font-weight-600" style="border-radius:8px;">
+                                <i class="anticon anticon-info-circle mr-1"></i>Details
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <?php elseif ($userPackageInfo && in_array($userPackageInfo['status'], ['expired','cancelled'])): ?>
+                <div class="card border-0 shadow-sm" style="border-left:4px solid #dc3545;">
+                    <div class="card-body py-3">
+                        <div class="d-flex align-items-center flex-wrap" style="gap:14px;">
+                            <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#dc3545,#e74c3c);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;color:#fff;">✕</div>
+                            <div class="flex-grow-1">
+                                <div class="font-weight-bold" style="color:#2c3e50;">Kein aktives Paket</div>
+                                <div style="font-size:.85rem;color:#6c757d;">Ihr <?= htmlspecialchars($userPackageInfo['package_name']) ?>-Paket ist <?= $userPackageInfo['status'] === 'expired' ? 'abgelaufen' : 'gekündigt' ?>.</div>
+                            </div>
+                            <a href="packages.php" class="btn btn-sm btn-danger font-weight-600" style="border-radius:8px;">
+                                <i class="anticon anticon-shopping mr-1"></i>Paket erneuern
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <?php else: ?>
+                <div class="card border-0 shadow-sm" style="border-left:4px solid #6c757d;">
+                    <div class="card-body py-3">
+                        <div class="d-flex align-items-center flex-wrap" style="gap:14px;">
+                            <div style="width:40px;height:40px;border-radius:50%;background:#e9ecef;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">📦</div>
+                            <div class="flex-grow-1">
+                                <div class="font-weight-bold" style="color:#2c3e50;">Kein Paket vorhanden</div>
+                                <div style="font-size:.85rem;color:#6c757d;">Sie haben noch kein Wiederherstellungspaket. Wählen Sie jetzt ein Paket, um loszulegen.</div>
+                            </div>
+                            <a href="packages.php" class="btn btn-sm btn-primary font-weight-600" style="border-radius:8px;">
+                                <i class="anticon anticon-shopping mr-1"></i>Paket auswählen
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <?php endif; ?>
+            </div>
         </div>
         <?php endif; ?>
 

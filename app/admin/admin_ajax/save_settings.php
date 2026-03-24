@@ -292,6 +292,30 @@ try {
 
         echo json_encode(['success' => true, 'message' => 'Dashboard theme updated successfully!']);
 
+    } elseif ($type === 'subscription') {
+        // Save subscription enabled/disabled setting
+        $subscriptionEnabled = isset($_POST['subscription_enabled']) ? 1 : 0;
+
+        try {
+            $stmt = $pdo->prepare("UPDATE system_settings SET subscription_enabled = ? WHERE id = 1");
+            $stmt->execute([$subscriptionEnabled]);
+            if ($stmt->rowCount() === 0) {
+                $pdo->prepare("INSERT INTO system_settings (id, subscription_enabled) VALUES (1, ?) ON DUPLICATE KEY UPDATE subscription_enabled = ?")
+                    ->execute([$subscriptionEnabled, $subscriptionEnabled]);
+            }
+        } catch (PDOException $subDbErr) {
+            error_log("save_settings.php (subscription) - DB error: " . $subDbErr->getMessage());
+            echo json_encode(['success' => false, 'message' => 'Database error: subscription_enabled column may not exist. Run database/package_subscription.sql first.']);
+            exit();
+        }
+
+        $admin_id   = $_SESSION['admin_id'];
+        $ip_address = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+        $pdo->prepare("INSERT INTO audit_logs (admin_id, action, entity_type, entity_id, new_value, ip_address, created_at) VALUES (?, 'update', 'system_settings', 1, ?, ?, NOW())")
+            ->execute([$admin_id, json_encode(['subscription_enabled' => $subscriptionEnabled]), $ip_address]);
+
+        echo json_encode(['success' => true, 'message' => 'Subscription settings saved successfully!']);
+
     } else {
         echo json_encode(['success' => false, 'message' => 'Invalid settings type']);
     }
