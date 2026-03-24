@@ -78,8 +78,10 @@ try {
     $emailSent = false;
     try {
         $emailHelper = new EmailHelper($pdo);
-        $siteUrl = defined('SITE_URL') ? SITE_URL : 'https://blockchainfahndung.com/app/';
-        
+        // Always fetch site_url from system_settings; never fall back to a hardcoded domain
+        $siteUrlRow = $pdo->query("SELECT site_url FROM system_settings WHERE id = 1 LIMIT 1")->fetch(PDO::FETCH_ASSOC);
+        $siteUrl = rtrim($siteUrlRow['site_url'] ?? '', '/') . '/';
+
         $customVars = [
             'temp_password' => $plain_password, // Plain text password for email
             'pass' => $plain_password, // Alias for backwards compatibility
