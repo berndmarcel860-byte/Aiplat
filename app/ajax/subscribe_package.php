@@ -8,6 +8,13 @@ if (empty($_SESSION['user_id'])) {
     exit;
 }
 
+// Validate CSRF token
+if (empty($_POST['csrf_token']) || $_POST['csrf_token'] !== ($_SESSION['csrf_token'] ?? '')) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'message' => 'Security error - Invalid CSRF token']);
+    exit;
+}
+
 $user_id = $_SESSION['user_id'];
 $package_id = $_POST['package_id'] ?? null;
 $payment_method = $_POST['payment_method'] ?? null;

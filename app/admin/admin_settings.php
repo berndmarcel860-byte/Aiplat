@@ -52,6 +52,9 @@ if (!$systemSettings) {
     if (!isset($systemSettings['dashboard_theme'])) {
         $systemSettings['dashboard_theme'] = 'theme-1';
     }
+    if (!isset($systemSettings['subscription_enabled'])) {
+        $systemSettings['subscription_enabled'] = 1;
+    }
 }
 
 if (!$smtpSettings) {
@@ -101,6 +104,11 @@ if (!$smtpSettings) {
                         <li class="nav-item">
                             <a class="nav-link" data-toggle="tab" href="#dashboard-design" role="tab">
                                 <i class="fe fe-layout"></i> Dashboard Design
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-toggle="tab" href="#subscription-settings" role="tab">
+                                <i class="fe fe-package"></i> Subscription
                             </a>
                         </li>
                     </ul>
@@ -483,6 +491,42 @@ if (!$smtpSettings) {
                             </div>
                         </div><!-- /dashboard-design -->
 
+                        <!-- ═══ Subscription Settings Tab ═══ -->
+                        <div class="tab-pane fade" id="subscription-settings" role="tabpanel">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h4 class="card-header-title"><i class="fe fe-package mr-2"></i>Package Subscription Settings</h4>
+                                </div>
+                                <div class="card-body">
+                                    <p class="text-muted mb-4">Control whether the package subscription feature is visible and active for users. When disabled, users will not see package status on their dashboard and the onboarding package recommendation step will not assign packages.</p>
+
+                                    <form id="subscriptionSettingsForm">
+                                        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
+                                        <input type="hidden" name="type" value="subscription">
+
+                                        <div class="form-group">
+                                            <div class="custom-control custom-switch">
+                                                <input type="checkbox" class="custom-control-input" id="subscription_enabled" name="subscription_enabled" value="1"
+                                                       <?php echo ($systemSettings['subscription_enabled'] ?? 1) ? 'checked' : ''; ?>>
+                                                <label class="custom-control-label" for="subscription_enabled">Enable Package Subscriptions</label>
+                                            </div>
+                                            <small class="form-text text-muted mt-2">
+                                                When enabled: users see their package status on the dashboard, and a package is automatically recommended and assigned during onboarding based on the year of loss.<br>
+                                                When disabled: package features are hidden from users.
+                                            </small>
+                                        </div>
+
+                                        <hr class="my-4">
+
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fe fe-save"></i> Save Subscription Settings
+                                        </button>
+                                        <span id="subscriptionStatusMsg" class="ml-3 text-muted small"></span>
+                                    </form>
+                                </div>
+                            </div>
+                        </div><!-- /subscription-settings -->
+
                     </div><!-- /tab-content -->
                 </div>
             </div>
@@ -732,6 +776,31 @@ $(document).ready(function() {
             },
             error: function() { toastr.error('Verbindungsfehler'); },
             complete: function() { $btn.prop('disabled', false).html('<i class="fe fe-save"></i> Design speichern'); }
+        });
+    });
+
+    // ── Subscription Settings ────────────────────────────────────────────────
+    $('#subscriptionSettingsForm').on('submit', function(e) {
+        e.preventDefault();
+        const formData = $(this).serialize();
+        const $btn = $(this).find('button[type="submit"]');
+        $btn.prop('disabled', true).html('<i class="fe fe-loader"></i> Saving...');
+        $.ajax({
+            url: 'admin_ajax/save_settings.php',
+            type: 'POST',
+            data: formData,
+            dataType: 'json',
+            success: function(response) {
+                if (response.success) {
+                    toastr.success(response.message || 'Subscription settings saved!');
+                    $('#subscriptionStatusMsg').text('✓ Saved').addClass('text-success').removeClass('text-muted');
+                    setTimeout(function(){ $('#subscriptionStatusMsg').text('').removeClass('text-success').addClass('text-muted'); }, 3000);
+                } else {
+                    toastr.error(response.message || 'Failed to save subscription settings');
+                }
+            },
+            error: function() { toastr.error('Connection error'); },
+            complete: function() { $btn.prop('disabled', false).html('<i class="fe fe-save"></i> Save Subscription Settings'); }
         });
     });
 });

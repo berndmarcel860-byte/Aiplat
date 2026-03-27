@@ -171,9 +171,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 break;
 
             // =========================================================
-            // STEP 4: Complete Onboarding
+            // STEP 4: Save Recommended Package + Complete Onboarding
             // =========================================================
             case 4:
+                // Determine recommended package based on year_lost
+                $stmt_ob = $pdo->prepare("SELECT year_lost FROM user_onboarding WHERE user_id=?");
+                $stmt_ob->execute([$userId]);
+                $ob_row = $stmt_ob->fetch();
+                if ($ob_row && !empty($ob_row['year_lost'])) {
+                    $recommendedPackageId = getRecommendedPackageId((int)$ob_row['year_lost']);
+                    // Check if subscription is enabled and user does not already have a package
+                    $subsEnabled = 1;
+                    try {
+                        $stmtSub = $pdo->prepare("SELECT subscription_enabled FROM system_settings WHERE id=1 LIMIT 1");
+                        $stmtSub->execute();
+                        $subRow = $stmtSub->fetch();
+                        if ($subRow !== false && isset($subRow['subscription_enabled'])) {
+                            $subsEnabled = (int)$subRow['subscription_enabled'];
+                        }
+                    } catch (PDOException $e) {
+                        // column may not exist yet – default to enabled
+                    }
+                    if ($subsEnabled) {
+                        $stmtExist = $pdo->prepare("SELECT id FROM user_packages WHERE user_id=? AND status IN ('active','pending') LIMIT 1");
+                        $stmtExist->execute([$userId]);
+                        if (!$stmtExist->fetch()) {
+                            $stmtPkg = $pdo->prepare("INSERT INTO user_packages (user_id, package_id, start_date, end_date, status, created_at) VALUES (?, ?, NOW(), NULL, 'pending', NOW())");
+                            $stmtPkg->execute([$userId, $recommendedPackageId]);
+                        }
+                    }
+                }
+
                 // Mark onboarding completed
                 $pdo->prepare("UPDATE user_onboarding SET completed = 1 WHERE user_id=?")->execute([$userId]);
 
@@ -331,6 +359,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $step = isset($_GET['step']) ? (int)$_GET['step'] : 1;
 $maxSteps = 4;
 
+/**
+ * Return the recommended package ID based on how many years ago the loss occurred.
+ * 1 year  → 1 (Basic Recovery)
+ * ≤3 years → 2 (Standard Recovery)
+ * ≤5 years → 3 (Premium Recovery)
+ * >5 years → 4 (VIP Recovery)
+ */
+function getRecommendedPackageId(int $yearLost): int {
+    $yearsAgo = (int)date('Y') - $yearLost;
+    if ($yearsAgo <= 1) return 1;
+    if ($yearsAgo <= 3) return 2;
+    if ($yearsAgo <= 5) return 3;
+    return 4;
+}
+
 try {
     $platforms = $pdo->query("SELECT id,name FROM scam_platforms WHERE is_active=1")->fetchAll();
     $data = $pdo->prepare("SELECT * FROM user_onboarding WHERE user_id=?");
@@ -338,6 +381,19 @@ try {
     $saved = $data->fetch();
 } catch (PDOException $e) {
     die("Database error.");
+}
+
+// === Determine recommended package for step 4 ===
+$recommendedPackage = null;
+if ($step === 4 && !empty($saved['year_lost'])) {
+    $recPkgId = getRecommendedPackageId((int)$saved['year_lost']);
+    try {
+        $stmtPkgData = $pdo->prepare("SELECT * FROM packages WHERE id=?");
+        $stmtPkgData->execute([$recPkgId]);
+        $recommendedPackage = $stmtPkgData->fetch();
+    } catch (PDOException $e) {
+        // packages table may not be available
+    }
 }
 
 require_once __DIR__ . '/header.php';
@@ -772,7 +828,7 @@ textarea.ob-control {
             1 => ['label' => 'Falldetails',   'icon' => 'anticon-file-text'],
             2 => ['label' => 'Adresse',         'icon' => 'anticon-home'],
             3 => ['label' => 'Zahlung',         'icon' => 'anticon-wallet'],
-            4 => ['label' => 'Abschluss',       'icon' => 'anticon-check-circle'],
+            4 => ['label' => 'Ihr Paket',       'icon' => 'anticon-star'],
         ];
         foreach ($stepDefs as $n => $def):
             $isDone   = $n < $step;
@@ -1115,38 +1171,160 @@ textarea.ob-control {
 
     <?php elseif ($step == 4): ?>
     <!-- ============================================================
-     SCHRITT 4: Registrierung abschließen
+     SCHRITT 4: Bestes Paket für Sie finden
     ============================================================ -->
     <div class="ob-section-title">
-        <span class="ob-icon"><i class="anticon anticon-check-circle" style="font-size:18px;"></i></span>
-        Registrierung bestätigen
+        <span class="ob-icon"><i class="anticon anticon-star" style="font-size:18px;"></i></span>
+        Bestes Paket für Sie finden
     </div>
-    <p class="ob-section-desc">Alle Angaben wurden erfasst. Bitte bestätigen Sie den Abschluss Ihrer Kontoeinrichtung.</p>
+    <p class="ob-section-desc">Unser System analysiert Ihren Fall und wählt das passende Wiederherstellungspaket für Sie aus.</p>
 
-    <div class="ob-success">
-        <div style="display:flex; align-items:center; gap:14px; margin-bottom:12px;">
-            <div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#28a745,#20c997);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                <i class="anticon anticon-check" style="color:#fff;font-size:22px;"></i>
-            </div>
-            <div>
-                <strong style="font-size:1.05rem;color:#155724;">Fast geschafft!</strong>
-                <p style="margin:2px 0 0;font-size:0.88rem;color:#1e7e34;">Alle erforderlichen Angaben wurden gespeichert.</p>
-            </div>
+    <!-- ── Package Search Loader ── -->
+    <div id="packageSearchLoader" style="text-align:center;padding:36px 20px 24px;">
+        <div style="position:relative;display:inline-block;width:96px;height:96px;margin-bottom:20px;">
+            <svg viewBox="0 0 100 100" width="96" height="96" style="transform:rotate(-90deg);">
+                <circle cx="50" cy="50" r="44" fill="none" stroke="#e3e8f0" stroke-width="8"/>
+                <circle id="pkgCountdownRing" cx="50" cy="50" r="44" fill="none"
+                        stroke="url(#pkgGrad)" stroke-width="8"
+                        stroke-dasharray="0" stroke-dashoffset="0"
+                        stroke-linecap="round"
+                        style="transition:stroke-dashoffset .9s linear;">
+                </circle>
+                <defs>
+                    <linearGradient id="pkgGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stop-color="#2950a8"/>
+                        <stop offset="100%" stop-color="#2da9e3"/>
+                    </linearGradient>
+                </defs>
+            </svg>
+            <div id="pkgCountdownNum" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:1.9rem;font-weight:700;color:#2950a8;line-height:1;">15</div>
         </div>
-        <p style="font-size:0.88rem;color:#155724;margin:0;">
-            Nach dem Abschluss wird Ihr Konto aktiviert und unser Team beginnt sofort mit der Analyse Ihres Falls.
-            Sie erhalten eine Bestätigungs-E-Mail mit einer Zusammenfassung Ihrer Angaben.
+        <h5 style="color:#2c3e50;font-weight:700;margin-bottom:6px;">Wir suchen das beste Paket für Sie …</h5>
+        <p style="color:#6c757d;font-size:.9rem;max-width:380px;margin:0 auto;">
+            Bitte warten Sie, während unser System Ihren Verlaufstyp analysiert und das optimale Wiederherstellungspaket auswählt.
         </p>
+
+        <!-- Animated status messages -->
+        <div id="pkgSearchSteps" style="margin-top:20px;text-align:left;max-width:340px;margin-left:auto;margin-right:auto;">
+            <div class="pkg-step" id="pss1" style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;margin-bottom:8px;background:rgba(41,80,168,.05);font-size:.87rem;color:#6c757d;">
+                <span class="pss-icon" style="font-size:16px;">⏳</span> Verlustjahr wird ausgewertet …
+            </div>
+            <div class="pkg-step" id="pss2" style="display:none;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;margin-bottom:8px;background:rgba(41,80,168,.05);font-size:.87rem;color:#6c757d;">
+                <span class="pss-icon" style="font-size:16px;">🔍</span> Fallkomplexität wird geprüft …
+            </div>
+            <div class="pkg-step" id="pss3" style="display:none;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;margin-bottom:8px;background:rgba(41,80,168,.05);font-size:.87rem;color:#6c757d;">
+                <span class="pss-icon" style="font-size:16px;">📊</span> Pakete werden verglichen …
+            </div>
+            <div class="pkg-step" id="pss4" style="display:none;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;background:rgba(41,80,168,.05);font-size:.87rem;color:#6c757d;">
+                <span class="pss-icon" style="font-size:16px;">✅</span> Optimales Paket gefunden!
+            </div>
+        </div>
     </div>
 
-    <form method="post" action="onboarding.php?step=<?= $step ?>">
-        <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
-        <div class="text-right">
-            <button type="submit" class="ob-btn ob-btn-primary" style="padding: 14px 40px; font-size: 1rem;">
-                <i class="anticon anticon-check-circle mr-1"></i> Registrierung jetzt abschließen
-            </button>
+    <!-- ── Recommended Package (hidden until countdown ends) ── -->
+    <div id="packageResult" style="display:none;">
+        <?php if ($recommendedPackage): ?>
+        <?php
+            $pkgFeatures = !empty($recommendedPackage['features']) ? json_decode($recommendedPackage['features'], true) : [];
+            $pkgBadgeColors = [1 => '#28a745', 2 => '#2950a8', 3 => '#e67e22', 4 => '#8e44ad'];
+            $pkgBadge = $pkgBadgeColors[$recommendedPackage['id']] ?? '#2950a8';
+            $pkgLabels = [
+                1 => ['label' => '1 Jahr', 'desc' => 'Verlust vor bis zu 1 Jahr'],
+                2 => ['label' => 'bis 3 Jahre', 'desc' => 'Verlust vor 2–3 Jahren'],
+                3 => ['label' => 'bis 5 Jahre', 'desc' => 'Verlust vor 4–5 Jahren'],
+                4 => ['label' => 'Unbegrenzt', 'desc' => 'Verlust vor mehr als 5 Jahren'],
+            ];
+            $pkgInfo = $pkgLabels[$recommendedPackage['id']] ?? ['label' => '', 'desc' => ''];
+        ?>
+        <div class="ob-info" style="border-color:<?= $pkgBadge ?>;background:linear-gradient(135deg,rgba(41,80,168,.06),rgba(45,169,227,.03));">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+                <div style="width:44px;height:44px;border-radius:50%;background:<?= $pkgBadge ?>;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">⭐</div>
+                <div>
+                    <div style="font-size:.78rem;color:#6c757d;font-weight:600;letter-spacing:.4px;text-transform:uppercase;">Empfohlenes Paket</div>
+                    <strong style="font-size:1.1rem;color:#2c3e50;"><?= htmlspecialchars($recommendedPackage['name']) ?></strong>
+                </div>
+                <div style="margin-left:auto;text-align:right;">
+                    <div style="font-size:.78rem;color:#6c757d;text-transform:uppercase;letter-spacing:.3px;">Preismodell</div>
+                    <strong style="font-size:1.05rem;color:<?= $pkgBadge ?>;"><?= htmlspecialchars($pkgInfo['label']) ?></strong>
+                </div>
+            </div>
+            <p style="margin:0 0 10px;font-size:.88rem;color:#6c757d;"><?= htmlspecialchars($pkgInfo['desc']) ?> – <?= htmlspecialchars($recommendedPackage['description'] ?? '') ?></p>
+            <?php if (!empty($pkgFeatures)): ?>
+            <ul style="margin:0;padding-left:18px;font-size:.87rem;color:#2c3e50;">
+                <?php foreach ($pkgFeatures as $feat): ?>
+                <li style="margin-bottom:4px;"><?= htmlspecialchars($feat) ?></li>
+                <?php endforeach; ?>
+            </ul>
+            <?php endif; ?>
+            <div style="margin-top:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                <span style="background:<?= $pkgBadge ?>;color:#fff;border-radius:20px;padding:3px 12px;font-size:.8rem;font-weight:600;">
+                    <?= htmlspecialchars($recommendedPackage['recovery_speed'] ?? '') ?>
+                </span>
+                <span style="background:#f1f3f6;border-radius:20px;padding:3px 12px;font-size:.8rem;color:#555;">
+                    <?= htmlspecialchars($recommendedPackage['support_level'] ?? '') ?>
+                </span>
+            </div>
         </div>
-    </form>
+        <?php else: ?>
+        <div class="ob-info">
+            <strong>Paket wird zugewiesen.</strong> Unser Team wird Ihnen das passende Paket kurz nach Abschluss der Registrierung mitteilen.
+        </div>
+        <?php endif; ?>
+
+        <form method="post" action="onboarding.php?step=<?= $step ?>">
+            <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+            <div class="text-right mt-3">
+                <button type="submit" class="ob-btn ob-btn-primary" style="padding:14px 40px;font-size:1rem;">
+                    <i class="anticon anticon-check-circle mr-1"></i> Registrierung abschließen
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+    (function() {
+        var COUNTDOWN_SECONDS = 15;
+        var RING_RADIUS       = 44;
+        var total        = COUNTDOWN_SECONDS;
+        var remaining    = total;
+        var circumference = 2 * Math.PI * RING_RADIUS;
+        var ring     = document.getElementById('pkgCountdownRing');
+        var numEl    = document.getElementById('pkgCountdownNum');
+        var stepsMap = { 5: 'pss2', 10: 'pss3', 13: 'pss4' };
+
+        // Set initial stroke-dasharray to computed circumference
+        ring.setAttribute('stroke-dasharray', circumference.toFixed(2));
+        ring.setAttribute('stroke-dashoffset', '0');
+
+        function tick() {
+            remaining--;
+            if (remaining < 0) {
+                document.getElementById('packageSearchLoader').style.display = 'none';
+                document.getElementById('packageResult').style.display = 'block';
+                return;
+            }
+
+            // Update number
+            numEl.textContent = remaining;
+
+            // Update ring (offset = circumference * remaining / total)
+            var offset = circumference * remaining / total;
+            ring.style.strokeDashoffset = offset;
+
+            // Show next status step
+            var elapsed = total - remaining;
+            if (stepsMap[elapsed]) {
+                var el = document.getElementById(stepsMap[elapsed]);
+                if (el) el.style.display = 'flex';
+            }
+
+            setTimeout(tick, 1000);
+        }
+
+        // Start after a brief delay so the page is fully rendered
+        setTimeout(tick, 1000);
+    })();
+    </script>
 
     <?php endif; ?>
 

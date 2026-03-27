@@ -1268,3 +1268,543 @@ h5, .h5 {
         padding: 1rem;
     }
 }
+
+/* ============================================================
+   PROFESSIONAL AI FUND RECOVERY — ENHANCED DASHBOARD STYLES
+   ============================================================ */
+
+/* ── SCAN BEAM ANIMATION (horizontal sweep over cards) ── */
+@keyframes scanBeam {
+    0%   { left: -100%; }
+    100% { left: 200%;  }
+}
+
+.kpi-card-wrapper {
+    position: relative;
+    overflow: hidden;
+}
+
+.kpi-card-wrapper::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 60%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+    animation: scanBeam 3.5s ease-in-out infinite;
+    pointer-events: none;
+    z-index: 10;
+}
+
+/* stagger scan beam per card */
+.kpi-card-wrapper:nth-child(2)::after { animation-delay: .8s; }
+.kpi-card-wrapper:nth-child(3)::after { animation-delay: 1.6s; }
+.kpi-card-wrapper:nth-child(4)::after { animation-delay: 2.4s; }
+
+/* ── GLOWING BORDER ON ACTIVE CARDS ── */
+.kpi-card-wrapper .card {
+    transition: transform .25s, box-shadow .25s;
+}
+.kpi-card-wrapper .card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 28px rgba(41,80,168,.25) !important;
+}
+
+/* ── AI SCANNER TABS ── */
+.ai-scan-tabs {
+    display: flex;
+    gap: 4px;
+    padding: .5rem 1rem;
+    background: #0f172a;
+    border-top: 1px solid #1e293b;
+}
+
+.ai-scan-tab {
+    padding: .3rem .75rem;
+    border-radius: 6px;
+    font-size: .72rem;
+    font-weight: 700;
+    color: #64748b;
+    background: transparent;
+    border: 1px solid #1e293b;
+    cursor: pointer;
+    transition: all .2s;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    position: relative;
+}
+
+.ai-scan-tab.active {
+    background: rgba(56,189,248,.12);
+    border-color: #38bdf8;
+    color: #38bdf8;
+}
+
+.ai-scan-tab:hover:not(.active) {
+    border-color: #334155;
+    color: #94a3b8;
+}
+
+.ai-scan-tab .ai-tab-dot {
+    display: inline-block;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: #475569;
+    margin-right: 5px;
+    vertical-align: middle;
+}
+
+.ai-scan-tab.active .ai-tab-dot {
+    background: #38bdf8;
+    animation: aiDotPulse 1.4s ease-in-out infinite;
+}
+
+/* ── TYPEWRITER CURSOR ── */
+@keyframes blinkCursor {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0; }
+}
+
+.ai-typewriter-cursor {
+    display: inline-block;
+    width: 8px;
+    height: 14px;
+    background: #38bdf8;
+    margin-left: 2px;
+    vertical-align: text-bottom;
+    animation: blinkCursor 1s step-end infinite;
+}
+
+/* ── TABLE ROW SCAN-IN ANIMATION ── */
+@keyframes rowScanIn {
+    from {
+        opacity: 0;
+        transform: translateX(-8px);
+        background: rgba(56,189,248,.06);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+        background: transparent;
+    }
+}
+
+.scan-row-animate {
+    animation: rowScanIn .4s ease forwards;
+}
+
+/* ── SCAN PULSE ON TABLE HEADER ── */
+.scan-table-header {
+    position: relative;
+    overflow: hidden;
+}
+
+.scan-table-header::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: -100%;
+    height: 2px;
+    width: 80%;
+    background: linear-gradient(90deg, transparent, #38bdf8, transparent);
+    animation: scanBeam 2.5s ease-in-out infinite;
+}
+
+/* ── RADAR PING (for "scanning" overlay) ── */
+@keyframes radarPing {
+    0%   { transform: scale(.3); opacity: .9; }
+    100% { transform: scale(2.2); opacity: 0; }
+}
+
+.radar-ping {
+    position: relative;
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+}
+
+.radar-ping::before, .radar-ping::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: rgba(56,189,248,.35);
+    animation: radarPing 2s ease-out infinite;
+}
+
+.radar-ping::after {
+    animation-delay: .7s;
+}
+
+.radar-ping-core {
+    position: absolute;
+    inset: 4px;
+    border-radius: 50%;
+    background: #38bdf8;
+    z-index: 1;
+}
+
+/* ── LIVE SEARCH SCANNER BAR ── */
+.ai-search-wrap {
+    position: relative;
+}
+
+.ai-search-input {
+    background: rgba(255,255,255,0.06) !important;
+    border: 1.5px solid rgba(56,189,248,0.25) !important;
+    color: #e2e8f0 !important;
+    border-radius: 8px !important;
+    padding-left: 2.2rem !important;
+    font-size: .82rem !important;
+    transition: border-color .2s, box-shadow .2s;
+    font-family: 'Courier New', monospace;
+}
+
+.ai-search-input:focus {
+    border-color: #38bdf8 !important;
+    box-shadow: 0 0 0 3px rgba(56,189,248,.15) !important;
+    outline: none !important;
+}
+
+.ai-search-input::placeholder { color: #475569; }
+
+.ai-search-icon {
+    position: absolute;
+    left: .65rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #38bdf8;
+    font-size: .85rem;
+    pointer-events: none;
+}
+
+.ai-searching-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(56,189,248,.12);
+    border: 1px solid rgba(56,189,248,.25);
+    border-radius: 6px;
+    color: #38bdf8;
+    font-size: .7rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+}
+
+.ai-searching-badge .dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: #38bdf8;
+    animation: aiDotPulse 1s ease-in-out infinite;
+}
+
+/* ── GLASSMORPHISM CARD STYLE ── */
+.glass-card {
+    background: rgba(15,23,42,.85) !important;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(56,189,248,.12) !important;
+}
+
+/* ── ACTIVITY LOG PANEL ── */
+.activity-log-panel {
+    background: #0a1628;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid rgba(56,189,248,.1);
+}
+
+.activity-log-header {
+    background: linear-gradient(90deg, #0f172a, #1e3a5f);
+    padding: .7rem 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #1e293b;
+}
+
+.activity-log-header h6 {
+    color: #e2e8f0;
+    font-size: .82rem;
+    font-weight: 700;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    margin: 0;
+}
+
+.activity-log-body {
+    height: 260px;
+    overflow-y: auto;
+    padding: .5rem .8rem;
+    font-family: 'Courier New', monospace;
+    font-size: .74rem;
+}
+
+.activity-log-body::-webkit-scrollbar { width: 3px; }
+.activity-log-body::-webkit-scrollbar-thumb { background: #1e3a5f; border-radius: 3px; }
+
+.activity-log-entry {
+    display: flex;
+    align-items: flex-start;
+    gap: .5rem;
+    padding: .2rem 0;
+    border-bottom: 1px solid rgba(30,41,59,.5);
+    animation: aiFeedIn .35s ease;
+}
+
+.activity-log-ts {
+    color: #334155;
+    white-space: nowrap;
+    flex-shrink: 0;
+    font-size: .7rem;
+}
+
+.activity-log-icon {
+    flex-shrink: 0;
+    font-size: .8rem;
+}
+
+.activity-log-icon.txn   { color: #38bdf8; }
+.activity-log-icon.case  { color: #818cf8; }
+.activity-log-icon.login { color: #4ade80; }
+.activity-log-icon.alert { color: #f59e0b; }
+.activity-log-icon.doc   { color: #c084fc; }
+.activity-log-icon.sys   { color: #94a3b8; }
+
+.activity-log-text {
+    color: #94a3b8;
+    font-size: .74rem;
+    flex: 1;
+    line-height: 1.5;
+}
+
+.activity-log-text em {
+    color: #e2e8f0;
+    font-style: normal;
+}
+
+/* ── NETWORK NODE ANIMATION (scan grid background) ── */
+.ai-network-bg {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.ai-net-node {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: rgba(56,189,248,.5);
+    animation: nodeFloat 4s ease-in-out infinite;
+}
+
+@keyframes nodeFloat {
+    0%, 100% { transform: translateY(0) scale(1); opacity: .5; }
+    50%       { transform: translateY(-6px) scale(1.3); opacity: 1; }
+}
+
+/* ── STATUS INDICATOR (blinking) ── */
+.status-live-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #4ade80;
+    animation: aiDotPulse 1.4s ease-in-out infinite;
+    margin-right: 5px;
+    vertical-align: middle;
+}
+
+/* ── SCAN PROGRESS RING ── */
+@keyframes spinRing {
+    0%   { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.scan-ring {
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    border: 2px solid rgba(56,189,248,.2);
+    border-top-color: #38bdf8;
+    border-radius: 50%;
+    animation: spinRing .8s linear infinite;
+    vertical-align: middle;
+    margin-right: 6px;
+}
+
+/* ── PROFESSIONAL CASES TABLE ── */
+.ai-cases-table th {
+    font-size: .72rem;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: #6c757d;
+    font-weight: 700;
+    border-top: none;
+    border-bottom: 2px solid #e9ecef;
+    padding: .75rem 1rem;
+    white-space: nowrap;
+}
+
+.ai-cases-table td {
+    font-size: .84rem;
+    padding: .7rem 1rem;
+    vertical-align: middle;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.ai-cases-table tbody tr {
+    transition: background .15s;
+}
+
+.ai-cases-table tbody tr:hover {
+    background: rgba(41,80,168,.04);
+}
+
+.ai-case-number {
+    font-family: 'Courier New', monospace;
+    font-size: .8rem;
+    font-weight: 700;
+    color: #2950a8;
+}
+
+/* ── TRANSACTION ENTRY HOVER ── */
+.txn-row-ai {
+    border-bottom: 1px solid rgba(15,23,42,.06);
+    transition: background .15s, border-color .15s;
+    cursor: pointer;
+}
+
+.txn-row-ai:hover {
+    background: rgba(56,189,248,.05);
+    border-bottom-color: rgba(56,189,248,.15);
+}
+
+/* ── ENHANCED RECOVERY WORKFLOW STEPS ── */
+.recovery-step-ai {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+    position: relative;
+}
+
+.recovery-step-ai .step-icon-ai {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: #f1f5f9;
+    border: 2px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    color: #94a3b8;
+    transition: all .3s;
+    position: relative;
+    z-index: 1;
+}
+
+.recovery-step-ai.active .step-icon-ai {
+    background: linear-gradient(135deg, #2950a8, #2da9e3);
+    border-color: #2950a8;
+    color: #fff;
+    box-shadow: 0 0 0 4px rgba(41,80,168,.2);
+}
+
+.recovery-step-ai.active .step-icon-ai::after {
+    content: '';
+    position: absolute;
+    inset: -5px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(41,80,168,.35);
+    animation: aiPulseRing 2s ease-out infinite;
+}
+
+.recovery-step-ai .step-label-ai {
+    font-size: .7rem;
+    font-weight: 600;
+    color: #94a3b8;
+    margin-top: .4rem;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.recovery-step-ai.active .step-label-ai {
+    color: #2950a8;
+}
+
+.recovery-connector {
+    flex: 1;
+    height: 2px;
+    background: #e2e8f0;
+    margin-top: -22px;
+    position: relative;
+    overflow: hidden;
+}
+
+.recovery-connector.active {
+    background: linear-gradient(90deg, #2950a8, #2da9e3);
+}
+
+.recovery-connector.active::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 80%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,.6), transparent);
+    animation: scanBeam 2s ease-in-out infinite;
+}
+
+/* ── SECTION HEADER DARK ── */
+.section-header-ai {
+    background: linear-gradient(90deg, #0f172a, #1e3a5f);
+    border-bottom: none !important;
+}
+
+.section-header-ai h5, .section-header-ai h6 {
+    color: #e2e8f0;
+    font-size: .9rem;
+    font-weight: 700;
+    letter-spacing: .02em;
+    margin: 0;
+}
+
+/* ── CASE STATUS BADGE POLISH ── */
+.badge-ai-open    { background: rgba(255,193,7,.15); color: #856404; border: 1px solid rgba(255,193,7,.4); border-radius: 20px; padding: 3px 10px; font-size: .72rem; font-weight: 700; }
+.badge-ai-review  { background: rgba(23,162,184,.12); color: #0c5460; border: 1px solid rgba(23,162,184,.3); border-radius: 20px; padding: 3px 10px; font-size: .72rem; font-weight: 700; }
+.badge-ai-success { background: rgba(40,167,69,.1);  color: #155724; border: 1px solid rgba(40,167,69,.3); border-radius: 20px; padding: 3px 10px; font-size: .72rem; font-weight: 700; }
+.badge-ai-danger  { background: rgba(220,53,69,.1);  color: #721c24; border: 1px solid rgba(220,53,69,.3); border-radius: 20px; padding: 3px 10px; font-size: .72rem; font-weight: 700; }
+.badge-ai-docs    { background: rgba(108,117,125,.1);color: #343a40; border: 1px solid rgba(108,117,125,.3); border-radius: 20px; padding: 3px 10px; font-size: .72rem; font-weight: 700; }
+
+/* ── AI SECTION TITLE ── */
+.ai-section-title {
+    font-size: .9rem;
+    font-weight: 700;
+    color: #1e293b;
+    letter-spacing: .01em;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    margin: 0;
+}
+
+.ai-section-title::before {
+    content: '';
+    display: inline-block;
+    width: 3px;
+    height: 16px;
+    background: linear-gradient(135deg, #2950a8, #2da9e3);
+    border-radius: 2px;
+    flex-shrink: 0;
+}

@@ -44,7 +44,7 @@ try {
     
     // Add sorting
     $orderColumn = isset($_POST['order'][0]['column']) ? (int)$_POST['order'][0]['column'] : 0;
-    $orderDirection = isset($_POST['order'][0]['dir']) ? $_POST['order'][0]['dir'] : 'desc';
+    $orderDirection = (isset($_POST['order'][0]['dir']) && strtoupper($_POST['order'][0]['dir']) === 'ASC') ? 'ASC' : 'DESC';
     
     $columns = ['id', 'name', 'email', 'role', 'status', 'created_at'];
     

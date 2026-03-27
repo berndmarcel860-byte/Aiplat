@@ -3,7 +3,14 @@ ini_set('display_errors', 0);
 error_reporting(E_ALL);
 
 require_once '../../config.php';
+require_once '../admin_session.php';
 header('Content-Type: application/json');
+
+if (!isset($_SESSION['admin_id'])) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+    exit();
+}
 
 if (empty($_POST['case_id'])) {
     echo json_encode(['success' => false, 'message' => 'Case ID required']);
@@ -59,18 +66,18 @@ try {
         'message' => 'Case and related logs deleted successfully'
     ]);
 } catch (PDOException $e) {
-    $pdo->rollBack();
+    if ($pdo->inTransaction()) $pdo->rollBack();
+    error_log("Delete Case PDO Error: " . $e->getMessage());
     echo json_encode([
         'success' => false,
-        'message' => 'Database error during deletion',
-        'error' => $e->getMessage()
+        'message' => 'Database error during deletion'
     ]);
 } catch (Exception $e) {
-    $pdo->rollBack();
+    if ($pdo->inTransaction()) $pdo->rollBack();
+    error_log("Delete Case Error: " . $e->getMessage());
     echo json_encode([
         'success' => false,
-        'message' => 'Unexpected error occurred',
-        'error' => $e->getMessage()
+        'message' => 'Unexpected error occurred'
     ]);
 }
 ?>

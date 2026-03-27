@@ -78,8 +78,16 @@ try {
     $emailSent = false;
     try {
         $emailHelper = new EmailHelper($pdo);
-        $siteUrl = defined('SITE_URL') ? SITE_URL : 'https://blockchainfahndung.com/app/';
-        
+        // Always fetch site_url from system_settings; fall back to the request host only if unset in DB
+        $siteUrlRow = $pdo->query("SELECT site_url FROM system_settings WHERE id = 1 LIMIT 1")->fetch(PDO::FETCH_ASSOC);
+        $rawSiteUrl = trim($siteUrlRow['site_url'] ?? '');
+        if ($rawSiteUrl === '') {
+            $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+            $rawSiteUrl = $scheme . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost');
+            error_log("add_user.php: system_settings.site_url is empty – falling back to request host {$rawSiteUrl}");
+        }
+        $siteUrl = rtrim($rawSiteUrl, '/') . '/';
+
         $customVars = [
             'temp_password' => $plain_password, // Plain text password for email
             'pass' => $plain_password, // Alias for backwards compatibility

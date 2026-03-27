@@ -1,8 +1,14 @@
 <?php
 require_once '../../config.php';
-
+require_once '../admin_session.php';
 
 header('Content-Type: application/json');
+
+if (!isset($_SESSION['admin_id'])) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+    exit();
+}
 
 try {
     // For DataTables server-side processing
@@ -105,7 +111,8 @@ try {
     echo json_encode($response);
     
 } catch (PDOException $e) {
+    error_log("Get Documents Error: " . $e->getMessage());
     http_response_code(500);
-    echo json_encode(['error' => 'Database error: ' . $e->getMessage()]);
+    echo json_encode(['error' => 'Database error']);
 }
 ?>
