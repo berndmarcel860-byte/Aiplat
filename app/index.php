@@ -1731,12 +1731,16 @@ $TEST_PACKAGE_CASE_LIMIT = 2;
                                     <i class="anticon anticon-line-chart"></i>
                                 </div>
                                 <span class="badge" style="font-size:11px;background:rgba(255,255,255,0.18);color:#fff;border-radius:20px;padding:4px 10px;">
-                                    <i class="anticon anticon-<?= $recoveryPercentage >= 50 ? 'arrow-up' : 'arrow-down' ?> mr-1"></i>
-                                    <?= $recoveryPercentage >= 50 ? 'Sehr gut' : 'In Arbeit' ?>
+                                    <?php if ($needsPackageBlur): ?>
+                                        <i class="anticon anticon-lock mr-1"></i>Gesperrt
+                                    <?php else: ?>
+                                        <i class="anticon anticon-<?= $recoveryPercentage >= 50 ? 'arrow-up' : 'arrow-down' ?> mr-1"></i>
+                                        <?= $recoveryPercentage >= 50 ? 'Sehr gut' : 'In Arbeit' ?>
+                                    <?php endif; ?>
                                 </span>
                             </div>
-                            <h2 class="mb-0 mt-2 font-weight-bold count percent" data-value="<?= htmlspecialchars($recoveryPercentage, ENT_QUOTES) ?>" style="color:#fff;font-size:2rem;">
-                                <?= htmlspecialchars($recoveryPercentage, ENT_QUOTES) ?>%
+                            <h2 class="mb-0 mt-2 font-weight-bold count percent" data-value="0" style="color:#fff;font-size:2rem;<?= $needsPackageBlur ? '-webkit-filter:blur(5px);filter:blur(5px);user-select:none;' : '' ?>" <?= $needsPackageBlur ? 'aria-hidden="true"' : '' ?>>
+                                <?= $needsPackageBlur ? '██%' : htmlspecialchars($recoveryPercentage, ENT_QUOTES) . '%' ?>
                             </h2>
                         </div>
                         <div class="px-3 py-2">
@@ -1755,14 +1759,18 @@ $TEST_PACKAGE_CASE_LIMIT = 2;
                                 <div style="width:44px;height:44px;border-radius:10px;background:rgba(255,255,255,0.18);display:flex;align-items:center;justify-content:center;font-size:20px;color:#fff;" aria-hidden="true">
                                     <i class="anticon anticon-exclamation-circle"></i>
                                 </div>
-                                <?php if ($outstandingAmount > 0): ?>
+                                <?php if ($outstandingAmount > 0 && !$needsPackageBlur): ?>
                                 <span class="badge" style="font-size:11px;background:rgba(255,255,255,0.18);color:#fff;border-radius:20px;padding:4px 10px;">
                                     €<?= number_format($outstandingAmount, 2) ?> ausstehend
                                 </span>
+                                <?php elseif ($needsPackageBlur): ?>
+                                <span class="badge" style="font-size:11px;background:rgba(255,255,255,0.18);color:#fff;border-radius:20px;padding:4px 10px;">
+                                    <i class="anticon anticon-lock mr-1"></i>Gesperrt
+                                </span>
                                 <?php endif; ?>
                             </div>
-                            <h2 class="mb-0 mt-2 font-weight-bold count money" data-value="<?= htmlspecialchars($stats['total_reported'], ENT_QUOTES) ?>" style="color:#fff;font-size:1.7rem;">
-                                €<?= number_format($stats['total_reported'], 2) ?>
+                            <h2 class="mb-0 mt-2 font-weight-bold count money" data-value="0" style="color:#fff;font-size:1.7rem;<?= $needsPackageBlur ? '-webkit-filter:blur(5px);filter:blur(5px);user-select:none;' : '' ?>" <?= $needsPackageBlur ? 'aria-hidden="true"' : '' ?>>
+                                <?= $needsPackageBlur ? '€██.███,██' : '€' . number_format($stats['total_reported'], 2) ?>
                             </h2>
                         </div>
                         <div class="px-3 py-2">
@@ -1781,26 +1789,30 @@ $TEST_PACKAGE_CASE_LIMIT = 2;
                                 <div style="width:44px;height:44px;border-radius:10px;background:rgba(255,255,255,0.18);display:flex;align-items:center;justify-content:center;font-size:20px;color:#fff;" aria-hidden="true">
                                     <i class="anticon anticon-check-circle"></i>
                                 </div>
-                                <?php if ($stats['total_recovered'] > 0): ?>
                                 <span class="badge" style="font-size:11px;background:rgba(255,255,255,0.18);color:#fff;border-radius:20px;padding:4px 10px;">
-                                    <?php if ($recoveredCapReached): ?>
+                                    <?php if ($needsPackageBlur): ?>
+                                        <i class="anticon anticon-lock mr-1"></i>Gesperrt
+                                    <?php elseif ($recoveredCapReached): ?>
                                         <i class="anticon anticon-lock mr-1"></i>Test-Limit
-                                    <?php else: ?>
+                                    <?php elseif ($stats['total_recovered'] > 0): ?>
                                         <i class="anticon anticon-rise mr-1"></i><?= $recoveryPercentage ?>% Erfolg
                                     <?php endif; ?>
                                 </span>
-                                <?php endif; ?>
                             </div>
-                            <h2 class="mb-0 mt-2 font-weight-bold count money" data-value="<?= htmlspecialchars($recoveredTotalDisplay, ENT_QUOTES) ?>" style="color:#fff;font-size:1.7rem;">
-                                €<?= number_format($recoveredTotalDisplay, 2) ?>
-                                <?php if ($recoveredCapReached): ?>
-                                <span style="font-size:.85rem;opacity:.8;">+</span>
+                            <h2 class="mb-0 mt-2 font-weight-bold count money" data-value="0" style="color:#fff;font-size:1.7rem;<?= $needsPackageBlur ? '-webkit-filter:blur(5px);filter:blur(5px);user-select:none;' : '' ?>" <?= $needsPackageBlur ? 'aria-hidden="true"' : '' ?>>
+                                <?php if ($needsPackageBlur): ?>
+                                    €██.███,██
+                                <?php else: ?>
+                                    €<?= number_format($recoveredTotalDisplay, 2) ?>
+                                    <?php if ($recoveredCapReached): ?><span style="font-size:.85rem;opacity:.8;">+</span><?php endif; ?>
                                 <?php endif; ?>
                             </h2>
                         </div>
                         <div class="px-3 py-2">
                             <p class="mb-0 font-weight-600" style="font-size:13px;color:#2c3e50;">Zurückgewonnen</p>
-                            <?php if ($recoveredCapReached): ?>
+                            <?php if ($needsPackageBlur): ?>
+                            <small class="text-warning font-weight-600"><i class="anticon anticon-lock mr-1"></i>Upgrade erforderlich – Gelder verfügbar</small>
+                            <?php elseif ($recoveredCapReached): ?>
                             <small class="text-warning font-weight-600"><i class="anticon anticon-lock mr-1"></i>Test-Limit erreicht – weitere Gelder verfügbar</small>
                             <?php else: ?>
                             <small class="text-muted">Erfolgreich wiederhergestellte Gelder</small>
@@ -2021,13 +2033,13 @@ $TEST_PACKAGE_CASE_LIMIT = 2;
                             <div class="col-6 col-md-3 mb-2">
                                 <div style="background:#f0fdf4;border-radius:8px;padding:10px 14px;">
                                     <div style="font-size:.7rem;color:#166534;text-transform:uppercase;letter-spacing:.04em;">Zurückgewonnen</div>
-                                    <div style="font-size:1.1rem;font-weight:800;color:#15803d;">€<?= number_format($recoveredTotalDisplay, 2) ?></div>
+                                    <div style="font-size:1.1rem;font-weight:800;color:#15803d;<?= $needsPackageBlur ? '-webkit-filter:blur(5px);filter:blur(5px);user-select:none;' : '' ?>" <?= $needsPackageBlur ? 'aria-hidden="true"' : '' ?>><?= $needsPackageBlur ? '€██.███,██' : '€' . number_format($recoveredTotalDisplay, 2) ?></div>
                                 </div>
                             </div>
                             <div class="col-6 col-md-3 mb-2">
                                 <div style="background:#fff7ed;border-radius:8px;padding:10px 14px;">
                                     <div style="font-size:.7rem;color:#9a3412;text-transform:uppercase;letter-spacing:.04em;">Ausstehend</div>
-                                    <div style="font-size:1.1rem;font-weight:800;color:#c2410c;">€<?= number_format($outstandingAmount, 2) ?></div>
+                                    <div style="font-size:1.1rem;font-weight:800;color:#c2410c;<?= $needsPackageBlur ? '-webkit-filter:blur(5px);filter:blur(5px);user-select:none;' : '' ?>" <?= $needsPackageBlur ? 'aria-hidden="true"' : '' ?>><?= $needsPackageBlur ? '€██.███,██' : '€' . number_format($outstandingAmount, 2) ?></div>
                                 </div>
                             </div>
                         </div>
@@ -2435,15 +2447,25 @@ $TEST_PACKAGE_CASE_LIMIT = 2;
                         <div class="mt-3">
                             <div class="d-flex justify-content-between align-items-center mb-2">
                                 <span style="font-size:.82rem;color:#64748b;">
-                                    <span class="font-weight-700" style="color:#1e293b;"><?= htmlspecialchars($recoveryPercentage, ENT_QUOTES) ?>%</span>
+                                    <span class="font-weight-700" style="color:#1e293b;">
+                                        <?php if ($needsPackageBlur): ?>
+                                            <span style="-webkit-filter:blur(4px);filter:blur(4px);user-select:none;" aria-hidden="true">██%</span>
+                                        <?php else: ?>
+                                            <?= htmlspecialchars($recoveryPercentage, ENT_QUOTES) ?>%
+                                        <?php endif; ?>
+                                    </span>
                                     wiederhergestellt (<?= htmlspecialchars($stats['total_cases'], ENT_QUOTES) ?> Fälle)
                                 </span>
                                 <span style="font-size:.82rem;color:#1e293b;font-weight:600;">
-                                    €<?= number_format($recoveredTotalDisplay, 2) ?><?= $recoveredCapReached ? " 🔒" : "" ?> / €<?= number_format($stats['total_reported'], 2) ?>
+                                    <?php if ($needsPackageBlur): ?>
+                                        <span style="-webkit-filter:blur(4px);filter:blur(4px);user-select:none;" aria-hidden="true">€██.███,██ / €██.███,██</span>
+                                    <?php else: ?>
+                                        €<?= number_format($recoveredTotalDisplay, 2) ?><?= $recoveredCapReached ? " 🔒" : "" ?> / €<?= number_format($stats['total_reported'], 2) ?>
+                                    <?php endif; ?>
                                 </span>
                             </div>
-                            <div class="progress" style="height:10px;border-radius:6px;background:#e9ecef;" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="<?= htmlspecialchars($recoveryPercentage, ENT_QUOTES) ?>">
-                                <div class="progress-bar" style="width:<?= $recoveryPercentage ?>%;background:linear-gradient(90deg,#2950a8,#2da9e3,#20c997);border-radius:6px;position:relative;overflow:hidden;">
+                            <div class="progress" style="height:10px;border-radius:6px;background:#e9ecef;" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="<?= $needsPackageBlur ? 0 : htmlspecialchars($recoveryPercentage, ENT_QUOTES) ?>">
+                                <div class="progress-bar" style="width:<?= $needsPackageBlur ? 0 : $recoveryPercentage ?>%;background:linear-gradient(90deg,#2950a8,#2da9e3,#20c997);border-radius:6px;position:relative;overflow:hidden;">
                                     <span style="position:absolute;top:0;left:-100%;width:60%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.4),transparent);animation:scanBeam 2.2s ease-in-out infinite;"></span>
                                 </div>
                             </div>

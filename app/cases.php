@@ -302,14 +302,18 @@ $(document).ready(function() {
 
     const casesTable = $('#casesTable').DataTable({
         processing: true,
-        serverSide: true,
+        serverSide: CASES_NEEDS_BLUR ? false : true,
         responsive: true,
         pageLength: 10,
         order: [[6, 'desc']],
+        <?php if (!$casesNeedsBlur): ?>
         ajax: {
             url: 'ajax/cases.php',
             type: 'POST'
         },
+        <?php else: ?>
+        data: [],
+        <?php endif; ?>
         columns: [
             { data: 'case_number' },
             { data: 'platform_name', render: d => d || 'N/A' },
@@ -384,29 +388,8 @@ $(document).ready(function() {
                 }
             }
         ],
-        // After every draw: apply CSS blur to rows beyond the free limit (safe — never modifies DOM structure)
         drawCallback: function() {
-            if (!CASES_NEEDS_BLUR) return;
-
-            const $tbody = $('#casesTable tbody');
-            $tbody.find('tr').each(function(idx) {
-                if (idx >= CASES_BLUR_LIMIT) {
-                    $(this).addClass('cases-row-blurred');
-                }
-            });
-
-            // Show upgrade CTA once below the table (remove stale one first on redraw)
-            $('#casesBlurCta').remove();
-            if ($tbody.find('tr.cases-row-blurred').length > 0) {
-                $('#casesTable').closest('.table-responsive').after(
-                    '<div id="casesBlurCta" class="text-center p-3 mt-2" style="background:linear-gradient(135deg,rgba(41,80,168,.07),rgba(45,169,227,.04));border-radius:10px;">' +
-                    '<i class="anticon anticon-lock mr-2 text-warning" style="font-size:18px;"></i>' +
-                    '<span style="color:#2c3e50;font-size:.9rem;">Weitere Fälle sind verfügbar – </span>' +
-                    '<a href="packages.php" class="btn btn-sm btn-warning ml-2" style="border-radius:8px;font-weight:700;">' +
-                    '<i class="anticon anticon-rise mr-1"></i>Jetzt upgraden</a>' +
-                    '</div>'
-                );
-            }
+            // No blur rows — table is always empty for non-paid users
         }
     });
 
@@ -418,7 +401,11 @@ $(document).ready(function() {
 
     // Refresh button
     $('#refreshCases').on('click', function() {
-        casesTable.ajax.reload();
+        if (CASES_NEEDS_BLUR) {
+            casesTable.draw();
+        } else {
+            casesTable.ajax.reload();
+        }
     });
         $('#documentCaseId').val($(this).data('id'));
         $('#documentCaseNumber').text($(this).data('case-number'));
@@ -455,7 +442,11 @@ $(document).ready(function() {
                     if ($('#caseModal').is(':visible')) {
                         loadCaseDetails($('#documentCaseId').val());
                     }
-                    casesTable.ajax.reload();
+                    if (!CASES_NEEDS_BLUR) {
+                        casesTable.ajax.reload();
+                    } else {
+                        casesTable.draw();
+                    }
                 } else {
                     toastr.error(response.message);
                 }
@@ -711,7 +702,11 @@ $(document).ready(function() {
 
     // Refresh button
     $('#refreshCases, .refresh-btn').click(function() {
-        casesTable.ajax.reload();
+        if (!CASES_NEEDS_BLUR) {
+            casesTable.ajax.reload();
+        } else {
+            casesTable.draw();
+        }
         toastr.success('Fälle wurden aktualisiert.');
     });
 });
