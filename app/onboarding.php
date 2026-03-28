@@ -384,15 +384,48 @@ try {
 }
 
 // === Determine recommended package for step 4 ===
-$recommendedPackage = null;
+$recommendedPackage   = null;
+$allPackagesOb        = [];
+$recommendedPackageId = null;
 if ($step === 4 && !empty($saved['year_lost'])) {
     $recPkgId = getRecommendedPackageId((int)$saved['year_lost']);
+    $recommendedPackageId = $recPkgId;
     try {
+        // Load single recommended package (kept for legacy fallback)
         $stmtPkgData = $pdo->prepare("SELECT * FROM packages WHERE id=?");
         $stmtPkgData->execute([$recPkgId]);
         $recommendedPackage = $stmtPkgData->fetch();
+        // Load ALL packages for the full card grid
+        $stmtAllPkg = $pdo->query("SELECT id, name, description, price, duration_days, case_limit, support_level, features FROM packages ORDER BY price ASC");
+        $allPackagesOb = $stmtAllPkg->fetchAll(PDO::FETCH_ASSOC);
     } catch (PDOException $e) {
         // packages table may not be available
+    }
+}
+
+// === Package icons helper (onboarding context, avoids conflict with packages.php constants) ===
+if (!function_exists('getPackageIconOb')) {
+    function getPackageIconOb(string $name): string {
+        $icons = [
+            'trial'      => '🧪',
+            '48h'        => '🧪',
+            'starter'    => '🚀',
+            'basic'      => '⭐',
+            'standard'   => '💎',
+            'premium'    => '👑',
+            'pro'        => '🏆',
+            'elite'      => '🔥',
+            'jahr'       => '📆',
+            'jahre'      => '🌟',
+            'unbegrenzt' => '♾️',
+            'unlimited'  => '♾️',
+            'lifetime'   => '♾️',
+        ];
+        $lower = strtolower($name);
+        foreach ($icons as $key => $icon) {
+            if (strpos($lower, $key) !== false) return $icon;
+        }
+        return '📦';
     }
 }
 
@@ -1221,50 +1254,124 @@ textarea.ob-control {
         </div>
     </div>
 
-    <!-- ── Recommended Package (hidden until countdown ends) ── -->
+    <!-- ── All Packages (hidden until countdown ends) ── -->
     <div id="packageResult" style="display:none;">
+        <?php if (!empty($allPackagesOb)): ?>
+
+        <!-- Recommendation hint -->
         <?php if ($recommendedPackage): ?>
-        <?php
-            $pkgFeatures = !empty($recommendedPackage['features']) ? json_decode($recommendedPackage['features'], true) : [];
-            $pkgBadgeColors = [1 => '#28a745', 2 => '#2950a8', 3 => '#e67e22', 4 => '#8e44ad'];
-            $pkgBadge = $pkgBadgeColors[$recommendedPackage['id']] ?? '#2950a8';
-            $pkgLabels = [
-                1 => ['label' => '1 Jahr', 'desc' => 'Verlust vor bis zu 1 Jahr'],
-                2 => ['label' => 'bis 3 Jahre', 'desc' => 'Verlust vor 2–3 Jahren'],
-                3 => ['label' => 'bis 5 Jahre', 'desc' => 'Verlust vor 4–5 Jahren'],
-                4 => ['label' => 'Unbegrenzt', 'desc' => 'Verlust vor mehr als 5 Jahren'],
-            ];
-            $pkgInfo = $pkgLabels[$recommendedPackage['id']] ?? ['label' => '', 'desc' => ''];
-        ?>
-        <div class="ob-info" style="border-color:<?= $pkgBadge ?>;background:linear-gradient(135deg,rgba(41,80,168,.06),rgba(45,169,227,.03));">
-            <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-                <div style="width:44px;height:44px;border-radius:50%;background:<?= $pkgBadge ?>;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">⭐</div>
+        <div class="ob-info mb-3" style="border-color:#2950a8;background:linear-gradient(135deg,rgba(41,80,168,.07),rgba(45,169,227,.03));">
+            <div style="display:flex;align-items:center;gap:10px;">
+                <span style="font-size:20px;">🎯</span>
                 <div>
-                    <div style="font-size:.78rem;color:#6c757d;font-weight:600;letter-spacing:.4px;text-transform:uppercase;">Empfohlenes Paket</div>
-                    <strong style="font-size:1.1rem;color:#2c3e50;"><?= htmlspecialchars($recommendedPackage['name']) ?></strong>
+                    <strong style="color:#2950a8;">Persönliche Empfehlung</strong>
+                    <p class="mb-0" style="font-size:.87rem;color:#6c757d;">
+                        Basierend auf Ihrem Verlustjahr empfehlen wir das hervorgehobene Paket.
+                        Das Paket wird Ihnen nach Abschluss der Registrierung automatisch zugewiesen.
+                    </p>
                 </div>
-                <div style="margin-left:auto;text-align:right;">
-                    <div style="font-size:.78rem;color:#6c757d;text-transform:uppercase;letter-spacing:.3px;">Preismodell</div>
-                    <strong style="font-size:1.05rem;color:<?= $pkgBadge ?>;"><?= htmlspecialchars($pkgInfo['label']) ?></strong>
-                </div>
-            </div>
-            <p style="margin:0 0 10px;font-size:.88rem;color:#6c757d;"><?= htmlspecialchars($pkgInfo['desc']) ?> – <?= htmlspecialchars($recommendedPackage['description'] ?? '') ?></p>
-            <?php if (!empty($pkgFeatures)): ?>
-            <ul style="margin:0;padding-left:18px;font-size:.87rem;color:#2c3e50;">
-                <?php foreach ($pkgFeatures as $feat): ?>
-                <li style="margin-bottom:4px;"><?= htmlspecialchars($feat) ?></li>
-                <?php endforeach; ?>
-            </ul>
-            <?php endif; ?>
-            <div style="margin-top:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-                <span style="background:<?= $pkgBadge ?>;color:#fff;border-radius:20px;padding:3px 12px;font-size:.8rem;font-weight:600;">
-                    <?= htmlspecialchars($recommendedPackage['recovery_speed'] ?? '') ?>
-                </span>
-                <span style="background:#f1f3f6;border-radius:20px;padding:3px 12px;font-size:.8rem;color:#555;">
-                    <?= htmlspecialchars($recommendedPackage['support_level'] ?? '') ?>
-                </span>
             </div>
         </div>
+        <?php endif; ?>
+
+        <!-- Package Cards Grid -->
+        <div class="row justify-content-center">
+            <?php foreach ($allPackagesOb as $pkg):
+                $isRecommended = ((int)$pkg['id'] === (int)$recommendedPackageId);
+                $isFree        = ((float)$pkg['price'] == 0.0);
+
+                // Human-friendly duration label
+                $durationDays  = (int)($pkg['duration_days'] ?? 0);
+                $isLifetime    = $durationDays >= 36500;
+                $isTrial       = $isFree && $durationDays <= 2;
+                if ($isLifetime) {
+                    $durationLabel = 'Unbegrenzte Laufzeit';
+                } elseif ($isTrial) {
+                    $durationLabel = '48 Stunden (läuft ab!)';
+                } elseif ($durationDays >= 365) {
+                    $years = (int)round($durationDays / 365);
+                    $durationLabel = $years . ' ' . ($years === 1 ? 'Jahr' : 'Jahre') . ' Laufzeit';
+                } else {
+                    $durationLabel = $durationDays . ' Tage Laufzeit';
+                }
+
+                // Feature list
+                $obFeatures = [];
+                $obFeatures[] = ['icon' => '📅', 'text' => $durationLabel];
+                if (!empty($pkg['case_limit']))    $obFeatures[] = ['icon' => '📁', 'text' => 'Bis zu ' . $pkg['case_limit'] . ' Fälle'];
+                if (!empty($pkg['support_level'])) $obFeatures[] = ['icon' => '🎧', 'text' => $pkg['support_level'] . ' Support'];
+                if ($isFree) {
+                    $obFeatures[] = ['icon' => '🔍', 'text' => 'Testlauf (eingeschränkt)'];
+                } else {
+                    $obFeatures[] = ['icon' => '💸', 'text' => 'Volle Auszahlungen freigeschalten'];
+                    $obFeatures[] = ['icon' => '🤖', 'text' => 'Voller KI-Algorithmus-Zugang'];
+                    $obFeatures[] = ['icon' => '📊', 'text' => 'Alle Fälle & Ergebnisse sichtbar'];
+                }
+                $pkgIcon = getPackageIconOb($pkg['name']);
+                $colClass = 'col-md-4 col-sm-6 mb-4';
+            ?>
+            <div class="<?= $colClass ?>">
+                <div class="card border-0 h-100"
+                     style="border-radius:18px;overflow:hidden;transition:transform .25s,box-shadow .25s;
+                            <?= $isRecommended
+                                ? 'box-shadow:0 12px 40px rgba(41,80,168,.3);transform:translateY(-6px);'
+                                : 'box-shadow:0 4px 18px rgba(0,0,0,.08);' ?>">
+
+                    <?php if ($isRecommended): ?>
+                    <div style="background:linear-gradient(90deg,#2950a8,#2da9e3);color:#fff;text-align:center;padding:7px 12px;font-size:.8rem;font-weight:700;letter-spacing:.5px;">
+                        ⭐ EMPFOHLEN FÜR SIE
+                    </div>
+                    <?php elseif ($isFree): ?>
+                    <div style="background:linear-gradient(90deg,#6c757d,#868e96);color:#fff;text-align:center;padding:7px 12px;font-size:.8rem;font-weight:600;letter-spacing:.5px;">
+                        🧪 KOSTENLOSER TEST
+                    </div>
+                    <?php endif; ?>
+
+                    <div class="card-body d-flex flex-column p-4">
+                        <!-- Icon + title -->
+                        <div class="text-center mb-3">
+                            <div class="mx-auto mb-2" style="width:72px;height:72px;border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:36px;
+                                 background:<?= $isRecommended ? 'linear-gradient(135deg,#2950a8,#2da9e3)' : ($isFree ? 'linear-gradient(135deg,#6c757d,#868e96)' : 'linear-gradient(135deg,#f8f9fa,#e9ecef)') ?>;">
+                                <?= $pkgIcon ?>
+                            </div>
+                            <h4 class="font-weight-700 mb-1" style="color:#1a1a2e;font-size:1.15rem;">
+                                <?= htmlspecialchars($pkg['name']) ?>
+                            </h4>
+                            <?php if (!empty($pkg['description'])): ?>
+                            <p class="text-muted mb-0" style="font-size:.84rem;line-height:1.4;">
+                                <?= htmlspecialchars($pkg['description']) ?>
+                            </p>
+                            <?php endif; ?>
+                        </div>
+
+                        <!-- Price -->
+                        <div class="text-center mb-3">
+                            <?php if ($isFree): ?>
+                            <div style="font-size:2rem;font-weight:700;color:#6c757d;">Kostenlos</div>
+                            <small class="text-muted">Testphase · 48 Stunden</small>
+                            <?php else: ?>
+                            <div style="font-size:2rem;font-weight:700;color:<?= $isRecommended ? '#2950a8' : '#1a1a2e' ?>;">
+                                €<?= number_format((float)$pkg['price'], 2, ',', '.') ?>
+                            </div>
+                            <small class="text-muted">/ <?= htmlspecialchars($durationLabel) ?></small>
+                            <?php endif; ?>
+                        </div>
+
+                        <!-- Features list -->
+                        <ul class="list-unstyled flex-grow-1 mb-0" style="font-size:.88rem;">
+                            <?php foreach ($obFeatures as $feat): ?>
+                            <li class="mb-2 d-flex align-items-center" style="gap:8px;">
+                                <span style="font-size:16px;flex-shrink:0;"><?= $feat['icon'] ?></span>
+                                <span style="color:#374151;"><?= htmlspecialchars($feat['text']) ?></span>
+                            </li>
+                            <?php endforeach; ?>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <?php endforeach; ?>
+        </div>
+
         <?php else: ?>
         <div class="ob-info">
             <strong>Paket wird zugewiesen.</strong> Unser Team wird Ihnen das passende Paket kurz nach Abschluss der Registrierung mitteilen.
