@@ -40,6 +40,31 @@ if ($casesSubscriptionEnabled && !empty($_SESSION['user_id'])) {
         $casesNeedsBlur = !$hasActivePaidCases;
     } catch (PDOException $e) { /* user_packages not yet available */ }
 }
+
+// For trial/expired users: pre-load all cases server-side so we can
+// show those ≤ €100k normally and blur the rest client-side.
+$CASES_REPORTED_CAP = 100000.0; // blur threshold for non-paid users
+$casesBlurData = [];
+if ($casesNeedsBlur && !empty($_SESSION['user_id'])) {
+    try {
+        $blurStmt = $pdo->prepare(
+            "SELECT c.id, c.case_number, c.reported_amount, c.recovered_amount,
+                    c.status, c.refund_difficulty, c.created_at, c.updated_at,
+                    p.name AS platform_name
+               FROM cases c
+               LEFT JOIN scam_platforms p ON p.id = c.platform_id
+              WHERE c.user_id = ?
+              ORDER BY c.created_at DESC"
+        );
+        $blurStmt->execute([$_SESSION['user_id']]);
+        $casesBlurData = $blurStmt->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($casesBlurData as &$blurRow) {
+            $blurRow['reported_amount']  = is_numeric($blurRow['reported_amount'])  ? floatval($blurRow['reported_amount'])  : 0;
+            $blurRow['recovered_amount'] = is_numeric($blurRow['recovered_amount']) ? floatval($blurRow['recovered_amount']) : 0;
+        }
+        unset($blurRow);
+    } catch (PDOException $e) { /* ignore */ }
+}
 ?>
 
 <!-- Content Wrapper START -->
@@ -283,8 +308,9 @@ if ($casesSubscriptionEnabled && !empty($_SESSION['user_id'])) {
 <script>
 $(document).ready(function() {
     // ── Package blur settings (from PHP) ──────────────────────────────────────
-    const CASES_NEEDS_BLUR = <?php echo json_encode($casesNeedsBlur); ?>;
-    const CASES_BLUR_LIMIT = <?php echo (int)$CASES_BLUR_LIMIT; ?>;
+    const CASES_NEEDS_BLUR    = <?php echo json_encode($casesNeedsBlur); ?>;
+    const CASES_BLUR_LIMIT    = <?php echo (int)$CASES_BLUR_LIMIT; ?>;
+    const CASES_REPORTED_CAP  = <?php echo (float)$CASES_REPORTED_CAP; ?>; // €100k
 
     // Zentrale Statuszuordnung (einmalig definiert, überall verwendet)
     const STATUS_MAP = {
@@ -312,8 +338,13 @@ $(document).ready(function() {
             type: 'POST'
         },
         <?php else: ?>
-        data: [],
+        data: <?php echo json_encode(array_values($casesBlurData)); ?>,
         <?php endif; ?>
+        rowCallback: function(row, data) {
+            if (CASES_NEEDS_BLUR && parseFloat(data.reported_amount) > CASES_REPORTED_CAP) {
+                $(row).addClass('cases-row-blurred').attr('title', 'Upgrade erforderlich um diesen Fall zu sehen');
+            }
+        },
         columns: [
             { data: 'case_number' },
             { data: 'platform_name', render: d => d || 'N/A' },
@@ -389,7 +420,7 @@ $(document).ready(function() {
             }
         ],
         drawCallback: function() {
-            // No blur rows — table is always empty for non-paid users
+            // rowCallback handles blur — no extra work needed here
         }
     });
 
