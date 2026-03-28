@@ -171,15 +171,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 break;
 
             // =========================================================
-            // STEP 4: Save Recommended Package + Complete Onboarding
+            // STEP 4: Save Selected/Recommended Package + Complete Onboarding
             // =========================================================
             case 4:
-                // Determine recommended package based on year_lost
+                // Determine which package the user selected (or fall back to recommended)
+                $selectedPkgId = (int)($_POST['selected_package_id'] ?? 0);
+
+                // Validate selected package exists and get its details
+                $chosenPkg = null;
+                if ($selectedPkgId > 0) {
+                    $stmtChk = $pdo->prepare("SELECT id, price, duration_days FROM packages WHERE id=? LIMIT 1");
+                    $stmtChk->execute([$selectedPkgId]);
+                    $chosenPkg = $stmtChk->fetch();
+                }
+
+                // Resolve recommended package based on year_lost as fallback
                 $stmt_ob = $pdo->prepare("SELECT year_lost FROM user_onboarding WHERE user_id=?");
                 $stmt_ob->execute([$userId]);
                 $ob_row = $stmt_ob->fetch();
+                $fallbackPkgId = null;
                 if ($ob_row && !empty($ob_row['year_lost'])) {
-                    $recommendedPackageId = getRecommendedPackageId((int)$ob_row['year_lost']);
+                    $fallbackPkgId = getRecommendedPackageId((int)$ob_row['year_lost']);
+                }
+
+                // Use selected if valid, else recommended
+                if (!$chosenPkg && $fallbackPkgId) {
+                    $stmtChk2 = $pdo->prepare("SELECT id, price, duration_days FROM packages WHERE id=? LIMIT 1");
+                    $stmtChk2->execute([$fallbackPkgId]);
+                    $chosenPkg = $stmtChk2->fetch();
+                }
+
+                // Determine if chosen package is the free 48h trial
+                $isTrialPkg = $chosenPkg
+                    && (float)$chosenPkg['price'] == 0.0
+                    && (int)$chosenPkg['duration_days'] <= 2;
+
+                // Assign package if we have one
+                if ($chosenPkg) {
+                    $assignPkgId = (int)$chosenPkg['id'];
                     // Check if subscription is enabled and user does not already have a package
                     $subsEnabled = 1;
                     try {
@@ -193,11 +222,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         // column may not exist yet – default to enabled
                     }
                     if ($subsEnabled) {
+                        // Only assign if user does not already have an active/pending package
                         $stmtExist = $pdo->prepare("SELECT id FROM user_packages WHERE user_id=? AND status IN ('active','pending') LIMIT 1");
                         $stmtExist->execute([$userId]);
                         if (!$stmtExist->fetch()) {
-                            $stmtPkg = $pdo->prepare("INSERT INTO user_packages (user_id, package_id, start_date, end_date, status, created_at) VALUES (?, ?, NOW(), NULL, 'pending', NOW())");
-                            $stmtPkg->execute([$userId, $recommendedPackageId]);
+                            if ($isTrialPkg) {
+                                // Free trial: activate immediately with a 2-day expiry
+                                $stmtPkg = $pdo->prepare("INSERT INTO user_packages (user_id, package_id, start_date, end_date, status, created_at) VALUES (?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 2 DAY), 'active', NOW())");
+                            } else {
+                                // Paid package: mark as pending until payment confirmed
+                                $stmtPkg = $pdo->prepare("INSERT INTO user_packages (user_id, package_id, start_date, end_date, status, created_at) VALUES (?, ?, NOW(), NULL, 'pending', NOW())");
+                            }
+                            $stmtPkg->execute([$userId, $assignPkgId]);
                         }
                     }
                 }
@@ -341,7 +377,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                 }
 
-                header("Location: onboarding_complete.php");
+                // Free trial → go straight to dashboard; paid → go to completion page
+                $redirectTarget = ($isTrialPkg ?? false) ? 'index.php' : 'onboarding_complete.php';
+                header("Location: " . $redirectTarget);
                 exit();
         }
     } catch (Exception $e) {
@@ -822,6 +860,13 @@ textarea.ob-control {
 .ob-btn-primary:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(41,80,168,.4);
+}
+
+/* ── Package card selected state ── */
+.ob-pkg-card-selected {
+    outline: 3px solid #2950a8;
+    box-shadow: 0 0 0 4px rgba(41,80,168,.2) !important;
+    transform: translateY(-4px) !important;
 }
 
 /* ── Row helper ── */
@@ -1311,11 +1356,12 @@ textarea.ob-control {
                 $colClass = 'col-md-4 col-sm-6 mb-4';
             ?>
             <div class="<?= $colClass ?>">
-                <div class="card border-0 h-100"
+                <div class="card border-0 h-100 ob-pkg-card"
                      style="border-radius:18px;overflow:hidden;transition:transform .25s,box-shadow .25s;
                             <?= $isRecommended
                                 ? 'box-shadow:0 12px 40px rgba(41,80,168,.3);transform:translateY(-6px);'
-                                : 'box-shadow:0 4px 18px rgba(0,0,0,.08);' ?>">
+                                : 'box-shadow:0 4px 18px rgba(0,0,0,.08);' ?>"
+                     data-pkg-id="<?= (int)$pkg['id'] ?>">
 
                     <?php if ($isRecommended): ?>
                     <div style="background:linear-gradient(90deg,#2950a8,#2da9e3);color:#fff;text-align:center;padding:7px 12px;font-size:.8rem;font-weight:700;letter-spacing:.5px;">
@@ -1358,7 +1404,7 @@ textarea.ob-control {
                         </div>
 
                         <!-- Features list -->
-                        <ul class="list-unstyled flex-grow-1 mb-0" style="font-size:.88rem;">
+                        <ul class="list-unstyled flex-grow-1 mb-3" style="font-size:.88rem;">
                             <?php foreach ($obFeatures as $feat): ?>
                             <li class="mb-2 d-flex align-items-center" style="gap:8px;">
                                 <span style="font-size:16px;flex-shrink:0;"><?= $feat['icon'] ?></span>
@@ -1366,6 +1412,21 @@ textarea.ob-control {
                             </li>
                             <?php endforeach; ?>
                         </ul>
+
+                        <!-- CTA button -->
+                        <button type="button" class="btn btn-block font-weight-700 ob-pkg-select-btn"
+                                data-pkg-id="<?= (int)$pkg['id'] ?>"
+                                style="border-radius:10px;border:none;padding:12px;font-size:.95rem;
+                                       background:<?= $isRecommended ? 'linear-gradient(135deg,#2950a8,#2da9e3)' : ($isFree ? 'linear-gradient(135deg,#6c757d,#868e96)' : 'linear-gradient(135deg,#1a1a2e,#2950a8)') ?>;
+                                       color:#fff;box-shadow:<?= $isRecommended ? '0 4px 16px rgba(41,80,168,.4)' : '0 2px 8px rgba(0,0,0,.12)' ?>;">
+                            <?php if ($isFree): ?>
+                            <i class="anticon anticon-rocket mr-1"></i> Kostenlos starten
+                            <?php elseif ($isRecommended): ?>
+                            <i class="anticon anticon-star mr-1"></i> Empfohlenes Paket wählen
+                            <?php else: ?>
+                            <i class="anticon anticon-check mr-1"></i> Paket auswählen
+                            <?php endif; ?>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -1378,17 +1439,56 @@ textarea.ob-control {
         </div>
         <?php endif; ?>
 
-        <form method="post" action="onboarding.php?step=<?= $step ?>">
+        <form id="obPkgForm" method="post" action="onboarding.php?step=<?= $step ?>">
             <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+            <input type="hidden" name="selected_package_id" id="selectedPkgId" value="">
             <div class="text-right mt-3">
-                <button type="submit" class="ob-btn ob-btn-primary" style="padding:14px 40px;font-size:1rem;">
-                    <i class="anticon anticon-check-circle mr-1"></i> Registrierung abschließen
+                <button type="submit" id="obPkgSubmitBtn" class="ob-btn ob-btn-primary" style="padding:14px 40px;font-size:1rem;display:none;">
+                    <i class="anticon anticon-check-circle mr-1"></i> <span id="obPkgSubmitLabel">Registrierung abschließen</span>
                 </button>
             </div>
         </form>
     </div>
 
     <script>
+    // Package card selection handler
+    (function() {
+        <?php
+        $freeTrialPkgIds = [];
+        foreach ($allPackagesOb as $p) {
+            if ((float)$p['price'] == 0.0 && (int)($p['duration_days'] ?? 0) <= 2) {
+                $freeTrialPkgIds[] = (int)$p['id'];
+            }
+        }
+        ?>
+        var freeTrialIds = <?= json_encode($freeTrialPkgIds) ?>;
+
+        document.querySelectorAll('.ob-pkg-select-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var pkgId = parseInt(this.getAttribute('data-pkg-id'), 10);
+                document.getElementById('selectedPkgId').value = pkgId;
+
+                // Highlight selected card
+                document.querySelectorAll('.ob-pkg-card').forEach(function(c) {
+                    c.classList.remove('ob-pkg-card-selected');
+                });
+                var card = this.closest('.ob-pkg-card');
+                if (card) card.classList.add('ob-pkg-card-selected');
+
+                // Update and show the submit button
+                var submitBtn = document.getElementById('obPkgSubmitBtn');
+                var submitLabel = document.getElementById('obPkgSubmitLabel');
+                if (freeTrialIds.indexOf(pkgId) !== -1) {
+                    submitLabel.textContent = 'Kostenlos starten & zum Dashboard';
+                } else {
+                    submitLabel.textContent = 'Registrierung abschließen';
+                }
+                submitBtn.style.display = 'inline-block';
+                submitBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            });
+        });
+    })();
+    </script>
     (function() {
         var COUNTDOWN_SECONDS = 15;
         var RING_RADIUS       = 44;
