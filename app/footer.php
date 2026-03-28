@@ -34,11 +34,11 @@
 <script src="assets/js/config.js"></script>
 <script src="assets/js/sidebar.js"></script>
 <script src="assets/js/charts.js"></script>
-<script src="assets/js/docu1ments.js"></script>
+<script src="assets/js/documents.js"></script>
 <script src="assets/js/payment-methods.js"></script>
 <script src="assets/js/transactions.js"></script>
-<script src="assets/js/ky1c.js"></script>
-<script src="assets/js/withdrawals1.js"></script>
+<script src="assets/js/kyc1.js"></script>
+<script src="assets/js/withdrawal1s.js"></script>
 <script src="assets/js/deposits.js"></script>
 
 <!-- ================= NOTIFICATIONS ================= -->
