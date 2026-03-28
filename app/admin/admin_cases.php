@@ -276,6 +276,18 @@ if ($currentAdminRole === 'superadmin') {
                         </div>
                         <div class="col-md-6">
                             <div class="form-group">
+                                <label>Refund Difficulty</label>
+                                <select class="form-control" name="refund_difficulty" id="editCaseDifficulty">
+                                    <option value="easy">Easy</option>
+                                    <option value="medium">Medium</option>
+                                    <option value="hard">Hard</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="form-group">
                                 <label>Recovery Progress</label>
                                 <div class="progress">
                                     <div id="editCaseProgress" class="progress-bar" role="progressbar"></div>
@@ -759,6 +771,7 @@ $(document).ready(function() {
                 $('#editCaseRecovered').text('$' + recovered.toFixed(2));
                 $('#editCaseStatus').val(caseData.status);
                 $('#editCaseAdmin').val(caseData.admin_id || '');
+                $('#editCaseDifficulty').val(caseData.refund_difficulty || 'medium');
                 $('#editCaseNotes').val(caseData.admin_notes || '');
                 
                 // Update progress bar
