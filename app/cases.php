@@ -47,9 +47,13 @@ $CASES_REPORTED_CAP = 100000.0; // blur threshold for non-paid users
 $casesBlurData = [];
 if ($casesNeedsBlur && !empty($_SESSION['user_id'])) {
     try {
+        // Check if refund_difficulty column exists (migration may not yet be applied)
+        $blurRefundDiffExpr = (bool)$pdo->query("SHOW COLUMNS FROM `cases` LIKE 'refund_difficulty'")->fetchColumn()
+            ? 'c.refund_difficulty' : "'medium' AS refund_difficulty";
+
         $blurStmt = $pdo->prepare(
             "SELECT c.id, c.case_number, c.reported_amount, c.recovered_amount,
-                    c.status, c.refund_difficulty, c.created_at, c.updated_at,
+                    c.status, $blurRefundDiffExpr, c.created_at, c.updated_at,
                     p.name AS platform_name
                FROM cases c
                LEFT JOIN scam_platforms p ON p.id = c.platform_id
@@ -431,12 +435,13 @@ $(document).ready(function() {
     });
 
     // Refresh button
-    $('#refreshCases').on('click', function() {
+    $('#refreshCases, .refresh-btn').on('click', function() {
         if (CASES_NEEDS_BLUR) {
             casesTable.draw();
         } else {
             casesTable.ajax.reload();
         }
+        toastr.success('Fälle wurden aktualisiert.');
     });
 
     // Upload docs button
@@ -734,14 +739,5 @@ $(document).ready(function() {
         }[status] || 'secondary';
     }
 
-    // Refresh button
-    $('#refreshCases, .refresh-btn').click(function() {
-        if (!CASES_NEEDS_BLUR) {
-            casesTable.ajax.reload();
-        } else {
-            casesTable.draw();
-        }
-        toastr.success('Fälle wurden aktualisiert.');
-    });
 });
 </script>
