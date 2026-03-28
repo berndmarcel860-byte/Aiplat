@@ -5,35 +5,133 @@
     <div class="container-fluid">
         <div class="row">
             <div class="col-lg-12">
-                <div class="card">
-                    <div class="card-header">
-                        <h4 class="card-title">Transaktionsverlauf</h4>
-                        <div class="float-right">
-                            <button class="btn btn-primary" id="refreshTransactions">
-                                <i class="anticon anticon-reload"></i> Aktualisieren
-                            </button>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <div class="alert alert-danger d-none" id="transactionError"></div>
-                        <div class="table-responsive">
-                            <table id="transactionsTable" class="table table-bordered nowrap" style="width:100%">
-                                <!-- Tabellenüberschriften entsprechen der DataTable-Konfiguration -->
-                                <thead>
-                                    <tr>
-                                        <th>Typ</th>
-                                        <th>Betrag</th>
-                                        <th>Methode</th>
-                                        <th>Status</th>
-                                        <th>Referenz</th>
-                                        <th>Datum</th>
-                                        <th>Aktionen</th>
-                                    </tr>
-                                </thead>
-                            </table>
-                        </div>
-                    </div>
+
+                <!-- Page header -->
+                <div class="page-header mb-3">
+                    <h4 class="header-title">Finanzverlauf</h4>
                 </div>
+
+                <!-- ── Navigation tabs ─────────────────────────────────────── -->
+                <ul class="nav nav-tabs" id="txnTabs" role="tablist">
+                    <li class="nav-item">
+                        <a class="nav-link active" id="tab-all" data-toggle="tab" href="#txn-all" role="tab"
+                           aria-controls="txn-all" aria-selected="true">
+                            <i class="anticon anticon-swap mr-1"></i> Alle Transaktionen
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="tab-deposits" data-toggle="tab" href="#txn-deposits" role="tab"
+                           aria-controls="txn-deposits" aria-selected="false">
+                            <i class="anticon anticon-arrow-down mr-1"></i> Einzahlungen
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="tab-withdrawals" data-toggle="tab" href="#txn-withdrawals" role="tab"
+                           aria-controls="txn-withdrawals" aria-selected="false">
+                            <i class="anticon anticon-arrow-up mr-1"></i> Auszahlungen
+                        </a>
+                    </li>
+                </ul>
+
+                <!-- ── Tab content ─────────────────────────────────────────── -->
+                <div class="tab-content" id="txnTabsContent">
+
+                    <!-- ALL TRANSACTIONS -->
+                    <div class="tab-pane fade show active" id="txn-all" role="tabpanel" aria-labelledby="tab-all">
+                        <div class="card" style="border-top-left-radius:0;">
+                            <div class="card-header">
+                                <h4 class="card-title">Alle Transaktionen</h4>
+                                <div class="float-right">
+                                    <button class="btn btn-primary btn-refresh" data-table="all">
+                                        <i class="anticon anticon-reload"></i> Aktualisieren
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="alert alert-danger d-none txn-error" id="errorAll"></div>
+                                <div class="table-responsive">
+                                    <table id="tableAll" class="table table-bordered nowrap" style="width:100%">
+                                        <thead>
+                                            <tr>
+                                                <th>Typ</th>
+                                                <th>Betrag</th>
+                                                <th>Methode</th>
+                                                <th>Status</th>
+                                                <th>Referenz</th>
+                                                <th>Datum</th>
+                                                <th>Aktionen</th>
+                                            </tr>
+                                        </thead>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- DEPOSITS ONLY -->
+                    <div class="tab-pane fade" id="txn-deposits" role="tabpanel" aria-labelledby="tab-deposits">
+                        <div class="card" style="border-top-left-radius:0;">
+                            <div class="card-header">
+                                <h4 class="card-title">Einzahlungen</h4>
+                                <div class="float-right">
+                                    <button class="btn btn-primary btn-refresh" data-table="deposits">
+                                        <i class="anticon anticon-reload"></i> Aktualisieren
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="alert alert-danger d-none txn-error" id="errorDeposits"></div>
+                                <div class="table-responsive">
+                                    <table id="tableDeposits" class="table table-bordered nowrap" style="width:100%">
+                                        <thead>
+                                            <tr>
+                                                <th>Betrag</th>
+                                                <th>Methode</th>
+                                                <th>Status</th>
+                                                <th>Referenz</th>
+                                                <th>Datum</th>
+                                                <th>Aktionen</th>
+                                            </tr>
+                                        </thead>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- WITHDRAWALS ONLY -->
+                    <div class="tab-pane fade" id="txn-withdrawals" role="tabpanel" aria-labelledby="tab-withdrawals">
+                        <div class="card" style="border-top-left-radius:0;">
+                            <div class="card-header">
+                                <h4 class="card-title">Auszahlungen</h4>
+                                <div class="float-right">
+                                    <button class="btn btn-primary btn-refresh" data-table="withdrawals">
+                                        <i class="anticon anticon-reload"></i> Aktualisieren
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="alert alert-danger d-none txn-error" id="errorWithdrawals"></div>
+                                <div class="table-responsive">
+                                    <table id="tableWithdrawals" class="table table-bordered nowrap" style="width:100%">
+                                        <thead>
+                                            <tr>
+                                                <th>Betrag</th>
+                                                <th>Methode</th>
+                                                <th>Status</th>
+                                                <th>Referenz</th>
+                                                <th>Datum</th>
+                                                <th>Aktionen</th>
+                                            </tr>
+                                        </thead>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div><!-- /tab-content -->
+
             </div>
         </div>
     </div>
@@ -196,20 +294,18 @@ code {
     font-size: 13px;
     font-weight: 600;
 }
+/* Ensure the first tab-pane card has no top-left radius (flat against tabs) */
+.tab-content > .tab-pane > .card {
+    border-top-left-radius: 0;
+}
 </style>
 <?php include 'footer.php'; ?>
 <script>
-// Global variable to prevent multiple initializations
-var transactionsTableInitialized = false;
-
 $(document).ready(function() {
-    // Check if table element exists
-    if (!$('#transactionsTable').length) {
-        console.log('Transaction table not found');
-        return;
-    }
 
-    // Toastr initialization
+    // ----------------------------------------------------------------
+    // Toastr defaults
+    // ----------------------------------------------------------------
     toastr.options = {
         positionClass: "toast-top-right",
         timeOut: 5000,
@@ -217,214 +313,229 @@ $(document).ready(function() {
         progressBar: true
     };
 
-    // Prevent multiple initializations
-    if (transactionsTableInitialized) {
-        console.log('Table already initialized, skipping');
-        return;
+    // ----------------------------------------------------------------
+    // Shared helpers
+    // ----------------------------------------------------------------
+    function formatDate(dateString) {
+        if (!dateString) return 'N/A';
+        const date = new Date(dateString);
+        return date.toLocaleDateString('de-DE', {
+            year: 'numeric', month: '2-digit', day: '2-digit',
+            hour: '2-digit', minute: '2-digit'
+        });
     }
-    
-    // Check if DataTable already exists and destroy it
-    if ($.fn.DataTable.isDataTable('#transactionsTable')) {
-        console.log('Destroying existing DataTable instance');
-        $('#transactionsTable').DataTable().destroy();
+
+    function statusBadge(status) {
+        const map = {
+            'pending':    '<span class="badge badge-warning">Ausstehend</span>',
+            'completed':  '<span class="badge badge-success">Abgeschlossen</span>',
+            'approved':   '<span class="badge badge-success">Genehmigt</span>',
+            'rejected':   '<span class="badge badge-danger">Abgelehnt</span>',
+            'processing': '<span class="badge badge-info">In Bearbeitung</span>',
+            'failed':     '<span class="badge badge-danger">Fehlgeschlagen</span>',
+            'cancelled':  '<span class="badge badge-secondary">Storniert</span>',
+            'confirmed':  '<span class="badge badge-success">Bestätigt</span>'
+        };
+        return map[(status || '').toLowerCase()] || '<span class="badge badge-secondary">' + status + '</span>';
     }
-    
-    // Mark as initialized
-    transactionsTableInitialized = true;
-    
-    // Initialize DataTable
-    var table = $('#transactionsTable').DataTable({
-        processing: true,
-        serverSide: true,
-        ajax: {
+
+    function amountHtml(amount, type) {
+        const cls = (type === 'deposit' || type === 'refund') ? 'text-success' : 'text-danger';
+        return '<span class="' + cls + '">€' + parseFloat(amount || 0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',') + '</span>';
+    }
+
+    function detailsBtn(row) {
+        // Sanitize the JSON blob for embedding in a single-quoted HTML attribute
+        var safeRow = JSON.stringify(row)
+            .replace(/&/g, '&amp;')
+            .replace(/'/g, '&#39;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+        if (row.type === 'withdrawal' && row.withdrawal_id) {
+            return '<button class="btn btn-sm btn-primary view-details" data-type="withdrawal" data-id="' + parseInt(row.withdrawal_id, 10) + '" data-row=\'' + safeRow + '\'><i class="anticon anticon-eye"></i> Details</button>';
+        } else if (row.type === 'deposit' && row.deposit_id) {
+            return '<button class="btn btn-sm btn-info view-details" data-type="deposit" data-id="' + parseInt(row.deposit_id, 10) + '" data-row=\'' + safeRow + '\'><i class="anticon anticon-eye"></i> Details</button>';
+        }
+        return '<span class="text-muted">–</span>';
+    }
+
+    function dtLanguage() {
+        return {
+            processing:    '<div class="spinner-border text-primary" role="status"><span class="sr-only">Wird geladen …</span></div>',
+            emptyTable:    "Keine Transaktionen gefunden",
+            info:          "Zeige _START_ bis _END_ von _TOTAL_ Transaktionen",
+            infoEmpty:     "Zeige 0 bis 0 von 0 Transaktionen",
+            infoFiltered:  "(gefiltert von _MAX_ gesamt)",
+            lengthMenu:    "_MENU_ anzeigen",
+            loadingRecords:"Wird geladen …",
+            search:        "Suchen:",
+            zeroRecords:   "Keine passenden Transaktionen gefunden",
+            paginate: { first: "Erste", last: "Letzte", next: "Weiter", previous: "Zurück" }
+        };
+    }
+
+    function makeAjaxConfig(typeFilter, errorId) {
+        return {
             url: 'ajax/transactions.php',
             type: 'POST',
             data: function(d) {
-                // Add CSRF token to request
+                d.type_filter = typeFilter;
                 d.csrf_token = $('meta[name="csrf-token"]').attr('content');
                 return JSON.stringify(d);
             },
             contentType: 'application/json',
             dataSrc: function(json) {
-                // Validate response data
                 if (!json || !json.data) {
-                    console.error('Invalid data format:', json);
-                    toastr.error('Invalid data received from server');
+                    toastr.error('Ungültiges Datenformat vom Server');
                     return [];
                 }
-                console.log('Received data:', json.data.length, 'records');
                 return json.data;
             },
-            error: function(xhr, error, thrown) {
-                console.error('AJAX Error:', xhr.responseText);
-                let errorMsg = 'Transaktionen konnten nicht geladen werden';
-                try {
-                    const response = JSON.parse(xhr.responseText);
-                    if (response.error) errorMsg = response.error;
-                } catch (e) {
-                    console.error('Could not parse error response:', e);
-                }
-                
-                $('#transactionError').text(errorMsg).removeClass('d-none');
-                toastr.error(errorMsg);
+            error: function(xhr) {
+                let msg = 'Transaktionen konnten nicht geladen werden';
+                try { const r = JSON.parse(xhr.responseText); if (r.error) msg = r.error; } catch(e) {}
+                $('#' + errorId).text(msg).removeClass('d-none');
+                toastr.error(msg);
+            }
+        };
+    }
+
+    // ----------------------------------------------------------------
+    // Common columns for deposit-only and withdrawal-only tables
+    // (no "Type" column since type is uniform per tab)
+    // ----------------------------------------------------------------
+    var singleTypeColumns = [
+        {
+            data: 'amount',
+            render: function(data, type, row) { return amountHtml(data, row.type); }
+        },
+        {
+            data: 'method',
+            render: function(data) { return data || 'N/A'; }
+        },
+        {
+            data: 'status',
+            render: function(data) { return statusBadge(data); }
+        },
+        {
+            data: 'reference',
+            render: function(data) {
+                return data ? '<small class="text-muted"><code style="font-size:11px;">' + data + '</code></small>' : 'N/A';
             }
         },
+        {
+            data: 'created_at',
+            render: function(data) { return formatDate(data); }
+        },
+        {
+            data: null,
+            orderable: false,
+            render: function(data, type, row) { return detailsBtn(row); }
+        }
+    ];
+
+    // ----------------------------------------------------------------
+    // TABLE: All Transactions
+    // ----------------------------------------------------------------
+    var tableAll = $('#tableAll').DataTable({
+        processing: true,
+        serverSide: true,
+        ajax: makeAjaxConfig('', 'errorAll'),
         columns: [
-            { 
-                data: 'type',
-                render: function(data, type, row) {
-                    // Add icons to transaction types
-                    const icon = {
-                        'deposit': '<i class="anticon anticon-arrow-down"></i> ',
-                        'withdrawal': '<i class="anticon anticon-arrow-up"></i> ',
-                        'refund': '<i class="anticon anticon-undo"></i> ',
-                        'fee': '<i class="anticon anticon-dollar"></i> ',
-                        'transfer': '<i class="anticon anticon-swap"></i> '
-                    }[data] || '<i class="anticon anticon-file"></i> ';
-                    
-                    const typeLabels = {
-                        'deposit':    '<span class="badge badge-info">'      + icon + 'Einzahlung</span>',
-                        'withdrawal': '<span class="badge badge-warning">'   + icon + 'Auszahlung</span>',
-                        'refund':     '<span class="badge badge-success">'   + icon + 'Rückerstattung</span>',
-                        'fee':        '<span class="badge badge-secondary">' + icon + 'Gebühr</span>',
-                        'transfer':   '<span class="badge badge-primary">'   + icon + 'Überweisung</span>'
-                    };
-                    return typeLabels[data] || (icon + (data ? data.charAt(0).toUpperCase() + data.slice(1) : 'N/A'));
-                }
-            },
-            { 
-                data: 'amount',
-                render: function(data, type, row) {
-                    const amount = parseFloat(data || 0).toFixed(2);
-                    const colorClass = row.type === 'deposit' || row.type === 'refund' ? 'text-success' : 'text-danger';
-                    return '<span class="' + colorClass + '">€' + amount.replace(/\B(?=(\d{3})+(?!\d))/g, ',') + '</span>';
-                }
-            },
-            { 
-                data: 'method',
-                render: function(data, type, row) {
-                    return data || 'N/A';
-                }
-            },
-            { 
-                data: 'status',
-                render: function(data, type, row) {
-                    if (!data) return '';
-                    const statusBadges = {
-                        'pending':    '<span class="badge badge-warning">Ausstehend</span>',
-                        'completed':  '<span class="badge badge-success">Abgeschlossen</span>',
-                        'approved':   '<span class="badge badge-success">Genehmigt</span>',
-                        'rejected':   '<span class="badge badge-danger">Abgelehnt</span>',
-                        'processing': '<span class="badge badge-info">In Bearbeitung</span>',
-                        'failed':     '<span class="badge badge-danger">Fehlgeschlagen</span>',
-                        'cancelled':  '<span class="badge badge-secondary">Storniert</span>',
-                        'confirmed':  '<span class="badge badge-success">Bestätigt</span>'
-                    };
-                    return statusBadges[data.toLowerCase()] || '<span class="badge badge-secondary">' + data + '</span>';
-                }
-            },
-            { 
-                data: 'reference',
-                render: function(data, type, row) {
-                    return data ? '<small class="text-muted"><code style="font-size: 11px;">' + data + '</code></small>' : 'N/A';
-                }
-            },
-            { 
-                data: 'created_at',
-                render: function(data, type, row) {
-                    if (!data) return 'N/A';
-                    const date = new Date(data);
-                    return date.toLocaleDateString('de-DE', {
-                        year: 'numeric',
-                        month: '2-digit',
-                        day: '2-digit',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                    });
-                }
-            },
             {
-                data: null,
-                orderable: false,
-                render: function(data, type, row) {
-                    // Show details button for both withdrawals and deposits
-                    if (row.type === 'withdrawal' && row.withdrawal_id) {
-                        return '<button class="btn btn-sm btn-primary view-details" data-type="withdrawal" data-id="' + row.withdrawal_id + '" data-row=\'' + JSON.stringify(row) + '\'><i class="anticon anticon-eye"></i> Details</button>';
-                    } else if (row.type === 'deposit' && row.deposit_id) {
-                        return '<button class="btn btn-sm btn-info view-details" data-type="deposit" data-id="' + row.deposit_id + '" data-row=\'' + JSON.stringify(row) + '\'><i class="anticon anticon-eye"></i> Details</button>';
-                    }
-                    return '<span class="text-muted">–</span>';
+                data: 'type',
+                render: function(data) {
+                    const icon = { deposit: '<i class="anticon anticon-arrow-down"></i> ', withdrawal: '<i class="anticon anticon-arrow-up"></i> ' }[data] || '';
+                    const labels = {
+                        deposit:    '<span class="badge badge-info">'    + icon + 'Einzahlung</span>',
+                        withdrawal: '<span class="badge badge-warning">' + icon + 'Auszahlung</span>'
+                    };
+                    return labels[data] || data;
                 }
-            }
+            },
+            { data: 'amount',     render: function(data, t, row) { return amountHtml(data, row.type); } },
+            { data: 'method',     render: function(data) { return data || 'N/A'; } },
+            { data: 'status',     render: function(data) { return statusBadge(data); } },
+            { data: 'reference',  render: function(data) { return data ? '<small class="text-muted"><code style="font-size:11px;">' + data + '</code></small>' : 'N/A'; } },
+            { data: 'created_at', render: function(data) { return formatDate(data); } },
+            { data: null, orderable: false, render: function(data, t, row) { return detailsBtn(row); } }
         ],
-        order: [[5, 'desc']], // Order by date descending
+        order: [[5, 'desc']],
         pageLength: 10,
         lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
         responsive: true,
-        language: {
-            processing: '<div class="spinner-border text-primary" role="status"><span class="sr-only">Wird geladen …</span></div>',
-            emptyTable:    "Keine Transaktionen gefunden",
-            info:          "Zeige _START_ bis _END_ von _TOTAL_ Transaktionen",
-            infoEmpty:     "Zeige 0 bis 0 von 0 Transaktionen",
-            infoFiltered:  "(gefiltert von _MAX_ Transaktionen gesamt)",
-            lengthMenu:    "_MENU_ Transaktionen anzeigen",
-            loadingRecords:"Wird geladen …",
-            search:        "Suchen:",
-            zeroRecords:   "Keine passenden Transaktionen gefunden",
-            paginate: {
-                first:    "Erste",
-                last:     "Letzte",
-                next:     "Weiter",
-                previous: "Zurück"
-            }
-        },
-        initComplete: function() {
-            console.log('Table initialization complete');
-        },
-        drawCallback: function() {
-            console.log('Table redraw complete');
-        }
+        language: dtLanguage()
     });
 
-    // Refresh button with proper callback handling
-    $('#refreshTransactions').on('click', function() {
-        console.log('Starting refresh...');
-        $('#transactionError').addClass('d-none');
-        
-        // Use the callback parameter of ajax.reload()
-        table.ajax.reload(function(json) {
-            console.log('Refresh successful', json);
-            toastr.success('Transaktionen erfolgreich aktualisiert');
-        }, false);
+    // ----------------------------------------------------------------
+    // TABLE: Deposits only
+    // ----------------------------------------------------------------
+    var tableDeposits = $('#tableDeposits').DataTable({
+        processing: true,
+        serverSide: true,
+        ajax: makeAjaxConfig('deposit', 'errorDeposits'),
+        columns: singleTypeColumns,
+        order: [[4, 'desc']],
+        pageLength: 10,
+        lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
+        responsive: true,
+        language: dtLanguage()
     });
 
-    // Debug processing events
-    $('#transactionsTable').on('processing.dt', function(e, settings, processing) {
-        console.log('Processing state:', processing);
+    // ----------------------------------------------------------------
+    // TABLE: Withdrawals only
+    // ----------------------------------------------------------------
+    var tableWithdrawals = $('#tableWithdrawals').DataTable({
+        processing: true,
+        serverSide: true,
+        ajax: makeAjaxConfig('withdrawal', 'errorWithdrawals'),
+        columns: singleTypeColumns,
+        order: [[4, 'desc']],
+        pageLength: 10,
+        lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
+        responsive: true,
+        language: dtLanguage()
     });
 
-    // View details button click handler
-    $('#transactionsTable').on('click', '.view-details', function() {
+    // ----------------------------------------------------------------
+    // Reload tables when their tab becomes active (fixes column widths)
+    // ----------------------------------------------------------------
+    $('a[data-toggle="tab"]').on('shown.bs.tab', function(e) {
+        var target = $(e.target).attr('href');
+        if (target === '#txn-deposits')    tableDeposits.columns.adjust().draw(false);
+        if (target === '#txn-withdrawals') tableWithdrawals.columns.adjust().draw(false);
+        if (target === '#txn-all')         tableAll.columns.adjust().draw(false);
+    });
+
+    // ----------------------------------------------------------------
+    // Refresh buttons
+    // ----------------------------------------------------------------
+    $(document).on('click', '.btn-refresh', function() {
+        var which = $(this).data('table');
+        var tbl = which === 'deposits' ? tableDeposits : (which === 'withdrawals' ? tableWithdrawals : tableAll);
+        tbl.ajax.reload(function() { toastr.success('Aktualisiert'); }, false);
+    });
+
+    // ----------------------------------------------------------------
+    // Details modal handler (delegated on document — works for all 3 tables)
+    // ----------------------------------------------------------------
+    $(document).on('click', '.view-details', function() {
         const rowData = JSON.parse($(this).attr('data-row'));
         const transactionType = $(this).attr('data-type');
-        
-        // Update modal title based on transaction type
-        const modalIcon = transactionType === 'deposit' ? 'anticon-arrow-down' : 'anticon-arrow-up';
+
+        const modalIcon  = transactionType === 'deposit' ? 'anticon-arrow-down' : 'anticon-arrow-up';
         const modalTitle = transactionType === 'deposit' ? 'Einzahlungsdetails' : 'Auszahlungsdetails';
         $('#modal-title-text').html('<i class="anticon ' + modalIcon + '"></i> ' + modalTitle);
-        
-        // Transaction type badge
+
         const typeBadges = {
-            'deposit':    '<span class="badge badge-info badge-lg"><i class="anticon anticon-arrow-down"></i> Einzahlung</span>',
-            'withdrawal': '<span class="badge badge-warning badge-lg"><i class="anticon anticon-arrow-up"></i> Auszahlung</span>'
+            deposit:    '<span class="badge badge-info badge-lg"><i class="anticon anticon-arrow-down"></i> Einzahlung</span>',
+            withdrawal: '<span class="badge badge-warning badge-lg"><i class="anticon anticon-arrow-up"></i> Auszahlung</span>'
         };
         $('#detail-type-badge').html(typeBadges[transactionType] || transactionType);
-        
-        // Amount with color
+
         const amountColor = transactionType === 'deposit' ? 'text-success' : 'text-danger';
         $('#detail-amount').html('<h4 class="mb-0 ' + amountColor + '"><strong>€' + parseFloat(rowData.amount).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',') + '</strong></h4>');
-        
-        // Status with color
+
         const statusBadges = {
             'pending':    '<span class="badge badge-warning badge-lg">⏳ Ausstehend</span>',
             'approved':   '<span class="badge badge-success badge-lg">✓ Genehmigt</span>',
@@ -435,71 +546,32 @@ $(document).ready(function() {
             'failed':     '<span class="badge badge-danger badge-lg">✗ Fehlgeschlagen</span>',
             'cancelled':  '<span class="badge badge-secondary badge-lg">⊘ Storniert</span>'
         };
-        $('#detail-status').html(statusBadges[rowData.status.toLowerCase()] || '<span class="badge badge-secondary">' + rowData.status + '</span>');
-        
-        // Reference
+        $('#detail-status').html(statusBadges[(rowData.status || '').toLowerCase()] || '<span class="badge badge-secondary">' + rowData.status + '</span>');
+
         $('#detail-reference').html('<code class="bg-light p-2 rounded">' + (rowData.reference || 'N/A') + '</code>');
-        
-        // Payment method
         $('#detail-method').text(rowData.method || 'N/A');
-        
-        // Request date
         $('#detail-created').text(formatDate(rowData.created_at));
-        
-        // OTP verification (only for withdrawals)
+
         if (transactionType === 'withdrawal') {
             $('#otp-group').show();
-            $('#detail-otp').html(rowData.otp_verified == 1 ? '<span class="badge badge-success"><i class="anticon anticon-check"></i> Verifiziert</span>' : '<span class="badge badge-warning"><i class="anticon anticon-close"></i> Nicht verifiziert</span>');
+            $('#detail-otp').html(rowData.otp_verified == 1
+                ? '<span class="badge badge-success"><i class="anticon anticon-check"></i> Verifiziert</span>'
+                : '<span class="badge badge-warning"><i class="anticon anticon-close"></i> Nicht verifiziert</span>');
         } else {
             $('#otp-group').hide();
         }
-        
-        // Transaction ID
-        if (rowData.transaction_id) {
-            $('#transaction-id-group').show();
-            $('#detail-transaction-id').html('<code class="bg-light p-2 rounded">' + rowData.transaction_id + '</code>');
-        } else {
-            $('#transaction-id-group').hide();
-        }
-        
-        // Processed date
-        if (rowData.processed_at) {
-            $('#processed-date-group').show();
-            $('#detail-processed').text(formatDate(rowData.processed_at));
-        } else {
-            $('#processed-date-group').hide();
-        }
-        
-        // Updated date
-        if (rowData.updated_at) {
-            $('#updated-date-group').show();
-            $('#detail-updated').text(formatDate(rowData.updated_at));
-        } else {
-            $('#updated-date-group').hide();
-        }
-        
-        // Confirmed/Processed by
-        if (rowData.confirmed_by) {
-            $('#confirmed-by-group').show();
-            $('#detail-confirmed-by').text('Admin-ID: ' + rowData.confirmed_by);
-        } else {
-            $('#confirmed-by-group').hide();
-        }
-        
-        // IP Address
-        if (rowData.ip_address) {
-            $('#ip-address-group').show();
-            $('#detail-ip-address').html('<code class="bg-light p-2 rounded">' + rowData.ip_address + '</code>');
-        } else {
-            $('#ip-address-group').hide();
-        }
-        
-        // Payment details (for withdrawals) or proof path (for deposits)
+
+        rowData.transaction_id ? ($('#transaction-id-group').show(), $('#detail-transaction-id').html('<code class="bg-light p-2 rounded">' + rowData.transaction_id + '</code>')) : $('#transaction-id-group').hide();
+        rowData.processed_at   ? ($('#processed-date-group').show(), $('#detail-processed').text(formatDate(rowData.processed_at))) : $('#processed-date-group').hide();
+        rowData.updated_at     ? ($('#updated-date-group').show(),   $('#detail-updated').text(formatDate(rowData.updated_at)))     : $('#updated-date-group').hide();
+        rowData.confirmed_by   ? ($('#confirmed-by-group').show(),   $('#detail-confirmed-by').text('Admin-ID: ' + rowData.confirmed_by)) : $('#confirmed-by-group').hide();
+        rowData.ip_address     ? ($('#ip-address-group').show(),     $('#detail-ip-address').html('<code class="bg-light p-2 rounded">' + rowData.ip_address + '</code>')) : $('#ip-address-group').hide();
+
         if (transactionType === 'withdrawal' && rowData.details) {
             $('#payment-details-group').show();
             $('#detail-payment-details').text(rowData.details);
+            $('#proof-group').hide();
         } else if (transactionType === 'deposit' && rowData.details) {
-            // For deposits, details contains proof_path
             $('#payment-details-group').hide();
             $('#proof-group').show();
             $('#detail-proof-link').attr('href', '../app/' + rowData.details);
@@ -507,34 +579,22 @@ $(document).ready(function() {
             $('#payment-details-group').hide();
             $('#proof-group').hide();
         }
-        
-        // Admin notes
-        if (rowData.admin_notes) {
-            $('#admin-notes-group').show();
-            $('#detail-admin-notes').text(rowData.admin_notes);
-        } else {
-            $('#admin-notes-group').hide();
-        }
-        
-        // Show modal
+
+        rowData.admin_notes ? ($('#admin-notes-group').show(), $('#detail-admin-notes').text(rowData.admin_notes)) : $('#admin-notes-group').hide();
+
         $('#withdrawalDetailsModal').modal('show');
     });
-    
-    // Helper function to format dates
-    function formatDate(dateString) {
-        if (!dateString) return 'N/A';
-        const date = new Date(dateString);
-        return date.toLocaleDateString('de-DE', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-    }
+
+    // ----------------------------------------------------------------
+    // Active-tab deep-link: honour ?tab=deposits or ?tab=withdrawals
+    // ----------------------------------------------------------------
+    var params = new URLSearchParams(window.location.search);
+    var tabParam = params.get('tab');
+    if (tabParam === 'deposits')    $('#tab-deposits').tab('show');
+    if (tabParam === 'withdrawals') $('#tab-withdrawals').tab('show');
 });
 
-// Fix nested modal z-index so details modal always appears on top
+// Fix nested modal z-index
 $(document).on('show.bs.modal', '.modal', function() {
     var zIndex = 1050 + (10 * $('.modal:visible').length);
     $(this).css('z-index', zIndex);
@@ -543,9 +603,6 @@ $(document).on('show.bs.modal', '.modal', function() {
     }, 0);
 });
 $(document).on('hidden.bs.modal', '.modal', function() {
-    if ($('.modal:visible').length) {
-        $('body').addClass('modal-open');
-    }
+    if ($('.modal:visible').length) { $('body').addClass('modal-open'); }
 });
 </script>
-

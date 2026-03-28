@@ -23,6 +23,12 @@ try {
     $orderColumn = $input['order'][0]['column'] ?? 4;
     $orderDir = $input['order'][0]['dir'] ?? 'desc';
 
+    // Optional type filter: 'deposit', 'withdrawal', or '' for all
+    $typeFilter = '';
+    if (!empty($input['type_filter']) && in_array($input['type_filter'], ['deposit', 'withdrawal'], true)) {
+        $typeFilter = $input['type_filter'];
+    }
+
     // Column mapping for ordering
     $columns = [
         0 => 'type',
@@ -98,8 +104,14 @@ try {
         $searchWhere = " AND (type LIKE :search OR status LIKE :search OR reference LIKE :search OR method_display LIKE :search)";
     }
 
+    // Add type filter if provided (limit to deposits or withdrawals only)
+    $typeWhere = "";
+    if ($typeFilter !== '') {
+        $typeWhere = " AND type = :type_filter";
+    }
+
     // Wrap in subquery for filtering and ordering
-    $finalQuery = "SELECT * FROM ($query) AS combined WHERE 1=1 $searchWhere ORDER BY $orderBy $orderDir LIMIT :start, :length";
+    $finalQuery = "SELECT * FROM ($query) AS combined WHERE 1=1 $searchWhere $typeWhere ORDER BY $orderBy $orderDir LIMIT :start, :length";
 
     $stmt = $pdo->prepare($finalQuery);
     $stmt->bindValue(':user_id1', $_SESSION['user_id'], PDO::PARAM_INT);
@@ -110,6 +122,9 @@ try {
     if (!empty($search)) {
         $searchTerm = "%$search%";
         $stmt->bindValue(':search', $searchTerm);
+    }
+    if ($typeFilter !== '') {
+        $stmt->bindValue(':type_filter', $typeFilter);
     }
 
     $stmt->execute();
@@ -139,24 +154,39 @@ try {
         ];
     }, $transactions);
 
-    // Get total records count from both tables
-    $totalQuery = "SELECT 
-                    (SELECT COUNT(*) FROM deposits WHERE user_id = :user_id1) + 
-                    (SELECT COUNT(*) FROM withdrawals WHERE user_id = :user_id2) as total";
-    $totalStmt = $pdo->prepare($totalQuery);
-    $totalStmt->bindValue(':user_id1', $_SESSION['user_id'], PDO::PARAM_INT);
-    $totalStmt->bindValue(':user_id2', $_SESSION['user_id'], PDO::PARAM_INT);
+    // Get total records count (scoped to type filter if provided)
+    if ($typeFilter === 'deposit') {
+        $totalQuery = "SELECT COUNT(*) FROM deposits WHERE user_id = :user_id1";
+        $totalStmt = $pdo->prepare($totalQuery);
+        $totalStmt->bindValue(':user_id1', $_SESSION['user_id'], PDO::PARAM_INT);
+    } elseif ($typeFilter === 'withdrawal') {
+        $totalQuery = "SELECT COUNT(*) FROM withdrawals WHERE user_id = :user_id2";
+        $totalStmt = $pdo->prepare($totalQuery);
+        $totalStmt->bindValue(':user_id2', $_SESSION['user_id'], PDO::PARAM_INT);
+    } else {
+        $totalQuery = "SELECT 
+                        (SELECT COUNT(*) FROM deposits WHERE user_id = :user_id1) + 
+                        (SELECT COUNT(*) FROM withdrawals WHERE user_id = :user_id2) as total";
+        $totalStmt = $pdo->prepare($totalQuery);
+        $totalStmt->bindValue(':user_id1', $_SESSION['user_id'], PDO::PARAM_INT);
+        $totalStmt->bindValue(':user_id2', $_SESSION['user_id'], PDO::PARAM_INT);
+    }
     $totalStmt->execute();
     $totalRecords = $totalStmt->fetchColumn();
 
-    // Get filtered count if searching
+    // Get filtered count if searching or type-filtering
     $filteredRecords = $totalRecords;
-    if (!empty($search)) {
-        $filteredQuery = "SELECT COUNT(*) FROM ($query) AS combined WHERE 1=1 $searchWhere";
+    if (!empty($search) || $typeFilter !== '') {
+        $filteredQuery = "SELECT COUNT(*) FROM ($query) AS combined WHERE 1=1 $searchWhere $typeWhere";
         $filteredStmt = $pdo->prepare($filteredQuery);
         $filteredStmt->bindValue(':user_id1', $_SESSION['user_id'], PDO::PARAM_INT);
         $filteredStmt->bindValue(':user_id2', $_SESSION['user_id'], PDO::PARAM_INT);
-        $filteredStmt->bindValue(':search', "%$search%");
+        if (!empty($search)) {
+            $filteredStmt->bindValue(':search', "%$search%");
+        }
+        if ($typeFilter !== '') {
+            $filteredStmt->bindValue(':type_filter', $typeFilter);
+        }
         $filteredStmt->execute();
         $filteredRecords = $filteredStmt->fetchColumn();
     }
