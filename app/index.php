@@ -2213,7 +2213,10 @@ $TEST_PACKAGE_CASE_LIMIT = 2;
                                 <span>Keine aktiven Wiederherstellungsoperationen</span>
                             </div>
                         <?php else: ?>
-                                <?php foreach ($ongoingRecoveries as $recovery): 
+                                <?php $recoveryIndex = 0; foreach ($ongoingRecoveries as $recovery):
+                                    $recoveryIndex++;
+                                    $isRecoveryBlurred = ($needsPackageBlur && $recoveryIndex > $TEST_PACKAGE_CASE_LIMIT);
+
                                     $reported = (float)($recovery['reported_amount'] ?? 0);
                                     $recovered = (float)($recovery['recovered_amount'] ?? 0);
                                     $status = $recovery['status'] ?? 'open';
@@ -2234,6 +2237,35 @@ $TEST_PACKAGE_CASE_LIMIT = 2;
                                         $statusText = 'In Bearbeitung';
                                     }
                                 ?>
+                                <?php if ($isRecoveryBlurred): ?>
+                                <div class="m-b-25" style="position:relative;overflow:hidden;">
+                                    <!-- Blurred preview -->
+                                    <div style="-webkit-filter:blur(5px);filter:blur(5px);pointer-events:none;user-select:none;" aria-hidden="true">
+                                        <div class="d-flex justify-content-between m-b-5">
+                                            <div>
+                                                <span style="font-family:monospace;color:#2950a8;font-weight:600;">SCM-????-????</span>
+                                            </div>
+                                            <div class="text-right">
+                                                <span>██%</span>
+                                                <div class="text-secondary">████████████</div>
+                                            </div>
+                                        </div>
+                                        <div class="progress progress-sm">
+                                            <div class="progress-bar bg-secondary" style="width:60%;"></div>
+                                        </div>
+                                        <div class="d-flex justify-content-between m-t-10">
+                                            <small class="text-muted">Gemeldet: €██.███,██</small>
+                                            <small class="text-muted">Zurückgewonnen: €██.███,██</small>
+                                        </div>
+                                    </div>
+                                    <!-- Upgrade overlay -->
+                                    <div style="position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;z-index:5;background:rgba(255,255,255,0.65);">
+                                        <a href="packages.php" class="btn btn-sm btn-warning font-weight-600" style="border-radius:8px;font-size:.8rem;box-shadow:0 2px 8px rgba(255,193,7,.4);">
+                                            <i class="anticon anticon-lock mr-1"></i>Jetzt upgraden um alle Fälle zu sehen
+                                        </a>
+                                    </div>
+                                </div>
+                                <?php else: ?>
                                 <div class="m-b-25">
                                     <div class="d-flex justify-content-between m-b-5">
                                         <div>
@@ -2266,6 +2298,7 @@ $TEST_PACKAGE_CASE_LIMIT = 2;
                                         </small>
                                     </div>
                                 </div>
+                                <?php endif; ?>
                                 <?php endforeach; ?>
                                 
                                 <div class="text-center mt-3 mb-1">
