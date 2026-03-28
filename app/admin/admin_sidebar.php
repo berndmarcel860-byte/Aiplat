@@ -75,7 +75,7 @@
                     </ul>
                 </li>
                 
-                <li class="nav-item dropdown <?= in_array(basename($_SERVER['PHP_SELF']), ['admin_transactions.php', 'admin_deposits.php', 'admin_withdrawals.php']) ? 'open' : '' ?>">
+                <li class="nav-item dropdown <?= in_array(basename($_SERVER['PHP_SELF']), ['admin_transactions.php', 'admin_deposits.php', 'admin_withdrawals.php', 'admin_package_payments.php']) ? 'open' : '' ?>">
                     <a class="dropdown-toggle" href="javascript:void(0);" data-toggle="financials">
                         <span class="icon-holder"><i class="anticon anticon-dollar"></i></span>
                         <span class="title">Financial Management</span>
@@ -84,7 +84,12 @@
                     <ul class="dropdown-menu">
                         <li class="<?= basename($_SERVER['PHP_SELF']) == 'admin_transactions.php' ? 'active' : '' ?>">
                             <a href="admin_transactions.php" data-page="transactions">
-                                <i class="anticon anticon-transaction"></i> All Transactions
+                                <i class="anticon anticon-transaction"></i> User Transactions
+                            </a>
+                        </li>
+                        <li class="<?= basename($_SERVER['PHP_SELF']) == 'admin_package_payments.php' ? 'active' : '' ?>">
+                            <a href="admin_package_payments.php" data-page="package-payments">
+                                <i class="anticon anticon-gift"></i> Package Payments
                             </a>
                         </li>
                         <li class="<?= basename($_SERVER['PHP_SELF']) == 'admin_deposits.php' ? 'active' : '' ?>">

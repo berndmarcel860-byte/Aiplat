@@ -58,21 +58,32 @@ try {
     $newStatus = $data['status'];
     
     // Update case
+    $allowedDifficulties = ['easy', 'medium', 'hard'];
+    $refundDifficulty = (!empty($data['refund_difficulty']) && in_array($data['refund_difficulty'], $allowedDifficulties))
+        ? $data['refund_difficulty']
+        : null;
+
     $stmt = $pdo->prepare("
         UPDATE cases SET
             status = :status,
             admin_notes = :admin_notes,
-            admin_id = :admin_id,
+            admin_id = :admin_id"
+        . ($refundDifficulty !== null ? ", refund_difficulty = :refund_difficulty" : "") . ",
             updated_at = NOW()
         WHERE id = :case_id
     ");
-    
-    $stmt->execute([
+
+    $params = [
         ':status' => $newStatus,
         ':admin_notes' => $data['admin_notes'] ?? null,
         ':admin_id' => $data['admin_id'] ?? $_SESSION['admin_id'],
         ':case_id' => $data['case_id']
-    ]);
+    ];
+    if ($refundDifficulty !== null) {
+        $params[':refund_difficulty'] = $refundDifficulty;
+    }
+
+    $stmt->execute($params);
     
     // Record status change if different
     if ($currentStatus != $newStatus) {

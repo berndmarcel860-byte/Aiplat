@@ -71,8 +71,8 @@ class AdminEmailHelper {
         $stmt = $pdo->query("SELECT * FROM system_settings WHERE id = 1");
         $settings = $stmt->fetch(PDO::FETCH_ASSOC);
         
-        $this->siteUrl = $settings['site_url'] ?? 'https://cryptofinanze.de';
-        $this->brandName = $settings['brand_name'] ?? 'CryptoFinanz';
+        $this->siteUrl = $settings['site_url'] ?? '';
+        $this->brandName = $settings['brand_name'] ?? '';
     }
     
     /**
@@ -219,12 +219,12 @@ class AdminEmailHelper {
                 'site_name' => htmlspecialchars($settings['brand_name'] ?? $this->brandName),
                 'brand_name' => htmlspecialchars($settings['brand_name'] ?? $this->brandName),
                 'site_url' => htmlspecialchars($settings['site_url'] ?? $this->siteUrl),
-                'contact_email' => htmlspecialchars($settings['contact_email'] ?? 'info@cryptofinanze.de'),
+                'contact_email' => htmlspecialchars($settings['contact_email'] ?? ''),
                 'contact_phone' => htmlspecialchars($settings['contact_phone'] ?? ''),
-                'company_address' => htmlspecialchars($settings['company_address'] ?? 'Davidson House Forbury Square, Reading, RG1 3EU, UNITED KINGDOM'),
-                'fca_reference_number' => htmlspecialchars($settings['fca_reference_number'] ?? '910584'),
-                'fca_reference' => htmlspecialchars($settings['fca_reference_number'] ?? '910584'),
-                'logo_url' => htmlspecialchars($settings['logo_url'] ?? 'https://novalnet-ai.de/assets/img/logo.png'),
+                'company_address' => htmlspecialchars($settings['company_address'] ?? ''),
+                'fca_reference_number' => htmlspecialchars($settings['fca_reference_number'] ?? ''),
+                'fca_reference' => htmlspecialchars($settings['fca_reference_number'] ?? ''),
+                'logo_url' => htmlspecialchars($settings['logo_url'] ?? ''),
                 
                 // Bank account (6 variables)
                 'has_bank_account' => $bankAccount ? 'yes' : 'no',
@@ -256,7 +256,7 @@ class AdminEmailHelper {
                 'current_time'  => date('H:i'),
                 'dashboard_url' => rtrim(htmlspecialchars($settings['site_url'] ?? $this->siteUrl), '/') . '/app/index.php',
                 'login_url'     => rtrim(htmlspecialchars($settings['site_url'] ?? $this->siteUrl), '/') . '/login.php',
-                'support_email' => htmlspecialchars($settings['contact_email'] ?? 'info@cryptofinanze.de'),
+                'support_email' => htmlspecialchars($settings['contact_email'] ?? ''),
 
                 // Aliases and extra variables used by email_notifications templates
                 'platform_name'    => htmlspecialchars($settings['brand_name'] ?? $this->brandName),
@@ -335,10 +335,10 @@ class AdminEmailHelper {
         $lastName = $variables['last_name'] ?? '';
         $brandName = $variables['brand_name'] ?? $this->brandName;
         $siteUrl = $variables['site_url'] ?? $this->siteUrl;
-        $contactEmail = $variables['contact_email'] ?? 'info@cryptofinanze.de';
-        $companyAddress = $variables['company_address'] ?? 'Davidson House Forbury Square, Reading, RG1 3EU, UNITED KINGDOM';
-        $fcaReference = $variables['fca_reference_number'] ?? '910584';
-        $logoUrl = $variables['logo_url'] ?? 'https://kryptox.co.uk/assets/img/logo.png';
+        $contactEmail = $variables['contact_email'] ?? '';
+        $companyAddress = $variables['company_address'] ?? '';
+        $fcaReference = $variables['fca_reference_number'] ?? '';
+        $logoUrl = $variables['logo_url'] ?? '';
         
         // Check if template has custom header (marked with <!-- CUSTOM_HEADER -->)
         $hasCustomHeader = (strpos($body, '<!-- CUSTOM_HEADER -->') !== false);

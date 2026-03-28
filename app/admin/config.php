@@ -1,17 +1,16 @@
 <?php
 error_reporting(E_ALL);
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
+ini_set('display_errors', 0);
+ini_set('display_startup_errors', 0);
 
-// Database configuration
-$host = 'localhost';
-$dbname = 'novalnet-ai';
-$username = 'novalnet';
-$password = 'BXTrpD5Dk5@@';
-
-// Error reporting
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
+// Database configuration — use environment variables (never hard-code credentials)
+$host     = getenv('DB_HOST')     ?: 'localhost';
+$dbname   = getenv('DB_NAME')     ?: 'novalnet-ai';
+$username = getenv('DB_USER')     ?: 'novalnet';
+$password = getenv('DB_PASSWORD') ?: '';
+if ($password === '') {
+    error_log('WARNING: DB_PASSWORD environment variable is not set');
+}
 
 try {
     // Create PDO instance
@@ -23,7 +22,8 @@ try {
     $pdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
     
 } catch (PDOException $e) {
-    die("Database connection failed: " . $e->getMessage());
+    error_log("Database connection failed: " . $e->getMessage());
+    die("A database error occurred. Please try again later.");
 }
 
 // Set application timezone — adjust APP_TIMEZONE env var or edit this value to match your server location

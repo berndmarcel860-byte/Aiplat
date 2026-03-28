@@ -127,9 +127,28 @@ if (!empty($userId)) {
         $ongoingStmt->execute([$userId]);
         $ongoingRecoveries = $ongoingStmt->fetchAll(PDO::FETCH_ASSOC);
 
-        // Transactions
-        $transactionsStmt = $pdo->prepare("SELECT t.*, CASE WHEN t.case_id IS NOT NULL THEN c.case_number ELSE 'System' END as reference_name FROM transactions t LEFT JOIN cases c ON t.case_id = c.id WHERE t.user_id = ? ORDER BY t.created_at DESC LIMIT 5");
-        $transactionsStmt->execute([$userId]);
+        // Transactions - unified view from deposits, withdrawals, and package_payments
+        $transactionsStmt = $pdo->prepare("
+            SELECT id, 'deposit' AS type, amount, status, reference, created_at,
+                   method_code AS reference_name, NULL AS case_id
+            FROM deposits
+            WHERE user_id = ?
+            UNION ALL
+            SELECT id, 'withdrawal' AS type, amount, status, reference, created_at,
+                   method_code AS reference_name, NULL AS case_id
+            FROM withdrawals
+            WHERE user_id = ?
+            UNION ALL
+            SELECT pp.id, 'deposit' AS type, pp.amount, pp.status, pp.reference, pp.created_at,
+                   COALESCE(CONCAT('Paket: ', p.name), pp.payment_method, 'Paket') AS reference_name,
+                   NULL AS case_id
+            FROM package_payments pp
+            LEFT JOIN packages p ON pp.package_id = p.id
+            WHERE pp.user_id = ?
+            ORDER BY created_at DESC
+            LIMIT 5
+        ");
+        $transactionsStmt->execute([$userId, $userId, $userId]);
         $transactions = $transactionsStmt->fetchAll(PDO::FETCH_ASSOC);
 
         // Status counts
@@ -200,6 +219,76 @@ try {
     error_log("dashboard_theme fetch: " . $e->getMessage());
 }
 $dashboardThemeSafe = htmlspecialchars($dashboardTheme, ENT_QUOTES, 'UTF-8');
+
+// ── Package / Subscription Status ───────────────────────────────────────────
+$subscriptionEnabled = false;
+$userPackageInfo     = null;
+$isTestPackage             = false;   // true if user has a free/test package (price=0)
+$hasActivePaidSubscription = false;   // true if user has a non-test, non-expired active package
+try {
+    $subStmt = $pdo->query("SELECT subscription_enabled FROM system_settings WHERE id = 1 LIMIT 1");
+    $subRow  = $subStmt->fetch(PDO::FETCH_ASSOC);
+    if ($subRow !== false && isset($subRow['subscription_enabled'])) {
+        $subscriptionEnabled = (bool)$subRow['subscription_enabled'];
+    }
+} catch (PDOException $e) {
+    // Column not yet migrated – treat as disabled
+}
+if ($subscriptionEnabled && !empty($userId)) {
+    try {
+        $pkgStmt = $pdo->prepare(
+            "SELECT up.id, up.status, up.end_date, up.package_id,
+                    p.name AS package_name, p.price
+               FROM user_packages up
+               JOIN packages p ON p.id = up.package_id
+              WHERE up.user_id = ?
+              ORDER BY up.created_at DESC
+              LIMIT 1"
+        );
+        $pkgStmt->execute([$userId]);
+        $userPackageInfo = $pkgStmt->fetch(PDO::FETCH_ASSOC);
+
+        // Auto-correct status: if end_date is set and has passed, treat as expired
+        if ($userPackageInfo
+            && $userPackageInfo['status'] === 'active'
+            && !empty($userPackageInfo['end_date'])
+            && strtotime($userPackageInfo['end_date']) < time()
+        ) {
+            $userPackageInfo['status'] = 'expired';
+            // Silently update the DB row so admin panel is consistent
+            try {
+                $pdo->prepare("UPDATE user_packages SET status = 'expired' WHERE id = ?")
+                    ->execute([$userPackageInfo['id']]);
+            } catch (PDOException $e) { /* best-effort */ }
+        }
+
+        // Determine package tier
+        if ($userPackageInfo && $userPackageInfo['status'] === 'active') {
+            $isTestPackage = ((float)$userPackageInfo['price'] == 0.0);
+            $hasActivePaidSubscription = !$isTestPackage;
+        }
+    } catch (PDOException $e) {
+        // packages / user_packages table not yet available
+    }
+}
+
+// Blur is needed for: active test/trial package OR expired/cancelled package OR no package at all
+$isExpiredPackage = $userPackageInfo
+    && in_array($userPackageInfo['status'], ['expired', 'cancelled']);
+
+// A user needs content blurred when subscription is on and they don't have an active paid plan
+$needsPackageBlur = $subscriptionEnabled && !$hasActivePaidSubscription;
+
+// Cap recovered amount for test-package or expired-package users
+$TEST_PACKAGE_RECOVERED_CAP = 100000.0; // €100k display cap for free/test/expired packages
+$recoveredTotalDisplay = $recoveredTotal ?? 0.0;
+$recoveredCapReached   = false;
+if ($needsPackageBlur && $recoveredTotalDisplay > $TEST_PACKAGE_RECOVERED_CAP) {
+    $recoveredCapReached   = true;
+    $recoveredTotalDisplay = $TEST_PACKAGE_RECOVERED_CAP;
+}
+// Show only first 2 cases; blur the rest for trial/expired/no-subscription users
+$TEST_PACKAGE_CASE_LIMIT = 2;
 ?>
 <?php if ($passwordChangeRequired): ?>
 
@@ -1204,6 +1293,81 @@ $dashboardThemeSafe = htmlspecialchars($dashboardTheme, ENT_QUOTES, 'UTF-8');
         </div>
         <?php endif; ?>
 
+        <!-- PACKAGE STATUS ALERT (shown when subscription feature is enabled) -->
+        <?php if ($subscriptionEnabled): ?>
+        <div class="row mb-4">
+            <div class="col-12">
+                <?php if ($userPackageInfo && $userPackageInfo['status'] === 'active'): ?>
+                <div class="card border-0 shadow-sm" style="border-left:4px solid #28a745;">
+                    <div class="card-body py-3">
+                        <div class="d-flex align-items-center flex-wrap" style="gap:14px;">
+                            <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#28a745,#20c997);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">⭐</div>
+                            <div class="flex-grow-1">
+                                <div class="font-weight-bold" style="color:#2c3e50;">
+                                    <?= htmlspecialchars($userPackageInfo['package_name']) ?> – Aktiv
+                                </div>
+                                <div style="font-size:.85rem;color:#6c757d;">
+                                    <?= !empty($userPackageInfo['end_date']) ? 'Läuft ab: ' . date('d.m.Y', strtotime($userPackageInfo['end_date'])) : 'Unbefristetes Paket' ?>
+                                </div>
+                            </div>
+                            <a href="packages.php" class="btn btn-sm btn-outline-success font-weight-600" style="border-radius:8px;">
+                                <i class="anticon anticon-eye mr-1"></i>Paket ansehen
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <?php elseif ($userPackageInfo && $userPackageInfo['status'] === 'pending'): ?>
+                <div class="card border-0 shadow-sm" style="border-left:4px solid #ffc107;">
+                    <div class="card-body py-3">
+                        <div class="d-flex align-items-center flex-wrap" style="gap:14px;">
+                            <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#ffc107,#ffdb4d);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">⏳</div>
+                            <div class="flex-grow-1">
+                                <div class="font-weight-bold" style="color:#2c3e50;">
+                                    <?= htmlspecialchars($userPackageInfo['package_name']) ?> – Wird aktiviert
+                                </div>
+                                <div style="font-size:.85rem;color:#6c757d;">Ihr Paket wartet auf Freischaltung durch unser Team.</div>
+                            </div>
+                            <a href="packages.php" class="btn btn-sm btn-outline-warning font-weight-600" style="border-radius:8px;">
+                                <i class="anticon anticon-info-circle mr-1"></i>Details
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <?php elseif ($userPackageInfo && in_array($userPackageInfo['status'], ['expired','cancelled'])): ?>
+                <div class="card border-0 shadow-sm" style="border-left:4px solid #dc3545;">
+                    <div class="card-body py-3">
+                        <div class="d-flex align-items-center flex-wrap" style="gap:14px;">
+                            <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#dc3545,#e74c3c);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;color:#fff;">✕</div>
+                            <div class="flex-grow-1">
+                                <div class="font-weight-bold" style="color:#2c3e50;">Kein aktives Paket</div>
+                                <div style="font-size:.85rem;color:#6c757d;">Ihr <?= htmlspecialchars($userPackageInfo['package_name']) ?>-Paket ist <?= $userPackageInfo['status'] === 'expired' ? 'abgelaufen' : 'gekündigt' ?>.</div>
+                            </div>
+                            <a href="packages.php" class="btn btn-sm btn-danger font-weight-600" style="border-radius:8px;">
+                                <i class="anticon anticon-shopping mr-1"></i>Paket erneuern
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <?php else: ?>
+                <div class="card border-0 shadow-sm" style="border-left:4px solid #6c757d;">
+                    <div class="card-body py-3">
+                        <div class="d-flex align-items-center flex-wrap" style="gap:14px;">
+                            <div style="width:40px;height:40px;border-radius:50%;background:#e9ecef;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">📦</div>
+                            <div class="flex-grow-1">
+                                <div class="font-weight-bold" style="color:#2c3e50;">Kein Paket vorhanden</div>
+                                <div style="font-size:.85rem;color:#6c757d;">Sie haben noch kein Wiederherstellungspaket. Wählen Sie jetzt ein Paket, um loszulegen.</div>
+                            </div>
+                            <a href="packages.php" class="btn btn-sm btn-primary font-weight-600" style="border-radius:8px;">
+                                <i class="anticon anticon-shopping mr-1"></i>Paket auswählen
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <?php endif; ?>
+            </div>
+        </div>
+        <?php endif; ?>
+
         <!-- INFO MODALS -->
         <!-- KYC Info Modal -->
    <div class="modal fade" id="kycInfoModal" tabindex="-1" role="dialog" aria-labelledby="kycInfoModalLabel" aria-hidden="true">
@@ -1636,53 +1800,95 @@ $dashboardThemeSafe = htmlspecialchars($dashboardTheme, ENT_QUOTES, 'UTF-8');
                                 <div style="width:44px;height:44px;border-radius:10px;background:rgba(255,255,255,0.18);display:flex;align-items:center;justify-content:center;font-size:20px;color:#fff;" aria-hidden="true">
                                     <i class="anticon anticon-check-circle"></i>
                                 </div>
-                                <?php if ($stats['total_recovered'] > 0): ?>
                                 <span class="badge" style="font-size:11px;background:rgba(255,255,255,0.18);color:#fff;border-radius:20px;padding:4px 10px;">
-                                    <i class="anticon anticon-rise mr-1"></i><?= $recoveryPercentage ?>% Erfolg
+                                    <?php if ($recoveredCapReached): ?>
+                                        <i class="anticon anticon-lock mr-1"></i>Test-Limit
+                                    <?php elseif ($stats['total_recovered'] > 0): ?>
+                                        <i class="anticon anticon-rise mr-1"></i><?= $recoveryPercentage ?>% Erfolg
+                                    <?php endif; ?>
                                 </span>
-                                <?php endif; ?>
                             </div>
-                            <h2 class="mb-0 mt-2 font-weight-bold count money" data-value="<?= htmlspecialchars($stats['total_recovered'], ENT_QUOTES) ?>" style="color:#fff;font-size:1.7rem;">
-                                €<?= number_format($stats['total_recovered'], 2) ?>
+                            <h2 class="mb-0 mt-2 font-weight-bold count money" data-value="<?= htmlspecialchars($recoveredTotalDisplay, ENT_QUOTES) ?>" style="color:#fff;font-size:1.7rem;">
+                                €<?= number_format($recoveredTotalDisplay, 2) ?>
+                                <?php if ($recoveredCapReached): ?>
+                                <span style="font-size:.85rem;opacity:.8;">+</span>
+                                <?php endif; ?>
                             </h2>
                         </div>
                         <div class="px-3 py-2">
                             <p class="mb-0 font-weight-600" style="font-size:13px;color:#2c3e50;">Zurückgewonnen</p>
+                            <?php if ($recoveredCapReached): ?>
+                            <small class="text-warning font-weight-600"><i class="anticon anticon-lock mr-1"></i>Test-Limit erreicht – weitere Gelder verfügbar</small>
+                            <?php else: ?>
                             <small class="text-muted">Erfolgreich wiederhergestellte Gelder</small>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- AI Algorithm Live Monitor -->
+        <?php if ($recoveredCapReached): ?>
+        <!-- Package Restriction Alert -->
+        <div class="row mb-3">
+            <div class="col-12">
+                <div class="alert border-0 d-flex align-items-start" role="alert"
+                     style="background:linear-gradient(135deg,rgba(255,193,7,.15),rgba(255,152,0,.08));border-left:4px solid #ffc107 !important;border-radius:10px;gap:14px;">
+                    <div style="font-size:24px;flex-shrink:0;">🔒</div>
+                    <div class="flex-grow-1">
+                        <strong style="color:#856404;"><?= $isExpiredPackage ? 'Paket abgelaufen – weitere Gelder warten auf Sie!' : 'Test-Limit erreicht – weitere Gelder zurückgewonnen!' ?></strong>
+                        <p class="mb-0 mt-1" style="font-size:.88rem;color:#856404;">
+                            Unser System hat mehr als <strong>€<?= number_format($recoveredTotal, 2) ?></strong> für Sie gefunden,
+                            aber <?= $isExpiredPackage ? 'Ihr abgelaufenes Paket' : 'Ihr aktuelles Test-Paket' ?> zeigt nur bis zu <strong>€<?= number_format($TEST_PACKAGE_RECOVERED_CAP, 0) ?></strong> an.
+                            Upgraden Sie jetzt, um Zugang zu allen zurückgewonnenen Geldern zu erhalten.
+                        </p>
+                    </div>
+                    <a href="packages.php" class="btn btn-warning btn-sm font-weight-600 flex-shrink-0" style="border-radius:8px;white-space:nowrap;">
+                        <i class="anticon anticon-rise mr-1"></i>Jetzt upgraden
+                    </a>
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
+
+        <!-- AI Algorithm Live Monitor — Enhanced -->
         <div class="row mt-3 mb-4">
             <div class="col-12">
                 <div class="card border-0 shadow-sm" id="aiAlgoMonitorCard" style="border-radius:16px;overflow:hidden;">
-                    <div class="card-header d-flex flex-wrap align-items-center justify-content-between py-3 px-4" style="background:linear-gradient(90deg,#0f172a 0%,#1e3a5f 60%,#1a4480 100%);border:none;">
-                        <div class="d-flex align-items-center gap-3">
+
+                    <!-- Header -->
+                    <div class="card-header d-flex flex-wrap align-items-center justify-content-between py-3 px-4" style="background:linear-gradient(90deg,#0a0f1e 0%,#0f172a 40%,#1a2744 100%);border:none;">
+                        <div class="d-flex align-items-center" style="gap:14px;">
                             <div class="ai-algo-pulse-wrap" aria-hidden="true">
                                 <div class="ai-algo-pulse"></div>
                                 <div class="ai-algo-pulse-core"><i class="anticon anticon-robot" style="font-size:1.25rem;color:#38bdf8;"></i></div>
                             </div>
                             <div>
-                                <h5 class="mb-0 text-white font-weight-bold" style="font-size:1rem;letter-spacing:.3px;">
-                                    KI-Algorithmus – Live Monitor
-                                </h5>
-                                <div style="font-size:.75rem;color:#94a3b8;margin-top:.1rem;">
-                                    <span id="aiAlgoStatusDot" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#4ade80;margin-right:.35rem;vertical-align:middle;animation:aiDotPulse 1.4s ease-in-out infinite;"></span>
-                                    Echtzeit-Transaktionsanalyse aktiv
+                                <div class="d-flex align-items-center" style="gap:8px;">
+                                    <h5 class="mb-0 font-weight-bold" style="font-size:.95rem;letter-spacing:.04em;color:#e2e8f0;">
+                                        KI-ALGORITHMUS &mdash; LIVE SCANNER
+                                    </h5>
+                                    <span class="ai-searching-badge"><span class="dot"></span>AKTIV</span>
+                                </div>
+                                <div style="font-size:.72rem;color:#64748b;margin-top:.2rem;font-family:'Courier New',monospace;">
+                                    v4.2.1 &bull; Blockchain-Analyse &bull; Transaktions-Tracking &bull; Fallüberwachung
                                 </div>
                             </div>
                         </div>
-                        <div class="d-flex gap-3 mt-2 mt-md-0" id="aiAlgoCounters">
+
+                        <!-- Counters -->
+                        <div class="d-flex mt-2 mt-md-0" style="gap:6px;" id="aiAlgoCounters">
                             <div class="ai-algo-counter-box" title="Transactions Checked">
                                 <div class="ai-algo-counter-val" id="aiTxnChecked">0</div>
                                 <div class="ai-algo-counter-lbl">Geprüft</div>
                             </div>
                             <div class="ai-algo-counter-box" title="Transactions Found">
-                                <div class="ai-algo-counter-val text-success" id="aiTxnFound">0</div>
+                                <div class="ai-algo-counter-val" id="aiTxnFound" style="color:#4ade80;">0</div>
                                 <div class="ai-algo-counter-lbl">Gefunden</div>
+                            </div>
+                            <div class="ai-algo-counter-box" title="Cases Scanned">
+                                <div class="ai-algo-counter-val" id="aiCasesScanned" style="color:#818cf8;">0</div>
+                                <div class="ai-algo-counter-lbl">Fälle</div>
                             </div>
                             <div class="ai-algo-counter-box" title="Scan Accuracy">
                                 <div class="ai-algo-counter-val" id="aiAccuracy" style="color:#f59e0b;">98.7%</div>
@@ -1690,24 +1896,45 @@ $dashboardThemeSafe = htmlspecialchars($dashboardTheme, ENT_QUOTES, 'UTF-8');
                             </div>
                         </div>
                     </div>
-                    <div class="card-body p-0" style="background:#0f172a;">
-                        <!-- Scan progress bar -->
-                        <div style="padding:.6rem 1.25rem .4rem;background:#0f172a;">
-                            <div style="display:flex;justify-content:space-between;font-size:.72rem;color:#64748b;margin-bottom:.3rem;">
-                                <span style="color:#94a3b8;">Scan-Fortschritt</span>
-                                <span id="aiScanPct" style="color:#38bdf8;">0%</span>
-                            </div>
-                            <div style="height:4px;background:#1e293b;border-radius:4px;overflow:hidden;">
-                                <div id="aiScanBar" style="height:100%;width:0%;background:linear-gradient(90deg,#38bdf8,#818cf8);border-radius:4px;transition:width .5s ease;"></div>
-                            </div>
+
+                    <!-- Scan bar + tabs -->
+                    <div style="background:#0f172a;padding:.5rem 1.25rem .35rem;">
+                        <div style="display:flex;justify-content:space-between;font-size:.7rem;color:#64748b;margin-bottom:.25rem;">
+                            <span style="color:#94a3b8;font-family:'Courier New',monospace;">
+                                <span class="scan-ring"></span>SCAN-FORTSCHRITT
+                            </span>
+                            <span id="aiScanPct" style="color:#38bdf8;font-family:'Courier New',monospace;font-weight:700;">0%</span>
                         </div>
-                        <!-- Live feed area -->
-                        <div id="aiLiveFeed" style="height:220px;overflow-y:auto;padding:.5rem 1.25rem 1rem;font-family:'Courier New',monospace;font-size:.78rem;line-height:1.7;background:#0f172a;scroll-behavior:smooth;">
+                        <div style="height:3px;background:#1e293b;border-radius:4px;overflow:hidden;margin-bottom:.35rem;">
+                            <div id="aiScanBar" style="height:100%;width:0%;background:linear-gradient(90deg,#2950a8,#38bdf8,#818cf8);border-radius:4px;transition:width .5s ease;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Feed Tabs -->
+                    <div class="ai-scan-tabs" role="tablist">
+                        <button class="ai-scan-tab active" data-feed="txn" role="tab" aria-selected="true">
+                            <span class="ai-tab-dot"></span>Transaktionen
+                        </button>
+                        <button class="ai-scan-tab" data-feed="cases" role="tab">
+                            <span class="ai-tab-dot"></span>Fälle
+                        </button>
+                        <button class="ai-scan-tab" data-feed="logs" role="tab">
+                            <span class="ai-tab-dot"></span>Logs
+                        </button>
+                        <button class="ai-scan-tab" data-feed="actions" role="tab">
+                            <span class="ai-tab-dot"></span>Aktionen
+                        </button>
+                    </div>
+
+                    <!-- Live feed area (shared, filtered by tab) -->
+                    <div class="card-body p-0" style="background:#0a0f1e;">
+                        <div id="aiLiveFeed" style="height:200px;overflow-y:auto;padding:.5rem 1.25rem 1rem;font-family:'Courier New',monospace;font-size:.77rem;line-height:1.75;background:#0a0f1e;scroll-behavior:smooth;">
                             <div style="color:#475569;text-align:center;padding:2rem 0;" id="aiLiveFeedEmpty">
-                                <i class="anticon anticon-loading" style="font-size:1.4rem;animation:spin 1s linear infinite;color:#38bdf8;"></i><br>
+                                <span class="scan-ring" style="width:22px;height:22px;border-width:3px;"></span>
                                 <span style="color:#64748b;font-size:.8rem;">Algorithmus wird initialisiert…</span>
                             </div>
                         </div>
+
                         <!-- Bottom stats bar -->
                         <div style="display:flex;flex-wrap:wrap;gap:0;border-top:1px solid #1e293b;">
                             <div class="ai-algo-stat-cell">
@@ -1726,82 +1953,99 @@ $dashboardThemeSafe = htmlspecialchars($dashboardTheme, ENT_QUOTES, 'UTF-8');
                                 <span class="ai-algo-stat-label">Nächster Scan</span>
                                 <span class="ai-algo-stat-val" id="aiNextScanCountdown" style="color:#c084fc;">—</span>
                             </div>
+                            <div class="ai-algo-stat-cell">
+                                <span class="ai-algo-stat-label">Aktiver Feed</span>
+                                <span class="ai-algo-stat-val" id="aiActiveFeedLabel" style="color:#e2e8f0;">TXN</span>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Recovery / Workflow -->
+        <!-- Recovery Workflow — Enhanced -->
         <div class="row mt-3">
             <div class="col-md-12">
-                <div class="card shadow-sm border-0">
+                <div class="card shadow-sm border-0" style="border-radius:14px;overflow:hidden;">
+                    <div class="card-header section-header-ai d-flex flex-wrap align-items-center justify-content-between py-3 px-4">
+                        <div class="d-flex align-items-center" style="gap:10px;">
+                            <div class="radar-ping"><div class="radar-ping-core"></div></div>
+                            <h5 class="ai-section-title">Wiederherstellungsstatus</h5>
+                        </div>
+                        <div class="d-flex align-items-center" style="gap:10px;">
+                            <span class="badge badge-pill px-3 py-2 badge-<?= $recoveryPercentage > 70 ? 'success' : ($recoveryPercentage > 30 ? 'warning' : 'danger') ?>" style="font-size:12px;">
+                                <i class="anticon anticon-<?= $recoveryPercentage > 70 ? 'check-circle' : ($recoveryPercentage > 30 ? 'clock-circle' : 'exclamation-circle') ?> mr-1"></i>
+                                <?= $recoveryPercentage > 70 ? 'Ausgezeichneter Fortschritt' : ($recoveryPercentage > 30 ? 'Guter Fortschritt' : 'Aufmerksamkeit erforderlich') ?>
+                            </span>
+                            <button class="btn btn-sm font-weight-600" id="refresh-algorithm" style="background:rgba(56,189,248,.1);color:#38bdf8;border:1px solid rgba(56,189,248,.2);border-radius:8px;" aria-live="polite">
+                                <i class="anticon anticon-sync"></i>
+                            </button>
+                        </div>
+                    </div>
                     <div class="card-body p-4">
-                        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
-                            <h5 class="mb-2 mb-md-0" style="color: #2c3e50; font-weight: 600;">
-                                <i class="anticon anticon-sync mr-2" style="color: var(--brand);"></i>Wiederherstellungsstatus
-                            </h5>
-                            <div>
-                                <span class="badge badge-pill px-3 py-2 badge-<?= $recoveryPercentage > 70 ? 'success' : ($recoveryPercentage > 30 ? 'warning' : 'danger') ?>" style="font-size: 13px;">
-                                    <i class="anticon anticon-<?= $recoveryPercentage > 70 ? 'check-circle' : ($recoveryPercentage > 30 ? 'clock-circle' : 'exclamation-circle') ?> mr-1"></i>
-                                    <?= $recoveryPercentage > 70 ? 'Ausgezeichneter Fortschritt' : ($recoveryPercentage > 30 ? 'Guter Fortschritt' : 'Aufmerksamkeit erforderlich') ?>
-                                </span>
+                        <!-- Enhanced step indicators -->
+                        <div class="d-flex align-items-center mb-4" style="gap:0;">
+                            <?php
+                            $steps = [
+                                ['icon'=>'search',         'label'=>'Verfolgen',     'threshold'=>0],
+                                ['icon'=>'lock',           'label'=>'Einfrieren',    'threshold'=>20],
+                                ['icon'=>'solution',       'label'=>'Rechtsverfahren','threshold'=>40],
+                                ['icon'=>'sync',           'label'=>'Wiederherstell.','threshold'=>60],
+                                ['icon'=>'check-circle',   'label'=>'Abgeschlossen', 'threshold'=>80],
+                            ];
+                            foreach ($steps as $si => $step):
+                                $isActive = $recoveryPercentage > $step['threshold'];
+                                $isLast   = ($si === count($steps) - 1);
+                            ?>
+                            <div class="recovery-step-ai <?= $isActive ? 'active' : '' ?>" style="flex:0 0 auto;">
+                                <div class="step-icon-ai">
+                                    <i class="anticon anticon-<?= $step['icon'] ?>"></i>
+                                </div>
+                                <div class="step-label-ai"><?= $step['label'] ?></div>
+                            </div>
+                            <?php if (!$isLast): ?>
+                            <div class="recovery-connector <?= $isActive ? 'active' : '' ?>" style="flex:1;margin-bottom:18px;"></div>
+                            <?php endif; endforeach; ?>
+                        </div>
+
+                        <!-- Progress bar -->
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <small class="text-muted" style="font-size:.75rem;">Gesamtfortschritt</small>
+                            <small class="font-weight-700" style="color:#2950a8;font-size:.75rem;"><?= htmlspecialchars($recoveryPercentage, ENT_QUOTES) ?>%</small>
+                        </div>
+                        <div class="progress mb-3" style="height:8px;border-radius:4px;background:#e9ecef;">
+                            <div class="progress-bar" id="recoveryProgressBar"
+                                 style="width:<?= $recoveryPercentage ?>%;background:linear-gradient(90deg,#2950a8,#2da9e3);border-radius:4px;position:relative;overflow:hidden;"
+                                 role="progressbar" aria-valuenow="<?= htmlspecialchars($recoveryPercentage, ENT_QUOTES) ?>" aria-valuemin="0" aria-valuemax="100">
+                                <span style="position:absolute;top:0;left:-100%;width:60%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.35),transparent);animation:scanBeam 2s ease-in-out infinite;"></span>
                             </div>
                         </div>
 
-                        <div class="mt-4">
-                            <div class="algorithm-animation">
-                                <div class="algorithm-steps" aria-hidden="true">
-                                    <div class="step <?= $recoveryPercentage > 0 ? 'active' : '' ?>">
-                                        <div class="step-icon">
-                                            <i class="anticon anticon-search"></i>
-                                        </div>
-                                        <div class="step-label">Gelder verfolgen</div>
-                                    </div>
-                                    <div class="step <?= $recoveryPercentage > 20 ? 'active' : '' ?>">
-                                        <div class="step-icon">
-                                            <i class="anticon anticon-lock"></i>
-                                        </div>
-                                        <div class="step-label">Vermögen einfrieren</div>
-                                    </div>
-                                    <div class="step <?= $recoveryPercentage > 40 ? 'active' : '' ?>">
-                                        <div class="step-icon">
-                                            <i class="anticon anticon-solution"></i>
-                                        </div>
-                                        <div class="step-label">Rechtsverfahren</div>
-                                    </div>
-                                    <div class="step <?= $recoveryPercentage > 60 ? 'active' : '' ?>">
-                                        <div class="step-icon">
-                                            <i class="anticon anticon-sync"></i>
-                                        </div>
-                                        <div class="step-label">Wiederherstellung</div>
-                                    </div>
-                                    <div class="step <?= $recoveryPercentage > 80 ? 'active' : '' ?>">
-                                        <div class="step-icon">
-                                            <i class="anticon anticon-check-circle"></i>
-                                        </div>
-                                        <div class="step-label">Abgeschlossen</div>
-                                    </div>
-                                </div>
-                                <div class="algorithm-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="<?= htmlspecialchars($recoveryPercentage, ENT_QUOTES) ?>">
-                                    <div class="progress-bar" style="width: <?= $recoveryPercentage ?>%"></div>
+                        <!-- Stats row -->
+                        <div class="row">
+                            <div class="col-6 col-md-3 mb-2">
+                                <div style="background:#f8f9fa;border-radius:8px;padding:10px 14px;">
+                                    <div style="font-size:.7rem;color:#6c757d;text-transform:uppercase;letter-spacing:.04em;">Gesamte Fälle</div>
+                                    <div style="font-size:1.4rem;font-weight:800;color:#1e293b;"><?= htmlspecialchars($stats['total_cases'], ENT_QUOTES) ?></div>
                                 </div>
                             </div>
-
-                            <div class="mt-4">
-                                <div class="d-flex flex-wrap justify-content-between align-items-center">
-                                    <div class="text-left">
-                                        <p class="m-b-5"><strong>Gesamte Fälle:</strong> <?= htmlspecialchars($stats['total_cases'], ENT_QUOTES) ?></p>
-                                        <p class="m-b-5"><strong>Aktive Fälle:</strong> <?= array_sum($statusCounts) ?></p>
-                                    </div>
-                                    <div class="text-right">
-                                        <p class="m-b-5"><strong>Zurückgewonnen:</strong> €<?= number_format($stats['total_recovered'], 2) ?></p>
-                                        <p class="m-b-5"><strong>Ausstehend:</strong> €<?= number_format($outstandingAmount, 2) ?></p>
-                                    </div>
+                            <div class="col-6 col-md-3 mb-2">
+                                <div style="background:#f8f9fa;border-radius:8px;padding:10px 14px;">
+                                    <div style="font-size:.7rem;color:#6c757d;text-transform:uppercase;letter-spacing:.04em;">Aktive Fälle</div>
+                                    <div style="font-size:1.4rem;font-weight:800;color:#2950a8;"><?= array_sum($statusCounts) ?></div>
                                 </div>
-                                <button class="btn btn-outline-primary btn-sm" id="refresh-algorithm" aria-live="polite">
-                                    <i class="anticon anticon-sync"></i> Status aktualisieren
-                                </button>
+                            </div>
+                            <div class="col-6 col-md-3 mb-2">
+                                <div style="background:#f0fdf4;border-radius:8px;padding:10px 14px;">
+                                    <div style="font-size:.7rem;color:#166534;text-transform:uppercase;letter-spacing:.04em;">Zurückgewonnen</div>
+                                    <div style="font-size:1.1rem;font-weight:800;color:#15803d;">€<?= number_format($recoveredTotalDisplay, 2) ?></div>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3 mb-2">
+                                <div style="background:#fff7ed;border-radius:8px;padding:10px 14px;">
+                                    <div style="font-size:.7rem;color:#9a3412;text-transform:uppercase;letter-spacing:.04em;">Ausstehend</div>
+                                    <div style="font-size:1.1rem;font-weight:800;color:#c2410c;">€<?= number_format($outstandingAmount, 2) ?></div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1812,44 +2056,64 @@ $dashboardThemeSafe = htmlspecialchars($dashboardTheme, ENT_QUOTES, 'UTF-8');
         <!-- Recent Cases + Side column -->
         <div class="row mt-3">
             <div class="col-md-12 col-lg-8">
-                <!-- Recent Cases -->
-                <div class="card shadow-sm border-0">
-                    <div class="card-body">
-                        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
-                            <h5 class="mb-2 mb-md-0" style="color: #2c3e50; font-weight: 600;">
-                                <i class="anticon anticon-folder-open mr-2" style="color: var(--brand);"></i>Aktuelle Fälle
-                            </h5>
-                            <div class="d-flex">
-                                <a href="cases.php" class="btn btn-sm btn-outline-primary mr-2">
-                                    <i class="anticon anticon-eye mr-1"></i>Alle ansehen
-                                </a>
-                                <a href="new-case.php" class="btn btn-sm btn-primary">
-                                    <i class="anticon anticon-plus-circle mr-1"></i>Neuer Fall
-                                </a>
-                            </div>
+                <!-- Recent Cases — AI Enhanced -->
+                <div class="card shadow-sm border-0" style="border-radius:14px;overflow:hidden;">
+                    <!-- Header with scan animation -->
+                    <div class="card-header section-header-ai scan-table-header d-flex flex-wrap align-items-center justify-content-between py-3 px-4">
+                        <div class="d-flex align-items-center" style="gap:10px;">
+                            <div class="radar-ping"><div class="radar-ping-core"></div></div>
+                            <h5 class="ai-section-title">Aktuelle Fälle</h5>
                         </div>
-                        
+                        <div class="d-flex align-items-center" style="gap:8px;">
+                            <!-- AI Search Box -->
+                            <div class="ai-search-wrap" style="min-width:160px;">
+                                <i class="anticon anticon-search ai-search-icon"></i>
+                                <input type="text" id="caseSearchInput" class="form-control form-control-sm ai-search-input"
+                                       placeholder="Fall durchsuchen…" autocomplete="off">
+                            </div>
+                            <a href="cases.php" class="btn btn-sm" style="background:rgba(56,189,248,.1);color:#38bdf8;border:1px solid rgba(56,189,248,.2);border-radius:8px;font-size:.75rem;">
+                                <i class="anticon anticon-eye mr-1"></i>Alle
+                            </a>
+                            <a href="new-case.php" class="btn btn-sm" style="background:linear-gradient(135deg,#2950a8,#2da9e3);color:#fff;border:none;border-radius:8px;font-size:.75rem;">
+                                <i class="anticon anticon-plus-circle mr-1"></i>Neu
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Scan status bar -->
+                    <div id="caseScanBar" style="background:#0f172a;padding:.3rem 1.25rem;display:flex;align-items:center;gap:10px;">
+                        <span class="scan-ring" style="width:14px;height:14px;border-width:2px;flex-shrink:0;"></span>
+                        <span style="font-family:'Courier New',monospace;font-size:.7rem;color:#64748b;" id="caseScanStatus">SCAN: Fälle werden analysiert…</span>
+                        <span class="ai-searching-badge ml-auto" id="caseScanBadge"><span class="dot"></span>LIVE</span>
+                    </div>
+
+                    <div class="card-body p-0">
                         <?php if (empty($cases)): ?>
-                            <div class="alert alert-info mt-3 d-flex align-items-center" style="border-radius: 10px;">
-                                <i class="anticon anticon-info-circle mr-2" style="font-size: 20px;"></i>
+                            <div class="alert alert-info m-3 d-flex align-items-center" style="border-radius:10px;">
+                                <i class="anticon anticon-info-circle mr-2" style="font-size:20px;"></i>
                                 <div>Keine Fälle gefunden. <a href="new-case.php" class="alert-link font-weight-600">Ersten Fall einreichen</a></div>
                             </div>
                         <?php else: ?>
-                            <div class="mt-3">
-                                <div class="table-responsive">
-                                    <table class="table table-hover mb-0">
-                                        <thead>
-                                            <tr>
-                                                <th>Fall-Nr.</th>
-                                                <th>Plattform</th>
-                                                <th>Gemeldet</th>
-                                                <th>Zurückgewonnen</th>
-                                                <th>Status</th>
-                                                <th>Aktionen</th>
+                            <div class="table-responsive">
+                                <table class="table ai-cases-table mb-0" id="casesTable">
+                                    <thead class="bg-light">
+                                        <tr>
+                                            <th>Fall-Nr.</th>
+                                            <th>Plattform</th>
+                                            <th>Gemeldet</th>
+                                            <th>Zurückgewonnen</th>
+                                            <th>Status</th>
+                                            <th></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="casesTableBody">
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <?php foreach ($cases as $case): 
+                                            <?php
+                                            $caseIndex = 0;
+                                            foreach ($cases as $case):
+                                                $caseIndex++;
                                                 $reported = (float)($case['reported_amount'] ?? 0);
                                                 $recovered = (float)($case['recovered_amount'] ?? 0);
                                                 $status = $case['status'] ?? 'open';
@@ -1864,7 +2128,34 @@ $dashboardThemeSafe = htmlspecialchars($dashboardTheme, ENT_QUOTES, 'UTF-8');
                                                     'refund_rejected' => 'danger',
                                                     'closed' => 'dark'
                                                 ][$status] ?? 'light';
+
+                                                // Blur rows beyond limit for test/expired/no-subscription users
+                                                $isBlurred = ($needsPackageBlur && $caseIndex > $TEST_PACKAGE_CASE_LIMIT);
                                             ?>
+                                            <?php if ($isBlurred): ?>
+                                            <tr>
+                                                <td colspan="6" style="padding:0;border:none;"
+                                                    aria-label="Weiterer Fall gesperrt – Upgrade erforderlich um alle Fälle anzuzeigen">
+                                                    <!-- Blurred row wrapper – position:relative must be on a <div>, not <tr>, for cross-browser support -->
+                                                    <div style="position:relative;overflow:hidden;min-height:50px;">
+                                                        <!-- Blurred preview content -->
+                                                        <div style="-webkit-filter:blur(5px);filter:blur(5px);pointer-events:none;padding:10px 12px;display:flex;gap:14px;align-items:center;user-select:none;" aria-hidden="true">
+                                                            <span style="font-family:monospace;color:#2950a8;white-space:nowrap;">SCM-????-????</span>
+                                                            <span class="badge badge-pill badge-secondary px-3">████████</span>
+                                                            <span style="white-space:nowrap;">€ ██████</span>
+                                                            <div class="progress flex-grow-1" style="height:6px;max-width:140px;border-radius:3px;"><div class="progress-bar" style="width:60%;background:linear-gradient(90deg,#2950a8,#2da9e3);"></div></div>
+                                                            <span class="badge badge-pill badge-warning px-2">███</span>
+                                                        </div>
+                                                        <!-- Upgrade overlay -->
+                                                        <div style="position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;z-index:5;background:rgba(255,255,255,0.65);">
+                                                            <a href="packages.php" class="btn btn-sm btn-warning font-weight-600" style="border-radius:8px;font-size:.8rem;box-shadow:0 2px 8px rgba(255,193,7,.4);">
+                                                                <i class="anticon anticon-lock mr-1"></i>Jetzt upgraden um alle Fälle zu sehen
+                                                            </a>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            <?php else: ?>
                                             <tr>
                                                 <td>
                                                     <a href="case-details.php?id=<?= htmlspecialchars($case['id'], ENT_QUOTES) ?>">
@@ -1909,41 +2200,42 @@ $dashboardThemeSafe = htmlspecialchars($dashboardTheme, ENT_QUOTES, 'UTF-8');
                                                     </span>
                                                 </td>
                                                 <td>
-                                                    <button class="btn btn-sm btn-outline-primary view-case-btn" 
-                                                            data-case-id="<?= htmlspecialchars($case['id'], ENT_QUOTES) ?>" 
-                                                            title="Falldetails anzeigen">
-                                                        <i class="anticon anticon-eye"></i> Anzeigen
+                                                    <button class="btn btn-sm view-case-btn font-weight-600"
+                                                            data-case-id="<?= htmlspecialchars($case['id'], ENT_QUOTES) ?>"
+                                                            title="Falldetails anzeigen"
+                                                            style="background:rgba(41,80,168,.08);color:#2950a8;border:1px solid rgba(41,80,168,.2);border-radius:8px;font-size:.75rem;">
+                                                        <i class="anticon anticon-eye mr-1"></i>Details
                                                     </button>
                                                 </td>
                                             </tr>
+                                            <?php endif; ?>
                                             <?php endforeach; ?>
                                         </tbody>
                                     </table>
                                 </div>
-                            </div>
                         <?php endif; ?>
                     </div>
                 </div>
 
-                <!-- Active Recovery Operations -->
-                <div class="card mt-3 shadow-sm border-0">
-                    <div class="card-body">
-                        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
-                            <h5 class="mb-2 mb-md-0" style="color: #2c3e50; font-weight: 600;">
-                                <i class="anticon anticon-sync mr-2" style="color: var(--brand);"></i>Aktive Wiederherstellungsoperationen
-                            </h5>
-                            <span class="badge badge-info px-3 py-2" style="font-size: 13px;">
-                                <i class="anticon anticon-file-text mr-1"></i><?= count($ongoingRecoveries) ?> aktive Fälle
-                            </span>
-                        </div>
-                        <div class="mt-3">
-                            <?php if (empty($ongoingRecoveries)): ?>
-                                <div class="alert alert-info d-flex align-items-center" style="border-radius: 10px;">
-                                    <i class="anticon anticon-info-circle mr-2" style="font-size: 20px;"></i>
-                                    <span>Keine aktiven Wiederherstellungsoperationen</span>
-                                </div>
-                            <?php else: ?>
-                                <?php foreach ($ongoingRecoveries as $recovery): 
+                <!-- Active Recovery Operations — Enhanced -->
+                <div class="card mt-3 shadow-sm border-0" style="border-radius:14px;overflow:hidden;">
+                    <div class="card-header section-header-ai d-flex align-items-center justify-content-between py-3 px-4">
+                        <h5 class="ai-section-title">
+                            <i class="anticon anticon-sync mr-1" style="font-size:.85rem;"></i>Aktive Wiederherstellungsoperationen
+                        </h5>
+                        <span class="ai-searching-badge"><span class="dot"></span><?= count($ongoingRecoveries) ?> aktiv</span>
+                    </div>
+                    <div class="card-body pt-3 pb-3">
+                        <?php if (empty($ongoingRecoveries)): ?>
+                            <div class="alert alert-info d-flex align-items-center" style="border-radius:10px;">
+                                <i class="anticon anticon-info-circle mr-2" style="font-size:20px;"></i>
+                                <span>Keine aktiven Wiederherstellungsoperationen</span>
+                            </div>
+                        <?php else: ?>
+                                <?php $recoveryIndex = 0; foreach ($ongoingRecoveries as $recovery):
+                                    $recoveryIndex++;
+                                    $isRecoveryBlurred = ($needsPackageBlur && $recoveryIndex > $TEST_PACKAGE_CASE_LIMIT);
+
                                     $reported = (float)($recovery['reported_amount'] ?? 0);
                                     $recovered = (float)($recovery['recovered_amount'] ?? 0);
                                     $status = $recovery['status'] ?? 'open';
@@ -1964,6 +2256,35 @@ $dashboardThemeSafe = htmlspecialchars($dashboardTheme, ENT_QUOTES, 'UTF-8');
                                         $statusText = 'In Bearbeitung';
                                     }
                                 ?>
+                                <?php if ($isRecoveryBlurred): ?>
+                                <div class="m-b-25" style="position:relative;overflow:hidden;">
+                                    <!-- Blurred preview -->
+                                    <div style="-webkit-filter:blur(5px);filter:blur(5px);pointer-events:none;user-select:none;" aria-hidden="true">
+                                        <div class="d-flex justify-content-between m-b-5">
+                                            <div>
+                                                <span style="font-family:monospace;color:#2950a8;font-weight:600;">SCM-????-????</span>
+                                            </div>
+                                            <div class="text-right">
+                                                <span>██%</span>
+                                                <div class="text-secondary">████████████</div>
+                                            </div>
+                                        </div>
+                                        <div class="progress progress-sm">
+                                            <div class="progress-bar bg-secondary" style="width:60%;"></div>
+                                        </div>
+                                        <div class="d-flex justify-content-between m-t-10">
+                                            <small class="text-muted">Gemeldet: €██.███,██</small>
+                                            <small class="text-muted">Zurückgewonnen: €██.███,██</small>
+                                        </div>
+                                    </div>
+                                    <!-- Upgrade overlay -->
+                                    <div style="position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;z-index:5;background:rgba(255,255,255,0.65);">
+                                        <a href="packages.php" class="btn btn-sm btn-warning font-weight-600" style="border-radius:8px;font-size:.8rem;box-shadow:0 2px 8px rgba(255,193,7,.4);">
+                                            <i class="anticon anticon-lock mr-1"></i>Jetzt upgraden um alle Fälle zu sehen
+                                        </a>
+                                    </div>
+                                </div>
+                                <?php else: ?>
                                 <div class="m-b-25">
                                     <div class="d-flex justify-content-between m-b-5">
                                         <div>
@@ -1996,15 +2317,15 @@ $dashboardThemeSafe = htmlspecialchars($dashboardTheme, ENT_QUOTES, 'UTF-8');
                                         </small>
                                     </div>
                                 </div>
+                                <?php endif; ?>
                                 <?php endforeach; ?>
                                 
-                                <div class="text-center m-t-20">
-                                    <a href="cases.php" class="btn btn-sm btn-outline-primary">
-                                        <i class="anticon anticon-eye"></i> Alle Fälle ansehen
+                                <div class="text-center mt-3 mb-1">
+                                    <a href="cases.php" class="btn btn-sm" style="background:rgba(41,80,168,.08);color:#2950a8;border:1px solid rgba(41,80,168,.2);border-radius:8px;font-size:.78rem;font-weight:600;">
+                                        <i class="anticon anticon-eye mr-1"></i>Alle Fälle ansehen
                                     </a>
                                 </div>
                             <?php endif; ?>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -2012,37 +2333,43 @@ $dashboardThemeSafe = htmlspecialchars($dashboardTheme, ENT_QUOTES, 'UTF-8');
             <!-- Right column -->
             <div class="col-md-12 col-lg-4">
 
-                <div class="card shadow-sm border-0 mt-3" style="border-radius:12px;overflow:hidden;">
-                    <div class="card-header section-header border-0 d-flex align-items-center justify-content-between py-3 px-3"
-                         style="background:linear-gradient(135deg,#1a2a6c,#2950a8);">
-                        <h5 class="mb-0 font-weight-bold text-white" style="font-size:0.95rem;">
-                            <i class="anticon anticon-transaction mr-2"></i>Aktuelle Transaktionen
-                        </h5>
-                        <a href="transactions.php" class="btn btn-sm" style="background:rgba(255,255,255,0.15);color:#fff;border-radius:6px;font-size:11px;">
-                            Alle ansehen <i class="anticon anticon-arrow-right ml-1"></i>
+                <!-- Transactions Feed — AI Enhanced -->
+                <div class="card shadow-sm border-0 mt-3" style="border-radius:14px;overflow:hidden;">
+                    <div class="card-header section-header-ai scan-table-header d-flex align-items-center justify-content-between py-3 px-4">
+                        <div class="d-flex align-items-center" style="gap:8px;">
+                            <div class="radar-ping"><div class="radar-ping-core"></div></div>
+                            <h5 class="ai-section-title" style="font-size:.85rem;">Aktuelle Transaktionen</h5>
+                        </div>
+                        <a href="transactions.php" class="btn btn-sm" style="background:rgba(56,189,248,.1);color:#38bdf8;border:1px solid rgba(56,189,248,.2);border-radius:8px;font-size:.72rem;">
+                            Alle <i class="anticon anticon-arrow-right ml-1"></i>
                         </a>
                     </div>
+                    <!-- Scan indicator -->
+                    <div style="background:#0f172a;padding:.25rem .9rem;font-family:'Courier New',monospace;font-size:.68rem;color:#475569;display:flex;align-items:center;gap:8px;">
+                        <span class="status-live-dot" style="width:6px;height:6px;"></span>
+                        <span id="txnScanStatus">Transaktionen werden gescannt…</span>
+                    </div>
                     <div class="card-body p-0">
-                        <div style="min-height: 300px">
+                        <div style="min-height:280px;">
                             <?php if (empty($transactions)): ?>
-                                <div class="alert alert-info d-flex align-items-center m-3" style="border-radius: 10px;">
-                                    <i class="anticon anticon-info-circle mr-2" style="font-size: 20px;"></i>
+                                <div class="alert alert-info d-flex align-items-center m-3" style="border-radius:10px;">
+                                    <i class="anticon anticon-info-circle mr-2" style="font-size:20px;"></i>
                                     <span>Noch keine Transaktionen vorhanden.</span>
                                 </div>
                             <?php else: ?>
-                                <div class="scrollable" style="height: 340px; overflow-y: auto;">
-                                    <?php foreach ($transactions as $transaction): ?>
+                                <div class="scrollable" style="height:340px;overflow-y:auto;">
+                                    <?php foreach ($transactions as $txIdx => $transaction): ?>
                                     <?php
                                     $iconConfig = [
-                                        'refund'     => ['icon' => 'arrow-up',   'color' => '#28a745', 'bg' => 'rgba(40,167,69,0.1)', 'label' => 'Rückerstattung'],
-                                        'deposit'    => ['icon' => 'plus-circle', 'color' => '#2950a8', 'bg' => 'rgba(41,80,168,0.1)', 'label' => 'Einzahlung'],
-                                        'withdrawal' => ['icon' => 'arrow-up',   'color' => '#dc3545', 'bg' => 'rgba(220,53,69,0.1)',  'label' => 'Auszahlung'],
-                                        'fee'        => ['icon' => 'minus',      'color' => '#e67e22', 'bg' => 'rgba(230,126,34,0.1)', 'label' => 'Gebühr']
+                                        'refund'     => ['icon' => 'undo',        'color' => '#28a745', 'bg' => 'rgba(40,167,69,0.08)',  'label' => 'Rückerstattung'],
+                                        'deposit'    => ['icon' => 'arrow-down',  'color' => '#2950a8', 'bg' => 'rgba(41,80,168,0.08)', 'label' => 'Einzahlung'],
+                                        'withdrawal' => ['icon' => 'arrow-up',    'color' => '#dc3545', 'bg' => 'rgba(220,53,69,0.08)',  'label' => 'Auszahlung'],
+                                        'fee'        => ['icon' => 'minus',       'color' => '#e67e22', 'bg' => 'rgba(230,126,34,0.08)', 'label' => 'Gebühr']
                                     ];
-                                    $cfg = $iconConfig[$transaction['type']] ?? ['icon' => 'swap', 'color' => '#6c757d', 'bg' => 'rgba(108,117,125,0.1)', 'label' => 'Transaktion'];
+                                    $cfg = $iconConfig[$transaction['type']] ?? ['icon' => 'swap', 'color' => '#6c757d', 'bg' => 'rgba(108,117,125,0.08)', 'label' => 'Transaktion'];
                                     $isPositive = in_array($transaction['type'], ['refund', 'deposit']);
                                     ?>
-                                    <div class="txn-row d-flex align-items-center px-3 py-3"
+                                    <div class="txn-row-ai d-flex align-items-center px-3 py-3 scan-row-animate"
                                          role="button" tabindex="0"
                                          data-id="<?= htmlspecialchars($transaction['id'], ENT_QUOTES) ?>"
                                          data-type="<?= htmlspecialchars($transaction['type'], ENT_QUOTES) ?>"
@@ -2053,20 +2380,24 @@ $dashboardThemeSafe = htmlspecialchars($dashboardTheme, ENT_QUOTES, 'UTF-8');
                                          data-reference="<?= htmlspecialchars($transaction['reference_name'], ENT_QUOTES) ?>"
                                          onclick="showTransactionDetails(this)"
                                          onkeypress="if(event.key==='Enter'||event.key===' ')showTransactionDetails(this)"
-                                         style="border-bottom:1px solid #f0f2f5;cursor:pointer;transition:background .15s;"
-                                         onmouseenter="this.style.background='#f8f9fa'" onmouseleave="this.style.background=''">
-                                        <div style="width:40px;height:40px;border-radius:10px;background:<?= $cfg['bg'] ?>;display:flex;align-items:center;justify-content:center;font-size:18px;color:<?= $cfg['color'] ?>;flex-shrink:0;" aria-hidden="true">
+                                         style="animation-delay:<?= $txIdx * 0.1 ?>s;">
+                                        <div style="width:36px;height:36px;border-radius:9px;background:<?= $cfg['bg'] ?>;display:flex;align-items:center;justify-content:center;font-size:16px;color:<?= $cfg['color'] ?>;flex-shrink:0;" aria-hidden="true">
                                             <i class="anticon anticon-<?= htmlspecialchars($cfg['icon'], ENT_QUOTES) ?>"></i>
                                         </div>
                                         <div class="ml-3 flex-grow-1">
-                                            <div class="font-weight-600" style="font-size:13px;color:#2c3e50;"><?= htmlspecialchars($cfg['label'], ENT_QUOTES) ?></div>
-                                            <div class="text-muted" style="font-size:11px;"><?= htmlspecialchars($transaction['reference_name'], ENT_QUOTES) ?> · <?= date('d.m.Y', strtotime($transaction['created_at'])) ?></div>
+                                            <div class="font-weight-600" style="font-size:.82rem;color:#1e293b;"><?= htmlspecialchars($cfg['label'], ENT_QUOTES) ?></div>
+                                            <div style="font-size:.72rem;color:#94a3b8;font-family:'Courier New',monospace;"><?= htmlspecialchars($transaction['reference_name'], ENT_QUOTES) ?> · <?= date('d.m.Y', strtotime($transaction['created_at'])) ?></div>
                                         </div>
                                         <div class="text-right">
-                                            <div class="font-weight-bold" style="font-size:14px;color:<?= $isPositive ? '#28a745' : '#dc3545' ?>;">
+                                            <div class="font-weight-700" style="font-size:.88rem;color:<?= $isPositive ? '#16a34a' : '#dc2626' ?>;">
                                                 <?= $isPositive ? '+' : '-' ?>€<?= number_format($transaction['amount'], 2) ?>
                                             </div>
-                                            <i class="anticon anticon-right text-muted" style="font-size:10px;"></i>
+                                            <?php
+                                            $tStatus = $transaction['status'] ?? 'completed';
+                                            $tBadgeMap = ['completed'=>'badge-ai-success','pending'=>'badge-ai-open','failed'=>'badge-ai-danger','rejected'=>'badge-ai-danger'];
+                                            $tBadgeClass = $tBadgeMap[$tStatus] ?? 'badge-ai-docs';
+                                            ?>
+                                            <span class="<?= $tBadgeClass ?>" style="font-size:.65rem;"><?= htmlspecialchars($tStatus, ENT_QUOTES) ?></span>
                                         </div>
                                     </div>
                                     <?php endforeach; ?>
@@ -2076,11 +2407,13 @@ $dashboardThemeSafe = htmlspecialchars($dashboardTheme, ENT_QUOTES, 'UTF-8');
                     </div>
                 </div>
 
-                <div class="card shadow-sm mt-3">
+                <!-- Case Status + Activity Log -->
+                <div class="card shadow-sm mt-3" style="border-radius:14px;overflow:hidden;">
+                    <div class="card-header section-header-ai d-flex align-items-center justify-content-between py-3 px-4">
+                        <h5 class="ai-section-title" style="font-size:.85rem;">Fallstatuszusammenfassung</h5>
+                    </div>
                     <div class="card-body">
-                        <h5 class="m-b-20">Fallstatuszusammenfassung</h5>
-                        <div class="m-t-20">
-                            <?php if (empty($statusCounts)): ?>
+                        <?php if (empty($statusCounts)): ?>
                                 <div class="alert alert-info">Keine Fälle gefunden</div>
                             <?php else: ?>
                                 <div class="row">
@@ -2115,6 +2448,19 @@ $dashboardThemeSafe = htmlspecialchars($dashboardTheme, ENT_QUOTES, 'UTF-8');
                                     </ul>
                                 </div>
                             <?php endif; ?>
+                    </div>
+                </div>
+
+                <!-- Live Activity Log panel -->
+                <div class="activity-log-panel mt-3">
+                    <div class="activity-log-header">
+                        <h6><i class="anticon anticon-desktop mr-2" style="color:#38bdf8;"></i>SYSTEM AKTIVITÄTSPROTOKOLL</h6>
+                        <span class="ai-searching-badge"><span class="dot"></span>LIVE</span>
+                    </div>
+                    <div class="activity-log-body" id="activityLogBody">
+                        <div style="color:#334155;text-align:center;padding:1.5rem 0;" id="activityLogEmpty">
+                            <span class="scan-ring"></span>
+                            <span style="font-size:.72rem;color:#475569;">Protokoll wird geladen…</span>
                         </div>
                     </div>
                 </div>
@@ -2128,32 +2474,30 @@ $dashboardThemeSafe = htmlspecialchars($dashboardTheme, ENT_QUOTES, 'UTF-8');
                 <div class="card shadow-sm border-0">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
-                            <h5 style="color: #2c3e50; font-weight: 600;">
-                                <i class="anticon anticon-line-chart mr-2" style="color: var(--brand);"></i>Wiederherstellungsfortschritt
+                            <h5 class="ai-section-title">
+                                <i class="anticon anticon-line-chart mr-1" style="font-size:.9rem;"></i>Wiederherstellungsfortschritt
                             </h5>
-                            <div>
-                                <span class="badge badge-<?= $recoveryPercentage >= 50 ? 'success' : 'warning' ?> px-3 py-2">
-                                    <i class="anticon anticon-<?= $recoveryPercentage >= 50 ? 'check-circle' : 'clock-circle' ?> mr-1"></i>
-                                    <?= $recoveryPercentage >= 50 ? 'Guter Fortschritt' : 'Aufmerksamkeit erforderlich' ?>
-                                </span>
-                            </div>
+                            <span class="badge badge-<?= $recoveryPercentage >= 50 ? 'success' : 'warning' ?> px-3 py-2">
+                                <i class="anticon anticon-<?= $recoveryPercentage >= 50 ? 'check-circle' : 'clock-circle' ?> mr-1"></i>
+                                <?= $recoveryPercentage >= 50 ? 'Guter Fortschritt' : 'Aufmerksamkeit erforderlich' ?>
+                            </span>
                         </div>
-                        <div class="mt-4">
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <span class="font-weight-semibold">
-                                    Gesamte Wiederherstellung: <span class="count" data-value="<?= htmlspecialchars($recoveryPercentage, ENT_QUOTES) ?>"><?= htmlspecialchars($recoveryPercentage, ENT_QUOTES) ?>%</span>
-                                    (<?= htmlspecialchars($stats['total_cases'], ENT_QUOTES) ?> Fälle)
+                        <div class="mt-3">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span style="font-size:.82rem;color:#64748b;">
+                                    <span class="font-weight-700" style="color:#1e293b;">
+                                        <?= htmlspecialchars($recoveryPercentage, ENT_QUOTES) ?>%
+                                    </span>
+                                    wiederhergestellt (<?= htmlspecialchars($stats['total_cases'], ENT_QUOTES) ?> Fälle)
                                 </span>
-                                <span>
-                                    €<?= number_format($stats['total_recovered'], 2) ?> von €<?= number_format($stats['total_reported'], 2) ?>
+                                <span style="font-size:.82rem;color:#1e293b;font-weight:600;">
+                                    €<?= number_format($recoveredTotalDisplay, 2) ?><?= $recoveredCapReached ? " 🔒" : "" ?> / €<?= number_format($stats['total_reported'], 2) ?>
                                 </span>
                             </div>
-                            <div class="progress" style="height: 12px; border-radius: 10px;" aria-hidden="false" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="<?= htmlspecialchars($recoveryPercentage, ENT_QUOTES) ?>">
-                                <div class="progress-bar bg-success" style="width: <?= $recoveryPercentage ?>%; background: linear-gradient(90deg, #28a745, #20c997);"></div>
-                            </div>
-                            <div class="mt-2 d-flex justify-content-between">
-                                <small class="text-muted">0%</small>
-                                <small class="text-muted">100%</small>
+                            <div class="progress" style="height:10px;border-radius:6px;background:#e9ecef;" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="<?= htmlspecialchars($recoveryPercentage, ENT_QUOTES) ?>">
+                                <div class="progress-bar" style="width:<?= $recoveryPercentage ?>%;background:linear-gradient(90deg,#2950a8,#2da9e3,#20c997);border-radius:6px;position:relative;overflow:hidden;">
+                                    <span style="position:absolute;top:0;left:-100%;width:60%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.4),transparent);animation:scanBeam 2.2s ease-in-out infinite;"></span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -2161,24 +2505,28 @@ $dashboardThemeSafe = htmlspecialchars($dashboardTheme, ENT_QUOTES, 'UTF-8');
             </div>
         </div>
 
-        <!-- Recovery Timeline Chart -->
+        <!-- Charts Row -->
         <div class="row mt-3 mb-4">
             <div class="col-md-8 mb-3">
-                <div class="card chart-card shadow-sm border-0 h-100">
-                    <div class="card-body">
-                        <h5 class="mb-3" style="color: #2c3e50; font-weight: 600;">
-                            <i class="anticon anticon-area-chart mr-2" style="color: var(--brand);"></i>Wiederherstellungs-Verlauf (letzte 6 Monate)
+                <div class="card chart-card shadow-sm border-0 h-100" style="border-radius:14px;overflow:hidden;">
+                    <div class="card-header section-header-ai py-3 px-4">
+                        <h5 class="ai-section-title">
+                            <i class="anticon anticon-area-chart mr-1" style="font-size:.9rem;"></i>Wiederherstellungs-Verlauf (letzte 6 Monate)
                         </h5>
+                    </div>
+                    <div class="card-body">
                         <canvas id="recoveryTimelineChart" height="120" aria-label="Recovery timeline chart"></canvas>
                     </div>
                 </div>
             </div>
             <div class="col-md-4 mb-3">
-                <div class="card chart-card shadow-sm border-0 h-100">
-                    <div class="card-body">
-                        <h5 class="mb-3" style="color: #2c3e50; font-weight: 600;">
-                            <i class="anticon anticon-pie-chart mr-2" style="color: var(--brand);"></i>Fallstatus
+                <div class="card chart-card shadow-sm border-0 h-100" style="border-radius:14px;overflow:hidden;">
+                    <div class="card-header section-header-ai py-3 px-4">
+                        <h5 class="ai-section-title">
+                            <i class="anticon anticon-pie-chart mr-1" style="font-size:.9rem;"></i>Fallstatus
                         </h5>
+                    </div>
+                    <div class="card-body">
                         <canvas id="statusChartEnhanced" height="160" aria-label="Case status donut chart"></canvas>
                         <div class="mt-3">
                             <ul class="list-unstyled mb-0" id="statusChartLegend"></ul>
@@ -2938,16 +3286,18 @@ function resetOtpFields() {
     // Start bgRefresh only if endpoint exists in your system; safe to comment out if not present.
     bgRefresh();
 
-    // ── AI Algorithm Live Monitor ──────────────────────────────────────
+    // ── AI Algorithm Live Monitor — Enhanced with tabs ──────────────────
     (function() {
         var txnChecked  = 0;
         var txnFound    = 0;
+        var casesScanned = 0;
         var scanPct     = 0;
         var nextScanSec = 60;
         var blockNum    = 21800000 + Math.floor(Math.random() * 50000);
         var feedEl      = document.getElementById('aiLiveFeed');
         var emptyEl     = document.getElementById('aiLiveFeedEmpty');
-        var maxLines    = 80;
+        var maxLines    = 100;
+        var activeTab   = 'txn'; // txn | cases | logs | actions
 
         var addressPool = [
             '0x3a5e…b29f','0x71dc…4e8a','0xbb12…c437','0x09fa…81d2',
@@ -2958,6 +3308,23 @@ function resetOtpFields() {
                            '€3,610','€125,000','€8,850','€550','€22,400'];
         var platformPool = ['Binance','Coinbase','Kraken','UniSwap',
                             'OKX','Bybit','dYdX','Gemini'];
+        var casePool    = ['SCM-2024-4412','SCM-2024-3891','SCM-2025-0117',
+                           'SCM-2025-1024','SCM-2024-7773'];
+        var actionPool  = ['Kontostand aktualisiert','Dokument hochgeladen',
+                           'KYC-Prüfung gestartet','Fallstatus geändert',
+                           'Auszahlungsantrag gestellt','Admin-Prüfung abgeschlossen'];
+        var logPool     = [
+            'AUTH: Benutzer angemeldet – IP 78.191.xx.xx',
+            'DB: Konfiguration geprüft – OK',
+            'SEC: CSRF-Token validiert',
+            'NET: Blockchain-Knoten reagiert – Latenz 34ms',
+            'SYS: Sitzung verlängert – 30 min',
+            'SCAN: Wallet-Index geladen – 1.240 Einträge',
+            'ALGO: Musterabgleich läuft – Iteration 4 von 10',
+        ];
+
+        // lines per tab (so clearing tab doesn't wipe all history)
+        var tabLines = { txn: [], cases: [], logs: [], actions: [] };
 
         function rnd(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
         function rndInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
@@ -2967,24 +3334,49 @@ function resetOtpFields() {
             return ('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2)+':'+('0'+d.getSeconds()).slice(-2);
         }
 
-        function addLine(type, msg, cssClass) {
+        function addLine(tab, type, msg, cssClass) {
             if (!feedEl) return;
-            if (emptyEl) { emptyEl.style.display = 'none'; }
+            if (emptyEl) emptyEl.style.display = 'none';
 
             var line = document.createElement('div');
             line.className = 'ai-feed-line';
+            line.dataset.tab = tab;
             line.innerHTML =
                 '<span class="ai-feed-ts">['+now()+']</span>' +
-                '<span class="ai-feed-type '+cssClass+'">'+type+'</span>' +
-                '<span class="ai-feed-msg">'+msg+'</span>';
+                '<span class="ai-feed-type '+cssClass+'">' + type + '</span>' +
+                '<span class="ai-feed-msg">' + msg + '</span>';
+
+            // Only show if this is the active tab
+            line.style.display = (tab === activeTab) ? '' : 'none';
             feedEl.appendChild(line);
 
-            /* trim old lines */
-            var lines = feedEl.querySelectorAll('.ai-feed-line');
-            if (lines.length > maxLines) { lines[0].remove(); }
-
+            // Trim
+            var allLines = feedEl.querySelectorAll('.ai-feed-line');
+            if (allLines.length > maxLines) allLines[0].remove();
             feedEl.scrollTop = feedEl.scrollHeight;
         }
+
+        function switchTab(tab) {
+            activeTab = tab;
+            var labelMap = { txn:'TXN', cases:'FÄLLE', logs:'LOGS', actions:'AKTIONEN' };
+            var lbl = document.getElementById('aiActiveFeedLabel');
+            if (lbl) lbl.textContent = labelMap[tab] || tab.toUpperCase();
+
+            feedEl.querySelectorAll('.ai-feed-line').forEach(function(el) {
+                el.style.display = (el.dataset.tab === tab) ? '' : 'none';
+            });
+            feedEl.scrollTop = feedEl.scrollHeight;
+        }
+
+        // Wire tab buttons
+        document.querySelectorAll('.ai-scan-tab').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.ai-scan-tab').forEach(function(b) { b.classList.remove('active'); b.setAttribute('aria-selected','false'); });
+                btn.classList.add('active');
+                btn.setAttribute('aria-selected','true');
+                switchTab(btn.dataset.feed);
+            });
+        });
 
         function updateCounter(id, val) {
             var el = document.getElementById(id);
@@ -2992,74 +3384,226 @@ function resetOtpFields() {
         }
 
         function tick() {
-            /* increment checked counter */
             var batch = rndInt(3, 12);
             txnChecked += batch;
             updateCounter('aiTxnChecked', txnChecked);
 
-            /* occasionally find one */
+            // TXN feed
             if (Math.random() < 0.10) {
                 txnFound++;
                 updateCounter('aiTxnFound', txnFound);
-                addLine('GEFUNDEN', 'Verdächtige Transaktion: ' + rnd(amountPool) +
+                addLine('txn', 'GEFUNDEN', 'Verdächtige Transaktion: ' + rnd(amountPool) +
                     ' von ' + rnd(addressPool) + ' via ' + rnd(platformPool), 'found');
             }
+            var r = Math.random();
+            if (r < 0.30) {
+                addLine('txn', 'PRÜFEN', 'Adresse ' + rnd(addressPool) + ' analysiert (' + batch + ' txn)', 'check');
+            } else if (r < 0.55) {
+                addLine('txn', 'BLOCK', 'Block #' + blockNum + ' verarbeitet – ' + rndInt(80,300) + ' Transaktionen', 'block');
+            } else if (r < 0.72) {
+                addLine('txn', 'SCAN', 'Netzwerk-Sweep: ' + rnd(platformPool) + ' – ' + rndInt(5,50) + ' Wallets', 'scan');
+            } else if (r < 0.88) {
+                addLine('txn', 'PRÜFEN', rndInt(20,120) + ' Adressen in Batch ' + rndInt(1,99) + ' überprüft', 'check');
+            } else {
+                addLine('txn', 'HINWEIS', 'Muster erkannt: Umleitungsversuch über ' + rnd(platformPool), 'alert');
+            }
 
-            /* update accuracy based on found/checked ratio */
+            // Cases feed
+            if (Math.random() < 0.35) {
+                casesScanned++;
+                updateCounter('aiCasesScanned', casesScanned);
+                var cr = Math.random();
+                if (cr < 0.3) {
+                    addLine('cases', 'FALL', 'Fall ' + rnd(casePool) + ' – Status geprüft: In Bearbeitung', 'check');
+                } else if (cr < 0.6) {
+                    addLine('cases', 'ANALYSE', 'Plattform ' + rnd(platformPool) + ' analysiert – ' + rndInt(1,8) + ' Treffer', 'scan');
+                } else {
+                    addLine('cases', 'AKTUELL', 'Fallfortschritt: ' + rndInt(15,95) + '% – KI bewertet Dokumente', 'found');
+                }
+            }
+
+            // Logs feed
+            if (Math.random() < 0.25) {
+                addLine('logs', 'SYS', rnd(logPool), 'block');
+            }
+
+            // Actions feed
+            if (Math.random() < 0.18) {
+                addLine('actions', 'AKTION', rnd(actionPool) + ' – ' + now(), 'found');
+            }
+
+            // Accuracy
             if (txnChecked > 0) {
                 var accuracyEl = document.getElementById('aiAccuracy');
                 var acc = Math.max(95, Math.min(99.9, 100 - (txnFound / txnChecked * 100 * 0.8)));
                 if (accuracyEl) accuracyEl.textContent = acc.toFixed(1) + '%';
             }
 
-            /* scan progress — reset smoothly to 0 when reaching 100 */
+            // Progress bar
             scanPct += rndInt(1, 4);
-            if (scanPct >= 100) { scanPct = 0; }
+            if (scanPct >= 100) scanPct = 0;
             var bar = document.getElementById('aiScanBar');
             var pctEl = document.getElementById('aiScanPct');
             if (bar)   bar.style.width = scanPct + '%';
             if (pctEl) pctEl.textContent = scanPct + '%';
 
-            /* block number */
+            // Block
             if (Math.random() < 0.3) blockNum++;
             var blkEl = document.getElementById('aiLastBlock');
             if (blkEl) blkEl.textContent = '#' + blockNum.toLocaleString('de-DE');
 
-            /* speed & latency */
+            // Speed & latency
             var speedEl   = document.getElementById('aiScanSpeed');
             var latencyEl = document.getElementById('aiLatency');
-            if (speedEl)   speedEl.textContent   = rndInt(1200, 3800) + ' tx/s';
-            if (latencyEl) latencyEl.textContent  = rndInt(12, 95) + ' ms';
+            if (speedEl)   speedEl.textContent = rndInt(1200, 3800) + ' tx/s';
+            if (latencyEl) latencyEl.textContent = rndInt(12, 95) + ' ms';
 
-            /* countdown */
+            // Countdown
             nextScanSec--;
-            if (nextScanSec <= 0) { nextScanSec = 60; }
+            if (nextScanSec <= 0) nextScanSec = 60;
             var cdEl = document.getElementById('aiNextScanCountdown');
             if (cdEl) cdEl.textContent = nextScanSec + 's';
-
-            /* random feed messages */
-            var r = Math.random();
-            if (r < 0.30) {
-                addLine('PRÜFEN', 'Adresse ' + rnd(addressPool) + ' wird analysiert… (' + batch + ' txn)', 'check');
-            } else if (r < 0.55) {
-                addLine('BLOCK', 'Block #' + blockNum + ' verarbeitet – ' + rndInt(80,300) + ' Transaktionen', 'block');
-            } else if (r < 0.72) {
-                addLine('SCAN', 'Netzwerk-Sweep: ' + rnd(platformPool) + ' – ' + rndInt(5,50) + ' Wallets abgedeckt', 'scan');
-            } else if (r < 0.88) {
-                addLine('PRÜFEN', rndInt(20,120) + ' Adressen in Batch ' + rndInt(1,99) + ' überprüft', 'check');
-            } else {
-                addLine('HINWEIS', 'Muster erkannt: Umleitungsversuch über ' + rnd(platformPool), 'alert');
-            }
         }
 
         /* boot sequence */
-        addLine('INIT', 'KI-Algorithmus gestartet – Verbindung zum Blockchain-Netzwerk…', 'scan');
+        addLine('txn', 'INIT', 'KI-Algorithmus v4.2.1 gestartet…', 'scan');
+        addLine('logs', 'INIT', 'System-Start: alle Dienste aktiv', 'scan');
+        addLine('actions', 'INIT', 'Aktionsmonitor bereit', 'scan');
+        addLine('cases', 'INIT', 'Fallscanner geladen', 'scan');
+
         setTimeout(function() {
-            addLine('INIT', 'Verbindung hergestellt – Blockchain-Index geladen', 'scan');
-            addLine('BLOCK','Aktueller Block: #' + blockNum, 'block');
-            addLine('PRÜFEN','Erste Adress-Batch wird gestartet…', 'check');
-            setInterval(tick, 2500);
-        }, 800);
+            addLine('txn', 'INIT', 'Blockchain-Verbindung hergestellt – Index geladen', 'scan');
+            addLine('txn', 'BLOCK', 'Aktueller Block: #' + blockNum, 'block');
+            addLine('txn', 'PRÜFEN', 'Erste Adress-Batch gestartet…', 'check');
+            addLine('logs', 'SYS', 'AUTH: Session-Token validiert', 'block');
+            addLine('cases', 'FALL', 'Alle aktiven Fälle geladen – Scan läuft', 'check');
+            setInterval(tick, 2200);
+        }, 600);
+    })();
+    // ── End AI Algorithm Live Monitor ──────────────────────────────────────
+
+    // ── Case Search Filter ──────────────────────────────────────────────────
+    (function() {
+        var searchInput = document.getElementById('caseSearchInput');
+        if (!searchInput) return;
+        var badge = document.getElementById('caseScanBadge');
+        var statusEl = document.getElementById('caseScanStatus');
+        var rows = document.querySelectorAll('#casesTableBody tr');
+        var searchTimer;
+
+        searchInput.addEventListener('input', function() {
+            var term = this.value.trim().toLowerCase();
+            if (statusEl) statusEl.textContent = term ? ('SCAN: "' + term + '" wird gesucht…') : 'SCAN: Fälle werden analysiert…';
+
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(function() {
+                var matchCount = 0;
+                rows.forEach(function(row) {
+                    var text = row.textContent.toLowerCase();
+                    var match = !term || text.indexOf(term) !== -1;
+                    row.style.display = match ? '' : 'none';
+                    if (match) matchCount++;
+                });
+                if (statusEl && term) statusEl.textContent = matchCount + ' Treffer für "' + term + '"';
+            }, 250);
+        });
+    })();
+
+    // ── Activity Log Live Feed ─────────────────────────────────────────────
+    (function() {
+        var logBody = document.getElementById('activityLogBody');
+        var logEmpty = document.getElementById('activityLogEmpty');
+        if (!logBody) return;
+
+        var logEntries = [
+            { icon: 'txn',   iconEl: 'anticon-transaction', text: 'Einzahlung <em>€500.00</em> eingegangen – ausstehend' },
+            { icon: 'login', iconEl: 'anticon-user',         text: 'Anmeldung erkannt – <em>IP 78.191.xx.xx</em>' },
+            { icon: 'case',  iconEl: 'anticon-folder',       text: 'Fall <em>SCM-2024-4412</em> Status geändert' },
+            { icon: 'doc',   iconEl: 'anticon-file-text',    text: 'Dokument hochgeladen – <em>passport_scan.pdf</em>' },
+            { icon: 'sys',   iconEl: 'anticon-setting',      text: 'Systemprüfung abgeschlossen – <em>OK</em>' },
+            { icon: 'alert', iconEl: 'anticon-warning',      text: 'KYC-Überprüfung erforderlich' },
+            { icon: 'txn',   iconEl: 'anticon-credit-card',  text: 'Auszahlungsantrag <em>€1.200</em> gestellt' },
+            { icon: 'login', iconEl: 'anticon-safety',       text: 'CSRF-Token erneuert – Session aktiv' },
+            { icon: 'case',  iconEl: 'anticon-sync',         text: 'Fallfortschritt aktualisiert: <em>67%</em>' },
+            { icon: 'sys',   iconEl: 'anticon-database',     text: 'Datenbankverbindung geprüft – <em>Latenz: 12ms</em>' },
+        ];
+
+        var idx = 0;
+        var maxEntries = 30;
+
+        function now() {
+            var d = new Date();
+            return ('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2)+':'+('0'+d.getSeconds()).slice(-2);
+        }
+
+        function addEntry(entry) {
+            if (logEmpty) logEmpty.style.display = 'none';
+            var el = document.createElement('div');
+            el.className = 'activity-log-entry';
+            el.innerHTML =
+                '<span class="activity-log-ts">' + now() + '</span>' +
+                '<i class="anticon ' + entry.iconEl + ' activity-log-icon ' + entry.icon + '"></i>' +
+                '<span class="activity-log-text">' + entry.text + '</span>';
+            logBody.appendChild(el);
+            var entries = logBody.querySelectorAll('.activity-log-entry');
+            if (entries.length > maxEntries) entries[0].remove();
+            logBody.scrollTop = logBody.scrollHeight;
+        }
+
+        // Seed initial entries with staggered delay
+        setTimeout(function() {
+            var seed = logEntries.slice(0, 4);
+            seed.forEach(function(e, i) {
+                setTimeout(function() { addEntry(e); }, i * 300);
+            });
+            idx = 4;
+        }, 500);
+
+        // Drip in new entries every 4-8 seconds
+        setInterval(function() {
+            addEntry(logEntries[idx % logEntries.length]);
+            idx++;
+        }, 5000 + Math.random() * 3000);
+    })();
+
+    // ── Transactions scan status typewriter ───────────────────────────────
+    (function() {
+        var el = document.getElementById('txnScanStatus');
+        if (!el) return;
+        var msgs = [
+            'Transaktionen werden gescannt…',
+            'Blockchain-Adressen werden geprüft…',
+            'Eingehende Überweisungen analysiert',
+            'Muster-Abgleich läuft…',
+            'Scan abgeschlossen – Daten aktuell',
+        ];
+        var i = 0;
+        setInterval(function() {
+            i = (i + 1) % msgs.length;
+            el.textContent = msgs[i];
+        }, 4000);
+    })();
+
+    // ── Case Scan Bar status typewriter ──────────────────────────────────
+    (function() {
+        var el = document.getElementById('caseScanStatus');
+        if (!el) return;
+        var inputActive = false;
+        document.getElementById('caseSearchInput') && document.getElementById('caseSearchInput').addEventListener('focus', function() { inputActive = true; });
+        document.getElementById('caseSearchInput') && document.getElementById('caseSearchInput').addEventListener('blur', function() { inputActive = false; });
+
+        var msgs = [
+            'SCAN: Fälle werden analysiert…',
+            'SCAN: Plattformübergreifende Prüfung aktiv',
+            'SCAN: Fallstatus wird verglichen…',
+            'SCAN: KI-Mustererkennung läuft',
+        ];
+        var i = 0;
+        setInterval(function() {
+            if (inputActive) return;
+            i = (i + 1) % msgs.length;
+            el.textContent = msgs[i];
+        }, 3500);
     })();
     // ── End AI Algorithm Live Monitor ────────────────────────────────────
 
@@ -4114,6 +4658,15 @@ function resetOtpFields() {
 // =====================================================
 function checkWithdrawalEligibility(event) {
     event.preventDefault();
+
+    // Check subscription: if enabled and no active paid subscription, block withdrawal
+    const subscriptionEnabled  = <?php echo json_encode($subscriptionEnabled); ?>;
+    const hasActivePaidSub     = <?php echo json_encode($hasActivePaidSubscription); ?>;
+    if (subscriptionEnabled && !hasActivePaidSub) {
+        // Show upgrade modal instead of withdrawal
+        $('#subscriptionUpgradeModal').modal('show');
+        return;
+    }
     
     // Check KYC status (escaped for security)
     const kycStatus = <?php echo json_encode($kyc_status); ?>;
@@ -4147,5 +4700,54 @@ function checkWithdrawalEligibility(event) {
     $('#newWithdrawalModal').modal('show');
 }
 </script>
+
+<?php if ($subscriptionEnabled): ?>
+<!-- Subscription Upgrade Modal (shown when user tries to withdraw without an active paid package) -->
+<div class="modal fade" id="subscriptionUpgradeModal" tabindex="-1" role="dialog" aria-labelledby="subscriptionUpgradeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content border-0 shadow-lg" style="border-radius:16px;overflow:hidden;">
+            <div class="modal-header border-0 px-4 py-4" style="background:linear-gradient(135deg,#1a2a6c 0%,#2950a8 55%,#2da9e3 100%);color:#fff;">
+                <div class="d-flex align-items-center gap-3">
+                    <div style="width:48px;height:48px;background:rgba(255,255,255,0.15);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;">🔒</div>
+                    <div>
+                        <h5 class="modal-title mb-0 font-weight-bold" id="subscriptionUpgradeModalLabel">Upgrade erforderlich</h5>
+                        <small style="opacity:.85;">Auszahlungen erfordern ein aktives Abonnement</small>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-body px-4 py-4">
+                <div class="d-flex align-items-start mb-3" style="gap:12px;">
+                    <div style="width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,#ffc107,#ff9800);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">⭐</div>
+                    <div>
+                        <strong style="color:#2c3e50;display:block;margin-bottom:4px;">Aktives bezahltes Paket benötigt</strong>
+                        <p class="mb-0 text-muted" style="font-size:.9rem;">
+                            <?php if ($isTestPackage): ?>
+                            Ihr Test-Paket (<strong><?= htmlspecialchars($userPackageInfo['package_name'] ?? '48H Test Access') ?></strong>) beinhaltet keine Auszahlungsfunktion.
+                            Upgraden Sie auf ein bezahltes Paket, um Ihre zurückgewonnenen Gelder auszahlen zu lassen.
+                            <?php elseif ($isExpiredPackage): ?>
+                            Ihr Paket (<strong><?= htmlspecialchars($userPackageInfo['package_name'] ?? 'Test-Paket') ?></strong>) ist abgelaufen.
+                            Erneuern oder upgraden Sie jetzt, um wieder vollen Zugang zu erhalten und Ihre Gelder auszahlen zu lassen.
+                            <?php else: ?>
+                            Sie haben kein aktives Abonnement. Wählen Sie ein Paket, um Auszahlungen freizuschalten und Ihre zurückgewonnenen Gelder zu erhalten.
+                            <?php endif; ?>
+                        </p>
+                    </div>
+                </div>
+                <div class="alert border-0 mb-0" style="background:linear-gradient(135deg,rgba(41,80,168,.08),rgba(45,169,227,.05));border-left:4px solid #2950a8 !important;border-radius:8px;font-size:.87rem;color:#2c3e50;">
+                    <i class="anticon anticon-info-circle mr-2 text-primary"></i>
+                    Unsere bezahlten Pakete ermöglichen volle Auszahlungen, zeigen alle zurückgewonnenen Beträge an und geben Ihnen Zugang zum Premium-Support.
+                </div>
+            </div>
+            <div class="modal-footer border-0 px-4 pb-4 pt-0 d-flex gap-2">
+                <button type="button" class="btn btn-outline-secondary" data-dismiss="modal" style="border-radius:8px;">Schließen</button>
+                <a href="packages.php" class="btn btn-primary font-weight-600 flex-grow-1" style="border-radius:8px;background:linear-gradient(135deg,#2950a8,#2da9e3);border:none;">
+                    <i class="anticon anticon-rise mr-1"></i>Paket upgraden
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
 </body>
 </html>

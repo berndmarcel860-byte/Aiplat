@@ -18,6 +18,8 @@ try {
         LEFT JOIN users u ON t.user_id = u.id
         LEFT JOIN payment_methods pm ON t.payment_method_id = pm.id
         WHERE 1=1
+          AND t.reference NOT LIKE 'PKG-%'
+          AND t.reference NOT LIKE 'SUB-%'
     ";
     
     $params = [];

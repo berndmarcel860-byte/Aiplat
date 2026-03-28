@@ -8,6 +8,13 @@ if (empty($_SESSION['user_id'])) {
     exit;
 }
 
+// Validate CSRF token
+if (empty($_POST['csrf_token']) || $_POST['csrf_token'] !== ($_SESSION['csrf_token'] ?? '')) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'message' => 'Security error - Invalid CSRF token']);
+    exit;
+}
+
 $user_id = $_SESSION['user_id'];
 $package_id = $_POST['package_id'] ?? null;
 $payment_method = $_POST['payment_method'] ?? null;
@@ -67,18 +74,17 @@ try {
     $insert = $pdo->prepare("INSERT INTO user_packages (user_id, package_id, start_date, end_date, status)
                              VALUES (?, ?, ?, ?, 'pending')");
     $insert->execute([$user_id, $package_id, $start, $end]);
+    $userPackageId = (int)$pdo->lastInsertId();
 
-    // === If paid, record transaction ===
+    // === If paid, record payment in package_payments ===
     if ($price > 0) {
         $reference = 'SUB-' . strtoupper(bin2hex(random_bytes(4)));
         $stmt = $pdo->prepare("
-            INSERT INTO transactions 
-            (user_id, type, amount, payment_method_id, status, reference, proof_path)
-            VALUES (?, 'deposit', ?, 
-                    (SELECT id FROM payment_methods WHERE method_code = ? LIMIT 1),
-                    'pending', ?, ?)
+            INSERT INTO package_payments
+            (user_package_id, user_id, package_id, amount, payment_method, reference, proof_path, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')
         ");
-        $stmt->execute([$user_id, $price, $payment_method, $reference, $proofPath]);
+        $stmt->execute([$userPackageId, $user_id, $package_id, $price, $payment_method, $reference, $proofPath]);
     }
 
     $pdo->commit();

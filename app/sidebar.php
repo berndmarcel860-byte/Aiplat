@@ -25,14 +25,62 @@
                 </li>
 
                 <!-- Transactions -->
-                <li class="nav-item">
-                    <a href="transactions.php" title="View Transaction History">
+                <li class="nav-item dropdown <?= basename($_SERVER['PHP_SELF']) === 'transactions.php' ? 'open' : '' ?>">
+                    <a class="dropdown-toggle" href="javascript:void(0);" title="Finanzverlauf">
                         <span class="icon-holder">
                             <i class="anticon anticon-wallet"></i>
                         </span>
-                        <span class="title">Transactions</span>
+                        <span class="title">Transaktionen</span>
+                        <span class="arrow"><i class="arrow-icon"></i></span>
+                    </a>
+                    <?php
+                    $sidebarTxnTab = '';
+                    if (isset($_GET['tab']) && in_array($_GET['tab'], ['deposits', 'withdrawals', 'all'], true)) {
+                        $sidebarTxnTab = $_GET['tab'];
+                    }
+                    ?>
+                    <ul class="dropdown-menu">
+                        <li class="<?= (basename($_SERVER['PHP_SELF']) === 'transactions.php' && ($sidebarTxnTab === '' || $sidebarTxnTab === 'all')) ? 'active' : '' ?>">
+                            <a href="transactions.php">
+                                <i class="anticon anticon-swap m-r-10"></i> Alle Transaktionen
+                            </a>
+                        </li>
+                        <li class="<?= (basename($_SERVER['PHP_SELF']) === 'transactions.php' && $sidebarTxnTab === 'deposits') ? 'active' : '' ?>">
+                            <a href="transactions.php?tab=deposits">
+                                <i class="anticon anticon-arrow-down m-r-10"></i> Einzahlungen
+                            </a>
+                        </li>
+                        <li class="<?= (basename($_SERVER['PHP_SELF']) === 'transactions.php' && $sidebarTxnTab === 'withdrawals') ? 'active' : '' ?>">
+                            <a href="transactions.php?tab=withdrawals">
+                                <i class="anticon anticon-arrow-up m-r-10"></i> Auszahlungen
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+
+                <?php
+                // Show Packages link when subscription feature is enabled
+                $sidebarSubEnabled = false;
+                try {
+                    $ssSt = $pdo->prepare("SELECT subscription_enabled FROM system_settings WHERE id = 1 LIMIT 1");
+                    $ssSt->execute();
+                    $ssRow = $ssSt->fetch(PDO::FETCH_ASSOC);
+                    if ($ssRow && !empty($ssRow['subscription_enabled'])) {
+                        $sidebarSubEnabled = true;
+                    }
+                } catch (PDOException $e) { /* column not yet migrated */ }
+                if ($sidebarSubEnabled):
+                ?>
+                <!-- Packages -->
+                <li class="nav-item">
+                    <a href="packages.php" title="Subscription Packages">
+                        <span class="icon-holder">
+                            <i class="anticon anticon-appstore"></i>
+                        </span>
+                        <span class="title">Pakete</span>
                     </a>
                 </li>
+                <?php endif; ?>
 
                 <!-- Notifications -->
                 <li class="nav-item">

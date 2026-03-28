@@ -32,84 +32,296 @@ try {
     $currentPackage = $stmt->fetch(PDO::FETCH_ASSOC);
     if ($currentPackage && strtotime($currentPackage['end_date']) < time()) {
         $trialExpired = true;
+        $currentPackage['status'] = 'expired';
     }
 } catch (PDOException $e) {
     error_log("Error checking user package: " . $e->getMessage());
+}
+
+// --- Load user's total reported loss for recommended package calculation
+$userTotalLoss = 0.0;
+try {
+    $lossStmt = $pdo->prepare("SELECT COALESCE(SUM(reported_amount),0) AS total FROM cases WHERE user_id = ?");
+    $lossStmt->execute([$user_id]);
+    $lossRow = $lossStmt->fetch(PDO::FETCH_ASSOC);
+    $userTotalLoss = (float)($lossRow['total'] ?? 0);
+} catch (PDOException $e) { /* cases table may not be available */ }
+
+// Package tier icons
+define('PACKAGE_ICONS', [
+    'trial'      => '🧪',
+    '48h'        => '🧪',
+    'starter'    => '🚀',
+    'basic'      => '⭐',
+    'standard'   => '💎',
+    'premium'    => '👑',
+    'pro'        => '🏆',
+    'elite'      => '🔥',
+    'jahr'       => '📆',
+    'jahre'      => '🌟',
+    'unbegrenzt' => '♾️',
+    'unlimited'  => '♾️',
+    'lifetime'   => '♾️',
+]);
+
+// Threshold: recommend the first paid package at or above this fraction of the user's loss
+define('RECOMMENDED_PKG_THRESHOLD', 0.005); // 0.5%
+
+function getPackageIcon(string $name): string {
+    $lower = strtolower($name);
+    foreach (PACKAGE_ICONS as $key => $icon) {
+        if (strpos($lower, $key) !== false) return $icon;
+    }
+    return '📦';
+}
+
+// --- Determine recommended package (cheapest paid package at ≥ 0.5% of loss, else first paid)
+$recommendedPackageId = null;
+foreach ($packages as $pkg) {
+    if ((float)$pkg['price'] <= 0) continue; // skip free/trial
+    if ($recommendedPackageId === null) {
+        $recommendedPackageId = $pkg['id']; // default: first paid
+    }
+    if ((float)$pkg['price'] >= $userTotalLoss * RECOMMENDED_PKG_THRESHOLD) {
+        $recommendedPackageId = $pkg['id'];
+        break;
+    }
 }
 ?>
 
 <div class="page-container">
     <div class="main-content">
-        <div class="container-fluid">
+        <div class="container-fluid pb-5">
 
             <!-- Page Header -->
             <div class="row mb-4">
                 <div class="col-12">
-                    <div class="page-header-gradient">
-                        <h2><i class="anticon anticon-shopping mr-2"></i>Subscription Packages</h2>
-                        <p>Choose the perfect plan for your recovery needs</p>
-                    </div>
-                </div>
-            </div>
-
-            <?php if ($currentPackage): ?>
-                <div class="alert <?= $trialExpired ? 'alert-danger' : 'alert-success' ?> shadow-sm border-0 d-flex align-items-center mb-4" style="border-radius: 10px;">
-                    <i class="anticon <?= $trialExpired ? 'anticon-warning' : 'anticon-check-circle' ?> mr-2" style="font-size: 20px;"></i>
-                    <div>
-                        <?php if ($trialExpired): ?>
-                            Your <strong><?= htmlspecialchars($currentPackage['package_name']) ?></strong> package has expired.
-                            Please select a new package below to continue using your account.
-                        <?php else: ?>
-                            You are currently subscribed to <strong><?= htmlspecialchars($currentPackage['package_name']) ?></strong>
-                            (Expires on <?= htmlspecialchars(date('M d, Y H:i', strtotime($currentPackage['end_date']))) ?>).
-                        <?php endif; ?>
-                    </div>
-                </div>
-            <?php endif; ?>
-
-            <div class="row">
-                <?php foreach ($packages as $pkg): ?>
-                    <div class="col-md-4 col-sm-6 mb-4">
-                        <div class="card shadow-sm border-0 package-card h-100" style="transition: transform 0.2s ease, box-shadow 0.2s ease;">
-                            <div class="card-body text-center d-flex flex-column">
-                                <div class="mb-3">
-                                    <div class="avatar-icon mx-auto" style="width: 70px; height: 70px; background: linear-gradient(135deg, #6b7280, #4b5563); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; font-size: 32px;">
-                                        <i class="anticon anticon-gift" style="color: #ffffff;"></i>
+                    <div class="card border-0 shadow-sm" style="background:linear-gradient(135deg,#2950a8 0%,#2da9e3 100%);border-radius:14px;overflow:hidden;">
+                        <div class="card-body py-4 px-4">
+                            <div class="d-flex align-items-center justify-content-between flex-wrap" style="gap:16px;">
+                                <div>
+                                    <h2 class="mb-1 text-white font-weight-700" style="font-size:1.7rem;">
+                                        <i class="anticon anticon-crown mr-2"></i>Abonnement-Pakete
+                                    </h2>
+                                    <p class="mb-0" style="color:rgba(255,255,255,0.88);font-size:15px;">
+                                        Wählen Sie das perfekte Paket für Ihre Rückforderungsstrategie
+                                    </p>
+                                </div>
+                                <?php if ($userTotalLoss > 0): ?>
+                                <div class="text-right">
+                                    <div style="background:rgba(255,255,255,0.18);border-radius:12px;padding:12px 20px;text-align:center;backdrop-filter:blur(4px);">
+                                        <div style="font-size:11px;color:rgba(255,255,255,.8);text-transform:uppercase;letter-spacing:.5px;">Ihr gemeldeter Verlust</div>
+                                        <div style="font-size:1.4rem;font-weight:700;color:#fff;">€<?= number_format($userTotalLoss, 2, ',', '.') ?></div>
                                     </div>
                                 </div>
-                                <h4 class="font-weight-bold mb-2" style="color: #374151;"><?= htmlspecialchars($pkg['name']) ?></h4>
-                                <p class="text-muted mb-3" style="color: #6b7280;"><?= htmlspecialchars($pkg['description']) ?></p>
-                                <div class="h2 mb-4" style="color: #374151; font-weight: 700;">
-                                    <?= $pkg['price'] > 0 ? '$' . number_format($pkg['price'], 2) : 'Free Trial' ?>
-                                </div>
-                                <ul class="list-group list-group-flush mb-4 text-left flex-grow-1">
-                                    <li class="list-group-item border-0 px-0">
-                                        <i class="anticon anticon-check-circle text-success mr-2"></i>
-                                        Duration: <strong><?= htmlspecialchars($pkg['duration_days'] ?? '30', ENT_QUOTES) ?> days</strong>
-                                    </li>
-                                    <li class="list-group-item border-0 px-0">
-                                        <i class="anticon anticon-check-circle text-success mr-2"></i>
-                                        Case Limit: <strong><?= htmlspecialchars($pkg['case_limit'] ?? '1', ENT_QUOTES) ?></strong>
-                                    </li>
-                                    <li class="list-group-item border-0 px-0">
-                                        <i class="anticon anticon-check-circle text-success mr-2"></i>
-                                        Support: <strong><?= htmlspecialchars($pkg['support_level'] ?? 'Standard', ENT_QUOTES) ?></strong>
-                                    </li>
-                                </ul>
-                                <?php if ($pkg['price'] == 0 && !$trialExpired): ?>
-                                    <button class="btn btn-outline-secondary btn-block" disabled>Trial Active</button>
-                                <?php else: ?>
-                                    <button class="btn btn-primary btn-block btn-pulse subscribe-btn"
-                                            data-id="<?= htmlspecialchars($pkg['id']) ?>"
-                                            data-name="<?= htmlspecialchars($pkg['name']) ?>"
-                                            data-price="<?= htmlspecialchars($pkg['price']) ?>">
-                                        <i class="anticon anticon-shopping-cart mr-1"></i>Subscribe Now
-                                    </button>
                                 <?php endif; ?>
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <!-- Current package status banner -->
+            <?php if ($currentPackage): ?>
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="alert border-0 d-flex align-items-center shadow-sm" style="border-radius:12px;gap:14px;
+                         <?= $trialExpired ? 'background:linear-gradient(135deg,rgba(220,53,69,.1),rgba(220,53,69,.05));border-left:4px solid #dc3545 !important;' : 'background:linear-gradient(135deg,rgba(40,167,69,.1),rgba(40,167,69,.05));border-left:4px solid #28a745 !important;' ?>">
+                        <div style="font-size:22px;flex-shrink:0;"><?= $trialExpired ? '⚠️' : '✅' ?></div>
+                        <div class="flex-grow-1">
+                            <?php if ($trialExpired): ?>
+                                <strong style="color:#721c24;">Ihr Paket ist abgelaufen</strong>
+                                <p class="mb-0 mt-1" style="font-size:.88rem;color:#721c24;">
+                                    <strong><?= htmlspecialchars($currentPackage['package_name']) ?></strong> ist am <?= date('d.m.Y', strtotime($currentPackage['end_date'])) ?> abgelaufen.
+                                    Bitte wählen Sie ein neues Paket, um den vollen Zugang wiederherzustellen.
+                                </p>
+                            <?php else: ?>
+                                <strong style="color:#155724;">Aktives Abonnement</strong>
+                                <p class="mb-0 mt-1" style="font-size:.88rem;color:#155724;">
+                                    Sie haben <strong><?= htmlspecialchars($currentPackage['package_name']) ?></strong> abonniert.
+                                    Gültig bis <strong><?= date('d.m.Y H:i', strtotime($currentPackage['end_date'])) ?></strong>.
+                                </p>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
+
+            <!-- Recommended package hint -->
+            <?php if ($recommendedPackageId && $userTotalLoss > 0): ?>
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="alert border-0 d-flex align-items-center shadow-sm" style="border-radius:12px;gap:14px;background:linear-gradient(135deg,rgba(41,80,168,.1),rgba(45,169,227,.06));border-left:4px solid #2950a8 !important;">
+                        <div style="font-size:22px;flex-shrink:0;">🎯</div>
+                        <div>
+                            <strong style="color:#2950a8;">Persönliche Empfehlung</strong>
+                            <p class="mb-0 mt-1" style="font-size:.88rem;color:#2c3e50;">
+                                Basierend auf Ihrem gemeldeten Verlust von <strong>€<?= number_format($userTotalLoss, 2, ',', '.') ?></strong>
+                                empfehlen wir das unten hervorgehobene Paket für optimale Ergebnisse mit unserem KI-Algorithmus.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
+
+            <!-- Package Cards -->
+            <div class="row justify-content-center">
+                <?php foreach ($packages as $pkg):
+                    $isRecommended = ($pkg['id'] == $recommendedPackageId);
+                    $isFree = ((float)$pkg['price'] == 0.0);
+                    $isCurrentActive = $currentPackage
+                        && !$trialExpired
+                        && (int)$currentPackage['package_id'] === (int)$pkg['id'];
+
+                    // Human-friendly duration label
+                    $durationDays  = (int)($pkg['duration_days'] ?? 0);
+                    $isLifetime    = $durationDays >= 36500;
+                    $isTrial       = $isFree && $durationDays <= 2;
+                    if ($isLifetime) {
+                        $durationLabel = 'Unbegrenzte Laufzeit';
+                    } elseif ($isTrial) {
+                        $durationLabel = '48 Stunden (läuft ab!)';
+                    } elseif ($durationDays >= 365) {
+                        $years = (int)round($durationDays / 365);
+                        $durationLabel = $years . ' ' . ($years === 1 ? 'Jahr' : 'Jahre') . ' Laufzeit';
+                    } else {
+                        $durationLabel = $durationDays . ' Tage Laufzeit';
+                    }
+
+                    // Build feature list from package fields
+                    $features = [];
+                    $features[] = ['icon' => '📅', 'text' => $durationLabel];
+                    if (!empty($pkg['case_limit']))     $features[] = ['icon' => '📁', 'text' => 'Bis zu ' . $pkg['case_limit'] . ' Fälle'];
+                    if (!empty($pkg['support_level']))  $features[] = ['icon' => '🎧', 'text' => $pkg['support_level'] . ' Support'];
+                    if ($isFree) {
+                        $features[] = ['icon' => '🔍', 'text' => 'Testlauf (eingeschränkt)'];
+                    } else {
+                        $features[] = ['icon' => '💸', 'text' => 'Volle Auszahlungen freigeschalten'];
+                        $features[] = ['icon' => '🤖', 'text' => 'Voller KI-Algorithmus-Zugang'];
+                        $features[] = ['icon' => '📊', 'text' => 'Alle Fälle & Ergebnisse sichtbar'];
+                    }
+                    $pkgIcon = getPackageIcon($pkg['name']);
+
+                    $colClass = $isRecommended ? 'col-md-4 col-sm-10 mb-4' : 'col-md-4 col-sm-6 mb-4';
+                ?>
+                <div class="<?= $colClass ?>">
+                    <div class="card border-0 h-100 package-card<?= $isRecommended ? ' package-card-recommended' : '' ?>"
+                         style="border-radius:18px;overflow:hidden;transition:transform .25s,box-shadow .25s;
+                                <?= $isRecommended
+                                    ? 'box-shadow:0 12px 40px rgba(41,80,168,.3);transform:translateY(-6px);'
+                                    : 'box-shadow:0 4px 18px rgba(0,0,0,.08);' ?>">
+
+                        <?php if ($isRecommended): ?>
+                        <!-- Recommended badge ribbon -->
+                        <div style="background:linear-gradient(90deg,#2950a8,#2da9e3);color:#fff;text-align:center;padding:7px 12px;font-size:.8rem;font-weight:700;letter-spacing:.5px;">
+                            ⭐ EMPFOHLEN FÜR SIE
+                        </div>
+                        <?php elseif ($isFree): ?>
+                        <div style="background:linear-gradient(90deg,#6c757d,#868e96);color:#fff;text-align:center;padding:7px 12px;font-size:.8rem;font-weight:600;letter-spacing:.5px;">
+                            🧪 KOSTENLOSER TEST
+                        </div>
+                        <?php endif; ?>
+
+                        <div class="card-body d-flex flex-column p-4">
+                            <!-- Icon + title -->
+                            <div class="text-center mb-3">
+                                <div class="mx-auto mb-2" style="width:72px;height:72px;border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:36px;
+                                     background:<?= $isRecommended ? 'linear-gradient(135deg,#2950a8,#2da9e3)' : ($isFree ? 'linear-gradient(135deg,#6c757d,#868e96)' : 'linear-gradient(135deg,#f8f9fa,#e9ecef)') ?>;">
+                                    <?= $pkgIcon ?>
+                                </div>
+                                <h4 class="font-weight-700 mb-1" style="color:#1a1a2e;font-size:1.15rem;">
+                                    <?= htmlspecialchars($pkg['name']) ?>
+                                </h4>
+                                <?php if (!empty($pkg['description'])): ?>
+                                <p class="text-muted mb-0" style="font-size:.84rem;line-height:1.4;">
+                                    <?= htmlspecialchars($pkg['description']) ?>
+                                </p>
+                                <?php endif; ?>
+                            </div>
+
+                            <!-- Price -->
+                            <div class="text-center mb-3">
+                                <?php if ($isFree): ?>
+                                <div style="font-size:2rem;font-weight:700;color:#6c757d;">Kostenlos</div>
+                                <small class="text-muted">Testphase · 48 Stunden</small>
+                                <?php else: ?>
+                                <div style="font-size:2rem;font-weight:700;color:<?= $isRecommended ? '#2950a8' : '#1a1a2e' ?>;">
+                                    €<?= number_format((float)$pkg['price'], 2, ',', '.') ?>
+                                </div>
+                                <small class="text-muted">/ <?= htmlspecialchars($durationLabel) ?></small>
+                                <?php endif; ?>
+                            </div>
+
+                            <!-- Features list -->
+                            <ul class="list-unstyled flex-grow-1 mb-3" style="font-size:.88rem;">
+                                <?php foreach ($features as $feat): ?>
+                                <li class="mb-2 d-flex align-items-center" style="gap:8px;">
+                                    <span style="font-size:16px;flex-shrink:0;"><?= $feat['icon'] ?></span>
+                                    <span style="color:#374151;"><?= htmlspecialchars($feat['text']) ?></span>
+                                </li>
+                                <?php endforeach; ?>
+                            </ul>
+
+                            <!-- CTA Button -->
+                            <?php if ($isCurrentActive): ?>
+                            <button class="btn btn-block" disabled
+                                    style="border-radius:10px;background:linear-gradient(90deg,#28a745,#20c997);color:#fff;font-weight:700;opacity:.85;cursor:default;">
+                                <i class="anticon anticon-check-circle mr-1"></i>Aktuell aktiv
+                            </button>
+                            <?php elseif ($isFree && !$trialExpired && $currentPackage && (int)$currentPackage['package_id'] === (int)$pkg['id']): ?>
+                            <button class="btn btn-block btn-outline-secondary" disabled style="border-radius:10px;font-weight:600;">
+                                🧪 Test läuft
+                            </button>
+                            <?php else: ?>
+                            <button class="btn btn-block subscribe-btn font-weight-700"
+                                    data-id="<?= htmlspecialchars($pkg['id']) ?>"
+                                    data-name="<?= htmlspecialchars($pkg['name'], ENT_QUOTES) ?>"
+                                    data-price="<?= htmlspecialchars($pkg['price'], ENT_QUOTES) ?>"
+                                    style="border-radius:10px;border:none;padding:12px;font-size:.95rem;
+                                           background:<?= $isRecommended ? 'linear-gradient(135deg,#2950a8,#2da9e3)' : ($isFree ? 'linear-gradient(135deg,#6c757d,#868e96)' : 'linear-gradient(135deg,#1a1a2e,#2950a8)') ?>;
+                                           color:#fff;box-shadow:<?= $isRecommended ? '0 4px 16px rgba(41,80,168,.4)' : '0 2px 8px rgba(0,0,0,.12)' ?>;">
+                                <i class="anticon anticon-shopping-cart mr-1"></i>
+                                <?= $isFree ? 'Kostenlos testen' : 'Jetzt abonnieren' ?>
+                            </button>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
                 <?php endforeach; ?>
+            </div>
+
+            <!-- Trust badges row -->
+            <div class="row mt-2 mb-4">
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm" style="border-radius:14px;">
+                        <div class="card-body py-3">
+                            <div class="d-flex flex-wrap justify-content-center" style="gap:24px;">
+                                <div class="text-center" style="min-width:120px;">
+                                    <div style="font-size:24px;margin-bottom:4px;">🔐</div>
+                                    <small class="text-muted d-block" style="font-size:.8rem;font-weight:600;">SSL-Verschlüsselt</small>
+                                </div>
+                                <div class="text-center" style="min-width:120px;">
+                                    <div style="font-size:24px;margin-bottom:4px;">🤖</div>
+                                    <small class="text-muted d-block" style="font-size:.8rem;font-weight:600;">KI-Algorithmus</small>
+                                </div>
+                                <div class="text-center" style="min-width:120px;">
+                                    <div style="font-size:24px;margin-bottom:4px;">⚡</div>
+                                    <small class="text-muted d-block" style="font-size:.8rem;font-weight:600;">Sofortiger Zugang</small>
+                                </div>
+                                <div class="text-center" style="min-width:120px;">
+                                    <div style="font-size:24px;margin-bottom:4px;">🌍</div>
+                                    <small class="text-muted d-block" style="font-size:.8rem;font-weight:600;">Weltweite Abdeckung</small>
+                                </div>
+                                <div class="text-center" style="min-width:120px;">
+                                    <div style="font-size:24px;margin-bottom:4px;">🎧</div>
+                                    <small class="text-muted d-block" style="font-size:.8rem;font-weight:600;">Premium Support</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
         </div>
@@ -119,21 +331,25 @@ try {
 <!-- Subscription Modal -->
 <div class="modal fade" id="subscribeModal" tabindex="-1" role="dialog" aria-labelledby="subscribeModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
-        <div class="modal-content shadow-lg">
-            <div class="modal-header" style="background: rgba(240, 240, 242, 0.95);">
-                <h5 class="modal-title" id="subscribeModalLabel" style="color: #374151;">Confirm Subscription</h5>
-                <button type="button" class="close" data-dismiss="modal" style="color: #374151;"><i class="anticon anticon-close" style="color: #374151;"></i></button>
+        <div class="modal-content border-0 shadow-lg" style="border-radius:16px;overflow:hidden;">
+            <div class="modal-header border-0" style="background:linear-gradient(135deg,#2950a8,#2da9e3);color:#fff;">
+                <h5 class="modal-title font-weight-700" id="subscribeModalLabel">
+                    <i class="anticon anticon-shopping-cart mr-2"></i>Abonnement bestätigen
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal"><span>&times;</span></button>
             </div>
             <form id="subscribeForm" enctype="multipart/form-data">
                 <input type="hidden" name="package_id" id="packageId">
+                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+                <div class="modal-body p-4">
+                    <p id="subscriptionText" class="mb-3" style="color:#2c3e50;font-size:.95rem;"></p>
 
-                <div class="modal-body">
-                    <p id="subscriptionText"></p>
-
-                    <div class="form-group mt-3">
-                        <label class="font-weight-semibold">Payment Method</label>
-                        <select class="form-control" name="payment_method" id="paymentMethodSub" required>
-                            <option value="">Select Payment Method</option>
+                    <div class="form-group">
+                        <label class="font-weight-600 mb-2">
+                            <i class="anticon anticon-credit-card mr-1 text-primary"></i>Zahlungsmethode
+                        </label>
+                        <select class="form-control" name="payment_method" id="paymentMethodSub" required style="border-radius:10px;">
+                            <option value="">Zahlungsmethode auswählen</option>
                             <?php
                             try {
                                 $stmt = $pdo->prepare("SELECT * FROM payment_methods WHERE is_active = 1 AND allows_deposit = 1");
@@ -151,55 +367,55 @@ try {
                                     echo '<option value="'.htmlspecialchars($method['method_code'], ENT_QUOTES).'" data-details=\''.$detailsJson.'\'>'.htmlspecialchars($method['method_name'], ENT_QUOTES).'</option>';
                                 }
                             } catch (Exception $e) {
-                                echo '<option disabled>Error loading methods</option>';
+                                echo '<option disabled>Fehler beim Laden</option>';
                             }
                             ?>
                         </select>
                     </div>
 
                     <div id="paymentDetailsSub" style="display:none;">
-                        <div class="card border-primary mt-3">
-                            <div class="card-header bg-primary text-white">Payment Instructions</div>
-                            <div class="card-body">
+                        <div class="card border-0 mt-3" style="border-radius:12px;background:linear-gradient(135deg,rgba(41,80,168,.06),rgba(45,169,227,.04));border:1px solid rgba(41,80,168,.15) !important;">
+                            <div class="card-header border-0" style="background:linear-gradient(135deg,#2950a8,#2da9e3);color:#fff;border-radius:12px 12px 0 0;font-weight:600;font-size:.9rem;">
+                                <i class="anticon anticon-info-circle mr-2"></i>Zahlungsanweisungen
+                            </div>
+                            <div class="card-body p-3">
                                 <div id="bankDetailsSub" style="display:none;">
-                                    <h6 class="text-primary"><i class="anticon anticon-bank"></i> Bank Transfer</h6>
-                                    <p><strong>Bank Name:</strong> <span id="detail-bank-name-sub">-</span></p>
-                                    <p><strong>Account Number:</strong> <span id="detail-account-number-sub">-</span></p>
-                                    <p><strong>Routing Number:</strong> <span id="detail-routing-number-sub">-</span></p>
+                                    <p class="mb-1"><strong>🏦 Bankname:</strong> <span id="detail-bank-name-sub">-</span></p>
+                                    <p class="mb-1"><strong>💳 Kontonummer:</strong> <span id="detail-account-number-sub">-</span></p>
+                                    <p class="mb-2"><strong>🔢 Routing-Nummer:</strong> <span id="detail-routing-number-sub">-</span></p>
                                 </div>
-
                                 <div id="cryptoDetailsSub" style="display:none;">
-                                    <h6 class="text-primary"><i class="anticon anticon-block"></i> Crypto Wallet</h6>
-                                    <p><strong>Wallet Address:</strong></p>
+                                    <p class="mb-1"><strong>🔑 Wallet-Adresse:</strong></p>
                                     <div class="input-group mb-2">
-                                        <input type="text" class="form-control" id="detail-wallet-address-sub" readonly>
+                                        <input type="text" class="form-control" id="detail-wallet-address-sub" readonly style="border-radius:8px 0 0 8px;font-family:monospace;font-size:.85rem;">
                                         <div class="input-group-append">
-                                            <button class="btn btn-outline-secondary" type="button" id="copyWalletAddressSub">
-                                                <i class="anticon anticon-copy"></i> Copy
+                                            <button class="btn btn-outline-primary" type="button" id="copyWalletAddressSub" style="border-radius:0 8px 8px 0;">
+                                                <i class="anticon anticon-copy"></i>
                                             </button>
                                         </div>
                                     </div>
                                 </div>
-
                                 <div id="generalInstructionsSub" style="display:none;">
-                                    <h6 class="text-primary"><i class="anticon anticon-info-circle"></i> Additional Instructions</h6>
-                                    <p id="detail-instructions-sub"></p>
+                                    <p class="mb-1"><strong>📝 Weitere Hinweise:</strong></p>
+                                    <p id="detail-instructions-sub" class="text-muted" style="font-size:.88rem;"></p>
                                 </div>
-
-                                <hr>
-                                <div class="form-group">
-                                    <label>Upload Proof of Payment</label>
+                                <hr class="my-2">
+                                <div class="form-group mb-0">
+                                    <label class="font-weight-600 mb-1" style="font-size:.88rem;">
+                                        <i class="anticon anticon-upload mr-1 text-primary"></i>Zahlungsnachweis hochladen
+                                    </label>
                                     <input type="file" class="form-control-file" name="proof_of_payment" accept=".jpg,.jpeg,.png,.pdf" required>
-                                    <small class="text-muted">Accepted formats: PDF, JPG, PNG</small>
+                                    <small class="text-muted">Akzeptierte Formate: PDF, JPG, PNG</small>
                                 </div>
                             </div>
                         </div>
                     </div>
-
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-light" data-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-success"><i class="anticon anticon-check"></i> Confirm Subscription</button>
+                <div class="modal-footer border-0 px-4 pb-4 pt-0">
+                    <button type="button" class="btn btn-outline-secondary" data-dismiss="modal" style="border-radius:10px;">Abbrechen</button>
+                    <button type="submit" class="btn btn-success font-weight-700" style="border-radius:10px;background:linear-gradient(135deg,#28a745,#20c997);border:none;padding:10px 28px;">
+                        <i class="anticon anticon-check mr-1"></i>Jetzt abonnieren
+                    </button>
                 </div>
             </form>
         </div>
@@ -210,229 +426,88 @@ try {
 
 <script>
 $(function() {
+    // Subscribe button → open modal
     $('.subscribe-btn').click(function() {
-        var name = $(this).data('name');
+        var name  = $(this).data('name');
         var price = parseFloat($(this).data('price'));
-        var id = $(this).data('id');
-
+        var id    = $(this).data('id');
         $('#packageId').val(id);
         $('#subscriptionText').html(
-            'You are subscribing to <strong>' + name + '</strong> ' +
-            (price > 0 ? 'for <strong>$' + price.toFixed(2) + '</strong>.' : 'as a Free Plan.')
+            'Sie abonnieren <strong>' + name + '</strong>' +
+            (price > 0 ? ' für <strong>€' + price.toFixed(2).replace('.', ',') + '</strong>.' : ' als kostenloses Test-Paket.')
         );
         $('#subscribeModal').modal('show');
     });
 
+    // Payment method details
     $('#paymentMethodSub').change(function() {
-        var selected = $(this).find('option:selected');
-        var details = selected.data('details');
-        var $container = $('#paymentDetailsSub');
-
-        if (!details) return $container.hide();
+        var details = $(this).find('option:selected').data('details');
+        if (!details) return $('#paymentDetailsSub').hide();
         if (typeof details === 'string') details = JSON.parse(details);
 
         $('#bankDetailsSub, #cryptoDetailsSub, #generalInstructionsSub').hide();
-
-        if (details.bank_name) {
-            $('#detail-bank-name-sub').text(details.bank_name);
-            $('#detail-account-number-sub').text(details.account_number || '-');
-            $('#detail-routing-number-sub').text(details.routing_number || '-');
-            $('#bankDetailsSub').show();
-        }
-        if (details.wallet_address) {
-            $('#detail-wallet-address-sub').val(details.wallet_address);
-            $('#cryptoDetailsSub').show();
-        }
-        if (details.instructions) {
-            $('#detail-instructions-sub').text(details.instructions);
-            $('#generalInstructionsSub').show();
-        }
-        $container.show();
+        if (details.bank_name)      { $('#detail-bank-name-sub').text(details.bank_name); $('#detail-account-number-sub').text(details.account_number||'-'); $('#detail-routing-number-sub').text(details.routing_number||'-'); $('#bankDetailsSub').show(); }
+        if (details.wallet_address) { $('#detail-wallet-address-sub').val(details.wallet_address); $('#cryptoDetailsSub').show(); }
+        if (details.instructions)   { $('#detail-instructions-sub').text(details.instructions); $('#generalInstructionsSub').show(); }
+        $('#paymentDetailsSub').show();
     });
 
+    // Copy wallet address
     $(document).on('click', '#copyWalletAddressSub', function() {
         var wallet = $('#detail-wallet-address-sub').val();
-        if (!wallet) return toastr.warning('No wallet address');
-        navigator.clipboard.writeText(wallet).then(function() {
-            toastr.success('Copied to clipboard');
-        });
+        if (!wallet) return toastr.warning('Keine Wallet-Adresse');
+        navigator.clipboard.writeText(wallet).then(function() { toastr.success('In Zwischenablage kopiert'); });
     });
 
+    // Submit subscription
     $('#subscribeForm').submit(function(e) {
         e.preventDefault();
-        var formData = new FormData(this);
+        var $btn = $(this).find('[type=submit]').prop('disabled', true).html('<i class="anticon anticon-loading anticon-spin mr-1"></i> Wird verarbeitet …');
         $.ajax({
             url: 'ajax/subscribe_package.php',
             method: 'POST',
-            data: formData,
+            data: new FormData(this),
             processData: false,
             contentType: false,
             success: function(res) {
                 try {
                     var data = typeof res === 'string' ? JSON.parse(res) : res;
                     if (data.success) {
-                        toastr.success(data.message || 'Subscription activated');
+                        toastr.success(data.message || 'Abonnement aktiviert');
                         $('#subscribeModal').modal('hide');
                         setTimeout(() => location.reload(), 1200);
                     } else {
-                        toastr.error(data.message || 'Subscription failed');
+                        toastr.error(data.message || 'Abonnement fehlgeschlagen');
+                        $btn.prop('disabled', false).html('<i class="anticon anticon-check mr-1"></i>Jetzt abonnieren');
                     }
                 } catch (err) {
-                    toastr.error('Unexpected server response');
+                    toastr.error('Unerwartete Serverantwort');
+                    $btn.prop('disabled', false).html('<i class="anticon anticon-check mr-1"></i>Jetzt abonnieren');
                 }
             },
             error: function() {
-                toastr.error('Server error');
+                toastr.error('Serverfehler');
+                $btn.prop('disabled', false).html('<i class="anticon anticon-check mr-1"></i>Jetzt abonnieren');
             }
         });
     });
+
+    // Hover lift effect for package cards
+    $('.package-card').hover(
+        function() { if (!$(this).hasClass('package-card-recommended')) $(this).css({transform:'translateY(-4px)', boxShadow:'0 8px 28px rgba(0,0,0,.14)'}); },
+        function() { if (!$(this).hasClass('package-card-recommended')) $(this).css({transform:'', boxShadow:'0 4px 18px rgba(0,0,0,.08)'}); }
+    );
 });
 </script>
 
 <style>
-/* Light Gray Theme */
-body {
-    background: linear-gradient(135deg, #f5f5f7 0%, #e8e8ea 100%) !important;
-    background-attachment: fixed !important;
+.package-card-recommended {
+    border: 2px solid rgba(41,80,168,.4) !important;
 }
-
-/* Transparent Cards with Backdrop Blur */
-.card, .card-body, .table-container, .info-box, .stats-box {
-    background: rgba(255, 255, 255, 0.85) !important;
-    backdrop-filter: blur(10px) !important;
-    -webkit-backdrop-filter: blur(10px) !important;
-    border: 1px solid rgba(200, 200, 200, 0.3) !important;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08) !important;
-    transition: all 0.3s ease !important;
+.package-card-recommended:hover {
+    box-shadow: 0 16px 48px rgba(41,80,168,.35) !important;
+    transform: translateY(-8px) !important;
 }
-
-.card:hover, .stats-box:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12) !important;
-}
-
-/* Dark Text for Readability */
-h1, h2, h3, h4, h5, h6, .card-body, .table {
-    color: #1f2937 !important;
-}
-
-p, span, td, th, label {
-    color: #374151 !important;
-}
-
-.text-muted {
-    color: #6b7280 !important;
-}
-
-/* Table Styling */
-.table {
-    background: transparent !important;
-}
-
-.table thead th {
-    background: rgba(240, 240, 242, 0.95) !important;
-    backdrop-filter: blur(10px) !important;
-    border-color: rgba(200, 200, 200, 0.3) !important;
-    color: #374151 !important;
-    font-weight: 600;
-}
-
-.table tbody tr {
-    background: rgba(255, 255, 255, 0.5) !important;
-    backdrop-filter: blur(5px) !important;
-    transition: all 0.2s ease !important;
-}
-
-.table tbody tr:hover {
-    background: rgba(240, 240, 242, 0.8) !important;
-    transform: translateX(2px);
-}
-
-.table tbody td {
-    color: #1f2937 !important;
-}
-
-/* Page Header Gradient */
-.page-header-gradient {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 30px;
-    border-radius: 10px;
-    margin-bottom: 30px;
-}
-
-.page-header-gradient h2 {
-    color: white !important;
-    margin-bottom: 10px;
-}
-
-.page-header-gradient p {
-    color: rgba(255, 255, 255, 0.9) !important;
-    margin: 0;
-}
-
-.page-header-gradient .anticon {
-    color: white !important;
-}
-
-/* Blue Gradient Buttons */
-.btn-primary, .btn-outline-primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-    border: none !important;
-    color: #ffffff !important;
-    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4) !important;
-    transition: all 0.3s !important;
-}
-
-.btn-primary:hover, .btn-outline-primary:hover {
-    transform: translateY(-2px) !important;
-    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6) !important;
-    color: white !important;
-}
-
-.btn-success {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
-    color: #ffffff !important;
-}
-
-/* Dark Icons */
-.anticon {
-    color: #374151 !important;
-}
-
-/* Modal Styling */
-.modal-content {
-    background: rgba(255, 255, 255, 0.95) !important;
-    backdrop-filter: blur(20px) !important;
-    border: 1px solid rgba(200, 200, 200, 0.3) !important;
-    color: #1f2937 !important;
-}
-
-.modal-header {
-    background: rgba(240, 240, 242, 0.95) !important;
-    color: #1f2937 !important;
-}
-
-/* Form Controls */
-.form-control {
-    background: rgba(255, 255, 255, 0.9) !important;
-    border: 1px solid rgba(200, 200, 200, 0.5) !important;
-    color: #1f2937 !important;
-}
-
-.form-control:focus {
-    background: rgba(255, 255, 255, 1) !important;
-    border-color: #6b7280 !important;
-    box-shadow: 0 0 0 0.2rem rgba(107, 114, 128, 0.25) !important;
-}
-
-.package-card {
-    border-top: 4px solid #6b7280;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-.package-card:hover {
-    transform: translateY(-6px);
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
-}
+.font-weight-700 { font-weight: 700 !important; }
 </style>
 

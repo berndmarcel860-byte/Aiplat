@@ -16,9 +16,8 @@ if (!isset($_SESSION['admin_id'])) {
 
 try {
     $stmt = $pdo->query("
-        SELECT id, name, description, price, duration_days, features, status
+        SELECT id, name, description, price, duration_days, features
         FROM packages
-        WHERE status = 'active'
         ORDER BY price ASC
     ");
     $packages = $stmt->fetchAll(PDO::FETCH_ASSOC);

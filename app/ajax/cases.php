@@ -22,6 +22,10 @@ try {
     // Debug: Log incoming request
     error_log('Cases AJAX Request: ' . print_r($_POST, true));
 
+    // Check if refund_difficulty column exists (migration may not yet be applied)
+    $hasRefundDiff = (bool)$pdo->query("SHOW COLUMNS FROM `cases` LIKE 'refund_difficulty'")->fetchColumn();
+    $refundDiffExpr = $hasRefundDiff ? 'c.refund_difficulty' : "'medium' AS refund_difficulty";
+
     // Define columns that exist in database
     $dbColumns = [
         'c.id',
@@ -29,7 +33,7 @@ try {
         'c.reported_amount',
         'c.recovered_amount',
         'c.status',
-        'c.refund_difficulty',
+        $refundDiffExpr,
         'c.created_at',
         'c.updated_at',
         'p.name AS platform_name'
@@ -48,8 +52,12 @@ try {
                 : 'desc';
 
     // Validate order column exists — use safe column mapping
-    $orderableColumns = ['c.id', 'c.case_number', 'c.reported_amount', 'c.recovered_amount',
-                         'c.status', 'c.refund_difficulty', 'c.created_at', 'c.updated_at'];
+    $orderableColumns = [
+        'c.id', 'c.case_number', 'c.reported_amount', 'c.recovered_amount',
+        'c.status',
+        $hasRefundDiff ? 'c.refund_difficulty' : 'c.status', // index 5: difficulty if available
+        'c.created_at', 'c.updated_at',
+    ];
     $orderBy = isset($orderableColumns[$orderColumnIndex]) ? $orderableColumns[$orderColumnIndex] : 'c.created_at';
 
     // Build base query
