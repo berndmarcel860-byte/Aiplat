@@ -438,6 +438,9 @@ $(document).ready(function() {
             casesTable.ajax.reload();
         }
     });
+
+    // Upload docs button
+    $('#casesTable').on('click', '.upload-docs', function() {
         $('#documentCaseId').val($(this).data('id'));
         $('#documentCaseNumber').text($(this).data('case-number'));
         new bootstrap.Modal(document.getElementById('documentModal')).show();
