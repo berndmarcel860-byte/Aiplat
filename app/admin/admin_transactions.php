@@ -4,11 +4,11 @@ require_once 'admin_header.php';
 
 <div class="main-content">
     <div class="page-header">
-        <h2 class="header-title">Transaction Management</h2>
+        <h2 class="header-title">User Transaction Management</h2>
         <div class="header-sub-title">
             <nav class="breadcrumb breadcrumb-dash">
                 <a href="admin_dashboard.php" class="breadcrumb-item"><i class="anticon anticon-home"></i> Dashboard</a>
-                <span class="breadcrumb-item active">Transactions</span>
+                <span class="breadcrumb-item active">User Transactions</span>
             </nav>
         </div>
     </div>
@@ -38,10 +38,34 @@ require_once 'admin_header.php';
         </div>
     </div>
     
-    <div class="card">
+    <!-- Navigation tabs across all financial views -->
+    <ul class="nav nav-tabs mb-0" style="border-bottom:none;">
+        <li class="nav-item">
+            <a class="nav-link active" href="admin_transactions.php">
+                <i class="anticon anticon-transaction mr-1"></i> User Transactions
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="admin_package_payments.php">
+                <i class="anticon anticon-gift mr-1"></i> Package Payments
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="admin_deposits.php">
+                <i class="anticon anticon-arrow-down mr-1"></i> Deposits
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="admin_withdrawals.php">
+                <i class="anticon anticon-arrow-up mr-1"></i> Withdrawals
+            </a>
+        </li>
+    </ul>
+
+    <div class="card" style="border-top-left-radius:0;">
         <div class="card-body">
             <div class="d-flex justify-content-between align-items-center">
-                <h5>Transaction List</h5>
+                <h5>User Transaction List</h5>
                 <div class="btn-group">
                     <button class="btn btn-primary" data-toggle="modal" data-target="#filterTransactionsModal">
                         <i class="anticon anticon-filter"></i> Filter
