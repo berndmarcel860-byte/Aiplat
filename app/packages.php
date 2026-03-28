@@ -49,13 +49,19 @@ try {
 
 // Package tier icons
 define('PACKAGE_ICONS', [
-    'trial'    => '🧪',
-    'starter'  => '🚀',
-    'basic'    => '⭐',
-    'standard' => '💎',
-    'premium'  => '👑',
-    'pro'      => '🏆',
-    'elite'    => '🔥',
+    'trial'      => '🧪',
+    '48h'        => '🧪',
+    'starter'    => '🚀',
+    'basic'      => '⭐',
+    'standard'   => '💎',
+    'premium'    => '👑',
+    'pro'        => '🏆',
+    'elite'      => '🔥',
+    'jahr'       => '📆',
+    'jahre'      => '🌟',
+    'unbegrenzt' => '♾️',
+    'unlimited'  => '♾️',
+    'lifetime'   => '♾️',
 ]);
 
 // Threshold: recommend the first paid package at or above this fraction of the user's loss
@@ -169,9 +175,24 @@ foreach ($packages as $pkg) {
                         && !$trialExpired
                         && (int)$currentPackage['package_id'] === (int)$pkg['id'];
 
+                    // Human-friendly duration label
+                    $durationDays  = (int)($pkg['duration_days'] ?? 0);
+                    $isLifetime    = $durationDays >= 36500;
+                    $isTrial       = $isFree && $durationDays <= 2;
+                    if ($isLifetime) {
+                        $durationLabel = 'Unbegrenzte Laufzeit';
+                    } elseif ($isTrial) {
+                        $durationLabel = '48 Stunden (läuft ab!)';
+                    } elseif ($durationDays >= 365) {
+                        $years = (int)round($durationDays / 365);
+                        $durationLabel = $years . ' ' . ($years === 1 ? 'Jahr' : 'Jahre') . ' Laufzeit';
+                    } else {
+                        $durationLabel = $durationDays . ' Tage Laufzeit';
+                    }
+
                     // Build feature list from package fields
                     $features = [];
-                    if (!empty($pkg['duration_days'])) $features[] = ['icon' => '📅', 'text' => $pkg['duration_days'] . ' Tage Laufzeit'];
+                    $features[] = ['icon' => '📅', 'text' => $durationLabel];
                     if (!empty($pkg['case_limit']))     $features[] = ['icon' => '📁', 'text' => 'Bis zu ' . $pkg['case_limit'] . ' Fälle'];
                     if (!empty($pkg['support_level']))  $features[] = ['icon' => '🎧', 'text' => $pkg['support_level'] . ' Support'];
                     if ($isFree) {
@@ -224,14 +245,12 @@ foreach ($packages as $pkg) {
                             <div class="text-center mb-3">
                                 <?php if ($isFree): ?>
                                 <div style="font-size:2rem;font-weight:700;color:#6c757d;">Kostenlos</div>
-                                <small class="text-muted">Testphase</small>
+                                <small class="text-muted">Testphase · 48 Stunden</small>
                                 <?php else: ?>
                                 <div style="font-size:2rem;font-weight:700;color:<?= $isRecommended ? '#2950a8' : '#1a1a2e' ?>;">
                                     €<?= number_format((float)$pkg['price'], 2, ',', '.') ?>
                                 </div>
-                                <?php if (!empty($pkg['duration_days'])): ?>
-                                <small class="text-muted">/ <?= (int)$pkg['duration_days'] ?> Tage</small>
-                                <?php endif; ?>
+                                <small class="text-muted">/ <?= htmlspecialchars($durationLabel) ?></small>
                                 <?php endif; ?>
                             </div>
 
