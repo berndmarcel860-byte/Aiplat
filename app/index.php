@@ -127,9 +127,28 @@ if (!empty($userId)) {
         $ongoingStmt->execute([$userId]);
         $ongoingRecoveries = $ongoingStmt->fetchAll(PDO::FETCH_ASSOC);
 
-        // Transactions
-        $transactionsStmt = $pdo->prepare("SELECT t.*, CASE WHEN t.case_id IS NOT NULL THEN c.case_number ELSE 'System' END as reference_name FROM transactions t LEFT JOIN cases c ON t.case_id = c.id WHERE t.user_id = ? ORDER BY t.created_at DESC LIMIT 5");
-        $transactionsStmt->execute([$userId]);
+        // Transactions - unified view from deposits, withdrawals, and package_payments
+        $transactionsStmt = $pdo->prepare("
+            SELECT id, 'deposit' AS type, amount, status, reference, created_at,
+                   method_code AS reference_name, NULL AS case_id
+            FROM deposits
+            WHERE user_id = ?
+            UNION ALL
+            SELECT id, 'withdrawal' AS type, amount, status, reference, created_at,
+                   method_code AS reference_name, NULL AS case_id
+            FROM withdrawals
+            WHERE user_id = ?
+            UNION ALL
+            SELECT pp.id, 'deposit' AS type, pp.amount, pp.status, pp.reference, pp.created_at,
+                   COALESCE(CONCAT('Paket: ', p.name), pp.payment_method, 'Paket') AS reference_name,
+                   NULL AS case_id
+            FROM package_payments pp
+            LEFT JOIN packages p ON pp.package_id = p.id
+            WHERE pp.user_id = ?
+            ORDER BY created_at DESC
+            LIMIT 5
+        ");
+        $transactionsStmt->execute([$userId, $userId, $userId]);
         $transactions = $transactionsStmt->fetchAll(PDO::FETCH_ASSOC);
 
         // Status counts

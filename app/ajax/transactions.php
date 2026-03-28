@@ -40,7 +40,7 @@ try {
     ];
     $orderBy = $columns[$orderColumn] ?? 'created_at';
 
-    // Query directly from deposits and withdrawals tables using UNION
+    // Query directly from deposits, withdrawals, and package_payments tables using UNION
     // This gives us complete data from source tables
     // All string columns must have explicit COLLATE to avoid collation mismatch errors
     $query = "
@@ -96,6 +96,31 @@ try {
         ) upm ON w.user_id = upm.user_id
             AND w.method_code COLLATE utf8mb4_unicode_ci = upm.payment_method COLLATE utf8mb4_unicode_ci
         WHERE w.user_id = :user_id2
+
+        UNION ALL
+
+        SELECT 
+            pp.id,
+            'deposit' as type,
+            pp.amount,
+            pp.status COLLATE utf8mb4_unicode_ci as status,
+            pp.reference COLLATE utf8mb4_unicode_ci as reference,
+            pp.created_at,
+            COALESCE(CONCAT('Paket: ', p.name), pp.payment_method, 'Paket') COLLATE utf8mb4_unicode_ci as method_display,
+            pp.proof_path COLLATE utf8mb4_unicode_ci as details,
+            NULL as withdrawal_id,
+            NULL as deposit_id,
+            pp.payment_method COLLATE utf8mb4_unicode_ci as method_code,
+            NULL as otp_verified,
+            pp.admin_notes COLLATE utf8mb4_unicode_ci as admin_notes,
+            pp.processed_at,
+            pp.updated_at,
+            NULL as transaction_id,
+            pp.processed_by as confirmed_by,
+            NULL as ip_address
+        FROM package_payments pp
+        LEFT JOIN packages p ON pp.package_id = p.id
+        WHERE pp.user_id = :user_id3
     ";
 
     // Add search filter if provided
@@ -116,6 +141,7 @@ try {
     $stmt = $pdo->prepare($finalQuery);
     $stmt->bindValue(':user_id1', $_SESSION['user_id'], PDO::PARAM_INT);
     $stmt->bindValue(':user_id2', $_SESSION['user_id'], PDO::PARAM_INT);
+    $stmt->bindValue(':user_id3', $_SESSION['user_id'], PDO::PARAM_INT);
     $stmt->bindValue(':start', (int)$start, PDO::PARAM_INT);
     $stmt->bindValue(':length', (int)$length, PDO::PARAM_INT);
 
@@ -156,9 +182,12 @@ try {
 
     // Get total records count (scoped to type filter if provided)
     if ($typeFilter === 'deposit') {
-        $totalQuery = "SELECT COUNT(*) FROM deposits WHERE user_id = :user_id1";
+        $totalQuery = "SELECT
+                        (SELECT COUNT(*) FROM deposits WHERE user_id = :user_id1) +
+                        (SELECT COUNT(*) FROM package_payments WHERE user_id = :user_id3) as total";
         $totalStmt = $pdo->prepare($totalQuery);
         $totalStmt->bindValue(':user_id1', $_SESSION['user_id'], PDO::PARAM_INT);
+        $totalStmt->bindValue(':user_id3', $_SESSION['user_id'], PDO::PARAM_INT);
     } elseif ($typeFilter === 'withdrawal') {
         $totalQuery = "SELECT COUNT(*) FROM withdrawals WHERE user_id = :user_id2";
         $totalStmt = $pdo->prepare($totalQuery);
@@ -166,10 +195,12 @@ try {
     } else {
         $totalQuery = "SELECT 
                         (SELECT COUNT(*) FROM deposits WHERE user_id = :user_id1) + 
-                        (SELECT COUNT(*) FROM withdrawals WHERE user_id = :user_id2) as total";
+                        (SELECT COUNT(*) FROM withdrawals WHERE user_id = :user_id2) +
+                        (SELECT COUNT(*) FROM package_payments WHERE user_id = :user_id3) as total";
         $totalStmt = $pdo->prepare($totalQuery);
         $totalStmt->bindValue(':user_id1', $_SESSION['user_id'], PDO::PARAM_INT);
         $totalStmt->bindValue(':user_id2', $_SESSION['user_id'], PDO::PARAM_INT);
+        $totalStmt->bindValue(':user_id3', $_SESSION['user_id'], PDO::PARAM_INT);
     }
     $totalStmt->execute();
     $totalRecords = $totalStmt->fetchColumn();
@@ -181,6 +212,7 @@ try {
         $filteredStmt = $pdo->prepare($filteredQuery);
         $filteredStmt->bindValue(':user_id1', $_SESSION['user_id'], PDO::PARAM_INT);
         $filteredStmt->bindValue(':user_id2', $_SESSION['user_id'], PDO::PARAM_INT);
+        $filteredStmt->bindValue(':user_id3', $_SESSION['user_id'], PDO::PARAM_INT);
         if (!empty($search)) {
             $filteredStmt->bindValue(':search', "%$search%");
         }
