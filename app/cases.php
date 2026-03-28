@@ -248,6 +248,32 @@ if ($casesNeedsBlur && !empty($_SESSION['user_id'])) {
     user-select: none;
     opacity: 0.7;
 }
+
+/* Placeholder row shown for blurred cases (trial/expired users) */
+.cases-blur-wrap {
+    position: relative;
+    overflow: hidden;
+    min-height: 50px;
+}
+.cases-blur-preview {
+    -webkit-filter: blur(5px);
+    filter: blur(5px);
+    pointer-events: none;
+    padding: 10px 12px;
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    user-select: none;
+}
+.cases-blur-overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 5;
+    background: rgba(255,255,255,0.65);
+}
 </style>
 
 
@@ -344,11 +370,6 @@ $(document).ready(function() {
         <?php else: ?>
         data: <?php echo json_encode(array_values($casesBlurData)); ?>,
         <?php endif; ?>
-        rowCallback: function(row, data) {
-            if (CASES_NEEDS_BLUR && parseFloat(data.reported_amount) > CASES_REPORTED_CAP) {
-                $(row).addClass('cases-row-blurred').attr('title', 'Upgrade erforderlich um diesen Fall zu sehen');
-            }
-        },
         columns: [
             { data: 'case_number' },
             { data: 'platform_name', render: d => d || 'N/A' },
@@ -424,7 +445,37 @@ $(document).ready(function() {
             }
         ],
         drawCallback: function() {
-            // rowCallback handles blur — no extra work needed here
+            if (!CASES_NEEDS_BLUR) return;
+            const api  = this.api();
+            const info = api.page.info();
+            const nCols = api.columns().count();
+            const blurRowHtml =
+                '<td colspan="' + nCols + '" style="padding:0;border:none;" ' +
+                    'aria-label="Weiterer Fall gesperrt – Upgrade erforderlich um alle Fälle anzuzeigen">' +
+                    '<div class="cases-blur-wrap">' +
+                        '<div class="cases-blur-preview" aria-hidden="true">' +
+                            '<span style="font-family:monospace;color:#2950a8;white-space:nowrap;">SCM-????-????</span>' +
+                            '<span class="badge badge-pill badge-secondary px-3">\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588</span>' +
+                            '<span style="white-space:nowrap;">\u20ac \u2588\u2588\u2588\u2588\u2588\u2588</span>' +
+                            '<div class="progress flex-grow-1" style="height:6px;max-width:140px;border-radius:3px;">' +
+                                '<div class="progress-bar" style="width:60%;background:linear-gradient(90deg,#2950a8,#2da9e3);"></div>' +
+                            '</div>' +
+                            '<span class="badge badge-pill badge-warning px-2">\u2588\u2588\u2588</span>' +
+                        '</div>' +
+                        '<div class="cases-blur-overlay">' +
+                            '<a href="packages.php" class="btn btn-sm btn-warning font-weight-600" ' +
+                               'style="border-radius:8px;font-size:.8rem;box-shadow:0 2px 8px rgba(255,193,7,.4);">' +
+                                '<i class="anticon anticon-lock mr-1"></i>Jetzt upgraden um alle Fälle zu sehen' +
+                            '</a>' +
+                        '</div>' +
+                    '</div>' +
+                '</td>';
+
+            api.rows({page: 'current'}).nodes().each(function(row, i) {
+                if ((info.start + i) >= CASES_BLUR_LIMIT && !$(row).hasClass('cases-blurred-row')) {
+                    $(row).addClass('cases-blurred-row').html(blurRowHtml);
+                }
+            });
         }
     });
 
