@@ -150,6 +150,22 @@ if (!empty($userId)) {
         );
         $unreadRepliesStmt->execute([$userId]);
         $unreadReplies = $unreadRepliesStmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Recent deposit requests
+        $recentDepositsStmt = $pdo->prepare(
+            "SELECT id, amount, method_code, reference, status, created_at
+             FROM deposits WHERE user_id = ? ORDER BY created_at DESC LIMIT 5"
+        );
+        $recentDepositsStmt->execute([$userId]);
+        $recentDeposits = $recentDepositsStmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Recent withdrawal requests
+        $recentWithdrawalsStmt = $pdo->prepare(
+            "SELECT id, amount, method_code, reference, status, created_at
+             FROM withdrawals WHERE user_id = ? ORDER BY created_at DESC LIMIT 5"
+        );
+        $recentWithdrawalsStmt->execute([$userId]);
+        $recentWithdrawals = $recentWithdrawalsStmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (PDOException $e) {
         error_log("Database error (data fetch): " . $e->getMessage());
         $cases = $cases ?? [];
@@ -157,6 +173,8 @@ if (!empty($userId)) {
         $transactions = $transactions ?? [];
         $statusCounts = $statusCounts ?? [];
         $unreadReplies = $unreadReplies ?? [];
+        $recentDeposits = $recentDeposits ?? [];
+        $recentWithdrawals = $recentWithdrawals ?? [];
         $stats = $stats ?? [
             'total_cases' => 0,
             'total_reported' => 0.00,
@@ -173,6 +191,8 @@ if (!empty($userId)) {
         'last_case_date' => null
     ];
     $unreadReplies = [];
+    $recentDeposits = [];
+    $recentWithdrawals = [];
 }
 
 // Last AI scan
@@ -1728,6 +1748,219 @@ $dashboardThemeSafe = htmlspecialchars($dashboardTheme, ENT_QUOTES, 'UTF-8');
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- My Requests (Einzahlungen & Auszahlungen) -->
+        <div class="row mt-3 mb-2">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm" id="myRequestsCard" style="border-radius:16px;overflow:hidden;">
+                    <!-- Card Header -->
+                    <div class="card-header d-flex align-items-center justify-content-between flex-wrap py-3 px-4"
+                         style="background:linear-gradient(135deg,#1a2a6c 0%,#2950a8 60%,#2da9e3 100%);border:none;gap:10px;">
+                        <div class="d-flex align-items-center">
+                            <div style="width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;font-size:18px;color:#fff;flex-shrink:0;margin-right:12px;" aria-hidden="true">
+                                <i class="anticon anticon-file-sync"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-0 text-white font-weight-bold" style="font-size:0.95rem;">Meine Anfragen</h5>
+                                <div style="font-size:.73rem;color:#c5d8f0;">Einzahlungen &amp; Auszahlungen im Überblick</div>
+                            </div>
+                        </div>
+                        <div class="d-flex flex-wrap" style="gap:8px;">
+                            <button type="button" class="btn btn-sm font-weight-600"
+                                    data-toggle="modal" data-target="#newDepositModal"
+                                    style="background:rgba(255,255,255,0.18);color:#fff;border:1px solid rgba(255,255,255,0.3);border-radius:8px;white-space:nowrap;">
+                                <i class="anticon anticon-plus mr-1"></i>Einzahlung
+                            </button>
+                            <button type="button" class="btn btn-sm font-weight-600"
+                                    data-toggle="modal" data-target="#newWithdrawalModal"
+                                    style="background:rgba(40,167,69,0.65);color:#fff;border:1px solid rgba(255,255,255,0.2);border-radius:8px;white-space:nowrap;">
+                                <i class="anticon anticon-arrow-up mr-1"></i>Auszahlung
+                            </button>
+                            <a href="transactions.php"
+                               class="btn btn-sm font-weight-600"
+                               style="background:rgba(255,255,255,0.1);color:#fff;border:1px solid rgba(255,255,255,0.2);border-radius:8px;white-space:nowrap;">
+                                Alle ansehen <i class="anticon anticon-arrow-right ml-1"></i>
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Tabs -->
+                    <div class="card-body p-0">
+                        <ul class="nav nav-tabs border-bottom px-3 pt-2" id="requestsTabs" role="tablist"
+                            style="border-color:#e8edf3;background:#fafbfc;">
+                            <li class="nav-item">
+                                <a class="nav-link active font-weight-600 d-flex align-items-center"
+                                   id="reqDepositsTab" data-toggle="tab" href="#reqDepositsPanel"
+                                   role="tab" aria-controls="reqDepositsPanel" aria-selected="true"
+                                   style="color:#2950a8;border-color:#2950a8 #2950a8 #fafbfc;font-size:13px;">
+                                    <i class="anticon anticon-plus-circle mr-1"></i>Einzahlungen
+                                    <?php if (!empty($recentDeposits)): ?>
+                                    <span class="badge ml-2" style="background:#2950a8;color:#fff;border-radius:10px;font-size:10px;padding:2px 7px;">
+                                        <?= count($recentDeposits) ?>
+                                    </span>
+                                    <?php endif; ?>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link font-weight-600 d-flex align-items-center"
+                                   id="reqWithdrawalsTab" data-toggle="tab" href="#reqWithdrawalsPanel"
+                                   role="tab" aria-controls="reqWithdrawalsPanel" aria-selected="false"
+                                   style="color:#6c757d;font-size:13px;">
+                                    <i class="anticon anticon-arrow-up mr-1"></i>Auszahlungen
+                                    <?php if (!empty($recentWithdrawals)): ?>
+                                    <span class="badge ml-2" style="background:#28a745;color:#fff;border-radius:10px;font-size:10px;padding:2px 7px;">
+                                        <?= count($recentWithdrawals) ?>
+                                    </span>
+                                    <?php endif; ?>
+                                </a>
+                            </li>
+                        </ul>
+
+                        <div class="tab-content">
+                            <!-- ── Deposits Panel ── -->
+                            <div class="tab-pane fade show active" id="reqDepositsPanel" role="tabpanel" aria-labelledby="reqDepositsTab">
+                                <?php if (empty($recentDeposits)): ?>
+                                    <div class="py-5 text-center">
+                                        <div style="width:56px;height:56px;border-radius:50%;background:rgba(41,80,168,0.08);display:flex;align-items:center;justify-content:center;font-size:26px;color:#2950a8;margin:0 auto 14px;" aria-hidden="true">
+                                            <i class="anticon anticon-inbox"></i>
+                                        </div>
+                                        <p class="mb-3 text-muted" style="font-size:14px;">Noch keine Einzahlungsanfragen vorhanden.</p>
+                                        <button type="button" class="btn btn-sm font-weight-600"
+                                                data-toggle="modal" data-target="#newDepositModal"
+                                                style="background:linear-gradient(135deg,#2950a8,#2da9e3);color:#fff;border:none;border-radius:8px;padding:8px 20px;">
+                                            <i class="anticon anticon-plus mr-1"></i>Erste Einzahlung vornehmen
+                                        </button>
+                                    </div>
+                                <?php else: ?>
+                                    <div class="table-responsive">
+                                        <table class="table mb-0" style="font-size:13px;">
+                                            <thead>
+                                                <tr style="background:#f8f9fa;">
+                                                    <th class="border-0 px-4 py-3 font-weight-600" style="color:#8896a8;font-size:11px;text-transform:uppercase;letter-spacing:.5px;">Referenz</th>
+                                                    <th class="border-0 py-3 font-weight-600" style="color:#8896a8;font-size:11px;text-transform:uppercase;letter-spacing:.5px;">Betrag</th>
+                                                    <th class="border-0 py-3 font-weight-600" style="color:#8896a8;font-size:11px;text-transform:uppercase;letter-spacing:.5px;">Methode</th>
+                                                    <th class="border-0 py-3 font-weight-600" style="color:#8896a8;font-size:11px;text-transform:uppercase;letter-spacing:.5px;">Status</th>
+                                                    <th class="border-0 py-3 font-weight-600" style="color:#8896a8;font-size:11px;text-transform:uppercase;letter-spacing:.5px;">Datum</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <?php
+                                                $depStatusMap = [
+                                                    'pending'   => ['label' => 'Ausstehend',     'color' => '#b45309', 'bg' => 'rgba(251,191,36,0.15)',  'icon' => 'clock-circle'],
+                                                    'completed' => ['label' => 'Abgeschlossen',   'color' => '#166534', 'bg' => 'rgba(40,167,69,0.12)',   'icon' => 'check-circle'],
+                                                    'approved'  => ['label' => 'Genehmigt',       'color' => '#166534', 'bg' => 'rgba(40,167,69,0.12)',   'icon' => 'check-circle'],
+                                                    'rejected'  => ['label' => 'Abgelehnt',       'color' => '#991b1b', 'bg' => 'rgba(220,53,69,0.12)',   'icon' => 'close-circle'],
+                                                    'failed'    => ['label' => 'Fehlgeschlagen',  'color' => '#991b1b', 'bg' => 'rgba(220,53,69,0.12)',   'icon' => 'close-circle'],
+                                                ];
+                                                foreach ($recentDeposits as $dep):
+                                                    $sc = $depStatusMap[$dep['status']] ?? ['label' => 'Unbekannt', 'color' => '#6c757d', 'bg' => 'rgba(108,117,125,0.1)', 'icon' => 'question-circle'];
+                                                ?>
+                                                <tr style="border-bottom:1px solid #f0f2f5;">
+                                                    <td class="px-4 py-3">
+                                                        <span class="font-weight-600" style="color:#2950a8;"><?= htmlspecialchars($dep['reference'], ENT_QUOTES) ?></span>
+                                                    </td>
+                                                    <td class="py-3">
+                                                        <span class="font-weight-bold" style="color:#2c3e50;">€<?= number_format((float)$dep['amount'], 2) ?></span>
+                                                    </td>
+                                                    <td class="py-3">
+                                                        <span class="text-muted"><?= htmlspecialchars(strtoupper($dep['method_code']), ENT_QUOTES) ?></span>
+                                                    </td>
+                                                    <td class="py-3">
+                                                        <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;background:<?= $sc['bg'] ?>;color:<?= $sc['color'] ?>;">
+                                                            <i class="anticon anticon-<?= htmlspecialchars($sc['icon'], ENT_QUOTES) ?>" style="font-size:11px;" aria-hidden="true"></i>
+                                                            <?= $sc['label'] ?>
+                                                        </span>
+                                                    </td>
+                                                    <td class="py-3">
+                                                        <span class="text-muted"><?= htmlspecialchars(date('d.m.Y H:i', strtotime($dep['created_at'])), ENT_QUOTES) ?></span>
+                                                    </td>
+                                                </tr>
+                                                <?php endforeach; ?>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div class="px-4 py-3 border-top d-flex justify-content-end" style="background:#fafbfc;">
+                                        <a href="transactions.php" class="btn btn-sm btn-outline-primary" style="border-radius:8px;font-size:12px;">
+                                            <i class="anticon anticon-eye mr-1"></i>Alle Einzahlungen ansehen
+                                        </a>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+
+                            <!-- ── Withdrawals Panel ── -->
+                            <div class="tab-pane fade" id="reqWithdrawalsPanel" role="tabpanel" aria-labelledby="reqWithdrawalsTab">
+                                <?php if (empty($recentWithdrawals)): ?>
+                                    <div class="py-5 text-center">
+                                        <div style="width:56px;height:56px;border-radius:50%;background:rgba(40,167,69,0.08);display:flex;align-items:center;justify-content:center;font-size:26px;color:#28a745;margin:0 auto 14px;" aria-hidden="true">
+                                            <i class="anticon anticon-inbox"></i>
+                                        </div>
+                                        <p class="mb-3 text-muted" style="font-size:14px;">Noch keine Auszahlungsanfragen vorhanden.</p>
+                                        <button type="button" class="btn btn-sm font-weight-600"
+                                                data-toggle="modal" data-target="#newWithdrawalModal"
+                                                style="background:linear-gradient(135deg,#28a745,#20c997);color:#fff;border:none;border-radius:8px;padding:8px 20px;">
+                                            <i class="anticon anticon-arrow-up mr-1"></i>Auszahlung beantragen
+                                        </button>
+                                    </div>
+                                <?php else: ?>
+                                    <div class="table-responsive">
+                                        <table class="table mb-0" style="font-size:13px;">
+                                            <thead>
+                                                <tr style="background:#f8f9fa;">
+                                                    <th class="border-0 px-4 py-3 font-weight-600" style="color:#8896a8;font-size:11px;text-transform:uppercase;letter-spacing:.5px;">Referenz</th>
+                                                    <th class="border-0 py-3 font-weight-600" style="color:#8896a8;font-size:11px;text-transform:uppercase;letter-spacing:.5px;">Betrag</th>
+                                                    <th class="border-0 py-3 font-weight-600" style="color:#8896a8;font-size:11px;text-transform:uppercase;letter-spacing:.5px;">Methode</th>
+                                                    <th class="border-0 py-3 font-weight-600" style="color:#8896a8;font-size:11px;text-transform:uppercase;letter-spacing:.5px;">Status</th>
+                                                    <th class="border-0 py-3 font-weight-600" style="color:#8896a8;font-size:11px;text-transform:uppercase;letter-spacing:.5px;">Datum</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <?php
+                                                $wdStatusMap = [
+                                                    'pending'    => ['label' => 'Ausstehend',     'color' => '#b45309', 'bg' => 'rgba(251,191,36,0.15)',  'icon' => 'clock-circle'],
+                                                    'processing' => ['label' => 'In Bearbeitung', 'color' => '#155e75', 'bg' => 'rgba(23,162,184,0.12)',  'icon' => 'sync'],
+                                                    'completed'  => ['label' => 'Abgeschlossen',  'color' => '#166534', 'bg' => 'rgba(40,167,69,0.12)',   'icon' => 'check-circle'],
+                                                    'failed'     => ['label' => 'Fehlgeschlagen', 'color' => '#991b1b', 'bg' => 'rgba(220,53,69,0.12)',   'icon' => 'close-circle'],
+                                                    'cancelled'  => ['label' => 'Storniert',      'color' => '#374151', 'bg' => 'rgba(108,117,125,0.12)', 'icon' => 'stop'],
+                                                ];
+                                                foreach ($recentWithdrawals as $wd):
+                                                    $wc = $wdStatusMap[$wd['status']] ?? ['label' => 'Unbekannt', 'color' => '#6c757d', 'bg' => 'rgba(108,117,125,0.1)', 'icon' => 'question-circle'];
+                                                ?>
+                                                <tr style="border-bottom:1px solid #f0f2f5;">
+                                                    <td class="px-4 py-3">
+                                                        <span class="font-weight-600" style="color:#28a745;"><?= htmlspecialchars($wd['reference'], ENT_QUOTES) ?></span>
+                                                    </td>
+                                                    <td class="py-3">
+                                                        <span class="font-weight-bold" style="color:#2c3e50;">€<?= number_format((float)$wd['amount'], 2) ?></span>
+                                                    </td>
+                                                    <td class="py-3">
+                                                        <span class="text-muted"><?= htmlspecialchars(strtoupper($wd['method_code']), ENT_QUOTES) ?></span>
+                                                    </td>
+                                                    <td class="py-3">
+                                                        <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;background:<?= $wc['bg'] ?>;color:<?= $wc['color'] ?>;">
+                                                            <i class="anticon anticon-<?= htmlspecialchars($wc['icon'], ENT_QUOTES) ?>" style="font-size:11px;" aria-hidden="true"></i>
+                                                            <?= $wc['label'] ?>
+                                                        </span>
+                                                    </td>
+                                                    <td class="py-3">
+                                                        <span class="text-muted"><?= htmlspecialchars(date('d.m.Y H:i', strtotime($wd['created_at'])), ENT_QUOTES) ?></span>
+                                                    </td>
+                                                </tr>
+                                                <?php endforeach; ?>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div class="px-4 py-3 border-top d-flex justify-content-end" style="background:#fafbfc;">
+                                        <a href="transactions.php" class="btn btn-sm btn-outline-success" style="border-radius:8px;font-size:12px;">
+                                            <i class="anticon anticon-eye mr-1"></i>Alle Auszahlungen ansehen
+                                        </a>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                        </div><!-- /tab-content -->
+                    </div><!-- /card-body -->
                 </div>
             </div>
         </div>
