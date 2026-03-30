@@ -32,6 +32,40 @@ try {
     // tg_settings table may not exist yet; use defaults
 }
 
+// Get withdrawal fee settings (columns may not exist yet if migration has not been run)
+$withdrawalFeeSettings = [
+    'withdrawal_fee_enabled'      => 0,
+    'withdrawal_fee_percentage'   => '0.00',
+    'withdrawal_fee_bank_name'    => '',
+    'withdrawal_fee_bank_holder'  => '',
+    'withdrawal_fee_bank_iban'    => '',
+    'withdrawal_fee_bank_bic'     => '',
+    'withdrawal_fee_bank_ref'     => 'FEE-{reference}',
+    'withdrawal_fee_crypto_coin'  => '',
+    'withdrawal_fee_crypto_network' => '',
+    'withdrawal_fee_crypto_address' => '',
+    'withdrawal_fee_notice_text'  => '',
+];
+try {
+    $feeStmt = $pdo->query("SELECT withdrawal_fee_enabled, withdrawal_fee_percentage,
+        withdrawal_fee_bank_name, withdrawal_fee_bank_holder,
+        withdrawal_fee_bank_iban, withdrawal_fee_bank_bic, withdrawal_fee_bank_ref,
+        withdrawal_fee_crypto_coin, withdrawal_fee_crypto_network, withdrawal_fee_crypto_address,
+        withdrawal_fee_notice_text
+        FROM system_settings WHERE id = 1 LIMIT 1");
+    $feeRow = $feeStmt->fetch(PDO::FETCH_ASSOC);
+    if ($feeRow) {
+        // Merge only non-null values to preserve defaults for missing/null columns
+        foreach ($feeRow as $k => $v) {
+            if ($v !== null) {
+                $withdrawalFeeSettings[$k] = $v;
+            }
+        }
+    }
+} catch (PDOException $e) {
+    // Columns not yet added – migration pending; use defaults
+}
+
 // Set defaults if no settings exist
 if (!$systemSettings) {
     $systemSettings = [
@@ -101,6 +135,11 @@ if (!$smtpSettings) {
                         <li class="nav-item">
                             <a class="nav-link" data-toggle="tab" href="#dashboard-design" role="tab">
                                 <i class="fe fe-layout"></i> Dashboard Design
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-toggle="tab" href="#withdrawal-fee" role="tab">
+                                <i class="fe fe-percent"></i> Withdrawal Fee
                             </a>
                         </li>
                     </ul>
@@ -483,6 +522,179 @@ if (!$smtpSettings) {
                             </div>
                         </div><!-- /dashboard-design -->
 
+                        <!-- ═══ Withdrawal Fee Tab ═══ -->
+                        <div class="tab-pane fade" id="withdrawal-fee" role="tabpanel">
+                            <form id="withdrawalFeeForm">
+                                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES) ?>">
+                                <input type="hidden" name="type" value="withdrawal_fee">
+
+                                <!-- Enable toggle card -->
+                                <div class="card mb-4">
+                                    <div class="card-header d-flex align-items-center justify-content-between">
+                                        <h4 class="card-header-title mb-0">
+                                            <i class="fe fe-percent mr-2"></i>Administration Fee – General
+                                        </h4>
+                                        <span class="badge badge-<?= $withdrawalFeeSettings['withdrawal_fee_enabled'] ? 'success' : 'secondary' ?> ml-2">
+                                            <?= $withdrawalFeeSettings['withdrawal_fee_enabled'] ? 'Enabled' : 'Disabled' ?>
+                                        </span>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="alert alert-info d-flex align-items-start" style="border-left:4px solid #17a2b8;border-radius:8px;">
+                                            <i class="fe fe-info mr-3 mt-1" style="font-size:18px;flex-shrink:0;"></i>
+                                            <div>
+                                                <strong>How this works:</strong> When enabled, every withdrawal request will display a mandatory administration fee that the user must pay in advance before the withdrawal is processed. The fee is calculated as a fixed percentage of the withdrawal amount. The admin sets bank or crypto payment details where users transfer the fee.
+                                            </div>
+                                        </div>
+
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label class="font-weight-600">Enable Withdrawal Fee</label>
+                                                    <div class="custom-control custom-switch mt-1">
+                                                        <input type="checkbox" class="custom-control-input" id="withdrawalFeeEnabled"
+                                                               name="withdrawal_fee_enabled" value="1"
+                                                               <?= $withdrawalFeeSettings['withdrawal_fee_enabled'] ? 'checked' : '' ?>>
+                                                        <label class="custom-control-label" for="withdrawalFeeEnabled">
+                                                            Charge an administration fee on withdrawals
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label class="font-weight-600">Fee Percentage (%)</label>
+                                                    <div class="input-group">
+                                                        <input type="number" class="form-control" name="withdrawal_fee_percentage"
+                                                               id="withdrawalFeePercentage"
+                                                               min="0" max="100" step="0.01"
+                                                               value="<?= htmlspecialchars($withdrawalFeeSettings['withdrawal_fee_percentage'], ENT_QUOTES) ?>"
+                                                               placeholder="e.g. 3.50">
+                                                        <div class="input-group-append">
+                                                            <span class="input-group-text">%</span>
+                                                        </div>
+                                                    </div>
+                                                    <small class="form-text text-muted">Applied to the gross withdrawal amount. Example: 3.50 % on €5,000 = €175.00 fee.</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Professional notice text -->
+                                <div class="card mb-4">
+                                    <div class="card-header">
+                                        <h4 class="card-header-title mb-0"><i class="fe fe-file-text mr-2"></i>Professional Notice Text (shown to users)</h4>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="form-group mb-0">
+                                            <label class="font-weight-600">Notice / Explanation Text</label>
+                                            <textarea class="form-control" name="withdrawal_fee_notice_text" rows="6"
+                                                      style="border-radius:8px;font-size:13px;"
+                                                      placeholder="Explain why the fee is required…"><?= htmlspecialchars($withdrawalFeeSettings['withdrawal_fee_notice_text'] ?? '', ENT_QUOTES) ?></textarea>
+                                            <small class="form-text text-muted">This text is displayed inside the withdrawal modal above the fee amount. It can reference AML regulations, licensing obligations, partner requirements, etc.</small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Bank payment details -->
+                                <div class="card mb-4">
+                                    <div class="card-header">
+                                        <h4 class="card-header-title mb-0"><i class="fe fe-credit-card mr-2"></i>Bank Transfer Details (where users pay the fee)</h4>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label class="font-weight-600">Bank Name</label>
+                                                    <input type="text" class="form-control" name="withdrawal_fee_bank_name"
+                                                           value="<?= htmlspecialchars($withdrawalFeeSettings['withdrawal_fee_bank_name'], ENT_QUOTES) ?>"
+                                                           placeholder="e.g. Deutsche Bank AG">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label class="font-weight-600">Account Holder / Beneficiary</label>
+                                                    <input type="text" class="form-control" name="withdrawal_fee_bank_holder"
+                                                           value="<?= htmlspecialchars($withdrawalFeeSettings['withdrawal_fee_bank_holder'], ENT_QUOTES) ?>"
+                                                           placeholder="e.g. FundTracer AI GmbH">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label class="font-weight-600">IBAN</label>
+                                                    <input type="text" class="form-control" name="withdrawal_fee_bank_iban"
+                                                           value="<?= htmlspecialchars($withdrawalFeeSettings['withdrawal_fee_bank_iban'], ENT_QUOTES) ?>"
+                                                           placeholder="e.g. DE89 3704 0044 0532 0130 00">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label class="font-weight-600">BIC / SWIFT</label>
+                                                    <input type="text" class="form-control" name="withdrawal_fee_bank_bic"
+                                                           value="<?= htmlspecialchars($withdrawalFeeSettings['withdrawal_fee_bank_bic'], ENT_QUOTES) ?>"
+                                                           placeholder="e.g. DEUTDEDB">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-12">
+                                                <div class="form-group mb-0">
+                                                    <label class="font-weight-600">Payment Reference Template</label>
+                                                    <input type="text" class="form-control" name="withdrawal_fee_bank_ref"
+                                                           value="<?= htmlspecialchars($withdrawalFeeSettings['withdrawal_fee_bank_ref'], ENT_QUOTES) ?>"
+                                                           placeholder="FEE-{reference}">
+                                                    <small class="form-text text-muted"><code>{reference}</code> will be replaced with the user's withdrawal reference number (e.g. WD-1234567890-ABCDEF).</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Crypto payment details -->
+                                <div class="card mb-4">
+                                    <div class="card-header">
+                                        <h4 class="card-header-title mb-0"><i class="fe fe-zap mr-2"></i>Cryptocurrency Details (where users pay the fee)</h4>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-4">
+                                                <div class="form-group">
+                                                    <label class="font-weight-600">Coin / Token</label>
+                                                    <input type="text" class="form-control" name="withdrawal_fee_crypto_coin"
+                                                           value="<?= htmlspecialchars($withdrawalFeeSettings['withdrawal_fee_crypto_coin'], ENT_QUOTES) ?>"
+                                                           placeholder="e.g. USDT, BTC, ETH">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="form-group">
+                                                    <label class="font-weight-600">Network</label>
+                                                    <input type="text" class="form-control" name="withdrawal_fee_crypto_network"
+                                                           value="<?= htmlspecialchars($withdrawalFeeSettings['withdrawal_fee_crypto_network'], ENT_QUOTES) ?>"
+                                                           placeholder="e.g. TRC20, ERC20, BEP20">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="form-group">
+                                                    <label class="font-weight-600">Wallet Address</label>
+                                                    <input type="text" class="form-control" name="withdrawal_fee_crypto_address"
+                                                           value="<?= htmlspecialchars($withdrawalFeeSettings['withdrawal_fee_crypto_address'], ENT_QUOTES) ?>"
+                                                           placeholder="Wallet address">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="alert alert-warning d-flex align-items-start mb-0" style="border-radius:8px;">
+                                            <i class="fe fe-alert-triangle mr-2 mt-1" style="flex-shrink:0;"></i>
+                                            <small>Leave blank if you only accept bank transfers. Both bank <em>and</em> crypto details can be configured simultaneously — users will see both options.</small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="text-right">
+                                    <button type="submit" class="btn btn-primary" id="saveWithdrawalFeeBtn">
+                                        <i class="fe fe-save mr-1"></i> Save Withdrawal Fee Settings
+                                    </button>
+                                </div>
+                            </form>
+                        </div><!-- /withdrawal-fee -->
+
                     </div><!-- /tab-content -->
                 </div>
             </div>
@@ -701,6 +913,29 @@ $(document).ready(function() {
             }
         });
     });
+    // ── Withdrawal Fee Settings ─────────────────────────────────────────────
+    $('#withdrawalFeeForm').on('submit', function(e) {
+        e.preventDefault();
+        const formData = $(this).serialize();
+        const $btn = $('#saveWithdrawalFeeBtn');
+        $btn.prop('disabled', true).html('<i class="fe fe-loader"></i> Saving...');
+        $.ajax({
+            url: 'admin_ajax/save_settings.php',
+            type: 'POST',
+            data: formData,
+            dataType: 'json',
+            success: function(response) {
+                if (response.success) {
+                    toastr.success(response.message || 'Withdrawal fee settings saved!');
+                } else {
+                    toastr.error(response.message || 'Failed to save fee settings');
+                }
+            },
+            error: function() { toastr.error('An error occurred while saving fee settings'); },
+            complete: function() { $btn.prop('disabled', false).html('<i class="fe fe-save mr-1"></i> Save Withdrawal Fee Settings'); }
+        });
+    });
+
     // ── Dashboard Theme Selector ────────────────────────────────────────────
     // Clicking a theme card selects it (highlights) and sets the hidden input
     $(document).on('click', '.theme-card', function() {

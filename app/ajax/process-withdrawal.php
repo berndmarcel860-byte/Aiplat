@@ -86,6 +86,25 @@ try {
 
     $methodCode = $paymentMethod['payment_method'] ?? $paymentMethod['type'] ?? 'bank';
 
+    // ── Load withdrawal fee settings ─────────────────────────────────────
+    $feeEnabled    = false;
+    $feePercentage = 0.0;
+    try {
+        $feeStmt = $pdo->query(
+            "SELECT withdrawal_fee_enabled, withdrawal_fee_percentage
+             FROM system_settings WHERE id = 1 LIMIT 1"
+        );
+        $feeRow = $feeStmt->fetch(PDO::FETCH_ASSOC);
+        if ($feeRow) {
+            $feeEnabled    = (bool)(int)$feeRow['withdrawal_fee_enabled'];
+            $feePercentage = (float)$feeRow['withdrawal_fee_percentage'];
+        }
+    } catch (PDOException $e) {
+        // Columns not yet added – migration pending; proceed without fee
+    }
+
+    $feeAmount = $feeEnabled ? round($amount * $feePercentage / 100, 2) : 0.0;
+
     // Generate unique reference
     $reference = 'WD-' . time() . '-' . strtoupper(substr(uniqid(), -6));
 
@@ -103,15 +122,17 @@ try {
 
         // Insert withdrawal record
         $insertStmt = $pdo->prepare("
-            INSERT INTO withdrawals (user_id, amount, method_code, payment_details, reference, status, created_at)
-            VALUES (?, ?, ?, ?, ?, 'pending', NOW())
+            INSERT INTO withdrawals (user_id, amount, method_code, payment_details, reference, status, fee_percentage, fee_amount, created_at)
+            VALUES (?, ?, ?, ?, ?, 'pending', ?, ?, NOW())
         ");
         $insertStmt->execute([
             $_SESSION['user_id'],
             $amount,
             $methodCode,
             $paymentDetails,
-            $reference
+            $reference,
+            $feeEnabled ? $feePercentage : null,
+            $feeEnabled ? $feeAmount     : null,
         ]);
 
         // Get updated balance from users table
@@ -149,11 +170,14 @@ try {
     }
 
     echo json_encode([
-        'success'     => true,
-        'message'     => 'Ihr Auszahlungsantrag wurde erfolgreich eingereicht. Sie erhalten eine Bestätigung per E-Mail.',
-        'reference'   => $reference,
-        'amount'      => number_format($amount, 2, ',', '.'),
-        'new_balance' => number_format($newBalance, 2, ',', '.'),
+        'success'      => true,
+        'message'      => 'Ihr Auszahlungsantrag wurde erfolgreich eingereicht. Sie erhalten eine Bestätigung per E-Mail.',
+        'reference'    => $reference,
+        'amount'       => number_format($amount, 2, ',', '.'),
+        'new_balance'  => number_format($newBalance, 2, ',', '.'),
+        'fee_enabled'  => $feeEnabled,
+        'fee_amount'   => $feeEnabled ? number_format($feeAmount, 2, ',', '.') : null,
+        'fee_percentage' => $feeEnabled ? $feePercentage : null,
     ]);
 
 } catch (Exception $e) {
