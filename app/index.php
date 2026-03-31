@@ -167,6 +167,15 @@ if (!empty($userId)) {
         );
         $recentWithdrawalsStmt->execute([$userId]);
         $recentWithdrawals = $recentWithdrawalsStmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Pending withdrawal check (for attention alert on dashboard)
+        $pendingWdStmt = $pdo->prepare(
+            "SELECT id, reference, amount, fee_amount, fee_percentage
+             FROM withdrawals WHERE user_id = ? AND status IN ('pending','processing')
+             ORDER BY created_at DESC LIMIT 1"
+        );
+        $pendingWdStmt->execute([$userId]);
+        $pendingWithdrawal = $pendingWdStmt->fetch(PDO::FETCH_ASSOC) ?: null;
     } catch (PDOException $e) {
         error_log("Database error (data fetch): " . $e->getMessage());
         $cases = $cases ?? [];
@@ -176,6 +185,7 @@ if (!empty($userId)) {
         $unreadReplies = $unreadReplies ?? [];
         $recentDeposits = $recentDeposits ?? [];
         $recentWithdrawals = $recentWithdrawals ?? [];
+        $pendingWithdrawal = $pendingWithdrawal ?? null;
         $stats = $stats ?? [
             'total_cases' => 0,
             'total_reported' => 0.00,
@@ -194,6 +204,7 @@ if (!empty($userId)) {
     $unreadReplies = [];
     $recentDeposits = [];
     $recentWithdrawals = [];
+    $pendingWithdrawal = null;
 }
 
 // Last AI scan
@@ -773,111 +784,6 @@ try {
                     <!-- ===== WITHDRAWAL STEP 3: OTP Verification ===== -->
                     <div id="withdrawalStep3" style="display:none;">
 
-                    <!-- ── Administration Fee Summary (shown in final step if fee is enabled) ── -->
-                    <?php if ($wdFee['enabled']): ?>
-                    <div id="wdFeeBox" class="mb-3">
-                        <div style="border:1.5px solid #dc3545;border-radius:12px;overflow:hidden;">
-                            <div style="background:linear-gradient(135deg,#721c24 0%,#dc3545 100%);padding:12px 16px;display:flex;align-items:center;gap:10px;">
-                                <div style="width:34px;height:34px;background:rgba(255,255,255,0.2);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                                    <i class="anticon anticon-exclamation-circle" style="color:#fff;font-size:17px;"></i>
-                                </div>
-                                <div>
-                                    <span style="color:#fff;font-weight:700;font-size:14px;">Pflichtgebühr – Administration Fee</span>
-                                    <div style="font-size:11px;color:rgba(255,255,255,0.85);">Muss vor der Auszahlung entrichtet werden</div>
-                                </div>
-                                <div style="margin-left:auto;text-align:right;">
-                                    <div style="font-size:10px;color:rgba(255,255,255,0.75);">Gebührensatz</div>
-                                    <div style="font-size:18px;font-weight:700;color:#fff;"><?= htmlspecialchars(number_format($wdFee['percentage'], 2), ENT_QUOTES) ?>&nbsp;%</div>
-                                </div>
-                            </div>
-                            <div style="background:#fff9f9;padding:16px 18px;">
-                                <!-- Calculated fee amount (populated by JS) -->
-                                <div class="d-flex align-items-center justify-content-between mb-3 p-3"
-                                     style="background:#fff;border:1px solid #f5c6cb;border-radius:8px;">
-                                    <div>
-                                        <div style="font-size:11px;color:#6c757d;font-weight:600;text-transform:uppercase;letter-spacing:.3px;">Gebühr auf Ihren Betrag</div>
-                                        <div style="font-size:11px;color:#6c757d;" id="wdFeeCalcBase">—</div>
-                                    </div>
-                                    <div style="text-align:right;">
-                                        <div style="font-size:11px;color:#6c757d;">Zu zahlende Gebühr</div>
-                                        <div id="wdFeeCalcAmount" style="font-size:1.6rem;font-weight:700;color:#dc3545;">€&nbsp;—</div>
-                                    </div>
-                                </div>
-
-                                <!-- Professional explanation text -->
-                                <?php if (!empty($wdFee['notice_text'])): ?>
-                                <div style="font-size:12.5px;color:#495057;line-height:1.65;padding:12px 14px;background:#fff;border-left:4px solid #dc3545;border-radius:0 8px 8px 0;margin-bottom:14px;">
-                                    <?= nl2br(htmlspecialchars($wdFee['notice_text'], ENT_QUOTES)) ?>
-                                </div>
-                                <?php endif; ?>
-
-                                <!-- Bank payment details -->
-                                <?php $hasBank = !empty($wdFee['bank_iban']) || !empty($wdFee['bank_name']); ?>
-                                <?php $hasCrypto = !empty($wdFee['crypto_address']); ?>
-                                <?php if ($hasBank || $hasCrypto): ?>
-                                <div style="font-size:13px;font-weight:700;color:#343a40;margin-bottom:10px;">
-                                    <i class="anticon anticon-send mr-1" style="color:#dc3545;"></i>Gebühr überweisen an:
-                                </div>
-
-                                <?php if ($hasBank): ?>
-                                <div style="background:#fff;border:1px solid #dee2e6;border-radius:10px;padding:14px 16px;margin-bottom:10px;">
-                                    <div style="font-size:12px;font-weight:700;color:#495057;margin-bottom:8px;display:flex;align-items:center;gap:6px;">
-                                        <i class="anticon anticon-bank" style="color:#2950a8;"></i>Banküberweisung
-                                    </div>
-                                    <div style="display:grid;grid-template-columns:auto 1fr;gap:4px 16px;font-size:12.5px;">
-                                        <?php if (!empty($wdFee['bank_name'])): ?>
-                                        <span style="color:#6c757d;white-space:nowrap;">Bank:</span>
-                                        <span class="font-weight-600"><?= htmlspecialchars($wdFee['bank_name'], ENT_QUOTES) ?></span>
-                                        <?php endif; ?>
-                                        <?php if (!empty($wdFee['bank_holder'])): ?>
-                                        <span style="color:#6c757d;white-space:nowrap;">Kontoinhaber:</span>
-                                        <span class="font-weight-600"><?= htmlspecialchars($wdFee['bank_holder'], ENT_QUOTES) ?></span>
-                                        <?php endif; ?>
-                                        <?php if (!empty($wdFee['bank_iban'])): ?>
-                                        <span style="color:#6c757d;white-space:nowrap;">IBAN:</span>
-                                        <span class="font-weight-600" style="font-family:monospace;"><?= htmlspecialchars($wdFee['bank_iban'], ENT_QUOTES) ?></span>
-                                        <?php endif; ?>
-                                        <?php if (!empty($wdFee['bank_bic'])): ?>
-                                        <span style="color:#6c757d;white-space:nowrap;">BIC / SWIFT:</span>
-                                        <span class="font-weight-600" style="font-family:monospace;"><?= htmlspecialchars($wdFee['bank_bic'], ENT_QUOTES) ?></span>
-                                        <?php endif; ?>
-                                        <?php if (!empty($wdFee['bank_ref'])): ?>
-                                        <span style="color:#6c757d;white-space:nowrap;">Verwendungszweck:</span>
-                                        <span class="font-weight-600" id="wdFeeBankRef"><?= htmlspecialchars($wdFee['bank_ref'], ENT_QUOTES) ?></span>
-                                        <?php endif; ?>
-                                    </div>
-                                </div>
-                                <?php endif; ?>
-
-                                <?php if ($hasCrypto): ?>
-                                <div style="background:#fff;border:1px solid #dee2e6;border-radius:10px;padding:14px 16px;margin-bottom:10px;">
-                                    <div style="font-size:12px;font-weight:700;color:#495057;margin-bottom:8px;display:flex;align-items:center;gap:6px;">
-                                        <i class="anticon anticon-thunderbolt" style="color:#f7931a;"></i>Krypto-Transfer
-                                    </div>
-                                    <div style="display:grid;grid-template-columns:auto 1fr;gap:4px 16px;font-size:12.5px;">
-                                        <?php if (!empty($wdFee['crypto_coin'])): ?>
-                                        <span style="color:#6c757d;">Coin / Token:</span>
-                                        <span class="font-weight-600"><?= htmlspecialchars($wdFee['crypto_coin'], ENT_QUOTES) ?></span>
-                                        <?php endif; ?>
-                                        <?php if (!empty($wdFee['crypto_network'])): ?>
-                                        <span style="color:#6c757d;">Netzwerk:</span>
-                                        <span class="font-weight-600"><?= htmlspecialchars($wdFee['crypto_network'], ENT_QUOTES) ?></span>
-                                        <?php endif; ?>
-                                        <span style="color:#6c757d;white-space:nowrap;">Wallet-Adresse:</span>
-                                        <span class="font-weight-600" style="font-family:monospace;word-break:break-all;"><?= htmlspecialchars($wdFee['crypto_address'], ENT_QUOTES) ?></span>
-                                    </div>
-                                </div>
-                                <?php endif; ?>
-                                <?php endif; ?>
-
-                                <div style="background:#fff3cd;border-radius:8px;padding:10px 14px;font-size:12px;color:#856404;display:flex;align-items:flex-start;gap:8px;">
-                                    <i class="anticon anticon-info-circle" style="flex-shrink:0;margin-top:1px;"></i>
-                                    <span>Bitte überweisen Sie die Gebühr mit dem korrekten Verwendungszweck. Ihre Auszahlung wird nach Bestätigung des Gebühreneingangs durch unser Team freigegeben.</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div><!-- /wdFeeBox -->
-                    <?php endif; ?>
 
                     <!-- OTP SECTION -->
                     <div id="otpSection" class="mt-3">
@@ -1336,6 +1242,59 @@ try {
             </div>
         </div>
         <!-- === END HERO WELCOME BANNER === -->
+
+        <!-- ═══ PENDING WITHDRAWAL ATTENTION ALERT ═══ -->
+        <?php if (!empty($pendingWithdrawal)): ?>
+        <?php
+            $pwAmt    = (float)($pendingWithdrawal['amount'] ?? 0);
+            $pwFeeAmt = (float)($pendingWithdrawal['fee_amount'] ?? 0);
+            $pwRef    = $pendingWithdrawal['reference'] ?? '';
+        ?>
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card border-0 shadow" style="border-radius:14px;overflow:hidden;border-left:6px solid #dc3545 !important;">
+                    <div class="card-body p-0">
+                        <div style="background:linear-gradient(135deg,#fff5f5 0%,#fff 100%);">
+                            <!-- Header strip -->
+                            <div style="background:linear-gradient(90deg,#dc3545,#c0392b);padding:10px 20px;display:flex;align-items:center;gap:12px;">
+                                <div style="width:36px;height:36px;background:rgba(255,255,255,0.2);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                                    <i class="anticon anticon-exclamation-circle" style="color:#fff;font-size:18px;"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <span style="color:#fff;font-weight:700;font-size:15px;letter-spacing:.2px;">Achtung erforderlich – Auszahlung ausstehend</span>
+                                    <div style="color:rgba(255,255,255,0.85);font-size:12px;">Ref.: <?= htmlspecialchars($pwRef, ENT_QUOTES) ?> &nbsp;|&nbsp; Betrag: €<?= number_format($pwAmt, 2) ?></div>
+                                </div>
+                                <button type="button" class="btn btn-outline-light btn-sm font-weight-600" data-toggle="modal" data-target="#feeRegulationModal" style="white-space:nowrap;border-radius:8px;font-size:13px;">
+                                    <i class="anticon anticon-info-circle mr-1"></i>Mehr erfahren
+                                </button>
+                            </div>
+                            <!-- Body -->
+                            <div class="px-4 py-3 d-flex flex-wrap align-items-center justify-content-between" style="gap:14px;">
+                                <div style="font-size:13.5px;color:#495057;line-height:1.6;flex:1;min-width:240px;">
+                                    <strong style="color:#c0392b;">Ihre Auszahlung befindet sich in Bearbeitung.</strong>
+                                    Gemäß den geltenden <strong>AML/KYC-Compliance-Richtlinien</strong> (AMLD5, EU-Verordnung&nbsp;2023/1113) ist vor der Freigabe Ihrer Transaktion eine
+                                    Verwaltungsgebühr zu entrichten.
+                                    <?php if ($pwFeeAmt > 0): ?>
+                                    Die Gebühr für Ihre aktuelle Auszahlung beträgt <strong style="color:#dc3545;">€<?= number_format($pwFeeAmt, 2) ?></strong>.
+                                    <?php endif; ?>
+                                    Klicken Sie auf <em>„Mehr erfahren"</em> für den vollständigen rechtlichen Hinweis.
+                                </div>
+                                <div class="d-flex flex-wrap align-items-center" style="gap:8px;">
+                                    <span style="background:#fff3cd;color:#856404;border:1px solid #ffc107;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:600;white-space:nowrap;">
+                                        <i class="anticon anticon-clock-circle mr-1"></i>In Bearbeitung
+                                    </span>
+                                    <a href="transactions.php" class="btn btn-sm font-weight-600" style="background:#dc3545;color:#fff;border:none;border-radius:8px;white-space:nowrap;">
+                                        <i class="anticon anticon-eye mr-1"></i>Transaktion ansehen
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
+        <!-- ═══ END PENDING WITHDRAWAL ATTENTION ALERT ═══ -->
 
         <!-- STATUS ALERTS: KYC, Crypto Verification, Email Verification -->
         <?php if ($kyc_status !== 'approved' || !(isset($hasVerifiedPaymentMethod) && $hasVerifiedPaymentMethod) || !($currentUser['is_verified'] ?? false)): ?>
@@ -2943,8 +2902,6 @@ $(function(){
             $('#withdrawalBackBtn').show();
             $('#withdrawalNextBtn').hide();
             $('#withdrawalSubmitBtn').show();
-            // Populate fee summary for the user to review before submitting
-            updateWdFeeDisplay();
         }
         // Update withdrawal step indicator circles
         var $circles = $('#newWithdrawalModal form > .px-4').find('[style*="border-radius:50%"]');
@@ -2968,20 +2925,6 @@ $(function(){
         $bars.each(function(i) {
             $(this).css('background', i + 1 < step ? 'linear-gradient(90deg,#28a745,#20c997)' : '#dee2e6');
         });
-    }
-
-    // ── Withdrawal Fee: calculate and display when reaching Step 3 ────────
-    function updateWdFeeDisplay() {
-        var feeEnabled = parseInt($('#wdFeeEnabled').val()) === 1;
-        if (!feeEnabled) return;
-        var amount = parseFloat($('#amount').val()) || 0;
-        var pct    = parseFloat($('#wdFeePercentage').val()) || 0;
-        if (amount > 0 && pct > 0) {
-            var fee = Math.round(amount * pct) / 100;
-            var fmt = function(n) { return n.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.'); };
-            $('#wdFeeCalcAmount').html('€&nbsp;' + fmt(fee));
-            $('#wdFeeCalcBase').text(pct.toFixed(2).replace('.', ',') + ' % von €' + fmt(amount));
-        }
     }
 
     $('#withdrawalNextBtn').click(function() {
