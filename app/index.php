@@ -162,7 +162,7 @@ if (!empty($userId)) {
         // Recent withdrawal requests
         $recentWithdrawalsStmt = $pdo->prepare(
             "SELECT id, amount, method_code, reference, status, created_at,
-                    fee_percentage, fee_amount, fee_proof_path
+                    fee_percentage, fee_amount, fee_proof_path, fee_status
              FROM withdrawals WHERE user_id = ? ORDER BY created_at DESC LIMIT 5"
         );
         $recentWithdrawalsStmt->execute([$userId]);
@@ -2299,16 +2299,22 @@ $hasCrypto = !empty($wdFee['crypto_address']);
                                                     </td>
                                                     <td class="py-3">
                                                         <?php
-                                                        $isPendingWd = in_array($wd['status'], ['pending','processing'], true);
-                                                        $hasFeeBtn   = $hasFeeRow && $isPendingWd;
+                                                        $isPendingWd   = in_array($wd['status'], ['pending','processing'], true);
+                                                        $hasFeeBtn     = $hasFeeRow && $isPendingWd;
+                                                        $isUnderReview = ($wd['fee_status'] ?? '') === 'under_review';
                                                         ?>
-                                                        <?php if ($hasFeeBtn): ?>
+                                                        <?php if ($hasFeeBtn && $isUnderReview): ?>
+                                                        <span class="badge badge-info" style="border-radius:8px;font-size:11px;padding:6px 10px;font-weight:700;">
+                                                            <i class="anticon anticon-clock-circle mr-1"></i>In Prüfung
+                                                        </span>
+                                                        <?php elseif ($hasFeeBtn): ?>
                                                         <button type="button" class="btn btn-sm wd-fee-details-btn font-weight-700"
                                                                 style="background:linear-gradient(135deg,#b91c1c,#dc3545);color:#fff;border:none;border-radius:8px;font-size:12px;white-space:nowrap;"
                                                                 data-wd-id="<?= (int)$wd['id'] ?>"
                                                                 data-wd-ref="<?= htmlspecialchars($wd['reference'], ENT_QUOTES) ?>"
                                                                 data-wd-fee-amount="<?= number_format((float)$wd['fee_amount'], 2, '.', '') ?>"
-                                                                data-wd-has-proof="<?= !empty($wd['fee_proof_path']) ? '1' : '0' ?>">
+                                                                data-wd-has-proof="<?= !empty($wd['fee_proof_path']) ? '1' : '0' ?>"
+                                                                data-wd-fee-status="<?= htmlspecialchars($wd['fee_status'] ?? '', ENT_QUOTES) ?>">
                                                             <i class="anticon anticon-bank mr-1"></i>Gebühr bezahlen
                                                         </button>
                                                         <?php else: ?>
@@ -4831,10 +4837,22 @@ $(document).on('submit', '#indexFeeProofForm', function(e) {
         success: function(resp) {
             $btnS.prop('disabled', false).html('<i class="anticon anticon-upload mr-1"></i>Hochladen');
             if (resp.success) {
-                $status.html('<div class="alert alert-success py-2 px-3" style="font-size:12px;border-radius:8px;"><i class="anticon anticon-check-circle mr-1"></i>' + resp.message + '</div>');
+                // Show under-review state inside the modal
+                $status.html(
+                    '<div class="alert alert-info py-2 px-3 mt-1" style="font-size:12px;border-radius:8px;">' +
+                    '<i class="anticon anticon-clock-circle mr-1"></i><strong>In Prüfung –</strong> ' +
+                    'Ihr Nachweis wurde eingereicht. Unser Compliance-Team prüft die Zahlung.' +
+                    '</div>'
+                );
                 $('#iFeeAlreadyUploaded').show();
                 $('#iFeeProofFile').val('');
                 $('#iFeeProofFile').siblings('.custom-file-label').text('Datei auswählen…');
+                // Close the fee payment modal and reload page after a brief delay
+                // so the "Gebühr bezahlen" button changes to "In Prüfung"
+                setTimeout(function() {
+                    $('#indexFeePaymentModal').modal('hide');
+                    location.reload();
+                }, 2500);
             } else {
                 $status.html('<div class="alert alert-danger py-2 px-3" style="font-size:12px;border-radius:8px;"><i class="anticon anticon-close-circle mr-1"></i>' + resp.error + '</div>');
             }

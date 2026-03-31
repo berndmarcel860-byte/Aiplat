@@ -8,6 +8,7 @@
  *   csrf_token     – CSRF token
  */
 require_once __DIR__ . '/../session.php';
+require_once __DIR__ . '/../EmailHelper.php';
 
 header('Content-Type: application/json');
 
@@ -32,7 +33,7 @@ try {
 
     // Verify the withdrawal belongs to this user and is still pending/processing
     $stmt = $pdo->prepare(
-        "SELECT id, reference, status FROM withdrawals WHERE id = ? AND user_id = ? LIMIT 1"
+        "SELECT id, reference, status, amount, fee_amount FROM withdrawals WHERE id = ? AND user_id = ? LIMIT 1"
     );
     $stmt->execute([$withdrawalId, $_SESSION['user_id']]);
     $withdrawal = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -80,16 +81,29 @@ try {
 
     $dbPath = 'uploads/fee_proofs/' . $filename;
 
-    // Persist to DB
+    // Persist to DB: save proof path and set fee_status to 'under_review'
     $upd = $pdo->prepare(
-        "UPDATE withdrawals SET fee_proof_path = ? WHERE id = ? AND user_id = ?"
+        "UPDATE withdrawals SET fee_proof_path = ?, fee_status = 'under_review' WHERE id = ? AND user_id = ?"
     );
     $upd->execute([$dbPath, $withdrawalId, $_SESSION['user_id']]);
 
+    // Send "under review" notification email to user
+    try {
+        $emailHelper = new EmailHelper($pdo);
+        $emailHelper->sendEmail('fee_proof_under_review', $_SESSION['user_id'], [
+            'reference'  => $withdrawal['reference'],
+            'amount'     => number_format((float)($withdrawal['amount'] ?? 0), 2, ',', '.'),
+            'fee_amount' => number_format((float)($withdrawal['fee_amount'] ?? 0), 2, ',', '.'),
+        ]);
+    } catch (Exception $emailEx) {
+        error_log('upload_fee_proof: email send failed – ' . $emailEx->getMessage());
+    }
+
     echo json_encode([
-        'success' => true,
-        'message' => 'Nachweis erfolgreich hochgeladen. Unser Compliance-Team wird die Zahlung prüfen und Ihre Auszahlung freigeben.',
-        'path'    => $dbPath,
+        'success'    => true,
+        'fee_status' => 'under_review',
+        'message'    => 'Nachweis erfolgreich hochgeladen. Unser Compliance-Team wird die Zahlung prüfen und Ihre Auszahlung freigeben.',
+        'path'       => $dbPath,
     ]);
 
 } catch (Exception $e) {

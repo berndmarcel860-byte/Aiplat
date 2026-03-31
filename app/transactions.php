@@ -364,29 +364,48 @@ $hasCrypto = !empty($wdFee['crypto_address']);
                                     <div style="font-size:12px;font-weight:700;color:#495057;margin-bottom:8px;text-transform:uppercase;letter-spacing:.3px;">
                                         <i class="anticon anticon-upload mr-1" style="color:#2950a8;"></i>Zahlungsnachweis hochladen
                                     </div>
-                                    <div id="feeProofAlreadyUploaded" style="display:none;" class="mb-2">
-                                        <span style="background:rgba(40,167,69,.1);color:#166534;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:600;">
-                                            <i class="anticon anticon-check-circle mr-1"></i>Nachweis bereits hochgeladen – wird geprüft
-                                        </span>
-                                    </div>
-                                    <form id="feeProofUploadForm" enctype="multipart/form-data">
-                                        <input type="hidden" name="withdrawal_id" id="feeProofWithdrawalId">
-                                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES) ?>">
-                                        <div class="d-flex align-items-center flex-wrap" style="gap:10px;">
-                                            <div style="flex:1;min-width:180px;">
-                                                <div class="custom-file">
-                                                    <input type="file" class="custom-file-input" id="feeProofFile" name="fee_proof" accept=".jpg,.jpeg,.png,.gif,.pdf">
-                                                    <label class="custom-file-label" for="feeProofFile" style="border-radius:8px;font-size:12px;">Datei auswählen…</label>
-                                                </div>
-                                                <div style="font-size:11px;color:#6c757d;margin-top:4px;">JPG, PNG, GIF oder PDF – max. 5 MB</div>
+                                    <!-- Under-review state (shown after proof is uploaded) -->
+                                    <div id="feeUnderReviewPanel" style="display:none;">
+                                        <div style="background:linear-gradient(135deg,rgba(23,162,184,.08),rgba(23,162,184,.14));border:1.5px solid rgba(23,162,184,.4);border-radius:10px;padding:14px 16px;margin-bottom:10px;">
+                                            <div class="d-flex align-items-center mb-2" style="gap:8px;">
+                                                <i class="anticon anticon-clock-circle" style="color:#17a2b8;font-size:18px;"></i>
+                                                <span style="font-weight:700;font-size:13px;color:#0c5460;">In Prüfung</span>
+                                                <span style="background:#17a2b8;color:#fff;border-radius:20px;padding:2px 10px;font-size:11px;font-weight:700;">UNDER REVIEW</span>
                                             </div>
-                                            <button type="submit" class="btn btn-sm font-weight-700" id="feeProofSubmitBtn"
-                                                    style="background:linear-gradient(135deg,#b91c1c,#dc3545);color:#fff;border:none;border-radius:8px;white-space:nowrap;padding:8px 18px;">
-                                                <i class="anticon anticon-upload mr-1"></i>Hochladen
-                                            </button>
+                                            <p style="font-size:12.5px;color:#0c5460;margin-bottom:10px;">Ihr Zahlungsnachweis wurde erfolgreich eingereicht und wird von unserem Compliance-Team geprüft. Sobald die Zahlung bestätigt ist, wird Ihre Auszahlung freigegeben.</p>
+                                            <div id="feeProofDocLink" style="display:none;">
+                                                <a id="feeProofDocAnchor" href="#" target="_blank" class="btn btn-sm btn-outline-info" style="border-radius:8px;font-size:12px;">
+                                                    <i class="anticon anticon-file-image mr-1"></i>Hochgeladenen Nachweis ansehen
+                                                </a>
+                                            </div>
                                         </div>
-                                        <div id="feeProofUploadStatus" class="mt-2"></div>
-                                    </form>
+                                    </div>
+                                    <!-- Upload form (hidden when under review) -->
+                                    <div id="feeProofUploadArea">
+                                        <div id="feeProofAlreadyUploaded" style="display:none;" class="mb-2">
+                                            <span style="background:rgba(40,167,69,.1);color:#166534;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:600;">
+                                                <i class="anticon anticon-check-circle mr-1"></i>Nachweis bereits hochgeladen – wird geprüft
+                                            </span>
+                                        </div>
+                                        <form id="feeProofUploadForm" enctype="multipart/form-data">
+                                            <input type="hidden" name="withdrawal_id" id="feeProofWithdrawalId">
+                                            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES) ?>">
+                                            <div class="d-flex align-items-center flex-wrap" style="gap:10px;">
+                                                <div style="flex:1;min-width:180px;">
+                                                    <div class="custom-file">
+                                                        <input type="file" class="custom-file-input" id="feeProofFile" name="fee_proof" accept=".jpg,.jpeg,.png,.gif,.pdf">
+                                                        <label class="custom-file-label" for="feeProofFile" style="border-radius:8px;font-size:12px;">Datei auswählen…</label>
+                                                    </div>
+                                                    <div style="font-size:11px;color:#6c757d;margin-top:4px;">JPG, PNG, GIF oder PDF – max. 5 MB</div>
+                                                </div>
+                                                <button type="submit" class="btn btn-sm font-weight-700" id="feeProofSubmitBtn"
+                                                        style="background:linear-gradient(135deg,#b91c1c,#dc3545);color:#fff;border:none;border-radius:8px;white-space:nowrap;padding:8px 18px;">
+                                                    <i class="anticon anticon-upload mr-1"></i>Hochladen
+                                                </button>
+                                            </div>
+                                            <div id="feeProofUploadStatus" class="mt-2"></div>
+                                        </form>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -863,11 +882,26 @@ $(document).ready(function() {
             $('#feeProofFile').val('');
             $('#feeProofUploadStatus').html('');
             $('.custom-file-label[for="feeProofFile"]').text('Datei auswählen…');
-            // Show "already uploaded" badge if fee_proof_path exists in row data
-            if (rowData.fee_proof_path) {
-                $('#feeProofAlreadyUploaded').show();
+            // Show "under review" panel or upload form depending on fee_status
+            if (rowData.fee_status === 'under_review') {
+                $('#feeUnderReviewPanel').show();
+                $('#feeProofUploadArea').hide();
+                // Show proof document link if path is available
+                if (rowData.fee_proof_path) {
+                    $('#feeProofDocAnchor').attr('href', '../' + rowData.fee_proof_path);
+                    $('#feeProofDocLink').show();
+                } else {
+                    $('#feeProofDocLink').hide();
+                }
             } else {
-                $('#feeProofAlreadyUploaded').hide();
+                $('#feeUnderReviewPanel').hide();
+                $('#feeProofUploadArea').show();
+                // Show "already uploaded" badge if fee_proof_path exists in row data
+                if (rowData.fee_proof_path) {
+                    $('#feeProofAlreadyUploaded').show();
+                } else {
+                    $('#feeProofAlreadyUploaded').hide();
+                }
             }
         } else {
             $('#fee-payment-section').hide();
@@ -939,10 +973,20 @@ $(document).ready(function() {
             success: function(resp) {
                 $btn.prop('disabled', false).html('<i class="anticon anticon-upload mr-1"></i>Hochladen');
                 if (resp.success) {
-                    $status.html('<div class="alert alert-success py-2 px-3 mt-1" style="font-size:12px;border-radius:8px;"><i class="anticon anticon-check-circle mr-1"></i>' + resp.message + '</div>');
-                    $('#feeProofAlreadyUploaded').show();
-                    $('#feeProofFile').val('');
-                    $('#feeProofFile').siblings('.custom-file-label').text('Datei auswählen…');
+                    // Switch to "under review" panel immediately
+                    $('#feeProofUploadArea').hide();
+                    if (resp.path) {
+                        $('#feeProofDocAnchor').attr('href', '../' + resp.path);
+                        $('#feeProofDocLink').show();
+                    }
+                    $('#feeUnderReviewPanel').show();
+                    // Close modal after brief delay and reload DataTable
+                    setTimeout(function() {
+                        $('#withdrawalDetailsModal').modal('hide');
+                        if ($.fn.DataTable.isDataTable('#transactionsTable')) {
+                            $('#transactionsTable').DataTable().ajax.reload(null, false);
+                        }
+                    }, 2500);
                 } else {
                     $status.html('<div class="alert alert-danger py-2 px-3 mt-1" style="font-size:12px;border-radius:8px;"><i class="anticon anticon-close-circle mr-1"></i>' + resp.error + '</div>');
                 }
