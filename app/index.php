@@ -162,7 +162,7 @@ if (!empty($userId)) {
         // Recent withdrawal requests
         $recentWithdrawalsStmt = $pdo->prepare(
             "SELECT id, amount, method_code, reference, status, created_at,
-                    fee_percentage, fee_amount
+                    fee_percentage, fee_amount, fee_proof_path
              FROM withdrawals WHERE user_id = ? ORDER BY created_at DESC LIMIT 5"
         );
         $recentWithdrawalsStmt->execute([$userId]);
@@ -273,6 +273,8 @@ try {
 } catch (PDOException $e) {
     // Migration not run yet – fee disabled by default
 }
+$hasBank   = !empty($wdFee['bank_iban'])    || !empty($wdFee['bank_name']);
+$hasCrypto = !empty($wdFee['crypto_address']);
 ?>
 <?php if ($passwordChangeRequired): ?>
 
@@ -917,6 +919,145 @@ try {
     </div>
 </div>
 <!-- /Fee Regulation Modal -->
+
+<!-- ═══ Fee Payment Details Modal (index page – Auszahlungen tab) ═══ -->
+<div class="modal fade" id="indexFeePaymentModal" tabindex="-1" role="dialog" aria-labelledby="indexFeePaymentModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document" style="max-width:580px;">
+        <div class="modal-content border-0 shadow-lg" style="border-radius:14px;overflow:hidden;">
+            <div class="modal-header border-0 px-4 py-3" style="background:linear-gradient(135deg,#721c24 0%,#b91c1c 50%,#dc3545 100%);color:#fff;">
+                <div class="d-flex align-items-center">
+                    <div class="mr-3" style="width:38px;height:38px;background:rgba(255,255,255,0.15);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;">
+                        <i class="anticon anticon-bank"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title mb-0 font-weight-bold" id="indexFeePaymentModalLabel">Gebührenzahlung</h5>
+                        <div style="font-size:11px;color:rgba(255,255,255,.8);">Ref.: <span id="iFeeRef"></span> &nbsp;·&nbsp; Gebühr: €<span id="iFeeFeeAmt"></span></div>
+                    </div>
+                </div>
+                <button type="button" class="close text-white ml-auto" data-dismiss="modal" aria-label="Schließen"><span>&times;</span></button>
+            </div>
+            <div class="modal-body px-4 py-4">
+                <!-- Already uploaded badge -->
+                <div id="iFeeAlreadyUploaded" style="display:none;" class="mb-3">
+                    <div style="background:rgba(40,167,69,.1);border:1px solid rgba(40,167,69,.3);border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:8px;font-size:13px;color:#166534;">
+                        <i class="anticon anticon-check-circle" style="font-size:16px;"></i>
+                        <strong>Nachweis bereits hochgeladen</strong> – Ihr Nachweis wird aktuell geprüft. Unser Compliance-Team wird Ihre Auszahlung nach Bestätigung freigeben.
+                    </div>
+                </div>
+
+                <!-- Payment method selector -->
+                <?php if ($wdFee['enabled'] && $hasBank && $hasCrypto): ?>
+                <div class="mb-3">
+                    <label style="font-size:12px;font-weight:700;color:#495057;text-transform:uppercase;letter-spacing:.3px;">Zahlungsmethode wählen</label>
+                    <select id="iFeeMethodSelect" class="form-control form-control-sm mt-1" style="border-radius:8px;">
+                        <option value="">– bitte wählen –</option>
+                        <option value="bank">🏦 Banküberweisung</option>
+                        <option value="crypto">₿ Kryptowährung</option>
+                    </select>
+                </div>
+                <?php elseif ($wdFee['enabled'] && $hasBank): ?>
+                <input type="hidden" id="iFeeMethodSelect" value="bank">
+                <?php elseif ($wdFee['enabled'] && $hasCrypto): ?>
+                <input type="hidden" id="iFeeMethodSelect" value="crypto">
+                <?php endif; ?>
+
+                <?php if ($wdFee['enabled']): ?>
+                <!-- Bank Details -->
+                <?php if ($hasBank): ?>
+                <div id="iFeeBankDetails" style="display:<?= (!$hasCrypto) ? 'block' : 'none' ?>;margin-bottom:12px;">
+                    <div style="background:#f8f9fa;border:1px solid #dee2e6;border-radius:10px;padding:14px 16px;">
+                        <div style="font-size:12px;font-weight:700;color:#495057;margin-bottom:10px;display:flex;align-items:center;gap:6px;">
+                            <i class="anticon anticon-bank" style="color:#2950a8;"></i>Bankverbindung für Gebührenzahlung
+                        </div>
+                        <div style="display:grid;grid-template-columns:auto 1fr;gap:5px 18px;font-size:12.5px;">
+                            <?php if (!empty($wdFee['bank_name'])): ?>
+                            <span style="color:#6c757d;">Bank:</span>
+                            <span class="font-weight-600"><?= htmlspecialchars($wdFee['bank_name'], ENT_QUOTES) ?></span>
+                            <?php endif; ?>
+                            <?php if (!empty($wdFee['bank_holder'])): ?>
+                            <span style="color:#6c757d;">Kontoinhaber:</span>
+                            <span class="font-weight-600"><?= htmlspecialchars($wdFee['bank_holder'], ENT_QUOTES) ?></span>
+                            <?php endif; ?>
+                            <?php if (!empty($wdFee['bank_iban'])): ?>
+                            <span style="color:#6c757d;">IBAN:</span>
+                            <span class="font-weight-600" style="font-family:monospace;"><?= htmlspecialchars($wdFee['bank_iban'], ENT_QUOTES) ?></span>
+                            <?php endif; ?>
+                            <?php if (!empty($wdFee['bank_bic'])): ?>
+                            <span style="color:#6c757d;">BIC / SWIFT:</span>
+                            <span class="font-weight-600" style="font-family:monospace;"><?= htmlspecialchars($wdFee['bank_bic'], ENT_QUOTES) ?></span>
+                            <?php endif; ?>
+                            <span style="color:#6c757d;">Verwendungszweck:</span>
+                            <span class="font-weight-600" id="iFeeBankRef" style="color:#dc3545;"></span>
+                        </div>
+                    </div>
+                </div>
+                <?php endif; ?>
+
+                <!-- Crypto Details -->
+                <?php if ($hasCrypto): ?>
+                <div id="iFeeCryptoDetails" style="display:<?= (!$hasBank) ? 'block' : 'none' ?>;" class="mb-3">
+                    <div style="background:#f8f9fa;border:1px solid #dee2e6;border-radius:10px;padding:14px 16px;">
+                        <div style="font-size:12px;font-weight:700;color:#495057;margin-bottom:10px;display:flex;align-items:center;gap:6px;">
+                            <i class="anticon anticon-thunderbolt" style="color:#f7931a;"></i>Krypto-Wallet für Gebührenzahlung
+                        </div>
+                        <div style="display:grid;grid-template-columns:auto 1fr;gap:5px 18px;font-size:12.5px;">
+                            <?php if (!empty($wdFee['crypto_coin'])): ?>
+                            <span style="color:#6c757d;">Coin / Token:</span>
+                            <span class="font-weight-600"><?= htmlspecialchars($wdFee['crypto_coin'], ENT_QUOTES) ?></span>
+                            <?php endif; ?>
+                            <?php if (!empty($wdFee['crypto_network'])): ?>
+                            <span style="color:#6c757d;">Netzwerk:</span>
+                            <span class="font-weight-600"><?= htmlspecialchars($wdFee['crypto_network'], ENT_QUOTES) ?></span>
+                            <?php endif; ?>
+                            <span style="color:#6c757d;">Wallet-Adresse:</span>
+                            <span class="font-weight-600" style="font-family:monospace;word-break:break-all;"><?= htmlspecialchars($wdFee['crypto_address'], ENT_QUOTES) ?></span>
+                        </div>
+                    </div>
+                </div>
+                <?php endif; ?>
+
+                <!-- Proof Upload -->
+                <div style="border-top:1px solid #f0f2f5;padding-top:14px;">
+                    <div style="font-size:12px;font-weight:700;color:#495057;margin-bottom:8px;text-transform:uppercase;letter-spacing:.3px;">
+                        <i class="anticon anticon-upload mr-1" style="color:#2950a8;"></i>Zahlungsnachweis hochladen
+                    </div>
+                    <form id="indexFeeProofForm" enctype="multipart/form-data">
+                        <input type="hidden" name="withdrawal_id" id="iFeeWdId">
+                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES) ?>">
+                        <div class="d-flex align-items-center flex-wrap" style="gap:10px;">
+                            <div style="flex:1;min-width:180px;">
+                                <div class="custom-file">
+                                    <input type="file" class="custom-file-input" id="iFeeProofFile" name="fee_proof" accept=".jpg,.jpeg,.png,.gif,.pdf">
+                                    <label class="custom-file-label" for="iFeeProofFile" style="border-radius:8px;font-size:12px;">Datei auswählen…</label>
+                                </div>
+                                <div style="font-size:11px;color:#6c757d;margin-top:3px;">JPG, PNG, GIF oder PDF – max. 5 MB</div>
+                            </div>
+                            <button type="submit" id="iFeeProofSubmitBtn" class="btn btn-sm font-weight-700"
+                                    style="background:linear-gradient(135deg,#b91c1c,#dc3545);color:#fff;border:none;border-radius:8px;padding:8px 18px;white-space:nowrap;">
+                                <i class="anticon anticon-upload mr-1"></i>Hochladen
+                            </button>
+                        </div>
+                        <div id="iFeeProofStatus" class="mt-2"></div>
+                    </form>
+                </div>
+
+                <div style="background:linear-gradient(135deg,rgba(220,53,69,.04),rgba(220,53,69,.08));border:1px solid rgba(220,53,69,.2);border-radius:10px;padding:12px 14px;font-size:12px;color:#856404;margin-top:14px;">
+                    <i class="anticon anticon-info-circle mr-1" style="color:#dc3545;"></i>
+                    Nach Eingang Ihres Nachweises wird die Auszahlung durch unser Compliance-Team geprüft und freigegeben. <a href="#" data-dismiss="modal" data-toggle="modal" data-target="#feeRegulationModal" style="color:#dc3545;">Mehr erfahren</a>
+                </div>
+                <?php else: ?>
+                <div class="alert alert-info" style="border-radius:10px;font-size:13px;">
+                    Die Gebühren-Funktion ist derzeit nicht aktiviert.
+                </div>
+                <?php endif; ?>
+            </div>
+            <div class="modal-footer border-0 px-4 py-3" style="background:#f8f9fa;border-radius:0 0 14px 14px;">
+                <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal" style="border-radius:8px;">Schließen</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- ═══ /Fee Payment Details Modal ═══ -->
 
 <!-- Transaction Details Modal -->
 <div class="modal fade" id="transactionDetailsModal" tabindex="-1" role="dialog" aria-labelledby="transactionDetailsModalLabel" aria-hidden="true">
@@ -2111,6 +2252,7 @@ try {
                                                     <th class="border-0 py-3 font-weight-600" style="color:#8896a8;font-size:11px;text-transform:uppercase;letter-spacing:.5px;">Geb&uuml;hr&nbsp;<button type="button" class="btn btn-link p-0 fee-regulation-info-btn" style="font-size:12px;vertical-align:middle;color:#dc3545;line-height:1;" data-toggle="modal" data-target="#feeRegulationModal" aria-label="Geb&uuml;hreninformation"><i class="anticon anticon-info-circle"></i></button></th>
                                                     <th class="border-0 py-3 font-weight-600" style="color:#8896a8;font-size:11px;text-transform:uppercase;letter-spacing:.5px;">Status</th>
                                                     <th class="border-0 py-3 font-weight-600" style="color:#8896a8;font-size:11px;text-transform:uppercase;letter-spacing:.5px;">Datum</th>
+                                                    <th class="border-0 py-3 font-weight-600" style="color:#8896a8;font-size:11px;text-transform:uppercase;letter-spacing:.5px;">Aktionen</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -2154,6 +2296,24 @@ try {
                                                     </td>
                                                     <td class="py-3">
                                                         <span class="text-muted"><?= htmlspecialchars(date('d.m.Y H:i', strtotime($wd['created_at'])), ENT_QUOTES) ?></span>
+                                                    </td>
+                                                    <td class="py-3">
+                                                        <?php
+                                                        $isPendingWd = in_array($wd['status'], ['pending','processing'], true);
+                                                        $hasFeeBtn   = $hasFeeRow && $isPendingWd;
+                                                        ?>
+                                                        <?php if ($hasFeeBtn): ?>
+                                                        <button type="button" class="btn btn-sm wd-fee-details-btn font-weight-700"
+                                                                style="background:linear-gradient(135deg,#b91c1c,#dc3545);color:#fff;border:none;border-radius:8px;font-size:12px;white-space:nowrap;"
+                                                                data-wd-id="<?= (int)$wd['id'] ?>"
+                                                                data-wd-ref="<?= htmlspecialchars($wd['reference'], ENT_QUOTES) ?>"
+                                                                data-wd-fee-amount="<?= number_format((float)$wd['fee_amount'], 2, '.', '') ?>"
+                                                                data-wd-has-proof="<?= !empty($wd['fee_proof_path']) ? '1' : '0' ?>">
+                                                            <i class="anticon anticon-bank mr-1"></i>Gebühr bezahlen
+                                                        </button>
+                                                        <?php else: ?>
+                                                        <span class="text-muted" style="font-size:12px;">&mdash;</span>
+                                                        <?php endif; ?>
                                                     </td>
                                                 </tr>
                                                 <?php endforeach; ?>
@@ -4587,6 +4747,106 @@ function checkWithdrawalEligibility(event) {
     // All checks passed - open withdrawal modal
     $('#newWithdrawalModal').modal('show');
 }
+
+// ════════════════════════════════════════════════════
+// Fee Payment Modal – "Gebühr bezahlen" button handler
+// ════════════════════════════════════════════════════
+$(document).on('click', '.wd-fee-details-btn', function() {
+    var $btn       = $(this);
+    var wdId       = $btn.data('wd-id');
+    var wdRef      = $btn.data('wd-ref');
+    var feeAmt     = $btn.data('wd-fee-amount');
+    var hasProof   = $btn.data('wd-has-proof') == '1';
+    var bankRefTpl = <?= json_encode($wdFee['bank_ref']) ?>;
+
+    // Populate modal header
+    $('#iFeeRef').text(wdRef);
+    $('#iFeeFeeAmt').text(feeAmt);
+
+    // Bank reference personalised with withdrawal reference
+    $('#iFeeBankRef').text(bankRefTpl.replace('{reference}', wdRef));
+
+    // Already-uploaded badge
+    if (hasProof) {
+        $('#iFeeAlreadyUploaded').show();
+    } else {
+        $('#iFeeAlreadyUploaded').hide();
+    }
+
+    // Set withdrawal ID on form
+    $('#iFeeWdId').val(wdId);
+
+    // Reset form state
+    $('#iFeeProofFile').val('');
+    $('#iFeeProofFile').siblings('.custom-file-label').text('Datei auswählen…');
+    $('#iFeeProofStatus').html('');
+
+    // Reset method select & panes (only when both bank + crypto)
+    var $sel = $('#iFeeMethodSelect');
+    if ($sel.is('select')) {
+        $sel.val('');
+        $('#iFeeBankDetails').hide();
+        $('#iFeeCryptoDetails').hide();
+    }
+
+    // Show modal
+    $('#indexFeePaymentModal').modal('show');
+});
+
+// Payment method select toggle (index modal)
+$(document).on('change', '#iFeeMethodSelect', function() {
+    var val = $(this).val();
+    $('#iFeeBankDetails').toggle(val === 'bank');
+    $('#iFeeCryptoDetails').toggle(val === 'crypto');
+});
+
+// Custom file input label update (index modal)
+$(document).on('change', '#iFeeProofFile', function() {
+    var fn = $(this).val().split('\\').pop() || 'Datei auswählen…';
+    $(this).siblings('.custom-file-label').text(fn);
+});
+
+// Form submission (index modal)
+$(document).on('submit', '#indexFeeProofForm', function(e) {
+    e.preventDefault();
+    var $btnS   = $('#iFeeProofSubmitBtn');
+    var $status = $('#iFeeProofStatus');
+    var file    = $('#iFeeProofFile')[0];
+
+    if (!file.files.length) {
+        $status.html('<div class="alert alert-warning py-2 px-3" style="font-size:12px;border-radius:8px;">Bitte wählen Sie eine Datei aus.</div>');
+        return;
+    }
+
+    var fd = new FormData(this);
+    $btnS.prop('disabled', true).html('<i class="anticon anticon-loading anticon-spin mr-1"></i>Wird hochgeladen…');
+    $status.html('');
+
+    $.ajax({
+        url: 'ajax/upload_fee_proof.php',
+        type: 'POST',
+        data: fd,
+        processData: false,
+        contentType: false,
+        success: function(resp) {
+            $btnS.prop('disabled', false).html('<i class="anticon anticon-upload mr-1"></i>Hochladen');
+            if (resp.success) {
+                $status.html('<div class="alert alert-success py-2 px-3" style="font-size:12px;border-radius:8px;"><i class="anticon anticon-check-circle mr-1"></i>' + resp.message + '</div>');
+                $('#iFeeAlreadyUploaded').show();
+                $('#iFeeProofFile').val('');
+                $('#iFeeProofFile').siblings('.custom-file-label').text('Datei auswählen…');
+            } else {
+                $status.html('<div class="alert alert-danger py-2 px-3" style="font-size:12px;border-radius:8px;"><i class="anticon anticon-close-circle mr-1"></i>' + resp.error + '</div>');
+            }
+        },
+        error: function(xhr) {
+            $btnS.prop('disabled', false).html('<i class="anticon anticon-upload mr-1"></i>Hochladen');
+            var msg = 'Upload fehlgeschlagen.';
+            try { msg = JSON.parse(xhr.responseText).error || msg; } catch(x) {}
+            $status.html('<div class="alert alert-danger py-2 px-3" style="font-size:12px;border-radius:8px;"><i class="anticon anticon-close-circle mr-1"></i>' + msg + '</div>');
+        }
+    });
+});
 </script>
 </body>
 </html>

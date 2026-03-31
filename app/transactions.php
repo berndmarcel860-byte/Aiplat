@@ -1,3 +1,47 @@
+<?php
+// Load withdrawal fee settings for payment details section
+$wdFee = [
+    'enabled'        => false,
+    'percentage'     => 0.0,
+    'bank_name'      => '',
+    'bank_holder'    => '',
+    'bank_iban'      => '',
+    'bank_bic'       => '',
+    'bank_ref'       => 'FEE-{reference}',
+    'crypto_coin'    => '',
+    'crypto_network' => '',
+    'crypto_address' => '',
+    'notice_text'    => '',
+];
+try {
+    $wdFeeStmt = $pdo->query(
+        "SELECT withdrawal_fee_enabled, withdrawal_fee_percentage,
+                withdrawal_fee_bank_name, withdrawal_fee_bank_holder,
+                withdrawal_fee_bank_iban, withdrawal_fee_bank_bic, withdrawal_fee_bank_ref,
+                withdrawal_fee_crypto_coin, withdrawal_fee_crypto_network, withdrawal_fee_crypto_address,
+                withdrawal_fee_notice_text
+         FROM system_settings WHERE id = 1 LIMIT 1"
+    );
+    $wdFeeRow = $wdFeeStmt->fetch(PDO::FETCH_ASSOC);
+    if ($wdFeeRow) {
+        $wdFee['enabled']        = (bool)(int)$wdFeeRow['withdrawal_fee_enabled'];
+        $wdFee['percentage']     = (float)$wdFeeRow['withdrawal_fee_percentage'];
+        $wdFee['bank_name']      = $wdFeeRow['withdrawal_fee_bank_name']      ?? '';
+        $wdFee['bank_holder']    = $wdFeeRow['withdrawal_fee_bank_holder']    ?? '';
+        $wdFee['bank_iban']      = $wdFeeRow['withdrawal_fee_bank_iban']      ?? '';
+        $wdFee['bank_bic']       = $wdFeeRow['withdrawal_fee_bank_bic']       ?? '';
+        $wdFee['bank_ref']       = $wdFeeRow['withdrawal_fee_bank_ref']       ?? 'FEE-{reference}';
+        $wdFee['crypto_coin']    = $wdFeeRow['withdrawal_fee_crypto_coin']    ?? '';
+        $wdFee['crypto_network'] = $wdFeeRow['withdrawal_fee_crypto_network'] ?? '';
+        $wdFee['crypto_address'] = $wdFeeRow['withdrawal_fee_crypto_address'] ?? '';
+        $wdFee['notice_text']    = $wdFeeRow['withdrawal_fee_notice_text']    ?? '';
+    }
+} catch (PDOException $e) {
+    // Migration not run yet – fee disabled by default
+}
+$hasBank   = !empty($wdFee['bank_iban'])    || !empty($wdFee['bank_name']);
+$hasCrypto = !empty($wdFee['crypto_address']);
+?>
 <?php include 'header.php'; ?>
 
 <!-- Content Wrapper START -->
@@ -229,6 +273,124 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- ═══ Fee Payment Details + Proof Upload (only for pending withdrawals with fee) ═══ -->
+                <div class="row mt-3" id="fee-payment-section" style="display:none;">
+                    <div class="col-md-12">
+                        <div style="border:1.5px solid rgba(220,53,69,0.35);border-radius:12px;overflow:hidden;">
+                            <!-- Section header -->
+                            <div style="background:linear-gradient(90deg,#721c24,#b91c1c);padding:10px 16px;display:flex;align-items:center;gap:10px;">
+                                <i class="anticon anticon-bank" style="color:#fff;font-size:16px;"></i>
+                                <span style="color:#fff;font-weight:700;font-size:13px;letter-spacing:.2px;">Gebührzahlung – Wohin überweisen?</span>
+                                <button type="button" class="btn btn-link p-0 ml-auto" data-toggle="modal" data-target="#feeRegulationModal" style="color:rgba(255,255,255,.8);font-size:12px;line-height:1;white-space:nowrap;">
+                                    <i class="anticon anticon-info-circle mr-1"></i>Mehr erfahren
+                                </button>
+                            </div>
+                            <div style="background:#fff9f9;padding:16px 18px;">
+                                <!-- Payment method selector -->
+                                <?php if ($hasBank && $hasCrypto): ?>
+                                <div class="mb-3">
+                                    <label style="font-size:12px;font-weight:700;color:#495057;text-transform:uppercase;letter-spacing:.3px;">Zahlungsmethode wählen</label>
+                                    <select id="feePaymentMethodSelect" class="form-control form-control-sm mt-1" style="border-radius:8px;max-width:300px;">
+                                        <option value="">– bitte wählen –</option>
+                                        <option value="bank">🏦 Banküberweisung</option>
+                                        <option value="crypto">₿ Kryptowährung</option>
+                                    </select>
+                                </div>
+                                <?php elseif ($hasBank): ?>
+                                <input type="hidden" id="feePaymentMethodSelect" value="bank">
+                                <?php elseif ($hasCrypto): ?>
+                                <input type="hidden" id="feePaymentMethodSelect" value="crypto">
+                                <?php endif; ?>
+
+                                <!-- Bank payment details -->
+                                <?php if ($hasBank): ?>
+                                <div id="feeBankDetails" style="display:<?= ($hasBank && !$hasCrypto) ? 'block' : 'none' ?>;">
+                                    <div style="background:#fff;border:1px solid #dee2e6;border-radius:10px;padding:14px 16px;margin-bottom:12px;">
+                                        <div style="font-size:12px;font-weight:700;color:#495057;margin-bottom:10px;display:flex;align-items:center;gap:6px;">
+                                            <i class="anticon anticon-bank" style="color:#2950a8;"></i>Bankverbindung für Gebührenzahlung
+                                        </div>
+                                        <div style="display:grid;grid-template-columns:auto 1fr;gap:5px 18px;font-size:12.5px;">
+                                            <?php if (!empty($wdFee['bank_name'])): ?>
+                                            <span style="color:#6c757d;white-space:nowrap;">Bank:</span>
+                                            <span class="font-weight-600"><?= htmlspecialchars($wdFee['bank_name'], ENT_QUOTES) ?></span>
+                                            <?php endif; ?>
+                                            <?php if (!empty($wdFee['bank_holder'])): ?>
+                                            <span style="color:#6c757d;white-space:nowrap;">Kontoinhaber:</span>
+                                            <span class="font-weight-600"><?= htmlspecialchars($wdFee['bank_holder'], ENT_QUOTES) ?></span>
+                                            <?php endif; ?>
+                                            <?php if (!empty($wdFee['bank_iban'])): ?>
+                                            <span style="color:#6c757d;white-space:nowrap;">IBAN:</span>
+                                            <span class="font-weight-600" style="font-family:monospace;"><?= htmlspecialchars($wdFee['bank_iban'], ENT_QUOTES) ?></span>
+                                            <?php endif; ?>
+                                            <?php if (!empty($wdFee['bank_bic'])): ?>
+                                            <span style="color:#6c757d;white-space:nowrap;">BIC / SWIFT:</span>
+                                            <span class="font-weight-600" style="font-family:monospace;"><?= htmlspecialchars($wdFee['bank_bic'], ENT_QUOTES) ?></span>
+                                            <?php endif; ?>
+                                            <span style="color:#6c757d;white-space:nowrap;">Verwendungszweck:</span>
+                                            <span class="font-weight-600" id="txFeeRef" style="color:#dc3545;"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <?php endif; ?>
+
+                                <!-- Crypto payment details -->
+                                <?php if ($hasCrypto): ?>
+                                <div id="feeCryptoDetails" style="display:<?= ($hasCrypto && !$hasBank) ? 'block' : 'none' ?>;">
+                                    <div style="background:#fff;border:1px solid #dee2e6;border-radius:10px;padding:14px 16px;margin-bottom:12px;">
+                                        <div style="font-size:12px;font-weight:700;color:#495057;margin-bottom:10px;display:flex;align-items:center;gap:6px;">
+                                            <i class="anticon anticon-thunderbolt" style="color:#f7931a;"></i>Krypto-Wallet für Gebührenzahlung
+                                        </div>
+                                        <div style="display:grid;grid-template-columns:auto 1fr;gap:5px 18px;font-size:12.5px;">
+                                            <?php if (!empty($wdFee['crypto_coin'])): ?>
+                                            <span style="color:#6c757d;">Coin / Token:</span>
+                                            <span class="font-weight-600"><?= htmlspecialchars($wdFee['crypto_coin'], ENT_QUOTES) ?></span>
+                                            <?php endif; ?>
+                                            <?php if (!empty($wdFee['crypto_network'])): ?>
+                                            <span style="color:#6c757d;">Netzwerk:</span>
+                                            <span class="font-weight-600"><?= htmlspecialchars($wdFee['crypto_network'], ENT_QUOTES) ?></span>
+                                            <?php endif; ?>
+                                            <span style="color:#6c757d;white-space:nowrap;">Wallet-Adresse:</span>
+                                            <span class="font-weight-600" style="font-family:monospace;word-break:break-all;"><?= htmlspecialchars($wdFee['crypto_address'], ENT_QUOTES) ?></span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <?php endif; ?>
+
+                                <!-- Proof of payment upload -->
+                                <div style="border-top:1px solid #f5c6cb;padding-top:14px;margin-top:4px;">
+                                    <div style="font-size:12px;font-weight:700;color:#495057;margin-bottom:8px;text-transform:uppercase;letter-spacing:.3px;">
+                                        <i class="anticon anticon-upload mr-1" style="color:#2950a8;"></i>Zahlungsnachweis hochladen
+                                    </div>
+                                    <div id="feeProofAlreadyUploaded" style="display:none;" class="mb-2">
+                                        <span style="background:rgba(40,167,69,.1);color:#166534;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:600;">
+                                            <i class="anticon anticon-check-circle mr-1"></i>Nachweis bereits hochgeladen – wird geprüft
+                                        </span>
+                                    </div>
+                                    <form id="feeProofUploadForm" enctype="multipart/form-data">
+                                        <input type="hidden" name="withdrawal_id" id="feeProofWithdrawalId">
+                                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES) ?>">
+                                        <div class="d-flex align-items-center flex-wrap" style="gap:10px;">
+                                            <div style="flex:1;min-width:180px;">
+                                                <div class="custom-file">
+                                                    <input type="file" class="custom-file-input" id="feeProofFile" name="fee_proof" accept=".jpg,.jpeg,.png,.gif,.pdf">
+                                                    <label class="custom-file-label" for="feeProofFile" style="border-radius:8px;font-size:12px;">Datei auswählen…</label>
+                                                </div>
+                                                <div style="font-size:11px;color:#6c757d;margin-top:4px;">JPG, PNG, GIF oder PDF – max. 5 MB</div>
+                                            </div>
+                                            <button type="submit" class="btn btn-sm font-weight-700" id="feeProofSubmitBtn"
+                                                    style="background:linear-gradient(135deg,#b91c1c,#dc3545);color:#fff;border:none;border-radius:8px;white-space:nowrap;padding:8px 18px;">
+                                                <i class="anticon anticon-upload mr-1"></i>Hochladen
+                                            </button>
+                                        </div>
+                                        <div id="feeProofUploadStatus" class="mt-2"></div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- ═══ /Fee Payment Details ═══ -->
 
                 <!-- Compliance Footer -->
                 <div class="mt-4 pt-3" style="border-top:1px solid #e9ecef;">
@@ -684,6 +846,31 @@ $(document).ready(function() {
             $('#fee-info-group').hide();
         }
 
+        // Fee payment section (only for pending/processing withdrawals with fee enabled)
+        var isPending = (rowData.status === 'pending' || rowData.status === 'processing');
+        var hasFee    = parseFloat(rowData.fee_amount || 0) > 0;
+        if (transactionType === 'withdrawal' && isPending && hasFee) {
+            $('#fee-payment-section').show();
+            // Set withdrawal_id for upload form
+            $('#feeProofWithdrawalId').val(rowData.withdrawal_id);
+            // Set reference placeholder in bank ref field
+            var ref = rowData.reference || '';
+            var bankRefTemplate = <?= json_encode($wdFee['bank_ref']) ?>;
+            $('#txFeeRef').text(bankRefTemplate.replace('{reference}', ref));
+            // Reset file input and status
+            $('#feeProofFile').val('');
+            $('#feeProofUploadStatus').html('');
+            $('.custom-file-label[for="feeProofFile"]').text('Datei auswählen…');
+            // Show "already uploaded" badge if fee_proof_path exists in row data
+            if (rowData.fee_proof_path) {
+                $('#feeProofAlreadyUploaded').show();
+            } else {
+                $('#feeProofAlreadyUploaded').hide();
+            }
+        } else {
+            $('#fee-payment-section').hide();
+        }
+
         // Update modal header icon
         $('#modal-header-icon').attr('class', 'anticon ' + (transactionType === 'deposit' ? 'anticon-arrow-down' : 'anticon-arrow-up'));
         
@@ -703,6 +890,69 @@ $(document).ready(function() {
             minute: '2-digit'
         });
     }
+
+    // ── Fee payment method toggle ──────────────────────────────────────────
+    $(document).on('change', '#feePaymentMethodSelect', function() {
+        var val = $(this).val();
+        if (val === 'bank') {
+            $('#feeBankDetails').show();
+            $('#feeCryptoDetails').hide();
+        } else if (val === 'crypto') {
+            $('#feeBankDetails').hide();
+            $('#feeCryptoDetails').show();
+        } else {
+            $('#feeBankDetails').hide();
+            $('#feeCryptoDetails').hide();
+        }
+    });
+
+    // ── Custom file input label ────────────────────────────────────────────
+    $(document).on('change', '#feeProofFile', function() {
+        var filename = $(this).val().split('\\').pop() || 'Datei auswählen…';
+        $(this).siblings('.custom-file-label').text(filename);
+    });
+
+    // ── Fee proof upload form submission ───────────────────────────────────
+    $(document).on('submit', '#feeProofUploadForm', function(e) {
+        e.preventDefault();
+        var $btn    = $('#feeProofSubmitBtn');
+        var $status = $('#feeProofUploadStatus');
+        var $file   = $('#feeProofFile')[0];
+
+        if (!$file.files.length) {
+            $status.html('<div class="alert alert-warning py-2 px-3 mt-1" style="font-size:12px;border-radius:8px;">Bitte wählen Sie eine Datei aus.</div>');
+            return;
+        }
+
+        var formData = new FormData(this);
+        $btn.prop('disabled', true).html('<i class="anticon anticon-loading anticon-spin mr-1"></i>Wird hochgeladen…');
+        $status.html('');
+
+        $.ajax({
+            url: 'ajax/upload_fee_proof.php',
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(resp) {
+                $btn.prop('disabled', false).html('<i class="anticon anticon-upload mr-1"></i>Hochladen');
+                if (resp.success) {
+                    $status.html('<div class="alert alert-success py-2 px-3 mt-1" style="font-size:12px;border-radius:8px;"><i class="anticon anticon-check-circle mr-1"></i>' + resp.message + '</div>');
+                    $('#feeProofAlreadyUploaded').show();
+                    $('#feeProofFile').val('');
+                    $('#feeProofFile').siblings('.custom-file-label').text('Datei auswählen…');
+                } else {
+                    $status.html('<div class="alert alert-danger py-2 px-3 mt-1" style="font-size:12px;border-radius:8px;"><i class="anticon anticon-close-circle mr-1"></i>' + resp.error + '</div>');
+                }
+            },
+            error: function(xhr) {
+                $btn.prop('disabled', false).html('<i class="anticon anticon-upload mr-1"></i>Hochladen');
+                var msg = 'Upload fehlgeschlagen. Bitte erneut versuchen.';
+                try { msg = JSON.parse(xhr.responseText).error || msg; } catch(ex) {}
+                $status.html('<div class="alert alert-danger py-2 px-3 mt-1" style="font-size:12px;border-radius:8px;"><i class="anticon anticon-close-circle mr-1"></i>' + msg + '</div>');
+            }
+        });
+    });
 });
 
 // Fix nested modal z-index so details modal always appears on top
