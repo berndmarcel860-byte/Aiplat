@@ -1,5 +1,8 @@
+<?php include 'header.php'; ?>
+
 <?php
 // Load withdrawal fee settings for payment details section
+// (must come after header.php which sets up $pdo via session.php → config.php)
 $wdFee = [
     'enabled'        => false,
     'percentage'     => 0.0,
@@ -42,7 +45,6 @@ try {
 $hasBank   = !empty($wdFee['bank_iban'])    || !empty($wdFee['bank_name']);
 $hasCrypto = !empty($wdFee['crypto_address']);
 ?>
-<?php include 'header.php'; ?>
 
 <!-- Content Wrapper START -->
 <div class="main-content">
