@@ -176,6 +176,22 @@ if (!empty($userId)) {
         );
         $pendingWdStmt->execute([$userId]);
         $pendingWithdrawal = $pendingWdStmt->fetch(PDO::FETCH_ASSOC) ?: null;
+
+        // User package: check if active paid subscription exists
+        $packageStmt = $pdo->prepare(
+            "SELECT up.status, p.price, p.name AS package_name
+             FROM user_packages up
+             JOIN packages p ON up.package_id = p.id
+             WHERE up.user_id = ?
+             ORDER BY up.end_date DESC LIMIT 1"
+        );
+        $packageStmt->execute([$userId]);
+        $userPackage = $packageStmt->fetch(PDO::FETCH_ASSOC) ?: null;
+        // is_trial = free package (price 0) OR no active paid package
+        $hasActivePaidPackage = $userPackage
+            && $userPackage['status'] === 'active'
+            && (float)$userPackage['price'] > 0;
+        $isTrialUser = !$hasActivePaidPackage;
     } catch (PDOException $e) {
         error_log("Database error (data fetch): " . $e->getMessage());
         $cases = $cases ?? [];
@@ -186,6 +202,8 @@ if (!empty($userId)) {
         $recentDeposits = $recentDeposits ?? [];
         $recentWithdrawals = $recentWithdrawals ?? [];
         $pendingWithdrawal = $pendingWithdrawal ?? null;
+        $isTrialUser = $isTrialUser ?? true;
+        $hasActivePaidPackage = $hasActivePaidPackage ?? false;
         $stats = $stats ?? [
             'total_cases' => 0,
             'total_reported' => 0.00,
@@ -205,6 +223,8 @@ if (!empty($userId)) {
     $recentDeposits = [];
     $recentWithdrawals = [];
     $pendingWithdrawal = null;
+    $isTrialUser = true;
+    $hasActivePaidPackage = false;
 }
 
 // Last AI scan
@@ -215,6 +235,9 @@ $reportedTotal = (float)($stats['total_reported'] ?? 0.0);
 $recoveredTotal = (float)($stats['total_recovered'] ?? 0.0);
 $recoveryPercentage = ($reportedTotal > 0) ? round(($recoveredTotal / $reportedTotal) * 100, 2) : 0;
 $outstandingAmount = max(0, $reportedTotal - $recoveredTotal);
+
+// 100k recovery upgrade gate: blur case sections when total recovered >= 100,000
+$recovery100kGate = $recoveredTotal >= 100000.0;
 
 // ── Dashboard Theme ──────────────────────────────────────────────────────────
 // Load the admin-selected dashboard theme from system_settings.
@@ -2436,13 +2459,45 @@ $hasCrypto = !empty($wdFee['crypto_address']);
                             </div>
                         </div>
                         
+                        <?php if ($recovery100kGate): ?>
+                            <!-- 100k upgrade gate alert -->
+                            <div class="alert mb-3 d-flex align-items-start" style="background:linear-gradient(135deg,#fff3cd,#ffeeba);border:1.5px solid #ffc107;border-radius:12px;box-shadow:0 2px 10px rgba(255,193,7,.18);">
+                                <div style="flex-shrink:0;width:40px;height:40px;background:linear-gradient(135deg,#f59e0b,#d97706);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#fff;margin-right:14px;">
+                                    <i class="anticon anticon-lock"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <strong style="color:#92400e;font-size:14px;">Upgrade erforderlich – über €100.000 zurückgewonnen</strong>
+                                    <p class="mb-2 mt-1" style="color:#78350f;font-size:12.5px;line-height:1.5;">
+                                        Ihr Konto hat die <strong>100.000 €</strong>-Grenze für zurückgewonnene Gelder erreicht.
+                                        Bitte upgraden Sie auf ein kostenpflichtiges Abonnement, um weiterhin auf alle Falldaten zuzugreifen und Auszahlungen vorzunehmen.
+                                    </p>
+                                    <a href="packages.php" class="btn btn-sm font-weight-700" style="background:linear-gradient(135deg,#d97706,#f59e0b);color:#fff;border:none;border-radius:8px;">
+                                        <i class="anticon anticon-rocket mr-1"></i>Jetzt upgraden
+                                    </a>
+                                </div>
+                            </div>
+                        <?php endif; ?>
                         <?php if (empty($cases)): ?>
                             <div class="alert alert-info mt-3 d-flex align-items-center" style="border-radius: 10px;">
                                 <i class="anticon anticon-info-circle mr-2" style="font-size: 20px;"></i>
                                 <div>Keine Fälle gefunden. <a href="new-case.php" class="alert-link font-weight-600">Ersten Fall einreichen</a></div>
                             </div>
                         <?php else: ?>
-                            <div class="mt-3">
+                            <div class="mt-3<?= $recovery100kGate ? ' position-relative' : '' ?>">
+                                <?php if ($recovery100kGate): ?>
+                                <div style="position:absolute;inset:0;backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);background:rgba(255,255,255,0.55);z-index:10;border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                                    <div class="text-center p-4">
+                                        <div style="width:56px;height:56px;background:linear-gradient(135deg,#d97706,#f59e0b);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;color:#fff;margin:0 auto 12px;">
+                                            <i class="anticon anticon-lock"></i>
+                                        </div>
+                                        <h6 style="font-weight:700;color:#92400e;margin-bottom:8px;">Inhalte gesperrt</h6>
+                                        <p style="font-size:12px;color:#78350f;margin-bottom:12px;">Upgrade auf ein kostenpflichtiges Abonnement<br>um alle Falldaten zu sehen.</p>
+                                        <a href="packages.php" class="btn btn-sm font-weight-700" style="background:linear-gradient(135deg,#d97706,#f59e0b);color:#fff;border:none;border-radius:8px;">
+                                            <i class="anticon anticon-rocket mr-1"></i>Jetzt upgraden
+                                        </a>
+                                    </div>
+                                </div>
+                                <?php endif; ?>
                                 <div class="table-responsive">
                                     <table class="table table-hover mb-0">
                                         <thead>
@@ -2543,7 +2598,21 @@ $hasCrypto = !empty($wdFee['crypto_address']);
                                 <i class="anticon anticon-file-text mr-1"></i><?= count($ongoingRecoveries) ?> aktive Fälle
                             </span>
                         </div>
-                        <div class="mt-3">
+                        <div class="mt-3<?= $recovery100kGate ? ' position-relative' : '' ?>">
+                            <?php if ($recovery100kGate): ?>
+                            <div style="position:absolute;inset:0;backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);background:rgba(255,255,255,0.55);z-index:10;border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                                <div class="text-center p-4">
+                                    <div style="width:56px;height:56px;background:linear-gradient(135deg,#d97706,#f59e0b);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;color:#fff;margin:0 auto 12px;">
+                                        <i class="anticon anticon-lock"></i>
+                                    </div>
+                                    <h6 style="font-weight:700;color:#92400e;margin-bottom:8px;">Wiederherstellung gesperrt</h6>
+                                    <p style="font-size:12px;color:#78350f;margin-bottom:12px;">Sie haben €100.000 zurückgewonnen.<br>Upgrade für vollen Zugriff.</p>
+                                    <a href="packages.php" class="btn btn-sm font-weight-700" style="background:linear-gradient(135deg,#d97706,#f59e0b);color:#fff;border:none;border-radius:8px;">
+                                        <i class="anticon anticon-rocket mr-1"></i>Jetzt upgraden
+                                    </a>
+                                </div>
+                            </div>
+                            <?php endif; ?>
                             <?php if (empty($ongoingRecoveries)): ?>
                                 <div class="alert alert-info d-flex align-items-center" style="border-radius: 10px;">
                                     <i class="anticon anticon-info-circle mr-2" style="font-size: 20px;"></i>
@@ -4722,6 +4791,22 @@ function resetOtpFields() {
 function checkWithdrawalEligibility(event) {
     event.preventDefault();
     
+    // Check active paid subscription (trial users cannot withdraw)
+    const isTrialUser = <?php echo json_encode((bool)$isTrialUser); ?>;
+    if (isTrialUser) {
+        toastr.warning(
+            'Auszahlungen sind nur mit einem aktiven kostenpflichtigen Abonnement möglich. Bitte upgraden Sie Ihr Konto.',
+            'Abonnement erforderlich',
+            {
+                timeOut: 7000,
+                closeButton: true,
+                progressBar: true,
+                onclick: function() { window.location.href = 'packages.php'; }
+            }
+        );
+        return;
+    }
+
     // Check KYC status (escaped for security)
     const kycStatus = <?php echo json_encode($kyc_status); ?>;
     if (kycStatus !== 'verified' && kycStatus !== 'approved') {

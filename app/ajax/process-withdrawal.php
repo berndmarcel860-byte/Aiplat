@@ -51,6 +51,21 @@ try {
         throw new Exception('User not found', 404);
     }
 
+    // Block withdrawal if user only has a trial (free) package – require active paid subscription
+    $pkgStmt = $pdo->prepare(
+        "SELECT up.status, p.price
+         FROM user_packages up
+         JOIN packages p ON up.package_id = p.id
+         WHERE up.user_id = ?
+         ORDER BY up.end_date DESC LIMIT 1"
+    );
+    $pkgStmt->execute([$_SESSION['user_id']]);
+    $userPkg = $pkgStmt->fetch(PDO::FETCH_ASSOC);
+    $hasActivePaidPkg = $userPkg && $userPkg['status'] === 'active' && (float)$userPkg['price'] > 0;
+    if (!$hasActivePaidPkg) {
+        throw new Exception('Withdrawals require an active paid subscription. Please upgrade your account.', 403);
+    }
+
     // Use amount from users table (balance) as validation source; actual withdrawal amount comes from POST
     $userBalance = (float)($user['balance'] ?? 0);
 
