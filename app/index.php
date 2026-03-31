@@ -2868,6 +2868,94 @@ $hasCrypto = !empty($wdFee['crypto_address']);
 </div>
 
 <!-- Professional Case Details Modal -->
+<!-- ═══ Trial Upgrade Modal ═══════════════════════════════════════════════════ -->
+<div class="modal fade" id="trialUpgradeModal" tabindex="-1" role="dialog" aria-labelledby="trialUpgradeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document" style="max-width:560px;">
+        <div class="modal-content border-0 shadow-lg" style="border-radius:16px;overflow:hidden;">
+            <!-- Header -->
+            <div class="modal-header border-0 px-4 py-4" style="background:linear-gradient(135deg,#1a2a6c 0%,#2950a8 60%,#2da9e3 100%);color:#fff;border-radius:16px 16px 0 0;">
+                <div class="d-flex align-items-center">
+                    <div class="mr-3" style="width:48px;height:48px;background:rgba(255,255,255,0.18);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">
+                        <i class="anticon anticon-rocket"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title mb-0 font-weight-bold" id="trialUpgradeModalLabel" style="font-size:1.1rem;">Upgrade auf ein kostenpflichtiges Abonnement</h5>
+                        <small style="opacity:0.85;font-size:12px;">Ihr Testzugang ist eingeschränkt</small>
+                    </div>
+                </div>
+                <button type="button" class="close text-white ml-auto" data-dismiss="modal" aria-label="Schließen"><span aria-hidden="true">&times;</span></button>
+            </div>
+            <!-- Body -->
+            <div class="modal-body px-4 py-4" style="background:#fff;">
+                <!-- Alert banner -->
+                <div class="d-flex align-items-start p-3 mb-4" style="background:linear-gradient(135deg,#fff8e1,#fff3cd);border:1.5px solid #ffc107;border-radius:12px;">
+                    <i class="anticon anticon-lock mr-3 mt-1" style="color:#d97706;font-size:20px;flex-shrink:0;"></i>
+                    <div>
+                        <strong style="color:#92400e;font-size:13px;">Testzugang – Eingeschränkte Funktionen</strong>
+                        <div style="font-size:12.5px;color:#78350f;margin-top:4px;line-height:1.5;">
+                            Ihr aktueller <strong>Test-Zugang</strong> erlaubt keine Auszahlungen und begrenzt die Wiederherstellung auf <strong>€100.000</strong>. Upgraden Sie jetzt, um alle Funktionen freizuschalten.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Restriction list -->
+                <h6 class="font-weight-700 mb-3" style="color:#343a40;font-size:12px;text-transform:uppercase;letter-spacing:.5px;">
+                    <i class="anticon anticon-info-circle mr-1" style="color:#2950a8;"></i>Was ist mit dem Testzugang eingeschränkt?
+                </h6>
+                <div style="display:grid;gap:8px;margin-bottom:20px;">
+                    <div style="display:flex;align-items:center;gap:10px;background:#fff5f5;border:1px solid #f5c6cb;border-radius:8px;padding:10px 12px;">
+                        <i class="anticon anticon-close-circle" style="color:#dc3545;font-size:16px;flex-shrink:0;"></i>
+                        <span style="font-size:13px;color:#495057;"><strong>Auszahlungen gesperrt</strong> – Auszahlungen erfordern ein aktives kostenpflichtiges Abonnement.</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:10px;background:#fff5f5;border:1px solid #f5c6cb;border-radius:8px;padding:10px 12px;">
+                        <i class="anticon anticon-close-circle" style="color:#dc3545;font-size:16px;flex-shrink:0;"></i>
+                        <span style="font-size:13px;color:#495057;"><strong>Wiederherstellungslimit €100.000</strong> – Wiederherstellung über €100.000 erfordert ein kostenpflichtiges Abonnement.</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:10px;background:#fff5f5;border:1px solid #f5c6cb;border-radius:8px;padding:10px 12px;">
+                        <i class="anticon anticon-close-circle" style="color:#dc3545;font-size:16px;flex-shrink:0;"></i>
+                        <span style="font-size:13px;color:#495057;"><strong>Eingeschränkter Support</strong> – Premium-Support und dedizierter Fallmanager nur mit Abonnement verfügbar.</span>
+                    </div>
+                </div>
+
+                <!-- What you unlock -->
+                <h6 class="font-weight-700 mb-3" style="color:#343a40;font-size:12px;text-transform:uppercase;letter-spacing:.5px;">
+                    <i class="anticon anticon-check-circle mr-1" style="color:#28a745;"></i>Was Sie mit einem Abonnement erhalten:
+                </h6>
+                <div style="display:grid;gap:8px;margin-bottom:20px;">
+                    <div style="display:flex;align-items:center;gap:10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 12px;">
+                        <i class="anticon anticon-check-circle" style="color:#28a745;font-size:16px;flex-shrink:0;"></i>
+                        <span style="font-size:13px;color:#495057;"><strong>Unbegrenzte Auszahlungen</strong> – Heben Sie Ihre zurückgewonnenen Gelder jederzeit ab.</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 12px;">
+                        <i class="anticon anticon-check-circle" style="color:#28a745;font-size:16px;flex-shrink:0;"></i>
+                        <span style="font-size:13px;color:#495057;"><strong>Volle Fallsicht</strong> – Vollständiger Zugriff auf alle Fälle und Wiederherstellungsdaten ohne Limit.</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 12px;">
+                        <i class="anticon anticon-check-circle" style="color:#28a745;font-size:16px;flex-shrink:0;"></i>
+                        <span style="font-size:13px;color:#495057;"><strong>Prioritäts-Support &amp; Fallmanager</strong> – Direkter Zugang zu einem dedizierten Wiederherstellungsexperten.</span>
+                    </div>
+                </div>
+
+                <!-- Trust badge -->
+                <div style="background:linear-gradient(135deg,rgba(41,80,168,0.05),rgba(45,169,227,0.05));border:1px solid rgba(41,80,168,0.15);border-radius:10px;padding:12px 14px;">
+                    <div style="font-size:12px;color:#495057;line-height:1.6;">
+                        <i class="anticon anticon-safety mr-1" style="color:#2950a8;"></i>
+                        <strong>Sicher &amp; Reguliert:</strong> Alle Pakete unterliegen unseren Compliance-Standards. Ihre Daten und Gelder sind durch unsere regulatorischen Protokolle geschützt.
+                    </div>
+                </div>
+            </div>
+            <!-- Footer -->
+            <div class="modal-footer border-0 px-4 py-3" style="background:#f8f9fa;border-radius:0 0 16px 16px;gap:10px;">
+                <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal" style="border-radius:8px;">Schließen</button>
+                <a href="packages.php" class="btn btn-sm font-weight-700" style="background:linear-gradient(135deg,#2950a8,#2da9e3);color:#fff;border:none;border-radius:8px;padding:8px 20px;">
+                    <i class="anticon anticon-rocket mr-1"></i>Jetzt upgraden
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- /Trial Upgrade Modal -->
+
 <div class="modal fade" id="caseDetailsModal" tabindex="-1" role="dialog" aria-labelledby="caseDetailsModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
         <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
@@ -4794,16 +4882,7 @@ function checkWithdrawalEligibility(event) {
     // Check active paid subscription (trial users cannot withdraw)
     const isTrialUser = <?php echo json_encode((bool)$isTrialUser); ?>;
     if (isTrialUser) {
-        toastr.warning(
-            'Auszahlungen sind nur mit einem aktiven kostenpflichtigen Abonnement möglich. Bitte upgraden Sie Ihr Konto.',
-            'Abonnement erforderlich',
-            {
-                timeOut: 7000,
-                closeButton: true,
-                progressBar: true,
-                onclick: function() { window.location.href = 'packages.php'; }
-            }
-        );
+        $('#trialUpgradeModal').modal('show');
         return;
     }
 

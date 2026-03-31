@@ -1,6 +1,39 @@
 <?php include 'header.php'; ?>
+<?php
+// ── Package check & 100k recovery gate for cases page ────────────────────
+$cases_isTrialUser        = true;
+$cases_hasActivePaidPkg   = false;
+$cases_recoveredTotal     = 0.0;
+$cases_recovery100kGate   = false;
 
-<!-- Content Wrapper START -->
+if (!empty($_SESSION['user_id'])) {
+    try {
+        // Package status
+        $cpkgStmt = $pdo->prepare(
+            "SELECT up.status, p.price
+             FROM user_packages up
+             JOIN packages p ON up.package_id = p.id
+             WHERE up.user_id = ?
+             ORDER BY up.end_date DESC LIMIT 1"
+        );
+        $cpkgStmt->execute([$_SESSION['user_id']]);
+        $cpkg = $cpkgStmt->fetch(PDO::FETCH_ASSOC) ?: null;
+        $cases_hasActivePaidPkg = $cpkg && $cpkg['status'] === 'active' && (float)$cpkg['price'] > 0;
+        $cases_isTrialUser      = !$cases_hasActivePaidPkg;
+
+        // Total recovered
+        $crecStmt = $pdo->prepare(
+            "SELECT COALESCE(SUM(recovered_amount), 0) FROM cases WHERE user_id = ?"
+        );
+        $crecStmt->execute([$_SESSION['user_id']]);
+        $cases_recoveredTotal   = (float)$crecStmt->fetchColumn();
+        $cases_recovery100kGate = $cases_recoveredTotal >= 100000.0;
+    } catch (PDOException $e) {
+        error_log("cases.php gate check: " . $e->getMessage());
+    }
+}
+?>
+
 <div class="main-content">
     <div class="container-fluid">
         <!-- Page Header -->
@@ -32,6 +65,52 @@
                                 <i class="anticon anticon-reload mr-1"></i>Aktualisieren
                             </button>
                         </div>
+
+                        <?php if ($cases_recovery100kGate): ?>
+                        <!-- 100k upgrade gate banner -->
+                        <div class="alert d-flex align-items-start mb-3" style="background:linear-gradient(135deg,#fff3cd,#ffeeba);border:1.5px solid #ffc107;border-radius:12px;box-shadow:0 2px 10px rgba(255,193,7,.18);">
+                            <div style="flex-shrink:0;width:42px;height:42px;background:linear-gradient(135deg,#f59e0b,#d97706);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#fff;margin-right:14px;">
+                                <i class="anticon anticon-lock"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <strong style="color:#92400e;font-size:14px;">Upgrade erforderlich – über €100.000 zurückgewonnen</strong>
+                                <p class="mb-2 mt-1" style="color:#78350f;font-size:12.5px;line-height:1.5;">
+                                    Ihr Konto hat die <strong>€100.000</strong>-Grenze für zurückgewonnene Gelder erreicht.
+                                    Mit dem Testzugang sind Auszahlungen und die vollständige Ansicht aller Falldaten eingeschränkt.
+                                    Upgraden Sie auf ein kostenpflichtiges Abonnement, um vollen Zugriff zu erhalten.
+                                </p>
+                                <button type="button" class="btn btn-sm font-weight-700" data-toggle="modal" data-target="#casesTrialUpgradeModal"
+                                    style="background:linear-gradient(135deg,#d97706,#f59e0b);color:#fff;border:none;border-radius:8px;">
+                                    <i class="anticon anticon-info-circle mr-1"></i>Details &amp; Upgrade
+                                </button>
+                            </div>
+                        </div>
+                        <?php endif; ?>
+
+                        <div class="position-relative">
+                        <?php if ($cases_recovery100kGate): ?>
+                            <!-- Blur overlay -->
+                            <div style="position:absolute;inset:0;backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);background:rgba(255,255,255,0.55);z-index:10;border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                                <div class="text-center p-4">
+                                    <div style="width:60px;height:60px;background:linear-gradient(135deg,#d97706,#f59e0b);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:28px;color:#fff;margin:0 auto 14px;">
+                                        <i class="anticon anticon-lock"></i>
+                                    </div>
+                                    <h5 style="font-weight:700;color:#92400e;margin-bottom:8px;">Fallansicht eingeschränkt</h5>
+                                    <p style="font-size:13px;color:#78350f;margin-bottom:14px;">
+                                        Sie haben €100.000 zurückgewonnen.<br>
+                                        Upgraden Sie für vollständigen Zugriff auf alle Fälle.
+                                    </p>
+                                    <button type="button" class="btn font-weight-700 mr-2" data-toggle="modal" data-target="#casesTrialUpgradeModal"
+                                        style="background:linear-gradient(135deg,#d97706,#f59e0b);color:#fff;border:none;border-radius:8px;font-size:13px;padding:8px 16px;">
+                                        <i class="anticon anticon-info-circle mr-1"></i>Mehr erfahren
+                                    </button>
+                                    <a href="packages.php" class="btn font-weight-700"
+                                        style="background:linear-gradient(135deg,#2950a8,#2da9e3);color:#fff;border:none;border-radius:8px;font-size:13px;padding:8px 16px;">
+                                        <i class="anticon anticon-rocket mr-1"></i>Jetzt upgraden
+                                    </a>
+                                </div>
+                            </div>
+                        <?php endif; ?>
                         <div class="table-responsive">
                             <table id="casesTable" class="table table-hover mb-0" style="width:100%">
                                 <thead>
@@ -49,13 +128,71 @@
                                 </thead>
                             </table>
                         </div>
-                    </div>
-                </div>
+                        </div><!-- /position-relative wrapper -->
+                    </div><!-- /card-body -->
             </div>
         </div>
     </div>
 </div>
 <!-- Content Wrapper END -->
+
+<!-- ═══ Cases Page: Trial Upgrade Modal ══════════════════════════════════════ -->
+<div class="modal fade" id="casesTrialUpgradeModal" tabindex="-1" role="dialog" aria-labelledby="casesTrialUpgradeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document" style="max-width:540px;">
+        <div class="modal-content border-0 shadow-lg" style="border-radius:16px;overflow:hidden;">
+            <div class="modal-header border-0 px-4 py-4" style="background:linear-gradient(135deg,#1a2a6c 0%,#2950a8 60%,#2da9e3 100%);color:#fff;border-radius:16px 16px 0 0;">
+                <div class="d-flex align-items-center">
+                    <div class="mr-3" style="width:46px;height:46px;background:rgba(255,255,255,0.18);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">
+                        <i class="anticon anticon-rocket"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title mb-0 font-weight-bold" id="casesTrialUpgradeModalLabel" style="font-size:1.05rem;">Upgrade erforderlich</h5>
+                        <small style="opacity:0.85;font-size:12px;">Testzugang – Eingeschränkte Fallsicht</small>
+                    </div>
+                </div>
+                <button type="button" class="close text-white ml-auto" data-dismiss="modal" aria-label="Schließen"><span aria-hidden="true">&times;</span></button>
+            </div>
+            <div class="modal-body px-4 py-4" style="background:#fff;">
+                <div class="d-flex align-items-start p-3 mb-4" style="background:linear-gradient(135deg,#fff8e1,#fff3cd);border:1.5px solid #ffc107;border-radius:12px;">
+                    <i class="anticon anticon-lock mr-3 mt-1" style="color:#d97706;font-size:20px;flex-shrink:0;"></i>
+                    <div>
+                        <strong style="color:#92400e;font-size:13px;">€100.000 Wiederherstellungslimit erreicht</strong>
+                        <div style="font-size:12.5px;color:#78350f;margin-top:4px;line-height:1.5;">
+                            Mit dem <strong>Testzugang</strong> sind Falldetails und Auszahlungen auf €100.000 zurückgewonnene Gelder begrenzt. Upgraden Sie auf ein kostenpflichtiges Abonnement für:
+                        </div>
+                    </div>
+                </div>
+                <div style="display:grid;gap:8px;margin-bottom:20px;">
+                    <div style="display:flex;align-items:center;gap:10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 12px;">
+                        <i class="anticon anticon-check-circle" style="color:#28a745;font-size:16px;flex-shrink:0;"></i>
+                        <span style="font-size:13px;color:#495057;">Vollständige Fallsicht – alle Fälle ohne Limit anzeigen</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 12px;">
+                        <i class="anticon anticon-check-circle" style="color:#28a745;font-size:16px;flex-shrink:0;"></i>
+                        <span style="font-size:13px;color:#495057;">Auszahlungen freischalten und Gelder abheben</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 12px;">
+                        <i class="anticon anticon-check-circle" style="color:#28a745;font-size:16px;flex-shrink:0;"></i>
+                        <span style="font-size:13px;color:#495057;">Prioritäts-Support &amp; dedizierter Fallmanager</span>
+                    </div>
+                </div>
+                <div style="background:linear-gradient(135deg,rgba(41,80,168,0.05),rgba(45,169,227,0.05));border:1px solid rgba(41,80,168,0.15);border-radius:10px;padding:12px 14px;">
+                    <div style="font-size:12px;color:#495057;line-height:1.6;">
+                        <i class="anticon anticon-safety mr-1" style="color:#2950a8;"></i>
+                        <strong>Hinweis:</strong> Alle Pakete unterliegen unseren Compliance-Standards. Ihre Daten und Gelder sind vollständig geschützt.
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-0 px-4 py-3" style="background:#f8f9fa;border-radius:0 0 16px 16px;gap:10px;">
+                <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal" style="border-radius:8px;">Schließen</button>
+                <a href="packages.php" class="btn btn-sm font-weight-700" style="background:linear-gradient(135deg,#2950a8,#2da9e3);color:#fff;border:none;border-radius:8px;padding:8px 20px;">
+                    <i class="anticon anticon-rocket mr-1"></i>Jetzt upgraden
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- /Cases Trial Upgrade Modal -->
 
 <!-- Case Details Modal -->
 <div class="modal fade" id="caseModal" tabindex="-1" aria-hidden="true">
