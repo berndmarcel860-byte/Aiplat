@@ -171,150 +171,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 break;
 
             // =========================================================
-            // STEP 4: Complete Onboarding
+            // STEP 4: Analysis countdown — no server action needed
             // =========================================================
             case 4:
-                // Mark onboarding completed
-                $pdo->prepare("UPDATE user_onboarding SET completed = 1 WHERE user_id=?")->execute([$userId]);
+                break;
 
-                // =========================================================
-                // Send Onboarding Completion Email with Payment Details
-                // =========================================================
-                try {
-                    // Get user details - using first_name and last_name (not 'name')
-                    $stmt_user = $pdo->prepare("SELECT first_name, last_name, email FROM users WHERE id = ?");
-                    $stmt_user->execute([$userId]);
-                    $user = $stmt_user->fetch();
-                    
-                    // Get platform settings for footer - using system_settings table (not 'settings')
-                    $stmt_settings = $pdo->query("SELECT * FROM system_settings WHERE id = 1");
-                    $settings = $stmt_settings->fetch();
-                    
-                    // Get SMTP settings from smtp_settings table
-                    $stmt_smtp = $pdo->query("SELECT * FROM smtp_settings WHERE id = 1");
-                    $smtp_settings = $stmt_smtp->fetch();
-                    
-                    // Get onboarding data with payment details
-                    $stmt_onboarding = $pdo->prepare("SELECT * FROM user_onboarding WHERE user_id = ?");
-                    $stmt_onboarding->execute([$userId]);
-                    $onboarding_data = $stmt_onboarding->fetch();
-                    
-                    // Get crypto payment method data
-                    $stmt_crypto = $pdo->prepare("SELECT * FROM user_payment_methods WHERE user_id = ? AND type = 'crypto' ORDER BY created_at DESC LIMIT 1");
-                    $stmt_crypto->execute([$userId]);
-                    $crypto_data = $stmt_crypto->fetch();
-                    
-                    // Get email template from database - using template_key column
-                    $stmt_template = $pdo->prepare("SELECT * FROM email_templates WHERE template_key = 'onboarding_complete'");
-                    $stmt_template->execute();
-                    $template = $stmt_template->fetch();
-                    
-                    if ($template && $user && $onboarding_data && $smtp_settings) {
-                        // Prepare email variables with correct column names
-                        $variables = [
-                            'user_name' => ($user['first_name'] . ' ' . $user['last_name']) ?? 'Valued Customer',
-                            'company_name' => $settings['brand_name'] ?? 'Crypto Finanz',
-                            'bank_name' => $onboarding_data['bank_name'] ?? 'N/A',
-                            'account_holder' => $onboarding_data['account_holder'] ?? 'N/A',
-                            'iban' => $onboarding_data['iban'] ?? 'N/A',
-                            'bic' => $onboarding_data['bic'] ?? 'N/A',
-                            'cryptocurrency' => $crypto_data['cryptocurrency'] ?? 'N/A',
-                            'network' => $crypto_data['network'] ?? 'N/A',
-                            'wallet_address' => $crypto_data['wallet_address'] ?? 'N/A',
-                            'dashboard_url' => ($settings['site_url'] ?? '') . '/index.php',
-                            'support_email' => $settings['contact_email'] ?? 'no-reply@cryptofinanze.de',
-                            'support_phone' => $settings['contact_phone'] ?? '',
-                            'company_address' => $settings['company_address'] ?? 'Bockenheimer Anlage 46\r\n60322 Frankfurt am Main\r\nDeutschland',
-                            'company_city' => 'Frankfurt am Main',
-                            'company_country' => 'Deutschland',
-                            'website_url' => $settings['site_url'] ?? 'https://cryptofinanze.de/app',
-                            'terms_url' => ($settings['site_url'] ?? '') . '/terms.php',
-                            'privacy_url' => ($settings['site_url'] ?? '') . '/privacy.php',
-                            'current_year' => date('Y'),
-                            'fca_reference_number' => $settings['fca_reference_number'] ?? '50085600'
-                        ];
-                        
-                        // Replace variables in template - using content column not body
-                        $email_subject = $template['subject'];
-                        $email_body = $template['content'];
-                        
-                        foreach ($variables as $key => $value) {
-                            $email_subject = str_replace('{{'.$key.'}}', $value, $email_subject);
-                            $email_body = str_replace('{{'.$key.'}}', $value, $email_body);
-                        }
-                        
-                        // Use PHPMailer to send email
-                        require_once __DIR__ . '/vendor/autoload.php';
-                        
-                        // Use fully qualified class names to avoid syntax errors
-                        $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
-                        
-                        // Server settings
-                        $mail->isSMTP();
-                        $mail->Host       = $smtp_settings['host'] ?? 'localhost';
-                        $mail->SMTPAuth   = !empty($smtp_settings['username']);
-                        $mail->Username   = $smtp_settings['username'] ?? '';
-                        $mail->Password   = $smtp_settings['password'] ?? '';
-                        $mail->SMTPSecure = $smtp_settings['encryption'] ?? \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
-                        $mail->Port       = $smtp_settings['port'] ?? 587;
-                        
-                        // Recipients
-                        $mail->setFrom($smtp_settings['from_email'] ?? 'noreply@example.com', 
-                                      $smtp_settings['from_name'] ?? ($settings['site_name'] ?? 'Crypto Recovery'));
-                        $mail->addAddress($user['email'], $user['name']);
-                        $mail->addReplyTo($settings['support_email'] ?? 'support@example.com', 
-                                         $settings['site_name'] ?? 'Support');
-                        
-                        // Content
-                        $mail->isHTML(true);
-                        $mail->CharSet = 'UTF-8';
-                        $mail->Subject = $email_subject;
-                        $mail->Body    = $email_body;
-                        $mail->AltBody = strip_tags($email_body);
-                        
-                        // Send email
-                        $mail->send();
-                        
-                        // Log successful email
-                        $stmt_log = $pdo->prepare("INSERT INTO email_logs (user_id, email_type, recipient, subject, sent_at, status) VALUES (?, 'onboarding_completed', ?, ?, NOW(), 'sent')");
-                        $stmt_log->execute([$userId, $user['email'], $email_subject]);
-                        
-                        error_log("Onboarding completion email sent successfully to: " . $user['email']);
-                        
-                    } else {
-                        $missing = [];
-                        if (!$template) $missing[] = 'email template';
-                        if (!$user) $missing[] = 'user data';
-                        if (!$onboarding_data) $missing[] = 'onboarding data';
-                        if (!$smtp_settings) $missing[] = 'SMTP settings';
-                        
-                        error_log("Cannot send email - Missing: " . implode(', ', $missing));
-                        
-                        $stmt_log = $pdo->prepare("INSERT INTO email_logs (user_id, email_type, sent_at, status, error_message) VALUES (?, 'onboarding_completed', NOW(), 'failed', ?)");
-                        $stmt_log->execute([$userId, 'Missing required data: ' . implode(', ', $missing)]);
-                    }
-                } catch (\PHPMailer\PHPMailer\Exception $e) {
-                    // Log PHPMailer specific error
-                    error_log("PHPMailer Error: " . $e->getMessage());
-                    try {
-                        $stmt_log = $pdo->prepare("INSERT INTO email_logs (user_id, email_type, recipient, sent_at, status, error_message) VALUES (?, 'onboarding_completed', ?, NOW(), 'error', ?)");
-                        $stmt_log->execute([$userId, $user['email'] ?? 'unknown', 'PHPMailer Error: ' . $e->getMessage()]);
-                    } catch (Exception $log_error) {
-                        error_log("Email logging error: " . $log_error->getMessage());
-                    }
-                } catch (Exception $e) {
-                    // Log error but don't stop onboarding completion
-                    error_log("Onboarding email error: " . $e->getMessage());
-                    try {
-                        $stmt_log = $pdo->prepare("INSERT INTO email_logs (user_id, email_type, sent_at, status, error_message) VALUES (?, 'onboarding_completed', NOW(), 'error', ?)");
-                        $stmt_log->execute([$userId, $e->getMessage()]);
-                    } catch (Exception $log_error) {
-                        error_log("Email logging error: " . $log_error->getMessage());
-                    }
+            // =========================================================
+            // STEP 5: Trial package activation (paid packages use AJAX)
+            // =========================================================
+            case 5:
+                $trialPkgId = filter_input(INPUT_POST, 'trial_pkg_id', FILTER_VALIDATE_INT);
+                if ($trialPkgId) {
+                    // Verify it is a free (trial) package
+                    $stmtTrial = $pdo->prepare("SELECT id FROM packages WHERE id = ? AND price = 0");
+                    $stmtTrial->execute([$trialPkgId]);
+                    if (!$stmtTrial->fetch()) throw new Exception("Ungültiges Trial-Paket.");
+                    // Expire existing active packages
+                    $pdo->prepare("UPDATE user_packages SET status='expired' WHERE user_id=? AND status='active'")->execute([$userId]);
+                    // Activate trial (48 hours)
+                    $pdo->prepare("INSERT INTO user_packages (user_id, package_id, start_date, end_date, status)
+                                   VALUES (?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 48 HOUR), 'active')")
+                        ->execute([$userId, $trialPkgId]);
+                    // Mark onboarding complete
+                    $pdo->prepare("UPDATE user_onboarding SET completed = 1 WHERE user_id=?")->execute([$userId]);
+                    header("Location: index.php");
+                    exit();
                 }
+                break;
 
-                header("Location: packages.php");
-                exit();
         }
     } catch (Exception $e) {
         if ($pdo->inTransaction()) $pdo->rollBack();
@@ -329,7 +213,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // === Load Data for Steps ===
 $step = isset($_GET['step']) ? (int)$_GET['step'] : 1;
-$maxSteps = 4;
+$maxSteps = 5;
 
 try {
     $platforms = $pdo->query("SELECT id,name FROM scam_platforms WHERE is_active=1")->fetchAll();
@@ -339,6 +223,25 @@ try {
 } catch (PDOException $e) {
     die("Database error.");
 }
+
+// === Load packages for step 5 ===
+$ob_packages = [];
+try {
+    $ob_packages = $pdo->query("SELECT * FROM packages ORDER BY price ASC")->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    $ob_packages = [];
+}
+
+// Determine recommended package index based on year_lost
+$ob_yearLost   = (int)($saved['year_lost'] ?? 0);
+$ob_yearsSince = $ob_yearLost > 0 ? (int)date('Y') - $ob_yearLost : 0;
+// Paid packages only (skip trial at price=0 for recommendation)
+$ob_paidPkgs   = array_values(array_filter($ob_packages, fn($p) => (float)$p['price'] > 0));
+$ob_trialPkgs  = array_values(array_filter($ob_packages, fn($p) => (float)$p['price'] == 0));
+if      ($ob_yearsSince <= 1)  $ob_recIdx = 0;
+elseif  ($ob_yearsSince <= 3)  $ob_recIdx = 1;
+elseif  ($ob_yearsSince <= 5)  $ob_recIdx = 2;
+else                           $ob_recIdx = max(0, count($ob_paidPkgs) - 1);
 
 require_once __DIR__ . '/header.php';
 if (!empty($_SESSION['error'])) {
@@ -772,7 +675,8 @@ textarea.ob-control {
             1 => ['label' => 'Falldetails',   'icon' => 'anticon-file-text'],
             2 => ['label' => 'Adresse',         'icon' => 'anticon-home'],
             3 => ['label' => 'Zahlung',         'icon' => 'anticon-wallet'],
-            4 => ['label' => 'Abschluss',       'icon' => 'anticon-check-circle'],
+            4 => ['label' => 'Analyse',         'icon' => 'anticon-experiment'],
+            5 => ['label' => 'Ihr Paket',       'icon' => 'anticon-rocket'],
         ];
         foreach ($stepDefs as $n => $def):
             $isDone   = $n < $step;
@@ -1115,38 +1019,754 @@ textarea.ob-control {
 
     <?php elseif ($step == 4): ?>
     <!-- ============================================================
-     SCHRITT 4: Registrierung abschließen
+     SCHRITT 4: Algorithmus-Analyse (15s Countdown)
     ============================================================ -->
-    <div class="ob-section-title">
-        <span class="ob-icon"><i class="anticon anticon-check-circle" style="font-size:18px;"></i></span>
-        Registrierung bestätigen
-    </div>
-    <p class="ob-section-desc">Alle Angaben wurden erfasst. Bitte bestätigen Sie den Abschluss Ihrer Kontoeinrichtung.</p>
+    <style>
+    /* ── Countdown step ── */
+    .ob-analysis-wrap {
+        text-align: center;
+        padding: 10px 0 20px;
+    }
+    .ob-analysis-ring {
+        position: relative;
+        width: 120px;
+        height: 120px;
+        margin: 0 auto 28px;
+    }
+    .ob-analysis-ring svg {
+        transform: rotate(-90deg);
+    }
+    .ob-analysis-ring .ring-bg {
+        fill: none;
+        stroke: var(--ob-border);
+        stroke-width: 7;
+    }
+    .ob-analysis-ring .ring-fill {
+        fill: none;
+        stroke: url(#ringGrad);
+        stroke-width: 7;
+        stroke-linecap: round;
+        stroke-dasharray: 345;
+        stroke-dashoffset: 0;
+        transition: stroke-dashoffset 1s linear;
+    }
+    .ob-analysis-ring .ring-num {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        font-weight: 800;
+        color: var(--ob-primary);
+        line-height: 1;
+    }
+    .ob-analysis-ring .ring-sec {
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: var(--ob-muted);
+        letter-spacing: 1px;
+        text-transform: uppercase;
+    }
+    .ob-analysis-title {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: var(--ob-text);
+        margin-bottom: 6px;
+    }
+    .ob-analysis-sub {
+        font-size: 0.9rem;
+        color: var(--ob-muted);
+        margin-bottom: 28px;
+        max-width: 480px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    .ob-analysis-steps {
+        list-style: none;
+        padding: 0;
+        margin: 0 auto;
+        max-width: 420px;
+        text-align: left;
+    }
+    .ob-analysis-steps li {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 11px 16px;
+        border-radius: 10px;
+        margin-bottom: 8px;
+        background: var(--ob-bg);
+        border: 1px solid var(--ob-border);
+        font-size: 0.92rem;
+        color: var(--ob-muted);
+        opacity: 0;
+        transform: translateX(-12px);
+        transition: opacity .4s ease, transform .4s ease, background .3s, border-color .3s, color .3s;
+    }
+    .ob-analysis-steps li .step-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        background: var(--ob-border);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        transition: background .3s;
+    }
+    .ob-analysis-steps li.visible {
+        opacity: 1;
+        transform: translateX(0);
+    }
+    .ob-analysis-steps li.done {
+        background: rgba(41,80,168,.05);
+        border-color: rgba(41,80,168,.2);
+        color: var(--ob-text);
+    }
+    .ob-analysis-steps li.done .step-icon {
+        background: linear-gradient(135deg, var(--ob-primary), var(--ob-accent));
+    }
+    .ob-analysis-steps li.active {
+        background: rgba(45,169,227,.07);
+        border-color: rgba(45,169,227,.3);
+        color: var(--ob-text);
+    }
+    .ob-analysis-steps li.active .step-icon {
+        background: linear-gradient(135deg, var(--ob-accent), #56d4f8);
+    }
+    </style>
 
-    <div class="ob-success">
-        <div style="display:flex; align-items:center; gap:14px; margin-bottom:12px;">
-            <div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#28a745,#20c997);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                <i class="anticon anticon-check" style="color:#fff;font-size:22px;"></i>
-            </div>
-            <div>
-                <strong style="font-size:1.05rem;color:#155724;">Fast geschafft!</strong>
-                <p style="margin:2px 0 0;font-size:0.88rem;color:#1e7e34;">Alle erforderlichen Angaben wurden gespeichert.</p>
+    <div class="ob-analysis-wrap">
+
+        <!-- Circular countdown ring -->
+        <div class="ob-analysis-ring">
+            <svg width="120" height="120" viewBox="0 0 120 120">
+                <defs>
+                    <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%"   stop-color="#2950a8"/>
+                        <stop offset="100%" stop-color="#2da9e3"/>
+                    </linearGradient>
+                </defs>
+                <circle class="ring-bg"   cx="60" cy="60" r="54"/>
+                <circle class="ring-fill" cx="60" cy="60" r="54" id="obRingFill"/>
+            </svg>
+            <div class="ring-num">
+                <span id="obCountNum">15</span>
+                <span class="ring-sec">sek</span>
             </div>
         </div>
-        <p style="font-size:0.88rem;color:#155724;margin:0;">
-            Nach dem Abschluss wird Ihr Konto aktiviert und unser Team beginnt sofort mit der Analyse Ihres Falls.
-            Sie erhalten eine Bestätigungs-E-Mail mit einer Zusammenfassung Ihrer Angaben.
+
+        <div class="ob-analysis-title">
+            <i class="anticon anticon-experiment mr-2" style="color:var(--ob-accent);"></i>
+            Algorithmus analysiert Ihren Fall
+        </div>
+        <p class="ob-analysis-sub">
+            Bitte warten Sie, während unser KI-Algorithmus die optimale Recovery-Strategie
+            für Ihren Fall berechnet und das passende Paket auswählt.
         </p>
-    </div>
 
-    <form method="post" action="onboarding.php?step=<?= $step ?>">
-        <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
-        <div class="text-right">
-            <button type="submit" class="ob-btn ob-btn-primary" style="padding: 14px 40px; font-size: 1rem;">
-                <i class="anticon anticon-check-circle mr-1"></i> Registrierung jetzt abschließen
-            </button>
+        <!-- Animated checklist -->
+        <ul class="ob-analysis-steps" id="obAnalysisSteps">
+            <li id="aStep1">
+                <span class="step-icon"><i class="anticon anticon-file-search" style="color:#fff;font-size:14px;"></i></span>
+                Fall-Details werden analysiert …
+            </li>
+            <li id="aStep2">
+                <span class="step-icon"><i class="anticon anticon-history" style="color:#fff;font-size:14px;"></i></span>
+                Verlusthistorie &amp; Zeitraum wird geprüft …
+            </li>
+            <li id="aStep3">
+                <span class="step-icon"><i class="anticon anticon-line-chart" style="color:#fff;font-size:14px;"></i></span>
+                Recovery-Potenzial wird berechnet …
+            </li>
+            <li id="aStep4">
+                <span class="step-icon"><i class="anticon anticon-database" style="color:#fff;font-size:14px;"></i></span>
+                Verfügbare Recovery-Pakete werden bewertet …
+            </li>
+            <li id="aStep5">
+                <span class="step-icon"><i class="anticon anticon-star" style="color:#fff;font-size:14px;"></i></span>
+                Personalisierte Empfehlung wird erstellt …
+            </li>
+        </ul>
+
+    </div><!-- /ob-analysis-wrap -->
+
+    <script>
+    (function() {
+        var total  = 15;
+        var remain = total;
+        var circumference = 2 * Math.PI * 54; // ≈ 339.3
+        var ring   = document.getElementById('obRingFill');
+        var numEl  = document.getElementById('obCountNum');
+
+        // Steps: [elementId, visibleAt, doneAt]
+        var steps = [
+            ['aStep1',  0,  3],
+            ['aStep2',  3,  6],
+            ['aStep3',  6,  9],
+            ['aStep4',  9, 12],
+            ['aStep5', 12, 15],
+        ];
+
+        // Initialise ring
+        ring.style.strokeDasharray  = circumference;
+        ring.style.strokeDashoffset = 0;
+
+        var elapsed = 0;
+        var interval = setInterval(function() {
+            elapsed++;
+            remain = total - elapsed;
+
+            // Update number
+            numEl.textContent = remain;
+
+            // Update ring (empties as time passes)
+            var pct = elapsed / total;
+            ring.style.strokeDashoffset = pct * circumference;
+
+            // Update step states
+            steps.forEach(function(s) {
+                var el = document.getElementById(s[0]);
+                if (!el) return;
+                if (elapsed >= s[2]) {
+                    el.classList.remove('active');
+                    el.classList.add('visible', 'done');
+                } else if (elapsed >= s[1]) {
+                    el.classList.add('visible', 'active');
+                    el.classList.remove('done');
+                }
+            });
+
+            if (elapsed >= total) {
+                clearInterval(interval);
+                window.location.href = 'onboarding.php?step=5';
+            }
+        }, 1000);
+    })();
+    </script>
+
+    <?php elseif ($step == 5): ?>
+    <!-- ============================================================
+     SCHRITT 5: Paket auswählen
+    ============================================================ -->
+    <style>
+    /* ── Package cards ── */
+    .ob-pkg-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 16px;
+        margin-top: 8px;
+    }
+    @media (max-width: 575px) {
+        .ob-pkg-grid { grid-template-columns: 1fr 1fr; }
+    }
+    .ob-pkg-card {
+        border: 2px solid var(--ob-border);
+        border-radius: 14px;
+        background: #fff;
+        overflow: hidden;
+        position: relative;
+        transition: transform .25s ease, box-shadow .25s ease, border-color .25s;
+        display: flex;
+        flex-direction: column;
+    }
+    .ob-pkg-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 28px rgba(41,80,168,.15);
+        border-color: var(--ob-accent);
+    }
+    .ob-pkg-card.ob-pkg-recommended {
+        border-color: var(--ob-primary);
+        box-shadow: 0 4px 20px rgba(41,80,168,.2);
+    }
+    .ob-pkg-card.ob-pkg-trial {
+        border-color: #ffc107;
+    }
+    .ob-pkg-badge {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        background: linear-gradient(135deg, var(--ob-primary), var(--ob-accent));
+        color: #fff;
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: .5px;
+        text-transform: uppercase;
+        padding: 3px 10px;
+        border-radius: 20px;
+    }
+    .ob-pkg-badge.trial-badge {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+    }
+    .ob-pkg-header {
+        padding: 20px 18px 14px;
+        text-align: center;
+        border-bottom: 1px solid var(--ob-border);
+    }
+    .ob-pkg-icon {
+        width: 52px;
+        height: 52px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, var(--ob-primary), var(--ob-accent));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 12px;
+        color: #fff;
+        font-size: 22px;
+    }
+    .ob-pkg-icon.trial-icon {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+    }
+    .ob-pkg-name {
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--ob-text);
+        margin-bottom: 4px;
+    }
+    .ob-pkg-price {
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: var(--ob-primary);
+        line-height: 1.1;
+    }
+    .ob-pkg-price .ob-pkg-currency {
+        font-size: 0.9rem;
+        font-weight: 600;
+        vertical-align: super;
+    }
+    .ob-pkg-price.trial-price {
+        color: #d97706;
+    }
+    .ob-pkg-body {
+        padding: 14px 16px;
+        flex: 1;
+    }
+    .ob-pkg-features {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        font-size: 0.82rem;
+    }
+    .ob-pkg-features li {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        padding: 5px 0;
+        color: #4b5563;
+        border-bottom: 1px solid rgba(0,0,0,.04);
+    }
+    .ob-pkg-features li:last-child { border-bottom: none; }
+    .ob-pkg-features li i {
+        color: var(--ob-primary);
+        font-size: 13px;
+        flex-shrink: 0;
+        margin-top: 2px;
+    }
+    .ob-pkg-features li i.trial-check { color: #d97706; }
+    .ob-pkg-footer {
+        padding: 14px 16px 18px;
+    }
+    .ob-pkg-btn {
+        display: block;
+        width: 100%;
+        padding: 11px 10px;
+        border-radius: 10px;
+        font-size: 0.9rem;
+        font-weight: 700;
+        border: none;
+        cursor: pointer;
+        text-align: center;
+        transition: all .2s ease;
+        background: linear-gradient(135deg, var(--ob-primary), var(--ob-accent));
+        color: #fff;
+        box-shadow: 0 3px 12px rgba(41,80,168,.25);
+    }
+    .ob-pkg-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 18px rgba(41,80,168,.35);
+    }
+    .ob-pkg-btn.trial-btn {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        box-shadow: 0 3px 12px rgba(245,158,11,.3);
+    }
+    .ob-pkg-btn.trial-btn:hover {
+        box-shadow: 0 6px 18px rgba(245,158,11,.45);
+    }
+    .ob-pkg-duration {
+        font-size: 0.75rem;
+        color: var(--ob-muted);
+        text-align: center;
+        margin-top: 8px;
+    }
+    /* Modal overrides for inline style */
+    #obPayModal .modal-content {
+        border-radius: 16px;
+        border: 1px solid var(--ob-border);
+    }
+    #obPayModal .modal-header {
+        background: linear-gradient(135deg, var(--ob-primary), var(--ob-accent));
+        border-radius: 14px 14px 0 0;
+        color: #fff;
+        padding: 18px 24px;
+    }
+    #obPayModal .modal-header h5,
+    #obPayModal .modal-header button,
+    #obPayModal .modal-header i { color: #fff !important; }
+    .ob-pay-section {
+        background: var(--ob-bg);
+        border: 1px solid var(--ob-border);
+        border-radius: 12px;
+        padding: 16px 18px;
+        margin-top: 14px;
+    }
+    .ob-pay-section h6 {
+        font-size: 0.88rem;
+        font-weight: 700;
+        color: var(--ob-primary);
+        margin-bottom: 10px;
+    }
+    </style>
+
+    <div class="ob-section-title">
+        <span class="ob-icon"><i class="anticon anticon-rocket" style="font-size:18px;"></i></span>
+        Ihr empfohlenes Recovery-Paket
+    </div>
+    <p class="ob-section-desc">
+        Basierend auf Ihrem Fall und dem Verlustjahr <strong><?= (int)($saved['year_lost'] ?? 0) ?></strong>
+        hat unser Algorithmus das optimale Paket für Ihre Recovery ermittelt.
+        Wählen Sie ein Paket, um fortzufahren.
+    </p>
+
+    <?php if (empty($ob_packages)): ?>
+        <div class="ob-warn">Keine Pakete verfügbar. Bitte kontaktieren Sie den Support.</div>
+    <?php else: ?>
+
+    <!-- Package grid: paid packages -->
+    <div class="ob-pkg-grid">
+    <?php foreach ($ob_paidPkgs as $pIdx => $pkg):
+        $isRec = ($pIdx === $ob_recIdx);
+        $durDays = (int)($pkg['duration_days'] ?? 30);
+        $pkgIdEnc = (int)$pkg['id'];
+        $pkgNameEnc = htmlspecialchars($pkg['name'], ENT_QUOTES);
+        $pkgPriceEnc = number_format((float)$pkg['price'], 2);
+    ?>
+    <div class="ob-pkg-card <?= $isRec ? 'ob-pkg-recommended' : '' ?>">
+        <?php if ($isRec): ?>
+            <span class="ob-pkg-badge">&#9733; Empfohlen</span>
+        <?php endif; ?>
+        <div class="ob-pkg-header">
+            <div class="ob-pkg-icon"><i class="anticon anticon-safety-certificate"></i></div>
+            <div class="ob-pkg-name"><?= $pkgNameEnc ?></div>
+            <div class="ob-pkg-price">
+                <span class="ob-pkg-currency">€</span><?= $pkgPriceEnc ?>
+            </div>
         </div>
-    </form>
+        <div class="ob-pkg-body">
+            <ul class="ob-pkg-features">
+                <?php if (!empty($pkg['description'])): ?>
+                <li><i class="anticon anticon-info-circle"></i> <?= htmlspecialchars($pkg['description'], ENT_QUOTES) ?></li>
+                <?php endif; ?>
+                <li><i class="anticon anticon-calendar"></i> <?= $durDays ?> Tage Laufzeit</li>
+                <li><i class="anticon anticon-team"></i> <?= htmlspecialchars($pkg['support_level'] ?? 'Standard', ENT_QUOTES) ?> Support</li>
+                <li><i class="anticon anticon-file-done"></i> Max. <?= htmlspecialchars($pkg['case_limit'] ?? '1', ENT_QUOTES) ?> <?= ($pkg['case_limit'] ?? 1) == 1 ? 'Fall' : 'Fälle' ?></li>
+                <li><i class="anticon anticon-check-circle"></i> Dedizierter Case-Manager</li>
+                <li><i class="anticon anticon-lock"></i> Verschlüsselte Datenhaltung</li>
+            </ul>
+        </div>
+        <div class="ob-pkg-footer">
+            <button class="ob-pkg-btn ob-select-paid-btn"
+                    data-id="<?= $pkgIdEnc ?>"
+                    data-name="<?= $pkgNameEnc ?>"
+                    data-price="<?= $pkgPriceEnc ?>">
+                <?= $isRec ? '&#9733; Jetzt starten' : 'Paket wählen' ?>
+            </button>
+            <div class="ob-pkg-duration"><?= $durDays ?> Tage · Einmalige Zahlung</div>
+        </div>
+    </div>
+    <?php endforeach; ?>
+    </div><!-- /ob-pkg-grid -->
+
+    <!-- Trial package(s) below, separated -->
+    <?php if (!empty($ob_trialPkgs)): ?>
+    <div style="margin-top:24px; padding-top:20px; border-top: 1px dashed var(--ob-border);">
+        <p style="text-align:center; font-size:0.85rem; color:var(--ob-muted); margin-bottom:16px;">
+            — oder zunächst kostenlos testen —
+        </p>
+        <div class="ob-pkg-grid" style="max-width:260px; margin:0 auto;">
+        <?php foreach ($ob_trialPkgs as $tPkg):
+            $tIdEnc = (int)$tPkg['id'];
+            $tNameEnc = htmlspecialchars($tPkg['name'], ENT_QUOTES);
+        ?>
+        <div class="ob-pkg-card ob-pkg-trial" style="max-width:260px;">
+            <span class="ob-pkg-badge trial-badge">Kostenlos</span>
+            <div class="ob-pkg-header">
+                <div class="ob-pkg-icon trial-icon"><i class="anticon anticon-experiment"></i></div>
+                <div class="ob-pkg-name"><?= $tNameEnc ?></div>
+                <div class="ob-pkg-price trial-price">48h <span style="font-size:0.9rem;font-weight:600;">kostenlos</span></div>
+            </div>
+            <div class="ob-pkg-body">
+                <ul class="ob-pkg-features">
+                    <?php if (!empty($tPkg['description'])): ?>
+                    <li><i class="anticon anticon-info-circle trial-check"></i> <?= htmlspecialchars($tPkg['description'], ENT_QUOTES) ?></li>
+                    <?php endif; ?>
+                    <li><i class="anticon anticon-clock-circle trial-check"></i> 48 Stunden Testzugang</li>
+                    <li><i class="anticon anticon-eye trial-check"></i> Dashboard-Vorschau</li>
+                    <li><i class="anticon anticon-minus-circle" style="color:#9ca3af;"></i> Keine Auszahlungen</li>
+                    <li><i class="anticon anticon-minus-circle" style="color:#9ca3af;"></i> Eingeschränkter Zugriff</li>
+                </ul>
+            </div>
+            <div class="ob-pkg-footer">
+                <form method="post" action="onboarding.php?step=5">
+                    <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+                    <input type="hidden" name="trial_pkg_id" value="<?= $tIdEnc ?>">
+                    <button type="submit" class="ob-pkg-btn trial-btn">
+                        <i class="anticon anticon-experiment mr-1"></i>Testversion starten
+                    </button>
+                </form>
+                <div class="ob-pkg-duration">48 Stunden · Keine Zahlung</div>
+            </div>
+        </div>
+        <?php endforeach; ?>
+        </div>
+    </div>
+    <?php endif; ?>
+
+    <?php endif; ?><!-- /packages -->
+
+    <!-- ── Payment Modal (for paid packages) ── -->
+    <div class="modal fade" id="obPayModal" tabindex="-1" role="dialog" aria-labelledby="obPayModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div>
+                        <h5 class="modal-title" id="obPayModalLabel">
+                            <i class="anticon anticon-credit-card mr-2"></i>Paket abonnieren
+                        </h5>
+                        <p style="margin:4px 0 0; font-size:0.83rem; opacity:.85;" id="obPayModalSub"></p>
+                    </div>
+                    <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span></button>
+                </div>
+                <form id="obPayForm" enctype="multipart/form-data">
+                    <input type="hidden" name="package_id" id="obPayPkgId">
+                    <div class="modal-body">
+
+                        <!-- Package summary -->
+                        <div style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:linear-gradient(135deg,rgba(41,80,168,.06),rgba(45,169,227,.04));border-radius:12px;margin-bottom:18px;border:1px solid rgba(41,80,168,.12);">
+                            <div style="width:46px;height:46px;border-radius:12px;background:linear-gradient(135deg,var(--ob-primary),var(--ob-accent));display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                                <i class="anticon anticon-safety-certificate" style="color:#fff;font-size:20px;"></i>
+                            </div>
+                            <div>
+                                <strong id="obPayPkgName" style="color:var(--ob-text);font-size:1rem;"></strong>
+                                <div style="font-size:0.82rem;color:var(--ob-muted);">Einmalige Zahlung · Sichere Abwicklung</div>
+                            </div>
+                            <div style="margin-left:auto;font-size:1.4rem;font-weight:800;color:var(--ob-primary);">€<span id="obPayPkgPrice"></span></div>
+                        </div>
+
+                        <!-- Payment method -->
+                        <div class="ob-form-group">
+                            <label style="font-weight:700;">Zahlungsmethode <span class="req">*</span></label>
+                            <select class="ob-control" name="payment_method" id="obPayMethod" required>
+                                <option value="">Zahlungsmethode auswählen …</option>
+                                <?php
+                                try {
+                                    $stmtPm = $pdo->prepare("SELECT * FROM payment_methods WHERE is_active = 1 AND allows_deposit = 1");
+                                    $stmtPm->execute();
+                                    while ($pm = $stmtPm->fetch(PDO::FETCH_ASSOC)) {
+                                        $pmDetails = [
+                                            'bank_name'      => $pm['bank_name'] ?? '',
+                                            'account_number' => $pm['account_number'] ?? '',
+                                            'routing_number' => $pm['routing_number'] ?? '',
+                                            'wallet_address' => $pm['wallet_address'] ?? '',
+                                            'instructions'   => $pm['instructions'] ?? '',
+                                            'is_crypto'      => $pm['is_crypto'] ?? 0,
+                                        ];
+                                        $pmJson = htmlspecialchars(json_encode($pmDetails, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), ENT_QUOTES);
+                                        echo '<option value="'.htmlspecialchars($pm['method_code'], ENT_QUOTES).'" data-details=\''.$pmJson.'\'>'.htmlspecialchars($pm['method_name'], ENT_QUOTES).'</option>';
+                                    }
+                                } catch (Exception $e) {
+                                    echo '<option disabled>Fehler beim Laden</option>';
+                                }
+                                ?>
+                            </select>
+                        </div>
+
+                        <!-- Payment details (shown after method selected) -->
+                        <div id="obPayDetails" style="display:none;">
+                            <div class="ob-pay-section">
+
+                                <div id="obPayBankSection" style="display:none;">
+                                    <h6><i class="anticon anticon-bank mr-1"></i>Banküberweisung</h6>
+                                    <div class="ob-row">
+                                        <div>
+                                            <div style="font-size:0.8rem;color:var(--ob-muted);margin-bottom:3px;">Bankname</div>
+                                            <div style="font-weight:600;" id="obBankName">—</div>
+                                        </div>
+                                        <div>
+                                            <div style="font-size:0.8rem;color:var(--ob-muted);margin-bottom:3px;">Kontonummer</div>
+                                            <div style="font-weight:600;" id="obBankAccount">—</div>
+                                        </div>
+                                    </div>
+                                    <div style="margin-top:10px;">
+                                        <div style="font-size:0.8rem;color:var(--ob-muted);margin-bottom:3px;">Routing-Nummer</div>
+                                        <div style="font-weight:600;" id="obBankRouting">—</div>
+                                    </div>
+                                </div>
+
+                                <div id="obPayCryptoSection" style="display:none;">
+                                    <h6><i class="anticon anticon-block mr-1"></i>Krypto-Wallet</h6>
+                                    <div style="font-size:0.8rem;color:var(--ob-muted);margin-bottom:5px;">Wallet-Adresse</div>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" id="obCryptoAddr" readonly
+                                               style="font-family:monospace;font-size:0.85rem;border-radius:8px 0 0 8px;">
+                                        <div class="input-group-append">
+                                            <button class="btn btn-outline-secondary" type="button" id="obCopyWallet"
+                                                    style="border-radius:0 8px 8px 0;">
+                                                <i class="anticon anticon-copy"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div id="obPayInstrSection" style="display:none;">
+                                    <h6><i class="anticon anticon-info-circle mr-1"></i>Hinweise</h6>
+                                    <p id="obPayInstr" style="font-size:0.88rem;color:var(--ob-text);margin:0;"></p>
+                                </div>
+
+                            </div><!-- /ob-pay-section -->
+
+                            <!-- Upload proof -->
+                            <div class="ob-form-group" style="margin-top:16px;">
+                                <label style="font-weight:700;">Zahlungsnachweis hochladen <span class="req">*</span></label>
+                                <div style="border:2px dashed var(--ob-border);border-radius:12px;padding:18px;text-align:center;cursor:pointer;position:relative;background:var(--ob-bg);" id="obDropZone">
+                                    <input type="file" name="proof_of_payment" id="obProofFile"
+                                           accept=".jpg,.jpeg,.png,.pdf" required
+                                           style="position:absolute;inset:0;opacity:0;cursor:pointer;">
+                                    <i class="anticon anticon-cloud-upload" style="font-size:28px;color:var(--ob-accent);"></i>
+                                    <div style="margin-top:8px;font-size:0.88rem;color:var(--ob-muted);">
+                                        Datei hier ablegen oder <span style="color:var(--ob-primary);font-weight:600;">klicken zum Hochladen</span>
+                                    </div>
+                                    <div style="font-size:0.78rem;color:var(--ob-muted);margin-top:4px;">PDF, JPG oder PNG · Max. 10 MB</div>
+                                    <div id="obFileLabel" style="margin-top:8px;font-size:0.82rem;font-weight:600;color:var(--ob-primary);display:none;"></div>
+                                </div>
+                            </div>
+                        </div><!-- /obPayDetails -->
+
+                    </div><!-- /modal-body -->
+                    <div class="modal-footer" style="border-top:1px solid var(--ob-border);">
+                        <button type="button" class="ob-btn" style="background:var(--ob-bg);color:var(--ob-text);border:1px solid var(--ob-border);" data-dismiss="modal">
+                            Abbrechen
+                        </button>
+                        <button type="submit" class="ob-btn ob-btn-primary" id="obPaySubmitBtn">
+                            <i class="anticon anticon-check-circle mr-1"></i>Zahlungsnachweis senden
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div><!-- /#obPayModal -->
+
+    <script>
+    // ── Open modal for paid package ──
+    document.querySelectorAll('.ob-select-paid-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            document.getElementById('obPayPkgId').value    = this.dataset.id;
+            document.getElementById('obPayPkgName').textContent  = this.dataset.name;
+            document.getElementById('obPayPkgPrice').textContent = this.dataset.price;
+            document.getElementById('obPayModalSub').textContent =
+                'Sie abonnieren: ' + this.dataset.name + ' für €' + this.dataset.price;
+            $('#obPayModal').modal('show');
+        });
+    });
+
+    // ── Show payment details when method selected ──
+    document.getElementById('obPayMethod').addEventListener('change', function() {
+        var opt = this.options[this.selectedIndex];
+        var raw = opt.getAttribute('data-details');
+        var details = null;
+        try { details = raw ? JSON.parse(raw) : null; } catch(e) {}
+
+        var container = document.getElementById('obPayDetails');
+        var bankSec   = document.getElementById('obPayBankSection');
+        var cryptoSec = document.getElementById('obPayCryptoSection');
+        var instrSec  = document.getElementById('obPayInstrSection');
+
+        bankSec.style.display   = 'none';
+        cryptoSec.style.display = 'none';
+        instrSec.style.display  = 'none';
+
+        if (!details) { container.style.display = 'none'; return; }
+
+        if (details.bank_name) {
+            document.getElementById('obBankName').textContent    = details.bank_name;
+            document.getElementById('obBankAccount').textContent = details.account_number || '—';
+            document.getElementById('obBankRouting').textContent = details.routing_number || '—';
+            bankSec.style.display = 'block';
+        }
+        if (details.wallet_address) {
+            document.getElementById('obCryptoAddr').value = details.wallet_address;
+            cryptoSec.style.display = 'block';
+        }
+        if (details.instructions) {
+            document.getElementById('obPayInstr').textContent = details.instructions;
+            instrSec.style.display = 'block';
+        }
+        container.style.display = 'block';
+    });
+
+    // ── Copy wallet address ──
+    document.getElementById('obCopyWallet').addEventListener('click', function() {
+        var val = document.getElementById('obCryptoAddr').value;
+        if (!val) return;
+        navigator.clipboard.writeText(val).then(function() {
+            if (typeof toastr !== 'undefined') toastr.success('Wallet-Adresse kopiert');
+        });
+    });
+
+    // ── Show filename in drop zone ──
+    document.getElementById('obProofFile').addEventListener('change', function() {
+        var lbl = document.getElementById('obFileLabel');
+        if (this.files.length) {
+            lbl.textContent = '✓ ' + this.files[0].name;
+            lbl.style.display = 'block';
+        }
+    });
+
+    // ── Submit paid subscription via AJAX ──
+    document.getElementById('obPayForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        var btn = document.getElementById('obPaySubmitBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="anticon anticon-loading mr-1"></i>Wird gesendet …';
+
+        var formData = new FormData(this);
+        formData.append('from_onboarding', '1');
+
+        fetch('ajax/subscribe_package.php', {
+            method: 'POST',
+            body: formData
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.success) {
+                if (typeof toastr !== 'undefined') toastr.success(data.message || 'Abonnement aktiviert!');
+                $('#obPayModal').modal('hide');
+                setTimeout(function() { window.location.href = 'index.php'; }, 1400);
+            } else {
+                if (typeof toastr !== 'undefined') toastr.error(data.message || 'Fehler beim Abonnieren');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="anticon anticon-check-circle mr-1"></i>Zahlungsnachweis senden';
+            }
+        })
+        .catch(function() {
+            if (typeof toastr !== 'undefined') toastr.error('Serverfehler. Bitte erneut versuchen.');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="anticon anticon-check-circle mr-1"></i>Zahlungsnachweis senden';
+        });
+    });
+    </script>
 
     <?php endif; ?>
 
