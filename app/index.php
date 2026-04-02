@@ -237,7 +237,10 @@ $recoveryPercentage = ($reportedTotal > 0) ? round(($recoveredTotal / $reportedT
 $outstandingAmount = max(0, $reportedTotal - $recoveredTotal);
 
 // 100k recovery upgrade gate: blur case sections when total recovered >= 100,000
-$recovery100kGate = $recoveredTotal >= 100000.0;
+// AND user does NOT have an active paid package
+$recovery100kGate = !$hasActivePaidPackage && ($recoveredTotal >= 100000.0);
+// Blur all case sections when there is no active paid subscription (trial / expired / none)
+$caseBlurActive = !$hasActivePaidPackage;
 
 // ── Dashboard Theme ──────────────────────────────────────────────────────────
 // Load the admin-selected dashboard theme from system_settings.
@@ -2459,7 +2462,7 @@ $hasCrypto = !empty($wdFee['crypto_address']);
                             </div>
                         </div>
                         
-                        <?php if ($recovery100kGate): ?>
+                        <?php if ($caseBlurActive && $recoveredTotal >= 100000.0): ?>
                             <!-- 100k upgrade gate alert -->
                             <div class="alert mb-3 d-flex align-items-start" style="background:linear-gradient(135deg,#fff3cd,#ffeeba);border:1.5px solid #ffc107;border-radius:12px;box-shadow:0 2px 10px rgba(255,193,7,.18);">
                                 <div style="flex-shrink:0;width:40px;height:40px;background:linear-gradient(135deg,#f59e0b,#d97706);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#fff;margin-right:14px;">
@@ -2483,8 +2486,8 @@ $hasCrypto = !empty($wdFee['crypto_address']);
                                 <div>Keine Fälle gefunden. <a href="new-case.php" class="alert-link font-weight-600">Ersten Fall einreichen</a></div>
                             </div>
                         <?php else: ?>
-                            <div class="mt-3<?= $recovery100kGate ? ' position-relative' : '' ?>">
-                                <?php if ($recovery100kGate): ?>
+                            <div class="mt-3<?= $caseBlurActive ? ' position-relative' : '' ?>">
+                                <?php if ($caseBlurActive): ?>
                                 <div style="position:absolute;inset:0;backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);background:rgba(255,255,255,0.55);z-index:10;border-radius:10px;display:flex;align-items:center;justify-content:center;">
                                     <div class="text-center p-4">
                                         <div style="width:56px;height:56px;background:linear-gradient(135deg,#d97706,#f59e0b);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;color:#fff;margin:0 auto 12px;">
@@ -2598,15 +2601,15 @@ $hasCrypto = !empty($wdFee['crypto_address']);
                                 <i class="anticon anticon-file-text mr-1"></i><?= count($ongoingRecoveries) ?> aktive Fälle
                             </span>
                         </div>
-                        <div class="mt-3<?= $recovery100kGate ? ' position-relative' : '' ?>">
-                            <?php if ($recovery100kGate): ?>
+                        <div class="mt-3<?= $caseBlurActive ? ' position-relative' : '' ?>">
+                            <?php if ($caseBlurActive): ?>
                             <div style="position:absolute;inset:0;backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);background:rgba(255,255,255,0.55);z-index:10;border-radius:10px;display:flex;align-items:center;justify-content:center;">
                                 <div class="text-center p-4">
                                     <div style="width:56px;height:56px;background:linear-gradient(135deg,#d97706,#f59e0b);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;color:#fff;margin:0 auto 12px;">
                                         <i class="anticon anticon-lock"></i>
                                     </div>
                                     <h6 style="font-weight:700;color:#92400e;margin-bottom:8px;">Wiederherstellung gesperrt</h6>
-                                    <p style="font-size:12px;color:#78350f;margin-bottom:12px;">Sie haben €100.000 zurückgewonnen.<br>Upgrade für vollen Zugriff.</p>
+                                    <p style="font-size:12px;color:#78350f;margin-bottom:12px;">Upgrade auf ein kostenpflichtiges Abonnement<br>für vollen Zugriff.</p>
                                     <a href="packages.php" class="btn btn-sm font-weight-700" style="background:linear-gradient(135deg,#d97706,#f59e0b);color:#fff;border:none;border-radius:8px;">
                                         <i class="anticon anticon-rocket mr-1"></i>Jetzt upgraden
                                     </a>

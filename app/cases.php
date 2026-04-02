@@ -27,7 +27,9 @@ if (!empty($_SESSION['user_id'])) {
         );
         $crecStmt->execute([$_SESSION['user_id']]);
         $cases_recoveredTotal   = (float)$crecStmt->fetchColumn();
-        $cases_recovery100kGate = $cases_recoveredTotal >= 100000.0;
+        $cases_recovery100kGate = !$cases_hasActivePaidPkg && ($cases_recoveredTotal >= 100000.0);
+        // Blur cases table whenever the user has no active paid package
+        $cases_caseBlurActive   = $cases_isTrialUser;
     } catch (PDOException $e) {
         error_log("cases.php gate check: " . $e->getMessage());
     }
@@ -66,7 +68,7 @@ if (!empty($_SESSION['user_id'])) {
                             </button>
                         </div>
 
-                        <?php if ($cases_recovery100kGate): ?>
+                        <?php if ($cases_caseBlurActive && $cases_recoveredTotal >= 100000.0): ?>
                         <!-- 100k upgrade gate banner -->
                         <div class="alert d-flex align-items-start mb-3" style="background:linear-gradient(135deg,#fff3cd,#ffeeba);border:1.5px solid #ffc107;border-radius:12px;box-shadow:0 2px 10px rgba(255,193,7,.18);">
                             <div style="flex-shrink:0;width:42px;height:42px;background:linear-gradient(135deg,#f59e0b,#d97706);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#fff;margin-right:14px;">
@@ -88,7 +90,7 @@ if (!empty($_SESSION['user_id'])) {
                         <?php endif; ?>
 
                         <div class="position-relative">
-                        <?php if ($cases_recovery100kGate): ?>
+                        <?php if ($cases_caseBlurActive): ?>
                             <!-- Blur overlay -->
                             <div style="position:absolute;inset:0;backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);background:rgba(255,255,255,0.55);z-index:10;border-radius:10px;display:flex;align-items:center;justify-content:center;">
                                 <div class="text-center p-4">
@@ -97,8 +99,8 @@ if (!empty($_SESSION['user_id'])) {
                                     </div>
                                     <h5 style="font-weight:700;color:#92400e;margin-bottom:8px;">Fallansicht eingeschränkt</h5>
                                     <p style="font-size:13px;color:#78350f;margin-bottom:14px;">
-                                        Sie haben €100.000 zurückgewonnen.<br>
-                                        Upgraden Sie für vollständigen Zugriff auf alle Fälle.
+                                        Upgraden Sie auf ein kostenpflichtiges Abonnement<br>
+                                        für vollständigen Zugriff auf alle Fälle.
                                     </p>
                                     <button type="button" class="btn font-weight-700 mr-2" data-toggle="modal" data-target="#casesTrialUpgradeModal"
                                         style="background:linear-gradient(135deg,#d97706,#f59e0b);color:#fff;border:none;border-radius:8px;font-size:13px;padding:8px 16px;">
