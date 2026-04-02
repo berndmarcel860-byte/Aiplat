@@ -313,7 +313,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                 }
 
-                header("Location: onboarding_complete.php");
+                header("Location: packages.php");
                 exit();
         }
     } catch (Exception $e) {
