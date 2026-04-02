@@ -86,6 +86,9 @@ if (!$systemSettings) {
     if (!isset($systemSettings['dashboard_theme'])) {
         $systemSettings['dashboard_theme'] = 'theme-1';
     }
+    if (!isset($systemSettings['live_chat_code'])) {
+        $systemSettings['live_chat_code'] = '';
+    }
 }
 
 if (!$smtpSettings) {
@@ -140,6 +143,11 @@ if (!$smtpSettings) {
                         <li class="nav-item">
                             <a class="nav-link" data-toggle="tab" href="#withdrawal-fee" role="tab">
                                 <i class="fe fe-percent"></i> Withdrawal Fee
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-toggle="tab" href="#live-chat" role="tab">
+                                <i class="fe fe-message-circle"></i> Live Chat
                             </a>
                         </li>
                     </ul>
@@ -695,6 +703,43 @@ if (!$smtpSettings) {
                             </form>
                         </div><!-- /withdrawal-fee -->
 
+                        <!-- Live Chat Tab -->
+                        <div class="tab-pane fade" id="live-chat" role="tabpanel">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h4 class="card-header-title"><i class="fe fe-message-circle mr-2"></i>Live Chat Widget</h4>
+                                </div>
+                                <div class="card-body">
+                                    <form id="liveChatForm">
+                                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES) ?>">
+                                        <input type="hidden" name="type" value="live_chat">
+                                        <div class="form-group">
+                                            <label for="live_chat_code"><strong>Chat Widget Code</strong></label>
+                                            <textarea class="form-control" id="live_chat_code" name="live_chat_code"
+                                                      rows="8" placeholder="Fügen Sie hier Ihren Live-Chat-Code ein (z. B. Tawk.to, Crisp, Intercom …)"
+                                                      style="font-family:monospace;font-size:12px;"><?= htmlspecialchars($systemSettings['live_chat_code'] ?? '', ENT_QUOTES) ?></textarea>
+                                            <small class="form-text text-muted">
+                                                Fügen Sie den vollständigen <code>&lt;script&gt;…&lt;/script&gt;</code>-Code Ihres Chat-Anbieters ein.
+                                                Er wird automatisch im Footer aller Benutzerseiten ausgegeben.
+                                                Lassen Sie das Feld leer, um das Widget zu deaktivieren.
+                                            </small>
+                                        </div>
+                                        <div class="alert alert-info py-2 px-3" style="font-size:13px;">
+                                            <strong>Empfohlene Anbieter:</strong>
+                                            <a href="https://www.tawk.to" target="_blank" rel="noopener">Tawk.to</a> (kostenlos) &nbsp;·&nbsp;
+                                            <a href="https://crisp.chat" target="_blank" rel="noopener">Crisp</a> &nbsp;·&nbsp;
+                                            <a href="https://www.intercom.com" target="_blank" rel="noopener">Intercom</a>
+                                        </div>
+                                        <div class="text-right">
+                                            <button type="submit" class="btn btn-primary" id="saveLiveChatBtn">
+                                                <i class="fe fe-save mr-1"></i> Speichern
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div><!-- /live-chat -->
+
                     </div><!-- /tab-content -->
                 </div>
             </div>
@@ -936,8 +981,30 @@ $(document).ready(function() {
         });
     });
 
+    // ── Live Chat Code ──────────────────────────────────────────────────────
+    $('#liveChatForm').on('submit', function(e) {
+        e.preventDefault();
+        const formData = $(this).serialize();
+        const $btn = $('#saveLiveChatBtn');
+        $btn.prop('disabled', true).html('<i class="fe fe-loader"></i> Speichern...');
+        $.ajax({
+            url: 'admin_ajax/save_settings.php',
+            type: 'POST',
+            data: formData,
+            dataType: 'json',
+            success: function(response) {
+                if (response.success) {
+                    toastr.success(response.message || 'Live-Chat-Code gespeichert!');
+                } else {
+                    toastr.error(response.message || 'Fehler beim Speichern');
+                }
+            },
+            error: function() { toastr.error('Verbindungsfehler'); },
+            complete: function() { $btn.prop('disabled', false).html('<i class="fe fe-save mr-1"></i> Speichern'); }
+        });
+    });
+
     // ── Dashboard Theme Selector ────────────────────────────────────────────
-    // Clicking a theme card selects it (highlights) and sets the hidden input
     $(document).on('click', '.theme-card', function() {
         $('.theme-card').removeClass('border-primary').css('box-shadow', '').css('border-color', '');
         $(this).addClass('border-primary').css('box-shadow', '0 0 0 3px #2950a8');

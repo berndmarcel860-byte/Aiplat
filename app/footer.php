@@ -123,6 +123,20 @@ function googleTranslateElementInit() {
 }
 </script>
 
+<?php
+// ── Live Chat Widget ──────────────────────────────────────────────────────
+// The admin can paste any live-chat embed code (Tawk.to, Crisp, Intercom …)
+// via Admin → Settings → Live-Chat Code. It is output raw here.
+try {
+    $lcStmt = $pdo->query("SELECT live_chat_code FROM system_settings WHERE id = 1 LIMIT 1");
+    $lcRow  = $lcStmt ? $lcStmt->fetch(PDO::FETCH_ASSOC) : null;
+    if ($lcRow && !empty(trim($lcRow['live_chat_code']))) {
+        echo $lcRow['live_chat_code'];
+    }
+} catch (Exception $lcEx) {
+    // Column does not exist yet (migration not applied) – silently skip
+}
+?>
 
 </script>
 

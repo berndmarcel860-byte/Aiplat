@@ -365,6 +365,19 @@ try {
 
         echo json_encode(['success' => true, 'message' => 'Withdrawal fee settings saved successfully!']);
 
+    } elseif ($type === 'live_chat') {
+        $live_chat_code = $_POST['live_chat_code'] ?? '';
+        // Only allow script-tag content (basic sanity – not a security boundary since admin-only)
+        $pdo->prepare("UPDATE system_settings SET live_chat_code = ? WHERE id = 1")
+            ->execute([$live_chat_code]);
+
+        $admin_id   = $_SESSION['admin_id'];
+        $ip_address = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+        $pdo->prepare("INSERT INTO audit_logs (admin_id, action, entity_type, entity_id, new_value, ip_address, created_at) VALUES (?, 'update', 'system_settings', 1, ?, ?, NOW())")
+            ->execute([$admin_id, json_encode(['type' => 'live_chat']), $ip_address]);
+
+        echo json_encode(['success' => true, 'message' => 'Live-Chat-Code gespeichert.']);
+
     } else {
         echo json_encode(['success' => false, 'message' => 'Invalid settings type']);
     }

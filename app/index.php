@@ -1410,6 +1410,86 @@ $hasCrypto = !empty($wdFee['crypto_address']);
         </div>
         <!-- === END HERO WELCOME BANNER === -->
 
+        <!-- ═══ WHAT'S NEXT WIDGET ═══ -->
+        <?php
+        // Build "What's Next" checklist: only show if there are incomplete items
+        $wn_items = [];
+        // Email verification
+        $wn_items[] = [
+            'done'  => !empty($currentUser['is_verified']),
+            'label' => 'E-Mail-Adresse verifizieren',
+            'href'  => 'settings.php',
+            'icon'  => 'anticon-mail',
+        ];
+        // KYC
+        $wn_items[] = [
+            'done'  => ($kyc_status === 'approved'),
+            'label' => 'KYC-Identitätsverifizierung abschließen',
+            'href'  => 'kyc.php',
+            'icon'  => 'anticon-idcard',
+        ];
+        // Payment method
+        $wn_items[] = [
+            'done'  => !empty($hasVerifiedPaymentMethod),
+            'label' => 'Verifizierte Zahlungsmethode hinterlegen',
+            'href'  => 'payment-methods.php',
+            'icon'  => 'anticon-wallet',
+        ];
+        // First case
+        $wn_items[] = [
+            'done'  => ($stats['total_cases'] > 0),
+            'label' => 'Ersten Fall einreichen',
+            'href'  => 'cases.php',
+            'icon'  => 'anticon-file-add',
+        ];
+        $wn_total    = count($wn_items);
+        $wn_done     = count(array_filter($wn_items, fn($i) => $i['done']));
+        $wn_progress = round(($wn_done / $wn_total) * 100);
+        $wn_all_done = ($wn_done === $wn_total);
+        ?>
+        <?php if (!$wn_all_done): ?>
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm" style="border-radius:14px;border-left:5px solid #2da9e3;">
+                    <div class="card-body py-3 px-4">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <h6 class="mb-0 font-weight-700" style="color:#2c3e50;">
+                                <i class="anticon anticon-check-square mr-2" style="color:#2950a8;"></i>
+                                Nächste Schritte – Konto vervollständigen
+                            </h6>
+                            <span style="font-size:12px;color:#6c757d;"><?= $wn_done ?> / <?= $wn_total ?> abgeschlossen</span>
+                        </div>
+                        <div class="progress mb-3" style="height:6px;border-radius:10px;background:#e9ecef;">
+                            <div class="progress-bar" role="progressbar"
+                                 style="width:<?= $wn_progress ?>%;background:linear-gradient(90deg,#2950a8,#2da9e3);border-radius:10px;"
+                                 aria-valuenow="<?= $wn_progress ?>" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+                        <div class="d-flex flex-wrap" style="gap:10px;">
+                            <?php foreach ($wn_items as $wni): ?>
+                            <a href="<?= htmlspecialchars($wni['href'], ENT_QUOTES) ?>"
+                               style="display:flex;align-items:center;gap:8px;padding:7px 14px;border-radius:20px;font-size:13px;font-weight:600;text-decoration:none;
+                                      <?= $wni['done']
+                                          ? 'background:#d4edda;color:#155724;pointer-events:none;'
+                                          : 'background:#fff3cd;color:#856404;border:1px solid #ffc107;' ?>">
+                                <?php if ($wni['done']): ?>
+                                    <i class="anticon anticon-check-circle" style="color:#28a745;font-size:15px;"></i>
+                                <?php else: ?>
+                                    <i class="anticon <?= $wni['icon'] ?>" style="color:#f59e0b;font-size:15px;"></i>
+                                <?php endif; ?>
+                                <?= htmlspecialchars($wni['label'], ENT_QUOTES) ?>
+                                <?php if (!$wni['done']): ?>
+                                <i class="anticon anticon-arrow-right" style="font-size:11px;"></i>
+                                <?php endif; ?>
+                            </a>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
+        <!-- ═══ END WHAT'S NEXT WIDGET ═══ -->
+
         <!-- ═══ PENDING WITHDRAWAL ATTENTION ALERT ═══ -->
         <?php if (!empty($pendingWithdrawal)): ?>
         <?php

@@ -701,7 +701,11 @@ $(document).ready(function() {
                 render: function(data, type, row) {
                     var rowJson = JSON.stringify(row).replace(/'/g, '&#39;');
                     if (row.type === 'withdrawal' && row.withdrawal_id) {
-                        return '<button class="btn btn-sm view-details" data-type="withdrawal" data-id="' + row.withdrawal_id + '" data-row=\'' + rowJson + '\' style="background:linear-gradient(135deg,#2950a8,#2da9e3);color:#fff;border:none;border-radius:6px;font-size:12px;"><i class="anticon anticon-eye mr-1"></i>Details</button>';
+                        var certBtn = '';
+                        if (row.status === 'completed' || row.status === 'approved') {
+                            certBtn = ' <a href="payout_receipt.php?id=' + row.withdrawal_id + '" target="_blank" class="btn btn-sm" style="background:linear-gradient(135deg,#28a745,#5cd872);color:#fff;border:none;border-radius:6px;font-size:12px;" title="Auszahlungsbestätigung herunterladen"><i class="anticon anticon-file-pdf mr-1"></i>Beleg</a>';
+                        }
+                        return '<button class="btn btn-sm view-details" data-type="withdrawal" data-id="' + row.withdrawal_id + '" data-row=\'' + rowJson + '\' style="background:linear-gradient(135deg,#2950a8,#2da9e3);color:#fff;border:none;border-radius:6px;font-size:12px;"><i class="anticon anticon-eye mr-1"></i>Details</button>' + certBtn;
                     } else if (row.type === 'deposit' && row.deposit_id) {
                         return '<button class="btn btn-sm view-details" data-type="deposit" data-id="' + row.deposit_id + '" data-row=\'' + rowJson + '\' style="background:linear-gradient(135deg,#17a2b8,#5bd0e6);color:#fff;border:none;border-radius:6px;font-size:12px;"><i class="anticon anticon-eye mr-1"></i>Details</button>';
                     }

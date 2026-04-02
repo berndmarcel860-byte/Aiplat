@@ -102,6 +102,12 @@
                             </a>
                         </li>
                         <li>
+                            <a href="security.php" title="Security &amp; Activity Log">
+                                <i class="anticon anticon-safety m-r-10"></i>
+                                Sicherheit
+                            </a>
+                        </li>
+                        <li>
                             <a href="settings.php" title="Account Settings">
                                 <i class="anticon anticon-setting m-r-10"></i>
                                 Settings

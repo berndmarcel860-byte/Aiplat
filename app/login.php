@@ -102,9 +102,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ]);
 
                     if ($sent) {
-                        // Log successful login attempt
-                        $stmt = $pdo->prepare("INSERT INTO login_logs (email, ip_address, user_agent, success) VALUES (?, ?, ?, 1)");
-                        $stmt->execute([$email, $ip, $_SERVER['HTTP_USER_AGENT'] ?? '']);
+                        // Log OTP-dispatched login attempt (user_id known)
+                        $stmt = $pdo->prepare("INSERT INTO login_logs (user_id, email, ip_address, user_agent, success) VALUES (?, ?, ?, ?, 0)");
+                        $stmt->execute([$user['id'], $email, $ip, $_SERVER['HTTP_USER_AGENT'] ?? '']);
 
                         // Redirect to OTP verification page
                         header("Location: verify-otp.php");

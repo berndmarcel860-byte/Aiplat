@@ -54,7 +54,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // Log successful OTP verification
                 $pdo->prepare("UPDATE otp_logs SET is_verified = 1 WHERE user_id = ? AND otp_code = ? AND purpose = 'login' ORDER BY created_at DESC LIMIT 1")
                     ->execute([$userId, $entered_otp]);
-                
+
+                // ── Log completed login with user_id ─────────────────────
+                $loginIp      = $_SERVER['REMOTE_ADDR'] ?? '';
+                $loginAgent   = $_SERVER['HTTP_USER_AGENT'] ?? '';
+                $pdo->prepare(
+                    "INSERT INTO login_logs (user_id, email, ip_address, user_agent, success)
+                     VALUES (?, ?, ?, ?, 1)"
+                )->execute([$userId, $user['email'], $loginIp, $loginAgent]);
+
+                // ── IP login alert: notify on new IP ─────────────────────
+                try {
+                    $lastIpStmt = $pdo->prepare(
+                        "SELECT ip_address FROM login_logs
+                         WHERE user_id = ? AND success = 1 AND id < LAST_INSERT_ID()
+                         ORDER BY id DESC LIMIT 1"
+                    );
+                    $lastIpStmt->execute([$userId]);
+                    $lastKnownIp = $lastIpStmt->fetchColumn();
+
+                    if ($lastKnownIp && $lastKnownIp !== $loginIp) {
+                        $emailHelper = new EmailHelper($pdo);
+                        $emailHelper->sendEmail('new_ip_login_alert', $userId, [
+                            'login_ip'     => htmlspecialchars($loginIp, ENT_QUOTES),
+                            'login_time'   => date('d.m.Y H:i:s'),
+                            'login_device' => htmlspecialchars(substr($loginAgent, 0, 100), ENT_QUOTES),
+                        ]);
+                    }
+                } catch (Exception $ipAlertEx) {
+                    error_log('IP alert error: ' . $ipAlertEx->getMessage());
+                }
+
                 // Redirect to dashboard
                 $_SESSION['success_message'] = "Erfolgreich angemeldet!";
                 header("Location: index.php");
