@@ -15,35 +15,51 @@ error_reporting(0);
 $token = isset($_GET['token']) ? trim($_GET['token']) : '';
 
 if (!empty($token)) {
+    // Database connection
+    require_once __DIR__ . '/config.php';
+
+    $ip_address = $_SERVER['REMOTE_ADDR'] ?? '';
+    $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? '';
+    $referrer   = $_SERVER['HTTP_REFERER']   ?? '';
+
+    // Step 1: Update email_logs.
+    // Try the full UPDATE first (requires opened_at column).
+    // If the column does not exist yet (migration not applied), fall back to
+    // updating only the status so the open event is still recorded.
     try {
-        // Database connection
-        require_once __DIR__ . '/config.php';
-        
-        // Get client information
-        $ip_address = $_SERVER['REMOTE_ADDR'] ?? '';
-        $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? '';
-        $referrer = $_SERVER['HTTP_REFERER'] ?? '';
-        
-        // Update email_logs to mark as opened
         $stmt = $pdo->prepare("
-            UPDATE email_logs 
-            SET status = 'opened', 
-                opened_at = NOW() 
-            WHERE tracking_token = ? 
-            AND status != 'opened'
+            UPDATE email_logs
+            SET status = 'opened', opened_at = NOW()
+            WHERE tracking_token = ?
+              AND status != 'opened'
         ");
         $stmt->execute([$token]);
-        
-        // Insert tracking record
+    } catch (Exception $e) {
+        error_log("Email tracking (full update) error: " . $e->getMessage());
+        // Fallback: update only status (opened_at column may not exist yet)
+        try {
+            $stmt = $pdo->prepare("
+                UPDATE email_logs
+                SET status = 'opened'
+                WHERE tracking_token = ?
+                  AND status != 'opened'
+            ");
+            $stmt->execute([$token]);
+        } catch (Exception $e2) {
+            error_log("Email tracking (fallback update) error: " . $e2->getMessage());
+        }
+    }
+
+    // Step 2: Insert a row into the open-event log table (independent of step 1).
+    try {
         $stmt = $pdo->prepare("
             INSERT INTO email_tracking (tracking_token, ip_address, user_agent, referrer, opened_at)
             VALUES (?, ?, ?, ?, NOW())
         ");
         $stmt->execute([$token, $ip_address, $user_agent, $referrer]);
-        
     } catch (Exception $e) {
-        // Silent fail - don't break email display
-        error_log("Email tracking error: " . $e->getMessage());
+        // Table may not exist yet — non-fatal, email_logs is the primary record.
+        error_log("Email tracking (insert) error: " . $e->getMessage());
     }
 }
 
