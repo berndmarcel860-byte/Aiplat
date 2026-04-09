@@ -49,7 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['last_activity'] = time();
                 
                 // Update last login and persist OTP grace period to DB
-                $pdo->prepare("UPDATE users SET last_login = NOW(), last_otp_verified_at = NOW() WHERE id = ?")->execute([$user['id']]);
+                $pdo->prepare("UPDATE users SET last_login = NOW(), last_otp_verified_at = NOW(), last_login_ip = ? WHERE id = ?")->execute([$loginIp, $user['id']]);
                 
                 // Log successful OTP verification
                 $pdo->prepare("UPDATE otp_logs SET is_verified = 1 WHERE user_id = ? AND otp_code = ? AND purpose = 'login' ORDER BY created_at DESC LIMIT 1")

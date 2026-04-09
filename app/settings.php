@@ -99,6 +99,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['error'] = "Fehler beim Ändern des Passworts: " . $e->getMessage();
             }
         }
+    } elseif (isset($_POST['update_otp_setting'])) {
+        // Toggle login OTP for this user
+        $otpEnabled = isset($_POST['login_otp_enabled']) ? 1 : 0;
+        try {
+            $pdo->prepare("UPDATE users SET login_otp_enabled = ? WHERE id = ?")
+                ->execute([$otpEnabled, $_SESSION['user_id']]);
+            $_SESSION['success'] = $otpEnabled
+                ? "Zwei-Faktor-Authentifizierung aktiviert."
+                : "Zwei-Faktor-Authentifizierung deaktiviert.";
+        } catch (PDOException $e) {
+            $_SESSION['error'] = "Fehler beim Speichern der Sicherheitseinstellung.";
+        }
     }
     
     header("Location: settings.php");
@@ -144,6 +156,9 @@ try {
                                 </li>
                                 <li class="nav-item">
                                     <a class="nav-link" id="password-tab" data-toggle="tab" href="#password" role="tab">Passwort</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" id="security-tab" data-toggle="tab" href="#security-otp" role="tab">Sicherheit</a>
                                 </li>
                             </ul>
                             
@@ -268,6 +283,47 @@ try {
                                         
                                         <button type="submit" name="change_password" class="btn btn-primary">Passwort ändern</button>
                                     </form>
+                                </div>
+
+                                <!-- Sicherheit / OTP -->
+                                <div class="tab-pane fade" id="security-otp" role="tabpanel">
+                                    <div class="row justify-content-center">
+                                        <div class="col-md-8">
+                                            <div class="card border-0 shadow-sm mb-4">
+                                                <div class="card-header" style="background:linear-gradient(135deg,#1a3a5c,#0d2137);color:#fff;border-radius:6px 6px 0 0;">
+                                                    <h5 class="mb-0"><i class="anticon anticon-safety mr-2"></i>Zwei-Faktor-Authentifizierung (2FA)</h5>
+                                                </div>
+                                                <div class="card-body">
+                                                    <p class="text-muted" style="font-size:14px;">
+                                                        Wenn aktiviert, erhalten Sie bei jeder Anmeldung von einem neuen Gerät oder nach 5 Tagen Inaktivität einen einmaligen Sicherheitscode per E-Mail.
+                                                    </p>
+                                                    <div class="alert alert-info py-2 px-3" style="font-size:13px;">
+                                                        <i class="anticon anticon-info-circle mr-1"></i>
+                                                        Der Code wird nicht erneut angefordert, wenn Sie sich innerhalb von 5 Tagen vom gleichen Gerät/IP anmelden.
+                                                    </div>
+                                                    <form method="POST" class="mt-3">
+                                                        <div class="d-flex align-items-center justify-content-between p-3 rounded" style="background:#f8f9fa;border:1px solid #e9ecef;">
+                                                            <div>
+                                                                <strong style="font-size:15px;">Login-OTP aktivieren</strong><br>
+                                                                <small class="text-muted">E-Mail-Verifizierung bei der Anmeldung</small>
+                                                            </div>
+                                                            <div class="custom-control custom-switch">
+                                                                <input type="checkbox" class="custom-control-input" id="login_otp_enabled"
+                                                                       name="login_otp_enabled" value="1"
+                                                                       <?= (!isset($user['login_otp_enabled']) || $user['login_otp_enabled']) ? 'checked' : '' ?>>
+                                                                <label class="custom-control-label" for="login_otp_enabled"></label>
+                                                            </div>
+                                                        </div>
+                                                        <div class="mt-3">
+                                                            <button type="submit" name="update_otp_setting" class="btn btn-primary">
+                                                                <i class="anticon anticon-save mr-1"></i> Einstellung speichern
+                                                            </button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>

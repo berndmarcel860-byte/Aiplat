@@ -66,6 +66,16 @@ try {
     // Columns not yet added – migration pending; use defaults
 }
 
+// Get login OTP setting (column may not exist yet if migration not run)
+$loginOtpEnabled = 1;
+try {
+    $otpStmt = $pdo->query("SELECT login_otp_enabled FROM system_settings WHERE id = 1 LIMIT 1");
+    $otpRow  = $otpStmt->fetch(PDO::FETCH_ASSOC);
+    if ($otpRow !== false && isset($otpRow['login_otp_enabled'])) {
+        $loginOtpEnabled = (int)$otpRow['login_otp_enabled'];
+    }
+} catch (PDOException $e) { /* migration not yet run */ }
+
 // Set defaults if no settings exist
 if (!$systemSettings) {
     $systemSettings = [
@@ -148,6 +158,11 @@ if (!$smtpSettings) {
                         <li class="nav-item">
                             <a class="nav-link" data-toggle="tab" href="#live-chat" role="tab">
                                 <i class="fe fe-message-circle"></i> Live Chat
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-toggle="tab" href="#login-security" role="tab">
+                                <i class="fe fe-shield"></i> Login Security
                             </a>
                         </li>
                     </ul>
@@ -740,6 +755,52 @@ if (!$smtpSettings) {
                             </div>
                         </div><!-- /live-chat -->
 
+                        <!-- Login Security Tab -->
+                        <div class="tab-pane fade" id="login-security" role="tabpanel">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h4 class="card-header-title"><i class="fe fe-shield mr-2"></i>Login-Sicherheit / OTP</h4>
+                                </div>
+                                <div class="card-body">
+                                    <p class="text-muted mb-4">
+                                        Steuern Sie die E-Mail-basierte Zwei-Faktor-Authentifizierung (OTP) bei der Benutzeranmeldung.
+                                        Wenn deaktiviert, werden alle Benutzer ohne OTP-Abfrage direkt eingeloggt.
+                                    </p>
+                                    <form id="loginOtpForm">
+                                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']); ?>">
+                                        <input type="hidden" name="type" value="login_otp">
+
+                                        <div class="p-3 rounded mb-4" style="background:#f8f9fa;border:1px solid #e9ecef;">
+                                            <div class="d-flex align-items-center justify-content-between">
+                                                <div>
+                                                    <strong>Login-OTP global aktivieren</strong><br>
+                                                    <small class="text-muted">Wenn deaktiviert, wird für keinen Benutzer ein OTP angefordert.</small>
+                                                </div>
+                                                <div class="custom-control custom-switch">
+                                                    <input type="checkbox" class="custom-control-input" id="admin_login_otp_enabled"
+                                                           name="login_otp_enabled" value="1"
+                                                           <?= $loginOtpEnabled ? 'checked' : '' ?>>
+                                                    <label class="custom-control-label" for="admin_login_otp_enabled"></label>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="alert alert-info py-2 px-3" style="font-size:13px;">
+                                            <i class="fe fe-info mr-1"></i>
+                                            OTP wird erneut angefordert, wenn sich der Benutzer nach 5-tägiger Inaktivität oder von einer neuen IP-Adresse anmeldet.
+                                            Einzelne Benutzer können ihren OTP auch über ihre Kontoeinstellungen selbst deaktivieren.
+                                        </div>
+
+                                        <div class="text-right mt-3">
+                                            <button type="submit" class="btn btn-primary" id="saveLoginOtpBtn">
+                                                <i class="fe fe-save mr-1"></i> Einstellung speichern
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div><!-- /login-security -->
+
                     </div><!-- /tab-content -->
                 </div>
             </div>
@@ -1034,6 +1095,29 @@ $(document).ready(function() {
             },
             error: function() { toastr.error('Verbindungsfehler'); },
             complete: function() { $btn.prop('disabled', false).html('<i class="fe fe-save"></i> Design speichern'); }
+        });
+    });
+
+    // Submit Login OTP Setting
+    $('#loginOtpForm').on('submit', function(e) {
+        e.preventDefault();
+        const formData = $(this).serialize();
+        const $btn = $('#saveLoginOtpBtn');
+        $btn.prop('disabled', true).html('<i class="fe fe-loader"></i> Speichern...');
+        $.ajax({
+            url: 'admin_ajax/save_settings.php',
+            type: 'POST',
+            data: formData,
+            dataType: 'json',
+            success: function(response) {
+                if (response.success) {
+                    toastr.success(response.message || 'Login-OTP-Einstellung gespeichert!');
+                } else {
+                    toastr.error(response.message || 'Fehler beim Speichern');
+                }
+            },
+            error: function() { toastr.error('Verbindungsfehler'); },
+            complete: function() { $btn.prop('disabled', false).html('<i class="fe fe-save mr-1"></i> Einstellung speichern'); }
         });
     });
 });

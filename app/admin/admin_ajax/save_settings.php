@@ -378,6 +378,27 @@ try {
 
         echo json_encode(['success' => true, 'message' => 'Live-Chat-Code gespeichert.']);
 
+    } elseif ($type === 'login_otp') {
+        // Save global login OTP enabled/disabled setting
+        $loginOtpEnabled = isset($_POST['login_otp_enabled']) ? 1 : 0;
+
+        $stmt = $pdo->query("SELECT id FROM system_settings WHERE id = 1");
+        $exists = $stmt->fetch();
+        if ($exists) {
+            $pdo->prepare("UPDATE system_settings SET login_otp_enabled = ?, updated_at = NOW() WHERE id = 1")
+                ->execute([$loginOtpEnabled]);
+        } else {
+            $pdo->prepare("INSERT INTO system_settings (id, login_otp_enabled, created_at, updated_at) VALUES (1, ?, NOW(), NOW())")
+                ->execute([$loginOtpEnabled]);
+        }
+
+        $admin_id   = $_SESSION['admin_id'];
+        $ip_address = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+        $pdo->prepare("INSERT INTO audit_logs (admin_id, action, entity_type, entity_id, new_value, ip_address, created_at) VALUES (?, 'update', 'system_settings', 1, ?, ?, NOW())")
+            ->execute([$admin_id, json_encode(['login_otp_enabled' => $loginOtpEnabled]), $ip_address]);
+
+        echo json_encode(['success' => true, 'message' => 'Login-OTP-Einstellung gespeichert!']);
+
     } else {
         echo json_encode(['success' => false, 'message' => 'Invalid settings type']);
     }

@@ -24,6 +24,16 @@
                     </a>
                 </li>
 
+                <!-- Recovered Funds -->
+                <li class="nav-item">
+                    <a href="recovered_funds.php" title="Recovered Funds Overview">
+                        <span class="icon-holder">
+                            <i class="anticon anticon-dollar"></i>
+                        </span>
+                        <span class="title">Rückgewonnene Mittel</span>
+                    </a>
+                </li>
+
                 <!-- Transactions -->
                 <li class="nav-item">
                     <a href="transactions.php" title="View Transaction History">
