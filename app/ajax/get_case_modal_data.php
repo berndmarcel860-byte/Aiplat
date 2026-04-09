@@ -61,9 +61,19 @@ try {
         return min($ts, $now);
     };
 
+    // ── Per-case milestone visibility (admin-controlled) ─────────────────────
+    $visStmt = $pdo->prepare(
+        "SELECT step2, step3, step4 FROM case_milestone_visibility WHERE case_id = ? LIMIT 1"
+    );
+    $visStmt->execute([$caseId]);
+    $vis = $visStmt->fetch(PDO::FETCH_ASSOC);
+    $showStep2 = $vis ? (bool)$vis['step2'] : false;
+    $showStep3 = $vis ? (bool)$vis['step3'] : false;
+    $showStep4 = $vis ? (bool)$vis['step4'] : false;
+
     $milestones = [];
 
-    // Step 1 – Fallaufnahme (= case created date)
+    // Step 1 – Fallaufnahme (= case created date, always visible)
     $milestones[] = [
         'date'  => date('d.m.Y', $created),
         'icon'  => 'anticon-file-text',
@@ -72,46 +82,52 @@ try {
         'text'  => 'Rechtsabteilung hat alle eingereichten Unterlagen geprüft und den Sachverhalt aufgenommen.',
     ];
 
-    // Step 2 – Forderungsschreiben (7–14 days after creation)
-    $step2 = $cap($created + mt_rand(7, 14) * 86400);
-    $milestones[] = [
-        'date'  => date('d.m.Y', $step2),
-        'icon'  => 'anticon-mail',
-        'color' => '#fa8c16',
-        'title' => 'Forderungsschreiben versandt',
-        'text'  => 'Offizielles Forderungsschreiben mit Belegen wurde an die betroffene Plattform / Gegenpartei übermittelt.',
-    ];
+    // Step 2 – Forderungsschreiben (7–14 days after creation, hidden until admin enables)
+    $step2Timestamp = $cap($created + mt_rand(7, 14) * 86400);
+    if ($showStep2) {
+        $milestones[] = [
+            'date'  => date('d.m.Y', $step2Timestamp),
+            'icon'  => 'anticon-mail',
+            'color' => '#fa8c16',
+            'title' => 'Forderungsschreiben versandt',
+            'text'  => 'Offizielles Forderungsschreiben mit Belegen wurde an die betroffene Plattform / Gegenpartei übermittelt.',
+        ];
+    }
 
-    // Step 3 – Regulatorische Eskalation (20–35 days after creation)
-    $step3 = $cap($created + mt_rand(20, 35) * 86400);
-    $milestones[] = [
-        'date'  => date('d.m.Y', $step3),
-        'icon'  => 'anticon-bank',
-        'color' => '#52c41a',
-        'title' => 'Regulatorische Eskalation',
-        'text'  => 'Fall wurde bei der zuständigen Aufsichtsbehörde (FCA / BaFin) zur weiteren Untersuchung eingereicht.',
-    ];
+    // Step 3 – Regulatorische Eskalation (20–35 days after creation, hidden until admin enables)
+    $step3Timestamp = $cap($created + mt_rand(20, 35) * 86400);
+    if ($showStep3) {
+        $milestones[] = [
+            'date'  => date('d.m.Y', $step3Timestamp),
+            'icon'  => 'anticon-bank',
+            'color' => '#52c41a',
+            'title' => 'Regulatorische Eskalation',
+            'text'  => 'Fall wurde bei der zuständigen Aufsichtsbehörde (FCA / BaFin) zur weiteren Untersuchung eingereicht.',
+        ];
+    }
 
-    // Step 4 – Rückerstattung bestätigt / Laufende Verhandlungen (45–90 days)
-    $step4 = $cap($created + mt_rand(45, 90) * 86400);
+    // Step 4 – Rückerstattung bestätigt / Laufende Verhandlungen (45–90 days, hidden until admin enables)
+    $step4Timestamp = $cap($created + mt_rand(45, 90) * 86400);
     $recovered = (float)$case['recovered_amount'];
-    if ($recovered > 0) {
-        $milestones[] = [
-            'date'  => date('d.m.Y', $step4),
-            'icon'  => 'anticon-check-circle',
-            'color' => '#722ed1',
-            'title' => 'Rückerstattung bestätigt',
-            'text'  => 'Die Gegenpartei hat der Rückerstattung des Betrags von '
-                      . number_format($recovered, 2, ',', '.') . ' € zugestimmt.',
-        ];
-    } else {
-        $milestones[] = [
-            'date'  => date('d.m.Y', $step4),
-            'icon'  => 'anticon-clock-circle',
-            'color' => '#faad14',
-            'title' => 'Laufende Verhandlungen',
-            'text'  => 'Aktive Korrespondenz mit der Gegenpartei. Rechtsabteilung erwartet Rückmeldung innerhalb von 14 Tagen.',
-        ];
+    if ($showStep4) {
+        if ($recovered > 0) {
+            $milestones[] = [
+                'date'  => date('d.m.Y', $step4Timestamp),
+                'icon'  => 'anticon-check-circle',
+                'color' => '#722ed1',
+                'title' => 'Rückerstattung bestätigt',
+                'text'  => 'Die Gegenpartei hat der Rückerstattung des Betrags von '
+                          . number_format($recovered, 2, ',', '.') . ' € zugestimmt.',
+            ];
+        } else {
+            $milestones[] = [
+                'date'  => date('d.m.Y', $step4Timestamp),
+                'icon'  => 'anticon-clock-circle',
+                'color' => '#faad14',
+                'title' => 'Laufende Verhandlungen',
+                'text'  => 'Aktive Korrespondenz mit der Gegenpartei. Rechtsabteilung erwartet Rückmeldung innerhalb von 14 Tagen.',
+            ];
+        }
     }
     mt_srand();
 
@@ -141,6 +157,11 @@ try {
         'updated_at'    => date('d.m.Y', strtotime($case['updated_at'] ?? $case['created_at'])),
         'stats'         => $stats,
         'milestones'    => $milestones,
+        'milestone_visibility' => [
+            'step2' => $showStep2,
+            'step3' => $showStep3,
+            'step4' => $showStep4,
+        ],
     ], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
 
 } catch (PDOException $e) {

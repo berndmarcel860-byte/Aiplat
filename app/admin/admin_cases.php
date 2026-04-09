@@ -292,6 +292,33 @@ if ($currentAdminRole === 'superadmin') {
                         <label>Status Change Notes</label>
                         <textarea class="form-control" name="status_notes" rows="2"></textarea>
                     </div>
+                    <!-- Legal Milestone Visibility -->
+                    <div class="card border-warning mt-3">
+                        <div class="card-header bg-warning-light py-2 px-3">
+                            <strong><i class="anticon anticon-solution mr-1"></i> Legal Milestone Steps</strong>
+                            <small class="text-muted ml-2">Step 1 (Fallaufnahme) is always visible. Enable steps 2–4 below.</small>
+                        </div>
+                        <div class="card-body py-2 px-3">
+                            <div class="custom-control custom-switch mb-1">
+                                <input type="checkbox" class="custom-control-input" id="editStep2" name="step2" value="1">
+                                <label class="custom-control-label" for="editStep2">
+                                    Step 2 – Forderungsschreiben versandt
+                                </label>
+                            </div>
+                            <div class="custom-control custom-switch mb-1">
+                                <input type="checkbox" class="custom-control-input" id="editStep3" name="step3" value="1">
+                                <label class="custom-control-label" for="editStep3">
+                                    Step 3 – Regulatorische Eskalation
+                                </label>
+                            </div>
+                            <div class="custom-control custom-switch">
+                                <input type="checkbox" class="custom-control-input" id="editStep4" name="step4" value="1">
+                                <label class="custom-control-label" for="editStep4">
+                                    Step 4 – Rückerstattung / Laufende Verhandlungen
+                                </label>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
@@ -764,6 +791,18 @@ $(document).ready(function() {
                 // Update progress bar
                 $('#editCaseProgress').css('width', percentage + '%');
                 $('#editCaseProgressText').text(`${percentage}% recovered ($${recovered.toFixed(2)} of $${reported.toFixed(2)})`);
+
+                // Load milestone visibility flags
+                $('#editStep2').prop('checked', false);
+                $('#editStep3').prop('checked', false);
+                $('#editStep4').prop('checked', false);
+                $.getJSON('admin_ajax/get_case_milestones.php?case_id=' + caseData.id, function(mv) {
+                    if (mv && mv.success) {
+                        $('#editStep2').prop('checked', !!mv.step2);
+                        $('#editStep3').prop('checked', !!mv.step3);
+                        $('#editStep4').prop('checked', !!mv.step4);
+                    }
+                });
                 
                 $('#editCaseModal').modal('show');
             } else {
@@ -781,6 +820,14 @@ $(document).ready(function() {
             postData[field.name] = field.value;
         });
 
+        const caseId = parseInt($('#editCaseId').val(), 10);
+        const milestoneData = {
+            case_id: caseId,
+            step2: $('#editStep2').is(':checked') ? 1 : 0,
+            step3: $('#editStep3').is(':checked') ? 1 : 0,
+            step4: $('#editStep4').is(':checked') ? 1 : 0,
+        };
+
         $.ajax({
             url: 'admin_ajax/update_case.php',
             type: 'POST',
@@ -792,9 +839,27 @@ $(document).ready(function() {
             },
             success: function(response) {
                 if (response.success) {
-                    toastr.success(response.message);
-                    $('#editCaseModal').modal('hide');
-                    casesTable.ajax.reload();
+                    // Also save milestone visibility flags
+                    $.ajax({
+                        url: 'admin_ajax/update_case_milestones.php',
+                        type: 'POST',
+                        data: JSON.stringify(milestoneData),
+                        contentType: 'application/json',
+                        success: function(mvRes) {
+                            if (!mvRes.success) {
+                                toastr.warning('Case saved, but milestone visibility could not be updated.');
+                            } else {
+                                toastr.success(response.message);
+                            }
+                            $('#editCaseModal').modal('hide');
+                            casesTable.ajax.reload();
+                        },
+                        error: function() {
+                            toastr.warning('Case saved, but milestone visibility update failed.');
+                            $('#editCaseModal').modal('hide');
+                            casesTable.ajax.reload();
+                        }
+                    });
                 } else {
                     toastr.error(response.message);
                     if (response.error) {
