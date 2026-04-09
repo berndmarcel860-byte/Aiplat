@@ -219,59 +219,305 @@ $statusLabels = [
 </div>
 
 <style>
+/* ── Timeline ─────────────────────────────────────────── */
 .rf-timeline-item { display:flex; gap:12px; margin-bottom:16px; }
 .rf-timeline-item:last-child { margin-bottom:0; }
 .rf-timeline-dot { flex-shrink:0; width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; border-width:2px; border-style:solid; }
+
+/* ── Live badge pulse ─────────────────────────────────── */
+@keyframes rf-live-pulse {
+    0%,100% { opacity:1; transform:scale(1); }
+    50%      { opacity:.5; transform:scale(.88); }
+}
+.rf-live-badge {
+    display:inline-flex; align-items:center; gap:4px;
+    background:#ff4d4f; color:#fff; font-size:10px; font-weight:700;
+    padding:2px 7px; border-radius:20px; letter-spacing:.6px;
+    animation: rf-live-pulse 1.4s ease-in-out infinite;
+}
+.rf-live-dot { width:6px; height:6px; border-radius:50%; background:#fff; }
+
+/* ── Radar spin ───────────────────────────────────────── */
+@keyframes rf-radar {
+    from { transform:rotate(0deg); }
+    to   { transform:rotate(360deg); }
+}
+.rf-radar-spin { display:inline-block; animation: rf-radar 1.6s linear infinite; }
+
+/* ── Scan log ─────────────────────────────────────────── */
+.rf-scan-log {
+    background:#0d1117; color:#39d353; font-family:monospace;
+    font-size:11px; height:130px; overflow-y:auto; border-radius:6px;
+    padding:8px 10px; line-height:1.7;
+}
+.rf-scan-log::-webkit-scrollbar { width:4px; }
+.rf-scan-log::-webkit-scrollbar-thumb { background:#39d35366; border-radius:2px; }
+
+/* ── Counter digits ───────────────────────────────────── */
+.rf-counter { font-size:18px; font-weight:800; line-height:1.1; color:#1a1a2e; }
+.rf-counter-label { font-size:11px; color:#888; margin-top:1px; }
+
+/* ── Scan progress bar ────────────────────────────────── */
+@keyframes rf-bar-glow {
+    0%,100% { box-shadow: 0 0 4px #1890ff66; }
+    50%      { box-shadow: 0 0 12px #1890ffcc; }
+}
+.rf-scan-bar { animation: rf-bar-glow 1.6s ease-in-out infinite; transition: width .25s linear; }
+
+/* ── Phase badge ──────────────────────────────────────── */
+.rf-phase {
+    font-size:11px; font-weight:700; padding:2px 8px; border-radius:20px;
+    background:#1890ff22; color:#1890ff; border:1px solid #1890ff44;
+    transition: background .4s, color .4s;
+}
+.rf-phase.complete { background:#52c41a22; color:#52c41a; border-color:#52c41a44; }
 </style>
 
 <script>
-(function() {
+(function () {
     var ajaxUrl = 'ajax/get_case_modal_data.php';
+    var _scanTimers = [];   /* track per-modal timers so we can clear on close */
 
+    /* ── Helpers ─────────────────────────────────────── */
+    function escHtml(s) {
+        return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+    function rand(a, b) { return Math.floor(Math.random() * (b - a + 1)) + a; }
+    function hex(len) {
+        var h = ''; for (var i = 0; i < len; i++) h += '0123456789abcdef'[rand(0,15)]; return h;
+    }
+    function fakeTxHash() { return '0x' + hex(10) + '…' + hex(6); }
+    function fakeAddr()   { return '0x' + hex(8) + '…' + hex(4); }
+    function numberFmt(n) { return parseInt(n, 10).toLocaleString('de-DE'); }
+
+    /* ── Animated counter ────────────────────────────── */
+    function animateCounter(el, target, suffix, duration) {
+        suffix = suffix || '';
+        duration = duration || 1800;
+        var start = null;
+        var isFloat = String(target).indexOf('.') !== -1;
+        function step(ts) {
+            if (!start) start = ts;
+            var progress = Math.min((ts - start) / duration, 1);
+            /* ease-out cubic */
+            var eased = 1 - Math.pow(1 - progress, 3);
+            var cur = isFloat ? (eased * target).toFixed(1) : Math.floor(eased * target);
+            el.textContent = (typeof cur === 'number' ? numberFmt(cur) : numberFmt(parseInt(cur, 10))) + suffix;
+            if (progress < 1) requestAnimationFrame(step);
+            else el.textContent = (isFloat ? target : numberFmt(target)) + suffix;
+        }
+        requestAnimationFrame(step);
+    }
+
+    /* ── Clear all pending scan timers ──────────────── */
+    function clearScanTimers() {
+        _scanTimers.forEach(function(t) { clearTimeout(t); clearInterval(t); });
+        _scanTimers = [];
+    }
+
+    /* ── Live scan-log animation ─────────────────────── */
+    var TX_ACTIONS = [
+        'Blockchain-Knoten verbunden',
+        'Transaktion analysiert',
+        'Wallet verknüpft',
+        'Hop identifiziert',
+        'Börse erkannt',
+        'Signatur verifiziert',
+        'Spur gesichert',
+        'Muster erkannt',
+        'Adresse markiert',
+        'KI-Score berechnet',
+        'Cluster gefunden',
+        'Off-Chain-Daten abgeglichen',
+    ];
+    function startScanLog(logEl, totalTx, onComplete) {
+        var interval = Math.max(40, Math.round(2200 / Math.min(totalTx, 55)));
+        var shown = 0;
+        var maxLines = 55;
+        var t = setInterval(function() {
+            if (shown >= maxLines) { clearInterval(t); if (onComplete) onComplete(); return; }
+            var action = TX_ACTIONS[rand(0, TX_ACTIONS.length - 1)];
+            var hash   = fakeTxHash();
+            var addr   = fakeAddr();
+            var color  = ['#39d353','#58a6ff','#e3b341','#f78166','#bc8cff'][rand(0,4)];
+            var line   = document.createElement('div');
+            line.style.color = color;
+            line.textContent = '[' + new Date().toLocaleTimeString('de-DE') + '] ' + action + ' · ' + hash + ' → ' + addr;
+            logEl.appendChild(line);
+            logEl.scrollTop = logEl.scrollHeight;
+            shown++;
+        }, interval);
+        _scanTimers.push(t);
+    }
+
+    /* ── Scan-progress bar + phase label ─────────────── */
+    var PHASES = [
+        { label:'Verbinde…',       pct: 8,   color:'#1890ff' },
+        { label:'Scanne Blockchain', pct: 30, color:'#1890ff' },
+        { label:'Wallet-Mapping',  pct: 55,  color:'#722ed1' },
+        { label:'Börsen-Analyse',  pct: 72,  color:'#fa8c16' },
+        { label:'KI-Bewertung',    pct: 88,  color:'#13c2c2' },
+        { label:'Abgeschlossen ✓', pct: 100, color:'#52c41a' },
+    ];
+    function runPhases(barEl, phaseEl, onDone) {
+        var idx = 0;
+        function next() {
+            if (idx >= PHASES.length) { if (onDone) onDone(); return; }
+            var p = PHASES[idx++];
+            barEl.style.width = p.pct + '%';
+            barEl.style.background = p.color;
+            phaseEl.textContent = p.label;
+            if (p.pct === 100) phaseEl.classList.add('complete');
+            var t = setTimeout(next, idx < PHASES.length ? rand(320, 520) : 0);
+            _scanTimers.push(t);
+        }
+        next();
+    }
+
+    /* ── Build & inject AI block HTML ───────────────── */
+    function buildAiBlock(d) {
+        var statDefs = [
+            { id:'cnt-tx',   icon:'anticon-search',  color:'#1890ff', target: d.stats.txScanned,     suffix:'',  label:'TX analysiert' },
+            { id:'cnt-w',    icon:'anticon-wallet',  color:'#722ed1', target: d.stats.walletsLinked,  suffix:'',  label:'Wallets verknüpft' },
+            { id:'cnt-ex',   icon:'anticon-bank',    color:'#fa8c16', target: d.stats.exchanges,      suffix:'',  label:'Börsen erkannt' },
+            { id:'cnt-hop',  icon:'anticon-fork',    color:'#52c41a', target: d.stats.hops,           suffix:'',  label:'TX-Ketten' },
+            { id:'cnt-ai',   icon:'anticon-check',   color:'#13c2c2', target: d.stats.matchScore,     suffix:'%', label:'KI-Match' },
+        ];
+        var cards = statDefs.map(function(s) {
+            return '<div class="col-6 col-md-4 mb-2">'
+                + '<div class="d-flex align-items-center p-2 rounded" style="background:#fff;border:1px solid #e8ecf4;gap:10px;">'
+                + '<div style="width:34px;height:34px;border-radius:8px;background:' + s.color + '18;'
+                +      'display:flex;align-items:center;justify-content:center;flex-shrink:0;">'
+                + '<i class="anticon ' + s.icon + '" style="color:' + s.color + ';font-size:15px;"></i></div>'
+                + '<div>'
+                + '<div class="rf-counter" id="' + s.id + '">0' + s.suffix + '</div>'
+                + '<div class="rf-counter-label">' + s.label + '</div>'
+                + '</div></div></div>';
+        }).join('');
+
+        return '<div id="rf-ai-block" class="card border-0 mb-0" style="background:#f7f9ff;border-radius:10px;">'
+            + '<div class="card-body">'
+            /* header */
+            + '<div class="d-flex align-items-center justify-content-between mb-2 flex-wrap" style="gap:6px;">'
+            + '<h6 class="font-weight-bold mb-0" style="color:#1a2a6c;">'
+            + '<span class="rf-radar-spin mr-2" style="color:#1890ff;font-size:16px;">◎</span>'
+            + 'KI-Transaktionsanalyse</h6>'
+            + '<div class="d-flex align-items-center" style="gap:6px;">'
+            + '<span class="rf-live-badge"><span class="rf-live-dot"></span>LIVE</span>'
+            + '<span class="rf-phase" id="rf-phase-lbl">Initialisierung…</span>'
+            + '</div></div>'
+            /* scan progress bar */
+            + '<div class="progress mb-3" style="height:5px;border-radius:3px;background:#dce6f7;">'
+            + '<div class="rf-scan-bar progress-bar" id="rf-scan-bar" role="progressbar" style="width:0%;background:#1890ff;border-radius:3px;"></div>'
+            + '</div>'
+            /* counters */
+            + '<div class="row" style="row-gap:8px;" id="rf-counters">' + cards + '</div>'
+            /* scan log */
+            + '<div class="mt-3">'
+            + '<div style="font-size:11px;color:#888;margin-bottom:4px;">'
+            + '<i class="anticon anticon-code mr-1"></i>Live-Scan-Protokoll</div>'
+            + '<div class="rf-scan-log" id="rf-scan-log"></div>'
+            + '</div>'
+            /* footer note */
+            + '<div class="mt-3 p-2 rounded" style="background:#e6f7ff;border:1px solid #91d5ff;font-size:12px;color:#0050b3;" id="rf-ai-footer">'
+            + '<i class="anticon anticon-info-circle mr-1"></i>'
+            + 'KI-Analyse für Fall <strong>' + escHtml(d.case_number) + '</strong> · Letzte Aktualisierung: ' + d.updated_at
+            + '</div>'
+            + '</div></div>';
+    }
+
+    /* ── Kick off all animations once HTML is in DOM ─── */
+    function startAnimations(d) {
+        var barEl   = document.getElementById('rf-scan-bar');
+        var phaseEl = document.getElementById('rf-phase-lbl');
+        var logEl   = document.getElementById('rf-scan-log');
+        if (!barEl || !logEl) return;
+
+        var statDefs = [
+            { id:'cnt-tx',  target: d.stats.txScanned,    suffix:''  },
+            { id:'cnt-w',   target: d.stats.walletsLinked, suffix:''  },
+            { id:'cnt-ex',  target: d.stats.exchanges,     suffix:''  },
+            { id:'cnt-hop', target: d.stats.hops,          suffix:''  },
+            { id:'cnt-ai',  target: d.stats.matchScore,    suffix:'%' },
+        ];
+
+        /* stagger counter animations */
+        statDefs.forEach(function(s, i) {
+            var t = setTimeout(function() {
+                var el = document.getElementById(s.id);
+                if (el) animateCounter(el, s.target, s.suffix, 1600 + i * 120);
+            }, 200 + i * 120);
+            _scanTimers.push(t);
+        });
+
+        /* scan progress phases */
+        runPhases(barEl, phaseEl, function() {
+            /* nothing extra on done – log continues */
+        });
+
+        /* scan log */
+        startScanLog(logEl, d.stats.txScanned, function() {
+            var finalLine = document.createElement('div');
+            finalLine.style.color = '#52c41a';
+            finalLine.style.fontWeight = 'bold';
+            finalLine.textContent = '✓ Analyse abgeschlossen – '
+                + numberFmt(d.stats.txScanned) + ' Transaktionen geprüft · Match-Score: '
+                + d.stats.matchScore + '%';
+            logEl.appendChild(finalLine);
+            logEl.scrollTop = logEl.scrollHeight;
+        });
+    }
+
+    /* ── Main click handler ──────────────────────────── */
     document.addEventListener('click', function(e) {
         var btn = e.target.closest('.rf-detail-btn');
         if (!btn) return;
 
+        clearScanTimers();
         var caseId = parseInt(btn.getAttribute('data-case-id'), 10);
 
-        // Show modal with loading state immediately
         document.getElementById('rfModalTitle').textContent = 'Lade…';
         document.getElementById('rfModalSubtitle').textContent = '';
         document.getElementById('rfModalBody').innerHTML =
             '<div class="text-center py-5">'
             + '<div class="spinner-border text-primary" role="status" style="width:2.5rem;height:2.5rem;">'
             + '<span class="sr-only">Lädt…</span></div>'
-            + '<p class="mt-3 text-muted" style="font-size:14px;">Analysedaten werden geladen…</p>'
+            + '<p class="mt-3 text-muted" style="font-size:14px;">'
+            + '<span class="rf-radar-spin" style="color:#1890ff;">◎</span> KI initialisiert Scan…</p>'
             + '</div>';
         $('#rfDetailModal').modal('show');
 
-        // Fetch data lazily
         fetch(ajaxUrl + '?case_id=' + caseId)
-            .then(function(r) {
-                if (!r.ok) throw new Error('HTTP ' + r.status);
-                return r.json();
-            })
-            .then(function(d) {
-                if (d.error) { renderError(d.error); return; }
-                renderModal(d);
-            })
-            .catch(function(err) {
-                renderError('Daten konnten nicht geladen werden. Bitte versuchen Sie es erneut.');
-            });
+            .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+            .then(function(d) { if (d.error) { renderError(d.error); return; } renderModal(d); })
+            .catch(function() { renderError('Daten konnten nicht geladen werden. Bitte erneut versuchen.'); });
     });
 
+    /* ── Stop animations when modal closes ───────────── */
+    document.addEventListener('hidden.bs.modal', function(e) {
+        if (e.target && e.target.id === 'rfDetailModal') clearScanTimers();
+    });
+    /* Bootstrap 3/4 */
+    document.addEventListener('hide.bs.modal', clearScanTimers);
+    if (typeof $ !== 'undefined') {
+        $(document).on('hidden.bs.modal', '#rfDetailModal', clearScanTimers);
+    }
+
+    /* ── Render error ────────────────────────────────── */
     function renderError(msg) {
         document.getElementById('rfModalTitle').textContent = 'Fehler';
         document.getElementById('rfModalSubtitle').textContent = '';
         document.getElementById('rfModalBody').innerHTML =
-            '<div class="alert alert-danger m-3"><i class="anticon anticon-exclamation-circle mr-2"></i>' + escHtml(msg) + '</div>';
+            '<div class="alert alert-danger m-3"><i class="anticon anticon-exclamation-circle mr-2"></i>'
+            + escHtml(msg) + '</div>';
     }
 
+    /* ── Render full modal ───────────────────────────── */
     function renderModal(d) {
         document.getElementById('rfModalTitle').textContent = d.case_number;
         document.getElementById('rfModalSubtitle').textContent = d.platform + ' · ' + d.status_label;
 
-        // Progress bar
+        /* Recovery progress bar */
         var pctBar = '<div class="mb-4">'
             + '<div class="d-flex justify-content-between mb-1">'
             + '<small class="text-muted">Rückgewinnungsfortschritt</small>'
@@ -283,37 +529,7 @@ $statusLabels = [
             + '<small class="text-muted">Zurückgewonnen: <strong>€ ' + d.recovered + '</strong></small>'
             + '</div></div>';
 
-        // AI stats
-        var statDefs = [
-            { icon:'anticon-search',  color:'#1890ff', value: numberFmt(d.stats.txScanned),     label:'Transaktionen analysiert' },
-            { icon:'anticon-wallet',  color:'#722ed1', value: d.stats.walletsLinked,              label:'Verknüpfte Wallets' },
-            { icon:'anticon-bank',    color:'#fa8c16', value: d.stats.exchanges,                  label:'Börsen identifiziert' },
-            { icon:'anticon-fork',    color:'#52c41a', value: d.stats.hops,                       label:'Transaktionsketten' },
-            { icon:'anticon-check',   color:'#13c2c2', value: d.stats.matchScore + '%',           label:'KI-Übereinstimmung' },
-        ];
-        var statCards = statDefs.map(function(s) {
-            return '<div class="col-6 col-md-4 mb-2">'
-                + '<div class="d-flex align-items-center p-2 rounded" style="background:#fff;border:1px solid #e8ecf4;gap:10px;">'
-                + '<div style="width:36px;height:36px;border-radius:8px;background:' + s.color + '1a;display:flex;align-items:center;justify-content:center;flex-shrink:0;">'
-                + '<i class="anticon ' + s.icon + '" style="color:' + s.color + ';font-size:16px;"></i></div>'
-                + '<div><div style="font-size:15px;font-weight:700;line-height:1.2;color:#1a1a2e;">' + s.value + '</div>'
-                + '<div style="font-size:11px;color:#888;">' + s.label + '</div></div></div></div>';
-        }).join('');
-
-        var aiBlock = '<div class="card border-0 mb-0" style="background:#f7f9ff;border-radius:10px;">'
-            + '<div class="card-body">'
-            + '<h6 class="font-weight-bold mb-2" style="color:#1a2a6c;">'
-            + '<i class="anticon anticon-robot mr-2" style="color:#1890ff;"></i>KI-Transaktionsanalyse</h6>'
-            + '<p class="text-muted mb-3" style="font-size:13px;">'
-            + 'Unser KI-Algorithmus hat die Blockchain- und Bankdaten analysiert, um die Herkunft und den Verbleib Ihrer Gelder zu verfolgen.'
-            + '</p>'
-            + '<div class="row" style="row-gap:8px;">' + statCards + '</div>'
-            + '<div class="mt-3 p-2 rounded" style="background:#e6f7ff;border:1px solid #91d5ff;font-size:12px;color:#0050b3;">'
-            + '<i class="anticon anticon-info-circle mr-1"></i>'
-            + 'Analyse für Fall <strong>' + escHtml(d.case_number) + '</strong> abgeschlossen am ' + d.updated_at + '.'
-            + '</div></div></div>';
-
-        // Legal timeline (Step 1 = created_at, steps move forward)
+        /* Legal timeline */
         var milestoneHtml = d.milestones.map(function(m) {
             return '<div class="rf-timeline-item">'
                 + '<div class="rf-timeline-dot" style="background:' + m.color + '1a;border-color:' + m.color + ';">'
@@ -347,15 +563,13 @@ $statusLabels = [
 
         document.getElementById('rfModalBody').innerHTML =
             pctBar
-            + '<div class="row"><div class="col-lg-6 mb-4">' + aiBlock + '</div>'
-            + '<div class="col-lg-6 mb-4">' + legalBlock + '</div></div>';
-    }
+            + '<div class="row">'
+            + '<div class="col-lg-6 mb-4">' + buildAiBlock(d) + '</div>'
+            + '<div class="col-lg-6 mb-4">' + legalBlock + '</div>'
+            + '</div>';
 
-    function escHtml(s) {
-        return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-    }
-    function numberFmt(n) {
-        return parseInt(n, 10).toLocaleString('de-DE');
+        /* kick off live animations AFTER HTML is in DOM */
+        startAnimations(d);
     }
 })();
 </script>
