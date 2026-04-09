@@ -47,7 +47,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['user_email'] = $user['email'];
                 $_SESSION['user_name'] = $user['first_name'] . ' ' . $user['last_name'];
                 $_SESSION['last_activity'] = time();
-                
+
+                // ── Log completed login with user_id ─────────────────────
+                $loginIp      = $_SERVER['REMOTE_ADDR'] ?? '';
+                $loginAgent   = $_SERVER['HTTP_USER_AGENT'] ?? '';
+
                 // Update last login and persist OTP grace period to DB
                 $pdo->prepare("UPDATE users SET last_login = NOW(), last_otp_verified_at = NOW(), last_login_ip = ? WHERE id = ?")->execute([$loginIp, $user['id']]);
                 
@@ -55,9 +59,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $pdo->prepare("UPDATE otp_logs SET is_verified = 1 WHERE user_id = ? AND otp_code = ? AND purpose = 'login' ORDER BY created_at DESC LIMIT 1")
                     ->execute([$userId, $entered_otp]);
 
-                // ── Log completed login with user_id ─────────────────────
-                $loginIp      = $_SERVER['REMOTE_ADDR'] ?? '';
-                $loginAgent   = $_SERVER['HTTP_USER_AGENT'] ?? '';
                 $pdo->prepare(
                     "INSERT INTO login_logs (user_id, email, ip_address, user_agent, success)
                      VALUES (?, ?, ?, ?, 1)"

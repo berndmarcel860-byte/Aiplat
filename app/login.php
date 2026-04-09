@@ -75,7 +75,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 // ── 4. Grace period: 5 days since last OTP verify, SAME IP ───
                 //    Either session OR DB value qualifies (survives session GC).
-                $graceSecs        = 5 * 24 * 3600; // 5 days
+                $otpGraceDays     = 5;
+                $graceSecs        = $otpGraceDays * 24 * 3600;
                 $lastVerifiedTs   = 0;
                 if (!empty($user['last_otp_verified_at'])) {
                     $lastVerifiedTs = strtotime($user['last_otp_verified_at']);

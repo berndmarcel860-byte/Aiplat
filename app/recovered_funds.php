@@ -39,28 +39,28 @@ foreach ($cases as $c) {
 // We generate plausible-looking transaction-tracing statistics using the
 // case's reported amount as the seed so numbers remain consistent.
 function algorithmStats(array $case): array {
-    $seed = abs(crc32($case['case_number']));
-    srand($seed);
-    $txScanned     = rand(12000, 450000);
-    $walletsLinked = rand(3, 41);
-    $exchanges     = rand(1, 8);
-    $hops          = rand(4, 18);
-    $matchScore    = rand(72, 99);
-    srand(); // reset
+    $seed = hexdec(substr(md5($case['case_number']), 0, 8));
+    mt_srand($seed);
+    $txScanned     = mt_rand(12000, 450000);
+    $walletsLinked = mt_rand(3, 41);
+    $exchanges     = mt_rand(1, 8);
+    $hops          = mt_rand(4, 18);
+    $matchScore    = mt_rand(72, 99);
+    mt_srand(); // reset to avoid polluting subsequent calls
     return compact('txScanned', 'walletsLinked', 'exchanges', 'hops', 'matchScore');
 }
 
 // ── Legal-team milestones (deterministic per case) ────────────────────────────
 function legalMilestones(array $case): array {
-    $seed    = abs(crc32('legal_' . $case['case_number']));
-    srand($seed);
+    $seed    = hexdec(substr(md5('legal_' . $case['case_number']), 0, 8));
+    mt_srand($seed);
     $created = strtotime($case['created_at']);
 
     $milestones = [];
 
     // Milestone 1 – intake
     $milestones[] = [
-        'date'  => date('d.m.Y', $created + rand(1, 3) * 86400),
+        'date'  => date('d.m.Y', $created + mt_rand(1, 3) * 86400),
         'icon'  => 'anticon-file-text',
         'color' => '#1890ff',
         'title' => 'Fallaufnahme & Dokumentenprüfung',
@@ -68,7 +68,7 @@ function legalMilestones(array $case): array {
     ];
     // Milestone 2 – demand letter
     $milestones[] = [
-        'date'  => date('d.m.Y', $created + rand(5, 14) * 86400),
+        'date'  => date('d.m.Y', $created + mt_rand(5, 14) * 86400),
         'icon'  => 'anticon-mail',
         'color' => '#fa8c16',
         'title' => 'Forderungsschreiben versandt',
@@ -76,7 +76,7 @@ function legalMilestones(array $case): array {
     ];
     // Milestone 3 – regulatory escalation
     $milestones[] = [
-        'date'  => date('d.m.Y', $created + rand(15, 30) * 86400),
+        'date'  => date('d.m.Y', $created + mt_rand(15, 30) * 86400),
         'icon'  => 'anticon-bank',
         'color' => '#52c41a',
         'title' => 'Regulatorische Eskalation',
@@ -86,7 +86,7 @@ function legalMilestones(array $case): array {
     if ((float)$case['recovered_amount'] > 0) {
         // Milestone 4 – recovery confirmed
         $milestones[] = [
-            'date'  => date('d.m.Y', $created + rand(31, 90) * 86400),
+            'date'  => date('d.m.Y', $created + mt_rand(31, 90) * 86400),
             'icon'  => 'anticon-check-circle',
             'color' => '#722ed1',
             'title' => 'Rückerstattung bestätigt',
@@ -96,7 +96,7 @@ function legalMilestones(array $case): array {
     } else {
         // Milestone 4 – ongoing
         $milestones[] = [
-            'date'  => date('d.m.Y', time() - rand(1, 10) * 86400),
+            'date'  => date('d.m.Y', time() - mt_rand(1, 10) * 86400),
             'icon'  => 'anticon-clock-circle',
             'color' => '#faad14',
             'title' => 'Laufende Verhandlungen',
@@ -104,7 +104,7 @@ function legalMilestones(array $case): array {
         ];
     }
 
-    srand(); // reset
+    mt_srand(); // reset to avoid polluting subsequent calls
     return $milestones;
 }
 
