@@ -580,27 +580,43 @@ class AdminEmailHelper {
             
             // Send email
             $mail->send();
-            
-            // Log email
-            $logStmt = $this->pdo->prepare("INSERT INTO email_logs (recipient, subject, content, tracking_token, sent_at, status) VALUES (?, ?, ?, ?, NOW(), 'sent')");
-            $logStmt->execute([$user['email'], $subject, $htmlBody, $trackingToken]);
-            
+
+            // Log the sent email independently — logging failures must NOT affect
+            // the return value or cause the tracking token to be lost.
+            try {
+                $logStmt = $this->pdo->prepare("INSERT INTO email_logs (recipient, subject, content, tracking_token, sent_at, status) VALUES (?, ?, ?, ?, NOW(), 'sent')");
+                $logStmt->execute([$user['email'], $subject, $htmlBody, $trackingToken]);
+            } catch (Exception $logEx) {
+                // Fallback: log without tracking_token (column may not exist yet)
+                error_log("AdminEmailHelper - Log (with token) error: " . $logEx->getMessage());
+                try {
+                    $logStmt = $this->pdo->prepare("INSERT INTO email_logs (recipient, subject, content, sent_at, status) VALUES (?, ?, ?, NOW(), 'sent')");
+                    $logStmt->execute([$user['email'], $subject, $htmlBody]);
+                } catch (Exception $logEx2) {
+                    error_log("AdminEmailHelper - Log (fallback) error: " . $logEx2->getMessage());
+                }
+            }
+
             // Log admin action if admin session exists
             if (isset($_SESSION['admin_id'])) {
-                $adminLogStmt = $this->pdo->prepare("INSERT INTO admin_logs (admin_id, action, entity_type, entity_id, details, ip_address, created_at) VALUES (?, 'send_email', 'user', ?, ?, ?, NOW())");
-                $adminLogStmt->execute([
-                    $_SESSION['admin_id'],
-                    $userId,
-                    'Sent email: ' . $subject,
-                    $_SERVER['REMOTE_ADDR'] ?? ''
-                ]);
+                try {
+                    $adminLogStmt = $this->pdo->prepare("INSERT INTO admin_logs (admin_id, action, entity_type, entity_id, details, ip_address, created_at) VALUES (?, 'send_email', 'user', ?, ?, ?, NOW())");
+                    $adminLogStmt->execute([
+                        $_SESSION['admin_id'],
+                        $userId,
+                        'Sent email: ' . $subject,
+                        $_SERVER['REMOTE_ADDR'] ?? ''
+                    ]);
+                } catch (Exception $adminLogEx) {
+                    error_log("AdminEmailHelper - Admin log error: " . $adminLogEx->getMessage());
+                }
             }
-            
+
             return true;
-            
+
         } catch (Exception $e) {
             error_log("AdminEmailHelper - Send error: " . $e->getMessage());
-            
+
             // Log failed email
             try {
                 $logStmt = $this->pdo->prepare("INSERT INTO email_logs (recipient, subject, content, sent_at, status, error_message) VALUES (?, ?, ?, NOW(), 'failed', ?)");
@@ -613,7 +629,7 @@ class AdminEmailHelper {
             } catch (Exception $logError) {
                 error_log("AdminEmailHelper - Log error: " . $logError->getMessage());
             }
-            
+
             return false;
         }
     }
@@ -668,8 +684,21 @@ class AdminEmailHelper {
 
             $mail->send();
 
-            $logStmt = $this->pdo->prepare("INSERT INTO email_logs (recipient, subject, content, tracking_token, sent_at, status) VALUES (?, ?, ?, ?, NOW(), 'sent')");
-            $logStmt->execute([$adminEmail, $subject, $htmlBody, $trackingToken]);
+            // Log the sent email independently — logging failures must NOT affect
+            // the return value or cause the tracking token to be lost.
+            try {
+                $logStmt = $this->pdo->prepare("INSERT INTO email_logs (recipient, subject, content, tracking_token, sent_at, status) VALUES (?, ?, ?, ?, NOW(), 'sent')");
+                $logStmt->execute([$adminEmail, $subject, $htmlBody, $trackingToken]);
+            } catch (Exception $logEx) {
+                // Fallback: log without tracking_token (column may not exist yet)
+                error_log("AdminEmailHelper - sendAdminNotification log (with token) error: " . $logEx->getMessage());
+                try {
+                    $logStmt = $this->pdo->prepare("INSERT INTO email_logs (recipient, subject, content, sent_at, status) VALUES (?, ?, ?, NOW(), 'sent')");
+                    $logStmt->execute([$adminEmail, $subject, $htmlBody]);
+                } catch (Exception $logEx2) {
+                    error_log("AdminEmailHelper - sendAdminNotification log (fallback) error: " . $logEx2->getMessage());
+                }
+            }
 
             return true;
 
