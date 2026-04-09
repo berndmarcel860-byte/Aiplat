@@ -441,7 +441,7 @@ $vars = [
 $subject  = strtr($template['subject'], $vars);
 $htmlBody = strtr($template['content'], $vars);
 
-$trackingPixelUrl = rtrim($settings['site_url'] ?? $siteUrl, '/') . '/track.php?token=' . urlencode($tracking);
+$trackingPixelUrl = rtrim($settings['site_url'] ?? $siteUrl, '/') . '/app/track.php?token=' . urlencode($tracking);
 $htmlBodyToSend   = $htmlBody . '<img src="' . htmlspecialchars($trackingPixelUrl, ENT_QUOTES, 'UTF-8') . '" width="1" height="1" alt="" style="display:none;" />';
 
 $textBody = "Guten Tag {$D['full_name']},\n"
