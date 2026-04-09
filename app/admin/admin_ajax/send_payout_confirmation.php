@@ -2,23 +2,13 @@
 // admin_ajax/send_payout_confirmation.php
 declare(strict_types=1);
 
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\Exception;
-use setasign\Fpdi\FpdfTpl as FPDF;
-
 ini_set('display_errors', 0);
 error_reporting(E_ALL);
 
-/* ---------- Autoload & App Includes ---------- */
-$phpMailerAvailable = false;
-$autoloadPath = __DIR__ . '/../../vendor/autoload.php';
-if (file_exists($autoloadPath)) {
-    require_once $autoloadPath;
-    $phpMailerAvailable = class_exists(PHPMailer::class);
-}
-
+/* ---------- App Includes ---------- */
 require_once '../admin_session.php';
 require_once '../../config.php'; // provides $pdo
+require_once __DIR__ . '/../../../mailer/SmtpClient.php';
 
 header('Content-Type: application/json');
 
@@ -454,62 +444,39 @@ $textBody = "Guten Tag {$D['full_name']},\n"
 
 
     $smtp = $pdo->query("SELECT * FROM smtp_settings WHERE is_active = 1 LIMIT 1")->fetch(PDO::FETCH_ASSOC);
-    if (!$smtp && !$phpMailerAvailable) {
-        throw new RuntimeException('Keine SMTP-Konfiguration und kein PHPMailer verfügbar.');
+    if (!$smtp) {
+        throw new RuntimeException('Keine SMTP-Konfiguration verfügbar.');
     }
 
     $sent = false; $err = null;
     $reply = $settings['contact_email'] ?? ('no-reply@'.parse_url($siteUrl, PHP_URL_HOST));
 
-    if ($phpMailerAvailable) {
-        try {
-            $mail = new PHPMailer(true);
-$mail->CharSet  = 'UTF-8';   // ensure UTF-8 headers (Subject) and body
-$mail->Encoding = 'base64';  // safe transfer encoding for UTF-8
+    try {
+        $fromEmail = $smtp['from_email'] ?? ('no-reply@' . parse_url($siteUrl, PHP_URL_HOST));
+        $fromName  = $smtp['from_name']  ?? ($settings['brand_name'] ?? 'ScamRecovery');
 
-            $mail->isSMTP();
-            $mail->Host       = $smtp['host'] ?? '';
-            $mail->SMTPAuth   = true;
-            $mail->Username   = $smtp['username'] ?? '';
-            $mail->Password   = $smtp['password'] ?? '';
-            $enc              = strtolower((string)($smtp['encryption'] ?? 'tls'));
-            $mail->SMTPSecure = ($enc === 'ssl') ? PHPMailer::ENCRYPTION_SMTPS : PHPMailer::ENCRYPTION_STARTTLS;
-            $mail->Port       = (int)($smtp['port'] ?? 587);
+        $smtpClient = new SmtpClient([
+            'host'       => $smtp['host'] ?? '',
+            'port'       => (int)($smtp['port'] ?? 587),
+            'username'   => $smtp['username'] ?? '',
+            'password'   => $smtp['password'] ?? '',
+            'from_email' => $fromEmail,
+            'from_name'  => $fromName,
+            'encryption' => strtolower((string)($smtp['encryption'] ?? 'tls')),
+        ]);
 
-            $fromEmail = $smtp['from_email'] ?? ('no-reply@' . parse_url($siteUrl, PHP_URL_HOST));
-            $fromName  = $smtp['from_name']  ?? ($settings['brand_name'] ?? 'ScamRecovery');
-            $mail->setFrom($fromEmail, $fromName);
-            $mail->addReplyTo($reply, $fromName);
-
-            $mail->addAddress($emailTo, $fullName);
-
-            $mail->isHTML(true);
-            $mail->Subject = $subject;
-            $mail->Body    = $htmlBodyToSend;
-            $mail->AltBody = $textBody;
-
-            $mail->addAttachment($absPath, $fileName);
-            $sent = $mail->send();
-        } catch (\Throwable $e) { $err = $e->getMessage(); }
-    } else {
-        // mail() fallback
-        $boundary = md5(uniqid());
-        $headers  = "From: " . ($reply) . "\r\n";
-        $headers .= "MIME-Version: 1.0\r\n";
-        $headers .= "Content-Type: multipart/mixed; boundary=\"$boundary\"\r\n";
-
-        $body  = "--$boundary\r\n";
-        $body .= "Content-Type: text/html; charset=UTF-8\r\n\r\n";
-        $body .= $htmlBodyToSend . "\r\n";
-        $body .= "--$boundary\r\n";
-        $body .= "Content-Type: application/pdf; name=\"$fileName\"\r\n";
-        $body .= "Content-Transfer-Encoding: base64\r\n";
-        $body .= "Content-Disposition: attachment; filename=\"$fileName\"\r\n\r\n";
-        $body .= chunk_split(base64_encode(file_get_contents($absPath))) . "\r\n";
-        $body .= "--$boundary--";
-        $sent = @mail($emailTo, $subject, $body, $headers);
-        if (!$sent) $err = 'mail() returned false';
-    }
+        $smtpClient->connect();
+        $sent = $smtpClient->send(
+            $emailTo,
+            $fullName,
+            $subject,
+            $htmlBodyToSend,
+            $textBody,
+            $reply,
+            [['path' => $absPath, 'name' => $fileName, 'mime' => 'application/pdf']]
+        );
+        $smtpClient->quit();
+    } catch (\Throwable $e) { $err = $e->getMessage(); }
 
     if ($sent) {
         $pdo->prepare("UPDATE payout_confirmation_logs SET status='sent', sent_at=NOW() WHERE id=?")

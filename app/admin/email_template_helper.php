@@ -9,51 +9,20 @@
  *   $helper->sendTemplateEmail('user@example.com', 'inactive_user_reminder', ['first_name' => 'John']);
  */
 
+require_once __DIR__ . '/../../mailer/SmtpClient.php';
+
 class EmailTemplateHelper {
     private $pdo;
     private $defaultFromEmail = 'noreply@fundtracerai.com';
     private $defaultFromName = 'FundTracer AI';
     private $smtpSettings = null;
-    private $phpMailerLoaded = false;
     private $systemSettings = null;
     private $siteUrl = '';
     
     public function __construct($pdo) {
         $this->pdo = $pdo;
-        $this->loadPHPMailer();
         $this->loadSMTPSettings();
         $this->loadSystemSettings();
-    }
-    
-    /**
-     * Load PHPMailer library
-     */
-    private function loadPHPMailer() {
-        if (class_exists('PHPMailer\PHPMailer\PHPMailer')) {
-            $this->phpMailerLoaded = true;
-            return;
-        }
-        
-        $vendorPaths = [
-            $_SERVER['DOCUMENT_ROOT'] . '/app/vendor/autoload.php',
-            __DIR__ . '/../vendor/autoload.php',
-            __DIR__ . '/../../vendor/autoload.php',
-            dirname(__DIR__) . '/vendor/autoload.php'
-        ];
-        
-        foreach ($vendorPaths as $path) {
-            if (file_exists($path)) {
-                require_once $path;
-                if (class_exists('PHPMailer\PHPMailer\PHPMailer')) {
-                    $this->phpMailerLoaded = true;
-                    break;
-                }
-            }
-        }
-        
-        if (!$this->phpMailerLoaded) {
-            error_log("PHPMailer not found. Emails will use PHP mail() function.");
-        }
     }
     
     /**
@@ -434,10 +403,9 @@ class EmailTemplateHelper {
         // Attempt to send — capture any error message for the log (mirrors AdminEmailHelper)
         $sendError = null;
         try {
-            if ($this->phpMailerLoaded && $this->smtpSettings) {
+            if ($this->smtpSettings) {
                 $success = $this->sendViaSMTP($to, $rendered['subject'], $htmlWithPixel, $rendered['plain_content'], $fromEmail, $fromName);
             } else {
-                // Fallback to PHP mail() function
                 $success = $this->sendViaMailFunction($to, $rendered['subject'], $htmlWithPixel, $fromEmail, $fromName);
                 if (!$success) {
                     throw new \Exception('PHP mail() function returned false');
@@ -465,40 +433,24 @@ class EmailTemplateHelper {
     }
     
     /**
-     * Send email via SMTP using PHPMailer
-     * 
-     * @param string $to Recipient email
-     * @param string $subject Email subject
-     * @param string $htmlContent HTML content
-     * @param string $plainContent Plain text content
-     * @param string $fromEmail From email address
-     * @param string $fromName From name
-     * @return bool True on success, false on failure
+     * Send email via SMTP using SmtpClient
      */
     private function sendViaSMTP($to, $subject, $htmlContent, $plainContent, $fromEmail, $fromName) {
-        $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
+        $s = $this->smtpSettings;
+        $client = new SmtpClient([
+            'host'       => $s['host'],
+            'port'       => (int)($s['port'] ?? 587),
+            'username'   => $s['username'],
+            'password'   => $s['password'],
+            'from_email' => $fromEmail ?: ($s['from_email'] ?? $s['username']),
+            'from_name'  => $fromName  ?: ($s['from_name'] ?? $this->defaultFromName),
+            'encryption' => $s['encryption'] ?? 'tls',
+        ]);
 
-        // SMTP configuration
-        $mail->isSMTP();
-        $mail->Host = $this->smtpSettings['host'];
-        $mail->SMTPAuth = true;
-        $mail->Username = $this->smtpSettings['username'];
-        $mail->Password = $this->smtpSettings['password'];
-        $mail->SMTPSecure = $this->smtpSettings['encryption'] ?? 'tls';
-        $mail->Port = $this->smtpSettings['port'] ?? 587;
-        $mail->CharSet = 'UTF-8';
-
-        // Email details
-        $mail->setFrom($fromEmail, $fromName);
-        $mail->addAddress($to);
-        $mail->isHTML(true);
-        $mail->Subject = $subject;
-        $mail->Body = $htmlContent;
-        $mail->AltBody = $plainContent;
-
-        // Send email — let PHPMailer\Exception propagate so the caller can log it
-        $mail->send();
-        return true;
+        $client->connect();
+        $ok = $client->send($to, '', $subject, $htmlContent, $plainContent);
+        $client->quit();
+        return $ok;
     }
     
     /**

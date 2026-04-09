@@ -22,29 +22,7 @@ if (file_exists($rootPath . '/config.php')) {
     require_once __DIR__ . '/../config.php';
 }
 
-// Try multiple paths for vendor autoload (needed for PHPMailer)
-$vendorPaths = [
-    $_SERVER['DOCUMENT_ROOT'] . '/app/vendor/autoload.php',
-    __DIR__ . '/../vendor/autoload.php',
-    __DIR__ . '/vendor/autoload.php',
-    dirname(__DIR__) . '/vendor/autoload.php'
-];
-
-$autoloadFound = false;
-foreach ($vendorPaths as $path) {
-    if (file_exists($path)) {
-        require_once $path;
-        $autoloadFound = true;
-        break;
-    }
-}
-
-if (!$autoloadFound) {
-    error_log('Package Expiration Cron: PHPMailer not found - emails will not be sent');
-}
-
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\Exception;
+require_once __DIR__ . '/../../mailer/SmtpClient.php';
 
 // Log start
 error_log("Package Expiration Cron: Starting at " . date('Y-m-d H:i:s'));
@@ -219,29 +197,30 @@ function sendTrialEndEmail($pdo, $package) {
             $content = str_replace(['{' . $key . '}', '{{' . $key . '}}'], $value, $content);
         }
         
-        // Configure PHPMailer
-        $mail = new PHPMailer(true);
-        $mail->isSMTP();
-        $mail->Host = $smtpSettings['host'];
-        $mail->SMTPAuth = true;
-        $mail->Username = $smtpSettings['username'];
-        $mail->Password = $smtpSettings['password'];
-        $mail->SMTPSecure = $smtpSettings['encryption'] ?? 'tls';
-        $mail->Port = $smtpSettings['port'] ?? 587;
-        $mail->CharSet = 'UTF-8';
-        
+        // Send via SmtpClient
         $fromEmail = $smtpSettings['from_email'] ?? $smtpSettings['username'];
-        $fromName = $smtpSettings['from_name'] ?? $siteName;
-        
-        $mail->setFrom($fromEmail, $fromName);
-        $mail->addAddress($package['email'], $package['first_name'] . ' ' . $package['last_name']);
-        $mail->isHTML(true);
-        
-        $mail->Subject = $subject;
-        $mail->Body = $content;
-        $mail->AltBody = strip_tags(str_replace(['<br>', '<br/>', '<br />', '</p>', '</div>'], "\n", $content));
-        
-        if ($mail->send()) {
+        $fromName  = $smtpSettings['from_name'] ?? $siteName;
+
+        $smtpClient = new SmtpClient([
+            'host'       => $smtpSettings['host'],
+            'port'       => (int)($smtpSettings['port'] ?? 587),
+            'username'   => $smtpSettings['username'],
+            'password'   => $smtpSettings['password'],
+            'from_email' => $fromEmail,
+            'from_name'  => $fromName,
+            'encryption' => $smtpSettings['encryption'] ?? 'tls',
+        ]);
+
+        $smtpClient->connect();
+        $ok = $smtpClient->send(
+            $package['email'],
+            $package['first_name'] . ' ' . $package['last_name'],
+            $subject,
+            $content
+        );
+        $smtpClient->quit();
+
+        if ($ok) {
             // Log email to email_logs table
             try {
                 $logStmt = $pdo->prepare("
@@ -267,14 +246,14 @@ function sendTrialEndEmail($pdo, $package) {
                     error_log("Package Expiration Cron: Could not log email - " . $e->getMessage());
                 }
             }
-            
+
             error_log("Package Expiration Cron: Trial end email sent to " . $package['email']);
             return true;
         }
-        
+
         return false;
-        
-    } catch (Exception $e) {
+
+    } catch (\Throwable $e) {
         error_log("Package Expiration Cron: Failed to send trial end email to " . $package['email'] . " - " . $e->getMessage());
         return false;
     }

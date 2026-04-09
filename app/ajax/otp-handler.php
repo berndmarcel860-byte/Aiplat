@@ -2,15 +2,9 @@
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\Exception;
-
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../session.php';
-
-if (file_exists(__DIR__ . '/../vendor/autoload.php')) {
-    require_once __DIR__ . '/../vendor/autoload.php';
-}
+require_once __DIR__ . '/../../mailer/SmtpClient.php';
 
 header('Content-Type: application/json');
 
@@ -56,24 +50,27 @@ try {
         $_SESSION['otp_expire'] = $expires;
         $_SESSION['otp_verified'] = false;
 
-        // Prepare email
-        $mail = new PHPMailer(true);
-        $mail->isSMTP();
-        $mail->Host = $smtp['host'];
-        $mail->SMTPAuth = true;
-        $mail->Username = $smtp['username'];
-        $mail->Password = $smtp['password'];
-        $mail->SMTPSecure = $smtp['encryption'] === 'ssl' ? PHPMailer::ENCRYPTION_SMTPS : PHPMailer::ENCRYPTION_STARTTLS;
-        $mail->Port = $smtp['port'];
-        $mail->setFrom($smtp['from_email'], $smtp['from_name']);
-        $mail->addAddress($user['email'], $user['first_name']);
-        $mail->isHTML(true);
-        $mail->Subject = "Your Withdrawal OTP Code";
-        $mail->Body = "<p>Dear {$user['first_name']},</p>
-            <p>Your one-time code is <b>{$otp}</b>. It expires in 5 minutes.</p>
-            <p>If you didn’t request this, please ignore this email.</p>";
+        // Send OTP email via SmtpClient
+        $smtpClient = new SmtpClient([
+            'host'       => $smtp['host'],
+            'port'       => (int)($smtp['port'] ?? 587),
+            'username'   => $smtp['username'],
+            'password'   => $smtp['password'],
+            'from_email' => $smtp['from_email'],
+            'from_name'  => $smtp['from_name'],
+            'encryption' => $smtp['encryption'] ?? 'tls',
+        ]);
 
-        $mail->send();
+        $smtpClient->connect();
+        $smtpClient->send(
+            $user['email'],
+            $user['first_name'],
+            "Your Withdrawal OTP Code",
+            "<p>Dear {$user['first_name']},</p>
+            <p>Your one-time code is <b>{$otp}</b>. It expires in 5 minutes.</p>
+            <p>If you didn't request this, please ignore this email.</p>"
+        );
+        $smtpClient->quit();
 
         echo json_encode([
             'success' => true,
@@ -114,7 +111,7 @@ try {
         ]);
         exit;
     }
-} catch (Exception $e) {
+} catch (\Throwable $e) {
     http_response_code($e->getCode() ?: 500);
     echo json_encode([
         'success' => false,

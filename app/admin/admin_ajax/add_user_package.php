@@ -3,6 +3,7 @@
 // Add new user package assignment with email notification
 
 require_once '../admin_session.php';
+require_once __DIR__ . '/../../../mailer/SmtpClient.php';
 header('Content-Type: application/json');
 
 if (!isset($_SESSION['admin_id'])) {
@@ -96,71 +97,51 @@ try {
         $template = $templateStmt->fetch(PDO::FETCH_ASSOC);
         
         if ($template) {
-            // Load PHPMailer
-            $vendorPaths = [
-                $_SERVER['DOCUMENT_ROOT'] . '/app/vendor/autoload.php',
-                __DIR__ . '/../../vendor/autoload.php',
-                __DIR__ . '/../vendor/autoload.php'
-            ];
-            foreach ($vendorPaths as $path) {
-                if (file_exists($path)) {
-                    require_once $path;
-                    break;
-                }
-            }
-            
-            if (class_exists('PHPMailer\PHPMailer\PHPMailer')) {
-                $smtpStmt = $pdo->query("SELECT * FROM smtp_settings LIMIT 1");
-                $smtp = $smtpStmt->fetch(PDO::FETCH_ASSOC);
-                
-                if ($smtp) {
-                    $mail = new PHPMailer\PHPMailer\PHPMailer(true);
-                    $mail->isSMTP();
-                    $mail->Host = $smtp['host'];
-                    $mail->SMTPAuth = true;
-                    $mail->Username = $smtp['username'];
-                    $mail->Password = $smtp['password'];
-                    $mail->SMTPSecure = $smtp['encryption'] ?? 'tls';
-                    $mail->Port = $smtp['port'] ?? 587;
-                    $mail->CharSet = 'UTF-8';
-                    
-                    $mail->setFrom($smtp['from_email'] ?? $smtp['username'], $smtp['from_name'] ?? ($settings['brand_name'] ?? 'System'));
-                    $mail->addAddress($user['email'], $user['first_name'] . ' ' . $user['last_name']);
-                    $mail->isHTML(true);
-                    
-                    // Replace variables in template
-                    $variables = [
-                        '{first_name}' => htmlspecialchars($user['first_name']),
-                        '{last_name}' => htmlspecialchars($user['last_name']),
-                        '{email}' => htmlspecialchars($user['email']),
-                        '{balance}' => number_format($user['balance'], 2),
-                        '{package_name}' => htmlspecialchars($package['name']),
-                        '{package_price}' => number_format($package['price'], 2),
-                        '{start_date}' => date('d.m.Y', strtotime($startDate)),
-                        '{end_date}' => $endDate ? date('d.m.Y', strtotime($endDate)) : 'N/A',
-                        '{site_url}' => $settings['site_url'] ?? 'https://kryptox.co.uk',
-                        '{site_name}' => $settings['brand_name'] ?? 'KryptoX',
-                        '{contact_email}' => $settings['contact_email'] ?? 'info@kryptox.co.uk'
-                    ];
-                    
-                    $subject = str_replace(array_keys($variables), array_values($variables), $template['subject']);
-                    $content = str_replace(array_keys($variables), array_values($variables), $template['content']);
-                    
-                    $mail->Subject = $subject;
-                    $mail->Body = $content;
-                    $mail->AltBody = strip_tags(str_replace(['<br>', '</p>'], "\n", $content));
-                    
-                    $mail->send();
+            $smtpStmt = $pdo->query("SELECT * FROM smtp_settings LIMIT 1");
+            $smtp = $smtpStmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($smtp) {
+                $variables = [
+                    '{first_name}' => htmlspecialchars($user['first_name']),
+                    '{last_name}' => htmlspecialchars($user['last_name']),
+                    '{email}' => htmlspecialchars($user['email']),
+                    '{balance}' => number_format($user['balance'], 2),
+                    '{package_name}' => htmlspecialchars($package['name']),
+                    '{package_price}' => number_format($package['price'], 2),
+                    '{start_date}' => date('d.m.Y', strtotime($startDate)),
+                    '{end_date}' => $endDate ? date('d.m.Y', strtotime($endDate)) : 'N/A',
+                    '{site_url}' => $settings['site_url'] ?? 'https://kryptox.co.uk',
+                    '{site_name}' => $settings['brand_name'] ?? 'KryptoX',
+                    '{contact_email}' => $settings['contact_email'] ?? 'info@kryptox.co.uk'
+                ];
+
+                $subject = str_replace(array_keys($variables), array_values($variables), $template['subject']);
+                $content = str_replace(array_keys($variables), array_values($variables), $template['content']);
+
+                try {
+                    $smtpClient = new SmtpClient([
+                        'host'       => $smtp['host'],
+                        'port'       => (int)($smtp['port'] ?? 587),
+                        'username'   => $smtp['username'],
+                        'password'   => $smtp['password'],
+                        'from_email' => $smtp['from_email'] ?? $smtp['username'],
+                        'from_name'  => $smtp['from_name'] ?? ($settings['brand_name'] ?? 'System'),
+                        'encryption' => $smtp['encryption'] ?? 'tls',
+                    ]);
+                    $smtpClient->connect();
+                    $smtpClient->send($user['email'], $user['first_name'] . ' ' . $user['last_name'], $subject, $content);
+                    $smtpClient->quit();
                     $emailSent = true;
-                    
-                    // Log email
+
                     $emailLogStmt = $pdo->prepare("INSERT INTO email_logs (template_id, recipient, subject, content, sent_at, status) VALUES (?, ?, ?, ?, NOW(), 'sent')");
                     $emailLogStmt->execute([$template['id'], $user['email'], $subject, $content]);
+                } catch (\Throwable $emailEx) {
+                    error_log("Package assignment email error: " . $emailEx->getMessage());
                 }
             }
         }
-    } catch (Exception $e) {
-        error_log("Package assignment email error: " . $e->getMessage());
+    } catch (\Throwable $emailOuterEx) {
+        error_log("Package assignment email error: " . $emailOuterEx->getMessage());
     }
     
     // Create user notification
