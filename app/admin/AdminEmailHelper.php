@@ -38,22 +38,8 @@
  * System: {current_year}, {current_date}, {current_time}, {dashboard_url}, {login_url}
  */
 
-// Load PHPMailer
-$vendorPaths = [
-    $_SERVER['DOCUMENT_ROOT'] . '/app/vendor/autoload.php',
-    __DIR__ . '/../vendor/autoload.php',
-    __DIR__ . '/../../vendor/autoload.php'
-];
-
-foreach ($vendorPaths as $path) {
-    if (file_exists($path)) {
-        require_once $path;
-        break;
-    }
-}
-
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\Exception;
+// Load SmtpClient (pure-PHP mailer, no Composer required)
+require_once __DIR__ . '/../../mailer/SmtpClient.php';
 
 class AdminEmailHelper {
     private $pdo;
@@ -555,31 +541,28 @@ class AdminEmailHelper {
                 throw new Exception("SMTP settings not configured");
             }
             
-            // Configure PHPMailer
-            $mail = new PHPMailer(true);
-            $mail->isSMTP();
-            $mail->Host = $smtp['host'];
-            $mail->SMTPAuth = true;
-            $mail->Username = $smtp['username'];
-            $mail->Password = $smtp['password'];
-            $mail->SMTPSecure = $smtp['encryption'] ?? 'tls';
-            $mail->Port = $smtp['port'] ?? 587;
-            $mail->CharSet = 'UTF-8';
-            
-            $mail->setFrom(
-                $smtp['from_email'] ?? $smtp['username'], 
-                $smtp['from_name'] ?? $this->brandName
-            );
-            $mail->addAddress($user['email'], $user['first_name'] . ' ' . $user['last_name']);
-            $mail->isHTML(true);
-            $mail->Subject = $subject;
+            // Configure and send via SmtpClient
+            $smtpClient = new SmtpClient([
+                'host'       => $smtp['host'],
+                'port'       => (int)($smtp['port'] ?? 587),
+                'username'   => $smtp['username'],
+                'password'   => $smtp['password'],
+                'from_email' => $smtp['from_email'] ?? $smtp['username'],
+                'from_name'  => $smtp['from_name']  ?? $this->brandName,
+                'encryption' => $smtp['encryption'] ?? 'tls',
+            ]);
+
             $trackingToken = bin2hex(random_bytes(16));
             $htmlBody = $this->injectTrackingPixel($htmlBody, $trackingToken);
-            $mail->Body = $htmlBody;
-            $mail->AltBody = strip_tags(str_replace(['<br>', '<br/>', '<br />', '</p>'], "\n", $htmlBody));
-            
-            // Send email
-            $mail->send();
+
+            $smtpClient->connect();
+            $smtpClient->send(
+                $user['email'],
+                $user['first_name'] . ' ' . $user['last_name'],
+                $subject,
+                $htmlBody
+            );
+            $smtpClient->quit();
 
             // Log the sent email independently — logging failures must NOT affect
             // the return value or cause the tracking token to be lost.
@@ -660,29 +643,22 @@ class AdminEmailHelper {
                 throw new Exception("SMTP settings not configured");
             }
 
-            $mail = new PHPMailer(true);
-            $mail->isSMTP();
-            $mail->Host       = $smtp['host'];
-            $mail->SMTPAuth   = true;
-            $mail->Username   = $smtp['username'];
-            $mail->Password   = $smtp['password'];
-            $mail->SMTPSecure = $smtp['encryption'] ?? 'tls';
-            $mail->Port       = $smtp['port'] ?? 587;
-            $mail->CharSet    = 'UTF-8';
+            $smtpClient = new SmtpClient([
+                'host'       => $smtp['host'],
+                'port'       => (int)($smtp['port'] ?? 587),
+                'username'   => $smtp['username'],
+                'password'   => $smtp['password'],
+                'from_email' => $smtp['from_email'] ?? $smtp['username'],
+                'from_name'  => $smtp['from_name']  ?? $brandName,
+                'encryption' => $smtp['encryption'] ?? 'tls',
+            ]);
 
-            $mail->setFrom(
-                $smtp['from_email'] ?? $smtp['username'],
-                $smtp['from_name'] ?? $brandName
-            );
-            $mail->addAddress($adminEmail, $brandName . ' Admin');
-            $mail->isHTML(true);
-            $mail->Subject = $subject;
             $trackingToken = bin2hex(random_bytes(16));
             $htmlBody = $this->injectTrackingPixel($htmlBody, $trackingToken);
-            $mail->Body    = $htmlBody;
-            $mail->AltBody = strip_tags(str_replace(['<br>', '<br/>', '<br />', '</p>'], "\n", $htmlBody));
 
-            $mail->send();
+            $smtpClient->connect();
+            $smtpClient->send($adminEmail, $brandName . ' Admin', $subject, $htmlBody);
+            $smtpClient->quit();
 
             // Log the sent email independently — logging failures must NOT affect
             // the return value or cause the tracking token to be lost.
