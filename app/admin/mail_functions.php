@@ -22,7 +22,7 @@ class Mailer {
      * Inject a 1×1 open-tracking pixel into the email body.
      */
     private function injectTrackingPixel(string $html, string $token): string {
-        $siteUrl = rtrim($this->systemSettings['site_url'] ?? '', '/');
+        $siteUrl = rtrim(preg_replace('#/app/?$#', '', rtrim($this->systemSettings['site_url'] ?? '', '/')), '/');
         $pixelUrl = $siteUrl . '/app/track_email.php?token=' . urlencode($token);
         $pixel = '<img src="' . htmlspecialchars($pixelUrl, ENT_QUOTES, 'UTF-8')
                . '" width="1" height="1" alt="" style="display:none;border:0;" />';

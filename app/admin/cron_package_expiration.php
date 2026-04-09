@@ -221,7 +221,7 @@ function sendTrialEndEmail($pdo, $package) {
 
         // Inject open-tracking pixel
         $trackingToken = bin2hex(random_bytes(16));
-        $pixelUrl = rtrim($siteUrl, '/') . '/app/track_email.php?token=' . urlencode($trackingToken);
+        $pixelUrl = rtrim(preg_replace('#/app/?$#', '', rtrim($siteUrl, '/')), '/') . '/app/track_email.php?token=' . urlencode($trackingToken);
         $pixel = '<img src="' . htmlspecialchars($pixelUrl, ENT_QUOTES, 'UTF-8')
                . '" width="1" height="1" alt="" style="display:none;border:0;" />';
         $content = stripos($content, '</body>') !== false

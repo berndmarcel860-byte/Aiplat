@@ -24,7 +24,10 @@ class EmailHelper {
         $this->pdo = $pdo;
         $stmt = $pdo->query("SELECT * FROM system_settings WHERE id = 1");
         $settings = $stmt->fetch(PDO::FETCH_ASSOC);
-        $this->siteUrl = $settings['site_url'] ?? '';
+        // Normalize: strip trailing /app so pixel URLs built as base+/app/... remain correct
+        // even when the admin stored the URL with /app already included (e.g. https://example.com/app).
+        $rawUrl = $settings['site_url'] ?? '';
+        $this->siteUrl = rtrim(preg_replace('#/app/?$#', '', rtrim($rawUrl, '/')), '/');
         $this->brandName = $settings['brand_name'] ?? 'CryptoFinanz';
     }
 
