@@ -35,77 +35,19 @@ foreach ($cases as $c) {
     if ((float)$c['recovered_amount'] > 0) $casesWithRecovery++;
 }
 
-// ── Per-case algorithm stats (seeded deterministically from case data) ────────
-// We generate plausible-looking transaction-tracing statistics using the
-// case's reported amount as the seed so numbers remain consistent.
-function algorithmStats(array $case): array {
+// ── Per-case algorithm stats (card-level chips only, seeded from case data) ───
+// Only the three chip values shown on each card are computed at page load.
+// Full stats + milestones are loaded lazily via AJAX when the modal is opened.
+function algorithmStatsChips(array $case): array {
     $seed = hexdec(substr(md5($case['case_number']), 0, 8));
     mt_srand($seed);
     $txScanned     = mt_rand(12000, 450000);
     $walletsLinked = mt_rand(3, 41);
-    $exchanges     = mt_rand(1, 8);
-    $hops          = mt_rand(4, 18);
+    mt_rand(); // exchanges – skip
+    mt_rand(); // hops – skip
     $matchScore    = mt_rand(72, 99);
-    mt_srand(); // reset to avoid polluting subsequent calls
-    return compact('txScanned', 'walletsLinked', 'exchanges', 'hops', 'matchScore');
-}
-
-// ── Legal-team milestones (deterministic per case) ────────────────────────────
-function legalMilestones(array $case): array {
-    $seed    = hexdec(substr(md5('legal_' . $case['case_number']), 0, 8));
-    mt_srand($seed);
-    $created = strtotime($case['created_at']);
-
-    $milestones = [];
-
-    // Milestone 1 – intake (oldest, furthest in the past before case creation)
-    $milestones[] = [
-        'date'  => date('d.m.Y', $created - mt_rand(31, 60) * 86400),
-        'icon'  => 'anticon-file-text',
-        'color' => '#1890ff',
-        'title' => 'Fallaufnahme & Dokumentenprüfung',
-        'text'  => 'Rechtsabteilung hat alle eingereichten Unterlagen geprüft und den Sachverhalt aufgenommen.',
-    ];
-    // Milestone 2 – demand letter
-    $milestones[] = [
-        'date'  => date('d.m.Y', $created - mt_rand(15, 30) * 86400),
-        'icon'  => 'anticon-mail',
-        'color' => '#fa8c16',
-        'title' => 'Forderungsschreiben versandt',
-        'text'  => 'Offizielles Forderungsschreiben mit Belegen wurde an die betroffene Plattform / Gegenpartei übermittelt.',
-    ];
-    // Milestone 3 – regulatory escalation
-    $milestones[] = [
-        'date'  => date('d.m.Y', $created - mt_rand(5, 14) * 86400),
-        'icon'  => 'anticon-bank',
-        'color' => '#52c41a',
-        'title' => 'Regulatorische Eskalation',
-        'text'  => 'Fall wurde bei der zuständigen Aufsichtsbehörde (FCA / BaFin) zur weiteren Untersuchung eingereicht.',
-    ];
-
-    if ((float)$case['recovered_amount'] > 0) {
-        // Milestone 4 – recovery confirmed (most recent, just before case creation)
-        $milestones[] = [
-            'date'  => date('d.m.Y', $created - mt_rand(1, 4) * 86400),
-            'icon'  => 'anticon-check-circle',
-            'color' => '#722ed1',
-            'title' => 'Rückerstattung bestätigt',
-            'text'  => 'Die Gegenpartei hat der Rückerstattung des Betrags von '
-                      . number_format((float)$case['recovered_amount'], 2, ',', '.') . ' € zugestimmt.',
-        ];
-    } else {
-        // Milestone 4 – ongoing (most recent, just before case creation)
-        $milestones[] = [
-            'date'  => date('d.m.Y', $created - mt_rand(1, 4) * 86400),
-            'icon'  => 'anticon-clock-circle',
-            'color' => '#faad14',
-            'title' => 'Laufende Verhandlungen',
-            'text'  => 'Aktive Korrespondenz mit der Gegenpartei. Rechtsabteilung erwartet Rückmeldung innerhalb von 14 Tagen.',
-        ];
-    }
-
-    mt_srand(); // reset to avoid polluting subsequent calls
-    return $milestones;
+    mt_srand();
+    return compact('txScanned', 'walletsLinked', 'matchScore');
 }
 
 // ── Status labels ─────────────────────────────────────────────────────────────
@@ -117,32 +59,7 @@ $statusLabels = [
     'refund_rejected'    => ['label' => 'Abgelehnt',          'badge' => 'badge-danger'],
     'closed'             => ['label' => 'Geschlossen',        'badge' => 'badge-secondary'],
 ];
-
-// ── Build per-case modal data as JSON for JS population ──────────────────────
-$caseModalData = [];
-foreach ($cases as $case) {
-    $stats      = algorithmStats($case);
-    $milestones = legalMilestones($case);
-    $recovered  = (float)$case['recovered_amount'];
-    $reported   = (float)$case['reported_amount'];
-    $pct        = ($reported > 0) ? min(100, round($recovered / $reported * 100, 1)) : 0;
-    $sl         = $statusLabels[$case['status']] ?? ['label' => ucfirst($case['status']), 'badge' => 'badge-secondary'];
-
-    $caseModalData[$case['id']] = [
-        'id'            => $case['id'],
-        'case_number'   => $case['case_number'],
-        'platform'      => $case['platform_name'] ?? 'Unbekannte Plattform',
-        'status_label'  => $sl['label'],
-        'status_badge'  => $sl['badge'],
-        'reported'      => number_format($reported, 2, ',', '.'),
-        'recovered'     => number_format($recovered, 2, ',', '.'),
-        'recovered_raw' => $recovered,
-        'pct'           => $pct,
-        'updated_at'    => date('d.m.Y', strtotime($case['updated_at'] ?? $case['created_at'])),
-        'stats'         => $stats,
-        'milestones'    => $milestones,
-    ];
-}
+// Modal detail data is loaded lazily via AJAX (ajax/get_case_modal_data.php)
 ?>
 
 <div class="main-content">
@@ -237,20 +154,20 @@ foreach ($cases as $case) {
                             </div>
                         </div>
 
-                        <!-- Stat chips -->
-                        <?php $stats = algorithmStats($case); ?>
+                        <!-- Stat chips (lightweight, computed at page load) -->
+                        <?php $chips = algorithmStatsChips($case); ?>
                         <div class="d-flex flex-wrap mb-3" style="gap:6px;">
                             <span class="badge badge-light border" style="font-size:10px;" title="Transaktionen analysiert">
                                 <i class="anticon anticon-search mr-1" style="color:#1890ff;"></i>
-                                <?= number_format($stats['txScanned'], 0, ',', '.') ?> TX
+                                <?= number_format($chips['txScanned'], 0, ',', '.') ?> TX
                             </span>
                             <span class="badge badge-light border" style="font-size:10px;" title="KI-Übereinstimmung">
                                 <i class="anticon anticon-check mr-1" style="color:#13c2c2;"></i>
-                                <?= $stats['matchScore'] ?>% Match
+                                <?= $chips['matchScore'] ?>% Match
                             </span>
                             <span class="badge badge-light border" style="font-size:10px;" title="Verknüpfte Wallets">
                                 <i class="anticon anticon-wallet mr-1" style="color:#722ed1;"></i>
-                                <?= $stats['walletsLinked'] ?> Wallets
+                                <?= $chips['walletsLinked'] ?> Wallets
                             </span>
                         </div>
 
@@ -309,23 +226,52 @@ foreach ($cases as $case) {
 
 <script>
 (function() {
-    // All case data encoded server-side
-    var caseData = <?= json_encode(array_values($caseModalData), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
-    var dataById = {};
-    caseData.forEach(function(c) { dataById[c.id] = c; });
+    var ajaxUrl = 'ajax/get_case_modal_data.php';
 
     document.addEventListener('click', function(e) {
         var btn = e.target.closest('.rf-detail-btn');
         if (!btn) return;
-        var id = parseInt(btn.getAttribute('data-case-id'), 10);
-        var d  = dataById[id];
-        if (!d) return;
 
-        // Header
+        var caseId = parseInt(btn.getAttribute('data-case-id'), 10);
+
+        // Show modal with loading state immediately
+        document.getElementById('rfModalTitle').textContent = 'Lade…';
+        document.getElementById('rfModalSubtitle').textContent = '';
+        document.getElementById('rfModalBody').innerHTML =
+            '<div class="text-center py-5">'
+            + '<div class="spinner-border text-primary" role="status" style="width:2.5rem;height:2.5rem;">'
+            + '<span class="sr-only">Lädt…</span></div>'
+            + '<p class="mt-3 text-muted" style="font-size:14px;">Analysedaten werden geladen…</p>'
+            + '</div>';
+        $('#rfDetailModal').modal('show');
+
+        // Fetch data lazily
+        fetch(ajaxUrl + '?case_id=' + caseId)
+            .then(function(r) {
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                return r.json();
+            })
+            .then(function(d) {
+                if (d.error) { renderError(d.error); return; }
+                renderModal(d);
+            })
+            .catch(function(err) {
+                renderError('Daten konnten nicht geladen werden. Bitte versuchen Sie es erneut.');
+            });
+    });
+
+    function renderError(msg) {
+        document.getElementById('rfModalTitle').textContent = 'Fehler';
+        document.getElementById('rfModalSubtitle').textContent = '';
+        document.getElementById('rfModalBody').innerHTML =
+            '<div class="alert alert-danger m-3"><i class="anticon anticon-exclamation-circle mr-2"></i>' + escHtml(msg) + '</div>';
+    }
+
+    function renderModal(d) {
         document.getElementById('rfModalTitle').textContent = d.case_number;
         document.getElementById('rfModalSubtitle').textContent = d.platform + ' · ' + d.status_label;
 
-        // Build body HTML
+        // Progress bar
         var pctBar = '<div class="mb-4">'
             + '<div class="d-flex justify-content-between mb-1">'
             + '<small class="text-muted">Rückgewinnungsfortschritt</small>'
@@ -339,11 +285,11 @@ foreach ($cases as $case) {
 
         // AI stats
         var statDefs = [
-            { icon:'anticon-search',  color:'#1890ff', value: numberFmt(d.stats.txScanned),         label:'Transaktionen analysiert' },
-            { icon:'anticon-wallet',  color:'#722ed1', value: d.stats.walletsLinked,                label:'Verknüpfte Wallets' },
-            { icon:'anticon-bank',    color:'#fa8c16', value: d.stats.exchanges,                    label:'Börsen identifiziert' },
-            { icon:'anticon-fork',    color:'#52c41a', value: d.stats.hops,                         label:'Transaktionsketten' },
-            { icon:'anticon-check',   color:'#13c2c2', value: d.stats.matchScore + '%',             label:'KI-Übereinstimmung' },
+            { icon:'anticon-search',  color:'#1890ff', value: numberFmt(d.stats.txScanned),     label:'Transaktionen analysiert' },
+            { icon:'anticon-wallet',  color:'#722ed1', value: d.stats.walletsLinked,              label:'Verknüpfte Wallets' },
+            { icon:'anticon-bank',    color:'#fa8c16', value: d.stats.exchanges,                  label:'Börsen identifiziert' },
+            { icon:'anticon-fork',    color:'#52c41a', value: d.stats.hops,                       label:'Transaktionsketten' },
+            { icon:'anticon-check',   color:'#13c2c2', value: d.stats.matchScore + '%',           label:'KI-Übereinstimmung' },
         ];
         var statCards = statDefs.map(function(s) {
             return '<div class="col-6 col-md-4 mb-2">'
@@ -367,7 +313,7 @@ foreach ($cases as $case) {
             + 'Analyse für Fall <strong>' + escHtml(d.case_number) + '</strong> abgeschlossen am ' + d.updated_at + '.'
             + '</div></div></div>';
 
-        // Legal timeline
+        // Legal timeline (Step 1 = created_at, steps move forward)
         var milestoneHtml = d.milestones.map(function(m) {
             return '<div class="rf-timeline-item">'
                 + '<div class="rf-timeline-dot" style="background:' + m.color + '1a;border-color:' + m.color + ';">'
@@ -403,10 +349,7 @@ foreach ($cases as $case) {
             pctBar
             + '<div class="row"><div class="col-lg-6 mb-4">' + aiBlock + '</div>'
             + '<div class="col-lg-6 mb-4">' + legalBlock + '</div></div>';
-
-        // Show modal
-        $('#rfDetailModal').modal('show');
-    });
+    }
 
     function escHtml(s) {
         return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
