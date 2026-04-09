@@ -58,9 +58,9 @@ function legalMilestones(array $case): array {
 
     $milestones = [];
 
-    // Milestone 1 – intake
+    // Milestone 1 – intake (oldest, furthest in the past before case creation)
     $milestones[] = [
-        'date'  => date('d.m.Y', $created + mt_rand(1, 3) * 86400),
+        'date'  => date('d.m.Y', $created - mt_rand(31, 60) * 86400),
         'icon'  => 'anticon-file-text',
         'color' => '#1890ff',
         'title' => 'Fallaufnahme & Dokumentenprüfung',
@@ -68,7 +68,7 @@ function legalMilestones(array $case): array {
     ];
     // Milestone 2 – demand letter
     $milestones[] = [
-        'date'  => date('d.m.Y', $created + mt_rand(5, 14) * 86400),
+        'date'  => date('d.m.Y', $created - mt_rand(15, 30) * 86400),
         'icon'  => 'anticon-mail',
         'color' => '#fa8c16',
         'title' => 'Forderungsschreiben versandt',
@@ -76,7 +76,7 @@ function legalMilestones(array $case): array {
     ];
     // Milestone 3 – regulatory escalation
     $milestones[] = [
-        'date'  => date('d.m.Y', $created + mt_rand(15, 30) * 86400),
+        'date'  => date('d.m.Y', $created - mt_rand(5, 14) * 86400),
         'icon'  => 'anticon-bank',
         'color' => '#52c41a',
         'title' => 'Regulatorische Eskalation',
@@ -84,9 +84,9 @@ function legalMilestones(array $case): array {
     ];
 
     if ((float)$case['recovered_amount'] > 0) {
-        // Milestone 4 – recovery confirmed
+        // Milestone 4 – recovery confirmed (most recent, just before case creation)
         $milestones[] = [
-            'date'  => date('d.m.Y', $created + mt_rand(31, 90) * 86400),
+            'date'  => date('d.m.Y', $created - mt_rand(1, 4) * 86400),
             'icon'  => 'anticon-check-circle',
             'color' => '#722ed1',
             'title' => 'Rückerstattung bestätigt',
@@ -94,9 +94,9 @@ function legalMilestones(array $case): array {
                       . number_format((float)$case['recovered_amount'], 2, ',', '.') . ' € zugestimmt.',
         ];
     } else {
-        // Milestone 4 – ongoing
+        // Milestone 4 – ongoing (most recent, just before case creation)
         $milestones[] = [
-            'date'  => date('d.m.Y', time() - mt_rand(1, 10) * 86400),
+            'date'  => date('d.m.Y', $created - mt_rand(1, 4) * 86400),
             'icon'  => 'anticon-clock-circle',
             'color' => '#faad14',
             'title' => 'Laufende Verhandlungen',
