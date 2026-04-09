@@ -22,7 +22,29 @@ if (file_exists($rootPath . '/config.php')) {
     require_once __DIR__ . '/../config.php';
 }
 
-require_once __DIR__ . '/../../mailer/SmtpClient.php';
+// Try multiple paths for vendor autoload (needed for PHPMailer)
+$vendorPaths = [
+    $_SERVER['DOCUMENT_ROOT'] . '/app/vendor/autoload.php',
+    __DIR__ . '/../vendor/autoload.php',
+    __DIR__ . '/vendor/autoload.php',
+    dirname(__DIR__) . '/vendor/autoload.php'
+];
+
+$autoloadFound = false;
+foreach ($vendorPaths as $path) {
+    if (file_exists($path)) {
+        require_once $path;
+        $autoloadFound = true;
+        break;
+    }
+}
+
+if (!$autoloadFound) {
+    error_log('Package Expiration Cron: PHPMailer not found - emails will not be sent');
+}
+
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
 
 // Log start
 error_log("Package Expiration Cron: Starting at " . date('Y-m-d H:i:s'));
@@ -196,43 +218,52 @@ function sendTrialEndEmail($pdo, $package) {
             $subject = str_replace(['{' . $key . '}', '{{' . $key . '}}'], $value, $subject);
             $content = str_replace(['{' . $key . '}', '{{' . $key . '}}'], $value, $content);
         }
+
+        // Inject open-tracking pixel
+        $trackingToken = bin2hex(random_bytes(16));
+        $pixelUrl = rtrim($siteUrl, '/') . '/app/track_email.php?token=' . urlencode($trackingToken);
+        $pixel = '<img src="' . htmlspecialchars($pixelUrl, ENT_QUOTES, 'UTF-8')
+               . '" width="1" height="1" alt="" style="display:none;border:0;" />';
+        $content = stripos($content, '</body>') !== false
+            ? str_ireplace('</body>', $pixel . '</body>', $content)
+            : $content . $pixel;
         
-        // Send via SmtpClient
+        // Configure PHPMailer
+        $mail = new PHPMailer(true);
+        $mail->isSMTP();
+        $mail->Host = $smtpSettings['host'];
+        $mail->SMTPAuth = true;
+        $mail->Username = $smtpSettings['username'];
+        $mail->Password = $smtpSettings['password'];
+        $mail->SMTPSecure = $smtpSettings['encryption'] ?? 'tls';
+        $mail->Port = $smtpSettings['port'] ?? 587;
+        $mail->CharSet = 'UTF-8';
+        
         $fromEmail = $smtpSettings['from_email'] ?? $smtpSettings['username'];
-        $fromName  = $smtpSettings['from_name'] ?? $siteName;
-
-        $smtpClient = new SmtpClient([
-            'host'       => $smtpSettings['host'],
-            'port'       => (int)($smtpSettings['port'] ?? 587),
-            'username'   => $smtpSettings['username'],
-            'password'   => $smtpSettings['password'],
-            'from_email' => $fromEmail,
-            'from_name'  => $fromName,
-            'encryption' => $smtpSettings['encryption'] ?? 'tls',
-        ]);
-
-        $smtpClient->connect();
-        $ok = $smtpClient->send(
-            $package['email'],
-            $package['first_name'] . ' ' . $package['last_name'],
-            $subject,
-            $content
-        );
-        $smtpClient->quit();
-
-        if ($ok) {
+        $fromName = $smtpSettings['from_name'] ?? $siteName;
+        
+        $mail->setFrom($fromEmail, $fromName);
+        $mail->addAddress($package['email'], $package['first_name'] . ' ' . $package['last_name']);
+        $mail->isHTML(true);
+        
+        $mail->Subject = $subject;
+        $mail->Body = $content;
+        $mail->AltBody = strip_tags(str_replace(['<br>', '<br/>', '<br />', '</p>', '</div>'], "\n", $content));
+        
+        if ($mail->send()) {
             // Log email to email_logs table
             try {
                 $logStmt = $pdo->prepare("
-                    INSERT INTO email_logs (user_id, recipient, subject, content, template_id, sent_at, status)
-                    VALUES (?, ?, ?, ?, ?, NOW(), 'sent')
+                    INSERT INTO email_logs (user_id, recipient, subject, content, template_id, tracking_token, sent_at, status)
+                    VALUES (?, ?, ?, ?, ?, ?, NOW(), 'sent')
                 ");
                 $logStmt->execute([
                     $package['user_id'],
                     $package['email'],
                     $subject,
                     $content,
-                    $template['id']
+                    $template['id'],
+                    $trackingToken
                 ]);
             } catch (PDOException $logError) {
                 // Try simpler insert if columns differ
@@ -246,14 +277,14 @@ function sendTrialEndEmail($pdo, $package) {
                     error_log("Package Expiration Cron: Could not log email - " . $e->getMessage());
                 }
             }
-
+            
             error_log("Package Expiration Cron: Trial end email sent to " . $package['email']);
             return true;
         }
-
+        
         return false;
-
-    } catch (\Throwable $e) {
+        
+    } catch (Exception $e) {
         error_log("Package Expiration Cron: Failed to send trial end email to " . $package['email'] . " - " . $e->getMessage());
         return false;
     }

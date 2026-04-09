@@ -84,16 +84,14 @@ class SmtpClient
     }
 
     /**
-     * Send a single email, optionally with file attachments.
+     * Send a single email.
      *
      * @param string $toEmail
      * @param string $toName
      * @param string $subject
      * @param string $htmlBody
-     * @param string $textBody      Plain-text fallback (auto-generated from HTML if empty)
-     * @param string $replyTo       Optional reply-to address
-     * @param array  $attachments   Optional file attachments.
-     *                              Each entry: ['path' => '/abs/path', 'name' => 'file.pdf', 'mime' => 'application/pdf']
+     * @param string $textBody  Plain-text fallback (auto-generated from HTML if empty)
+     * @param string $replyTo   Optional reply-to address
      * @return bool
      */
     public function send(
@@ -102,8 +100,7 @@ class SmtpClient
         string $subject,
         string $htmlBody,
         string $textBody = '',
-        string $replyTo = '',
-        array  $attachments = []
+        string $replyTo = ''
     ): bool {
         $a = $this->account;
 
@@ -116,16 +113,13 @@ class SmtpClient
 
         $this->command('DATA', 354);
 
-        $altBoundary  = 'alt_' . bin2hex(random_bytes(12));
-        $mixBoundary  = 'mix_' . bin2hex(random_bytes(12));
-        $msgId        = '<' . bin2hex(random_bytes(10)) . '@' . $this->localDomain() . '>';
-        $date         = date('r');
+        $boundary = 'mp_' . bin2hex(random_bytes(12));
+        $msgId    = '<' . bin2hex(random_bytes(10)) . '@' . $this->localDomain() . '>';
+        $date     = date('r');
 
         $fromEncoded = $this->encodeHeader($a['from_name']) . ' <' . $a['from_email'] . '>';
         $toEncoded   = $this->encodeHeader($toName)        . ' <' . $toEmail . '>';
         $subjectEnc  = $this->encodeHeader($subject);
-
-        $hasAttachments = !empty($attachments);
 
         $headers  = "From: $fromEncoded\r\n";
         $headers .= "To: $toEncoded\r\n";
@@ -133,56 +127,24 @@ class SmtpClient
         $headers .= "Date: $date\r\n";
         $headers .= "Message-ID: $msgId\r\n";
         $headers .= "MIME-Version: 1.0\r\n";
-
-        if ($hasAttachments) {
-            $headers .= "Content-Type: multipart/mixed; boundary=\"$mixBoundary\"\r\n";
-        } else {
-            $headers .= "Content-Type: multipart/alternative; boundary=\"$altBoundary\"\r\n";
-        }
+        $headers .= "Content-Type: multipart/alternative; boundary=\"$boundary\"\r\n";
         $headers .= "X-Mailer: PHP/SmtpClient\r\n";
 
         if ($replyTo) {
             $headers .= "Reply-To: $replyTo\r\n";
         }
 
-        // Build the text+html alternative part
-        $altPart  = "--$altBoundary\r\n";
-        $altPart .= "Content-Type: text/plain; charset=UTF-8\r\n";
-        $altPart .= "Content-Transfer-Encoding: quoted-printable\r\n\r\n";
-        $altPart .= $this->quotedPrintable($textBody) . "\r\n";
-        $altPart .= "--$altBoundary\r\n";
-        $altPart .= "Content-Type: text/html; charset=UTF-8\r\n";
-        $altPart .= "Content-Transfer-Encoding: quoted-printable\r\n\r\n";
-        $altPart .= $this->quotedPrintable($htmlBody) . "\r\n";
-        $altPart .= "--$altBoundary--";
+        $body  = "--$boundary\r\n";
+        $body .= "Content-Type: text/plain; charset=UTF-8\r\n";
+        $body .= "Content-Transfer-Encoding: quoted-printable\r\n\r\n";
+        $body .= $this->quotedPrintable($textBody) . "\r\n";
 
-        if ($hasAttachments) {
-            // Wrap the alternative part inside the mixed envelope
-            $body  = "--$mixBoundary\r\n";
-            $body .= "Content-Type: multipart/alternative; boundary=\"$altBoundary\"\r\n\r\n";
-            $body .= $altPart . "\r\n";
+        $body .= "--$boundary\r\n";
+        $body .= "Content-Type: text/html; charset=UTF-8\r\n";
+        $body .= "Content-Transfer-Encoding: quoted-printable\r\n\r\n";
+        $body .= $this->quotedPrintable($htmlBody) . "\r\n";
 
-            foreach ($attachments as $att) {
-                $filePath = $att['path']  ?? '';
-                $fileName = $att['name']  ?? basename($filePath);
-                $fileMime = $att['mime']  ?? 'application/octet-stream';
-
-                if (!file_exists($filePath)) {
-                    continue;
-                }
-
-                $fileData = chunk_split(base64_encode(file_get_contents($filePath)));
-                $body .= "--$mixBoundary\r\n";
-                $body .= "Content-Type: $fileMime; name=\"$fileName\"\r\n";
-                $body .= "Content-Transfer-Encoding: base64\r\n";
-                $body .= "Content-Disposition: attachment; filename=\"$fileName\"\r\n\r\n";
-                $body .= $fileData . "\r\n";
-            }
-
-            $body .= "--$mixBoundary--\r\n";
-        } else {
-            $body = $altPart . "\r\n";
-        }
+        $body .= "--$boundary--\r\n";
 
         // Escape leading dots (SMTP transparency)
         $message = str_replace("\r\n.", "\r\n..", $headers . "\r\n" . $body);

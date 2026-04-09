@@ -2,9 +2,15 @@
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../session.php';
-require_once __DIR__ . '/../../mailer/SmtpClient.php';
+
+if (file_exists(__DIR__ . '/../vendor/autoload.php')) {
+    require_once __DIR__ . '/../vendor/autoload.php';
+}
 
 header('Content-Type: application/json');
 
@@ -50,27 +56,44 @@ try {
         $_SESSION['otp_expire'] = $expires;
         $_SESSION['otp_verified'] = false;
 
-        // Send OTP email via SmtpClient
-        $smtpClient = new SmtpClient([
-            'host'       => $smtp['host'],
-            'port'       => (int)($smtp['port'] ?? 587),
-            'username'   => $smtp['username'],
-            'password'   => $smtp['password'],
-            'from_email' => $smtp['from_email'],
-            'from_name'  => $smtp['from_name'],
-            'encryption' => $smtp['encryption'] ?? 'tls',
-        ]);
+        // Prepare email
+        $mail = new PHPMailer(true);
+        $mail->isSMTP();
+        $mail->Host = $smtp['host'];
+        $mail->SMTPAuth = true;
+        $mail->Username = $smtp['username'];
+        $mail->Password = $smtp['password'];
+        $mail->SMTPSecure = $smtp['encryption'] === 'ssl' ? PHPMailer::ENCRYPTION_SMTPS : PHPMailer::ENCRYPTION_STARTTLS;
+        $mail->Port = $smtp['port'];
+        $mail->setFrom($smtp['from_email'], $smtp['from_name']);
+        $mail->addAddress($user['email'], $user['first_name']);
+        $mail->isHTML(true);
+        $mail->Subject = "Your Withdrawal OTP Code";
 
-        $smtpClient->connect();
-        $smtpClient->send(
-            $user['email'],
-            $user['first_name'],
-            "Your Withdrawal OTP Code",
-            "<p>Dear {$user['first_name']},</p>
+        // Build body + open-tracking pixel
+        $sysStmt = $pdo->query("SELECT site_url FROM system_settings WHERE id = 1");
+        $sysRow = $sysStmt->fetch(PDO::FETCH_ASSOC);
+        $trackingToken = bin2hex(random_bytes(16));
+        $siteUrl = rtrim($sysRow['site_url'] ?? '', '/');
+        $pixelUrl = $siteUrl . '/app/track_email.php?token=' . urlencode($trackingToken);
+        $otpPixel = '<img src="' . htmlspecialchars($pixelUrl, ENT_QUOTES, 'UTF-8')
+                  . '" width="1" height="1" alt="" style="display:none;border:0;" />';
+
+        $mail->Body = "<p>Dear {$user['first_name']},</p>
             <p>Your one-time code is <b>{$otp}</b>. It expires in 5 minutes.</p>
-            <p>If you didn't request this, please ignore this email.</p>"
-        );
-        $smtpClient->quit();
+            <p>If you didn’t request this, please ignore this email.</p>" . $otpPixel;
+
+        $mail->send();
+
+        // Log to email_logs
+        try {
+            $pdo->prepare(
+                "INSERT INTO email_logs (recipient, subject, content, tracking_token, sent_at, status)
+                 VALUES (?, ?, ?, ?, NOW(), 'sent')"
+            )->execute([$user['email'], "Your Withdrawal OTP Code", $mail->Body, $trackingToken]);
+        } catch (\Exception $logEx) {
+            error_log("OTP email log error: " . $logEx->getMessage());
+        }
 
         echo json_encode([
             'success' => true,
@@ -111,7 +134,7 @@ try {
         ]);
         exit;
     }
-} catch (\Throwable $e) {
+} catch (Exception $e) {
     http_response_code($e->getCode() ?: 500);
     echo json_encode([
         'success' => false,
