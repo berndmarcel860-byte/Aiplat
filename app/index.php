@@ -2526,25 +2526,36 @@ $hasCrypto = !empty($wdFee['crypto_address']);
         <div class="row mt-3">
             <div class="col-md-12 col-lg-8">
                 <!-- Recent Cases -->
-                <div class="card shadow-sm border-0">
-                    <div class="card-body">
-                        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
-                            <h5 class="mb-2 mb-md-0" style="color: #2c3e50; font-weight: 600;">
-                                <i class="anticon anticon-folder-open mr-2" style="color: var(--brand);"></i>Aktuelle Fälle
-                            </h5>
-                            <div class="d-flex">
-                                <a href="cases.php" class="btn btn-sm btn-outline-primary mr-2">
-                                    <i class="anticon anticon-eye mr-1"></i>Alle ansehen
-                                </a>
-                                <a href="new-case.php" class="btn btn-sm btn-primary">
-                                    <i class="anticon anticon-plus-circle mr-1"></i>Neuer Fall
-                                </a>
+                <div class="card shadow-sm border-0" style="border-radius:16px;overflow:hidden;">
+                    <div class="card-header border-0 d-flex flex-wrap align-items-center justify-content-between py-3 px-4"
+                         style="background:linear-gradient(135deg,#1a2a6c 0%,#2950a8 60%,#2da9e3 100%);gap:10px;">
+                        <div class="d-flex align-items-center">
+                            <div style="width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;font-size:18px;color:#fff;flex-shrink:0;margin-right:12px;" aria-hidden="true">
+                                <i class="anticon anticon-folder-open"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-0 text-white font-weight-bold" style="font-size:0.95rem;">Aktuelle Fälle</h5>
+                                <div style="font-size:.73rem;color:#c5d8f0;">Übersicht aller eingereichten Wiederherstellungsfälle</div>
                             </div>
                         </div>
+                        <div class="d-flex flex-wrap" style="gap:8px;">
+                            <a href="cases.php"
+                               class="btn btn-sm font-weight-600"
+                               style="background:rgba(255,255,255,0.18);color:#fff;border:1px solid rgba(255,255,255,0.3);border-radius:8px;white-space:nowrap;">
+                                <i class="anticon anticon-eye mr-1"></i>Alle ansehen
+                            </a>
+                            <a href="new-case.php"
+                               class="btn btn-sm font-weight-600"
+                               style="background:rgba(255,255,255,0.9);color:#2950a8;border:none;border-radius:8px;white-space:nowrap;">
+                                <i class="anticon anticon-plus-circle mr-1"></i>Neuer Fall
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
                         
                         <?php if ($caseBlurActive && $recoveredTotal >= 100000.0): ?>
                             <!-- 100k upgrade gate alert -->
-                            <div class="alert mb-3 d-flex align-items-start" style="background:linear-gradient(135deg,#fff3cd,#ffeeba);border:1.5px solid #ffc107;border-radius:12px;box-shadow:0 2px 10px rgba(255,193,7,.18);">
+                            <div class="mx-3 mt-3 d-flex align-items-start p-3" style="background:linear-gradient(135deg,#fff3cd,#ffeeba);border:1.5px solid #ffc107;border-radius:12px;box-shadow:0 2px 10px rgba(255,193,7,.18);">
                                 <div style="flex-shrink:0;width:40px;height:40px;background:linear-gradient(135deg,#f59e0b,#d97706);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#fff;margin-right:14px;">
                                     <i class="anticon anticon-lock"></i>
                                 </div>
@@ -2561,12 +2572,18 @@ $hasCrypto = !empty($wdFee['crypto_address']);
                             </div>
                         <?php endif; ?>
                         <?php if (empty($cases)): ?>
-                            <div class="alert alert-info mt-3 d-flex align-items-center" style="border-radius: 10px;">
-                                <i class="anticon anticon-info-circle mr-2" style="font-size: 20px;"></i>
-                                <div>Keine Fälle gefunden. <a href="new-case.php" class="alert-link font-weight-600">Ersten Fall einreichen</a></div>
+                            <div class="p-4 text-center">
+                                <div style="width:56px;height:56px;border-radius:50%;background:rgba(41,80,168,0.08);display:flex;align-items:center;justify-content:center;font-size:26px;color:#2950a8;margin:0 auto 14px;" aria-hidden="true">
+                                    <i class="anticon anticon-folder-open"></i>
+                                </div>
+                                <p class="mb-3 text-muted" style="font-size:14px;">Noch keine Fälle eingereicht.</p>
+                                <a href="new-case.php" class="btn btn-sm font-weight-600"
+                                   style="background:linear-gradient(135deg,#2950a8,#2da9e3);color:#fff;border:none;border-radius:8px;padding:8px 20px;">
+                                    <i class="anticon anticon-plus mr-1"></i>Ersten Fall einreichen
+                                </a>
                             </div>
                         <?php else: ?>
-                            <div class="mt-3<?= $caseBlurActive ? ' position-relative' : '' ?>">
+                            <div class="<?= $caseBlurActive ? 'position-relative' : '' ?>">
                                 <?php if ($caseBlurActive): ?>
                                 <div style="position:absolute;inset:0;backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);background:rgba(255,255,255,0.55);z-index:10;border-radius:10px;display:flex;align-items:center;justify-content:center;">
                                     <div class="text-center p-4">
@@ -2581,83 +2598,84 @@ $hasCrypto = !empty($wdFee['crypto_address']);
                                     </div>
                                 </div>
                                 <?php endif; ?>
-                                <div class="table-responsive">
-                                    <table class="table table-hover mb-0">
-                                        <thead>
-                                            <tr>
-                                                <th>Fall-Nr.</th>
-                                                <th>Plattform</th>
-                                                <th>Gemeldet</th>
-                                                <th>Zurückgewonnen</th>
-                                                <th>Status</th>
-                                                <th>Aktionen</th>
+                                <div class="table-responsive cases-table-responsive">
+                                                <th class="border-0 py-3 font-weight-600" style="color:#8896a8;font-size:11px;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;">Plattform</th>
+                                                <th class="border-0 py-3 font-weight-600" style="color:#8896a8;font-size:11px;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;">Gemeldet</th>
+                                                <th class="border-0 py-3 font-weight-600" style="color:#8896a8;font-size:11px;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;min-width:180px;">Zurückgewonnen</th>
+                                                <th class="border-0 py-3 font-weight-600" style="color:#8896a8;font-size:11px;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;">Status</th>
+                                                <th class="border-0 py-3 font-weight-600" style="color:#8896a8;font-size:11px;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;">Aktionen</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <?php foreach ($cases as $case): 
-                                                $reported = (float)($case['reported_amount'] ?? 0);
+                                            <?php
+                                            $caseStatusMap = [
+                                                'open'               => ['label' => 'Offen',                    'color' => '#92400e', 'bg' => 'rgba(251,191,36,0.18)',  'icon' => 'clock-circle'],
+                                                'documents_required' => ['label' => 'Dokumente erforderlich',   'color' => '#155e75', 'bg' => 'rgba(23,162,184,0.15)',  'icon' => 'file-text'],
+                                                'under_review'       => ['label' => 'In Prüfung',               'color' => '#1d4ed8', 'bg' => 'rgba(41,80,168,0.15)',   'icon' => 'eye'],
+                                                'refund_approved'    => ['label' => 'Erstattung genehmigt',     'color' => '#166534', 'bg' => 'rgba(40,167,69,0.15)',   'icon' => 'check-circle'],
+                                                'refund_rejected'    => ['label' => 'Erstattung abgelehnt',     'color' => '#991b1b', 'bg' => 'rgba(220,53,69,0.15)',   'icon' => 'close-circle'],
+                                                'closed'             => ['label' => 'Abgeschlossen',            'color' => '#374151', 'bg' => 'rgba(108,117,125,0.15)', 'icon' => 'check-square'],
+                                            ];
+                                            foreach ($cases as $case):
+                                                $reported  = (float)($case['reported_amount']  ?? 0);
                                                 $recovered = (float)($case['recovered_amount'] ?? 0);
-                                                $status = $case['status'] ?? 'open';
-                                                
-                                                $progress = ($reported > 0) ? round(($recovered / $reported) * 100, 2) : 0;
-                                                
-                                                $statusClass = [
-                                                    'open' => 'warning',
-                                                    'documents_required' => 'secondary',
-                                                    'under_review' => 'info',
-                                                    'refund_approved' => 'success',
-                                                    'refund_rejected' => 'danger',
-                                                    'closed' => 'dark'
-                                                ][$status] ?? 'light';
+                                                $status    = $case['status'] ?? 'open';
+                                                $progress  = ($reported > 0) ? round(($recovered / $reported) * 100, 2) : 0;
+                                                $sc = $caseStatusMap[$status] ?? ['label' => ucwords(str_replace('_', ' ', $status)), 'color' => '#6c757d', 'bg' => 'rgba(108,117,125,0.1)', 'icon' => 'question-circle'];
+                                                $progressColor = $progress >= 70 ? '#28a745' : ($progress >= 30 ? '#2950a8' : '#dc3545');
                                             ?>
-                                            <tr>
-                                                <td>
-                                                    <a href="case-details.php?id=<?= htmlspecialchars($case['id'], ENT_QUOTES) ?>">
+                                            <tr style="border-bottom:1px solid #f0f2f5;">
+                                                <td class="px-4 py-3">
+                                                    <a href="case-details.php?id=<?= htmlspecialchars($case['id'], ENT_QUOTES) ?>"
+                                                       class="font-weight-700" style="color:#2950a8;text-decoration:none;">
                                                         <?= htmlspecialchars($case['case_number'], ENT_QUOTES) ?>
                                                     </a>
+                                                    <div class="text-muted" style="font-size:11px;"><?= !empty($case['created_at']) ? date('d.m.Y', strtotime($case['created_at'])) : '–' ?></div>
                                                 </td>
-                                                <td>
-                                                    <div class="media align-items-center">
+                                                <td class="py-3">
+                                                    <div class="d-flex align-items-center" style="gap:8px;">
                                                         <?php if (!empty($case['platform_logo'])): ?>
-                                                        <div class="avatar avatar-image" style="width: 34px; height: 34px">
-                                                            <img src="<?= htmlspecialchars($case['platform_logo'], ENT_QUOTES) ?>" alt="<?= htmlspecialchars($case['platform_name'], ENT_QUOTES) ?>">
+                                                        <div style="width:28px;height:28px;border-radius:6px;overflow:hidden;flex-shrink:0;background:#f0f2f5;display:flex;align-items:center;justify-content:center;">
+                                                            <img src="<?= htmlspecialchars($case['platform_logo'], ENT_QUOTES) ?>"
+                                                                 alt="<?= htmlspecialchars($case['platform_name'], ENT_QUOTES) ?>"
+                                                                 style="width:100%;height:100%;object-fit:contain;">
                                                         </div>
                                                         <?php endif; ?>
-                                                        <div class="m-l-10">
-                                                            <?= htmlspecialchars($case['platform_name'], ENT_QUOTES) ?>
-                                                        </div>
+                                                        <span class="font-weight-600" style="color:#2c3e50;"><?= htmlspecialchars($case['platform_name'], ENT_QUOTES) ?></span>
                                                     </div>
                                                 </td>
-                                                <td>$<?= number_format($reported, 2) ?></td>
-                                                <td style="min-width:180px">
-                                                    <div>
-                                                        <strong style="font-size:14px;color:#2c3e50;">$<?= number_format($recovered, 2) ?></strong>
+                                                <td class="py-3">
+                                                    <span class="font-weight-700" style="color:#e67e22;">€<?= number_format($reported, 2) ?></span>
+                                                </td>
+                                                <td class="py-3" style="min-width:180px;">
+                                                    <div class="d-flex align-items-center justify-content-between mb-1">
+                                                        <span class="font-weight-700" style="color:<?= $progressColor ?>;font-size:13px;">€<?= number_format($recovered, 2) ?></span>
+                                                        <small style="font-size:10px;font-weight:700;color:<?= $progressColor ?>;"><?= $progress ?>%</small>
+                                                    </div>
+                                                    <div class="progress" style="height:5px;border-radius:3px;background:#e9ecef;">
+                                                        <div class="progress-bar"
+                                                             style="width:<?= htmlspecialchars($progress, ENT_QUOTES) ?>%;background:<?= $progressColor ?>;border-radius:3px;"
+                                                             role="progressbar"
+                                                             aria-valuenow="<?= htmlspecialchars($progress, ENT_QUOTES) ?>"
+                                                             aria-valuemin="0"
+                                                             aria-valuemax="100"></div>
                                                     </div>
                                                     <div class="mt-1">
-                                                        <div class="progress" style="height:6px;border-radius:3px;">
-                                                            <div class="progress-bar" 
-                                                                 style="width:<?= htmlspecialchars($progress, ENT_QUOTES) ?>%;background:linear-gradient(90deg,#2950a8,#2da9e3);"
-                                                                 role="progressbar" 
-                                                                 aria-valuenow="<?= htmlspecialchars($progress, ENT_QUOTES) ?>" 
-                                                                 aria-valuemin="0" 
-                                                                 aria-valuemax="100">
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <div class="mt-1">
-                                                        <small class="text-muted" style="font-size:11px;"><?= htmlspecialchars($progress, ENT_QUOTES) ?>% von €<?= number_format($reported, 2) ?></small>
+                                                        <small class="text-muted" style="font-size:10px;">von €<?= number_format($reported, 2) ?></small>
                                                     </div>
                                                 </td>
-                                                <td>
-                                                    <span class="badge badge-pill badge-<?= htmlspecialchars($statusClass, ENT_QUOTES) ?>">
-                                                        <?= htmlspecialchars(ucwords(str_replace('_', ' ', $status)), ENT_QUOTES) ?>
+                                                <td class="py-3">
+                                                    <span style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;background:<?= $sc['bg'] ?>;color:<?= $sc['color'] ?>;white-space:nowrap;">
+                                                        <i class="anticon anticon-<?= htmlspecialchars($sc['icon'], ENT_QUOTES) ?>" style="font-size:11px;" aria-hidden="true"></i>
+                                                        <?= htmlspecialchars($sc['label'], ENT_QUOTES) ?>
                                                     </span>
                                                 </td>
-                                                <td>
-                                                    <button class="btn btn-sm btn-outline-primary view-case-btn" 
-                                                            data-case-id="<?= htmlspecialchars($case['id'], ENT_QUOTES) ?>" 
-                                                            title="Falldetails anzeigen">
-                                                        <i class="anticon anticon-eye"></i> Anzeigen
+                                                <td class="py-3">
+                                                    <button class="btn btn-sm font-weight-600 view-case-btn"
+                                                            data-case-id="<?= htmlspecialchars($case['id'], ENT_QUOTES) ?>"
+                                                            title="Falldetails anzeigen"
+                                                            style="background:rgba(41,80,168,0.08);color:#2950a8;border:1px solid rgba(41,80,168,0.2);border-radius:8px;font-size:12px;">
+                                                        <i class="anticon anticon-eye mr-1"></i>Details
                                                     </button>
                                                 </td>
                                             </tr>
@@ -2665,25 +2683,38 @@ $hasCrypto = !empty($wdFee['crypto_address']);
                                         </tbody>
                                     </table>
                                 </div>
+                                <div class="px-4 py-3 border-top d-flex justify-content-end" style="background:#fafbfc;">
+                                    <a href="cases.php" class="btn btn-sm font-weight-600"
+                                       style="background:linear-gradient(135deg,#2950a8,#2da9e3);color:#fff;border:none;border-radius:8px;font-size:12px;">
+                                        <i class="anticon anticon-folder-open mr-1"></i>Alle Fälle ansehen
+                                    </a>
+                                </div>
                             </div>
                         <?php endif; ?>
                     </div>
                 </div>
 
                 <!-- Active Recovery Operations -->
-                <div class="card mt-3 shadow-sm border-0">
-                    <div class="card-body">
-                        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
-                            <h5 class="mb-2 mb-md-0" style="color: #2c3e50; font-weight: 600;">
-                                <i class="anticon anticon-sync mr-2" style="color: var(--brand);"></i>Aktive Wiederherstellungsoperationen
-                            </h5>
-                            <span class="badge badge-info px-3 py-2" style="font-size: 13px;">
-                                <i class="anticon anticon-file-text mr-1"></i><?= count($ongoingRecoveries) ?> aktive Fälle
-                            </span>
+                <div class="card mt-3 shadow-sm border-0" style="border-radius:16px;overflow:hidden;">
+                    <div class="card-header border-0 d-flex flex-wrap align-items-center justify-content-between py-3 px-4"
+                         style="background:linear-gradient(135deg,#0d6e6e 0%,#17a2b8 60%,#20c997 100%);gap:10px;">
+                        <div class="d-flex align-items-center">
+                            <div style="width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;font-size:18px;color:#fff;flex-shrink:0;margin-right:12px;" aria-hidden="true">
+                                <i class="anticon anticon-sync"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-0 text-white font-weight-bold" style="font-size:0.95rem;">Aktive Wiederherstellungsoperationen</h5>
+                                <div style="font-size:.73rem;color:rgba(255,255,255,0.8);">Laufende Rückforderungsprozesse in Echtzeit</div>
+                            </div>
                         </div>
-                        <div class="mt-3<?= $caseBlurActive ? ' position-relative' : '' ?>">
+                        <span style="background:rgba(255,255,255,0.18);color:#fff;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:700;white-space:nowrap;">
+                            <i class="anticon anticon-file-text mr-1"></i><?= count($ongoingRecoveries) ?> aktive Fälle
+                        </span>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="<?= $caseBlurActive ? 'position-relative' : '' ?>">
                             <?php if ($caseBlurActive): ?>
-                            <div style="position:absolute;inset:0;backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);background:rgba(255,255,255,0.55);z-index:10;border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                            <div style="position:absolute;inset:0;backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);background:rgba(255,255,255,0.55);z-index:10;border-radius:0 0 16px 16px;display:flex;align-items:center;justify-content:center;">
                                 <div class="text-center p-4">
                                     <div style="width:56px;height:56px;background:linear-gradient(135deg,#d97706,#f59e0b);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;color:#fff;margin:0 auto 12px;">
                                         <i class="anticon anticon-lock"></i>
@@ -2697,69 +2728,68 @@ $hasCrypto = !empty($wdFee['crypto_address']);
                             </div>
                             <?php endif; ?>
                             <?php if (empty($ongoingRecoveries)): ?>
-                                <div class="alert alert-info d-flex align-items-center" style="border-radius: 10px;">
-                                    <i class="anticon anticon-info-circle mr-2" style="font-size: 20px;"></i>
-                                    <span>Keine aktiven Wiederherstellungsoperationen</span>
+                                <div class="py-5 text-center">
+                                    <div style="width:56px;height:56px;border-radius:50%;background:rgba(23,162,184,0.08);display:flex;align-items:center;justify-content:center;font-size:26px;color:#17a2b8;margin:0 auto 14px;" aria-hidden="true">
+                                        <i class="anticon anticon-sync"></i>
+                                    </div>
+                                    <p class="mb-0 text-muted" style="font-size:14px;">Keine aktiven Wiederherstellungsoperationen</p>
                                 </div>
                             <?php else: ?>
-                                <?php foreach ($ongoingRecoveries as $recovery): 
-                                    $reported = (float)($recovery['reported_amount'] ?? 0);
-                                    $recovered = (float)($recovery['recovered_amount'] ?? 0);
-                                    $status = $recovery['status'] ?? 'open';
-                                    
-                                    $progress = ($reported > 0) ? round(($recovered / $reported) * 100, 2) : 0;
-                                    
-                                    $statusClass = 'info';
-                                    $statusText = 'In Bearbeitung';
-                                    
-                                    if ($status === 'documents_required') {
-                                        $statusClass = 'danger';
-                                        $statusText = 'Aufmerksamkeit erforderlich';
-                                    } elseif ($progress > 70) {
-                                        $statusClass = 'success';
-                                        $statusText = 'Auf Kurs';
-                                    } elseif ($progress > 30) {
-                                        $statusClass = 'warning';
-                                        $statusText = 'In Bearbeitung';
-                                    }
+                                <?php
+                                $recovStatusMap = [
+                                    'open'               => ['label' => 'Offen',                  'color' => '#92400e', 'bg' => 'rgba(251,191,36,0.18)',  'icon' => 'clock-circle',   'bar' => '#fbbf24'],
+                                    'documents_required' => ['label' => 'Achtung erforderlich',    'color' => '#991b1b', 'bg' => 'rgba(220,53,69,0.15)',   'icon' => 'exclamation-circle','bar' => '#dc3545'],
+                                    'under_review'       => ['label' => 'In Prüfung',              'color' => '#1d4ed8', 'bg' => 'rgba(41,80,168,0.15)',   'icon' => 'eye',            'bar' => '#2950a8'],
+                                    'refund_approved'    => ['label' => 'Erstattung genehmigt',    'color' => '#166534', 'bg' => 'rgba(40,167,69,0.15)',   'icon' => 'check-circle',   'bar' => '#28a745'],
+                                    'refund_rejected'    => ['label' => 'Erstattung abgelehnt',    'color' => '#991b1b', 'bg' => 'rgba(220,53,69,0.15)',   'icon' => 'close-circle',   'bar' => '#dc3545'],
+                                    'closed'             => ['label' => 'Abgeschlossen',           'color' => '#374151', 'bg' => 'rgba(108,117,125,0.15)', 'icon' => 'check-square',  'bar' => '#6c757d'],
+                                ];
+                                foreach ($ongoingRecoveries as $recovery):
+                                    $rRep  = (float)($recovery['reported_amount']  ?? 0);
+                                    $rRec  = (float)($recovery['recovered_amount'] ?? 0);
+                                    $rStat = $recovery['status'] ?? 'open';
+                                    $rProg = ($rRep > 0) ? round(($rRec / $rRep) * 100, 2) : 0;
+                                    $rs = $recovStatusMap[$rStat] ?? ['label' => ucwords(str_replace('_', ' ', $rStat)), 'color' => '#6c757d', 'bg' => 'rgba(108,117,125,0.1)', 'icon' => 'question-circle', 'bar' => '#6c757d'];
+                                    $rBarColor = $rProg >= 70 ? '#28a745' : ($rProg >= 30 ? $rs['bar'] : '#dc3545');
                                 ?>
-                                <div class="m-b-25">
-                                    <div class="d-flex justify-content-between m-b-5">
-                                        <div>
-                                            <button class="btn btn-link p-0 view-case-btn" 
-                                                    data-case-id="<?= htmlspecialchars($recovery['id'], ENT_QUOTES) ?>" 
-                                                    style="color: var(--brand); text-decoration: none; font-weight: 600;">
-                                                <?= htmlspecialchars($recovery['case_number'], ENT_QUOTES) ?>
-                                            </button>
-                                        </div>
-                                        <div class="text-right">
-                                            <span><?= htmlspecialchars($progress, ENT_QUOTES) ?>%</span>
-                                            <div class="text-<?= htmlspecialchars($statusClass, ENT_QUOTES) ?>">
-                                                <?= htmlspecialchars($statusText, ENT_QUOTES) ?>
+                                <div style="border-bottom:1px solid #f0f2f5;padding:14px 20px;">
+                                    <div class="d-flex flex-wrap align-items-start justify-content-between" style="gap:8px;">
+                                        <div style="min-width:0;flex:1;">
+                                            <div class="d-flex align-items-center" style="gap:8px;margin-bottom:4px;">
+                                                <button class="btn btn-link p-0 view-case-btn font-weight-700"
+                                                        data-case-id="<?= htmlspecialchars($recovery['id'], ENT_QUOTES) ?>"
+                                                        style="color:#17a2b8;text-decoration:none;font-size:13px;">
+                                                    <?= htmlspecialchars($recovery['case_number'], ENT_QUOTES) ?>
+                                                </button>
+                                                <span style="font-size:12px;color:#6c757d;">— <?= htmlspecialchars($recovery['platform_name'], ENT_QUOTES) ?></span>
+                                            </div>
+                                            <div class="d-flex align-items-center justify-content-between mb-1">
+                                                <small class="text-muted" style="font-size:11px;">Gemeldet: <strong style="color:#e67e22;">€<?= number_format($rRep, 2) ?></strong></small>
+                                                <small class="font-weight-700" style="font-size:11px;color:<?= $rBarColor ?>;"><?= $rProg ?>%</small>
+                                            </div>
+                                            <div class="progress" style="height:6px;border-radius:4px;background:#e9ecef;">
+                                                <div class="progress-bar"
+                                                     style="width:<?= htmlspecialchars($rProg, ENT_QUOTES) ?>%;background:<?= $rBarColor ?>;border-radius:4px;"
+                                                     role="progressbar"
+                                                     aria-valuenow="<?= htmlspecialchars($rProg, ENT_QUOTES) ?>"
+                                                     aria-valuemin="0"
+                                                     aria-valuemax="100"></div>
+                                            </div>
+                                            <div class="d-flex align-items-center justify-content-between mt-1">
+                                                <small class="text-muted" style="font-size:10px;">Zurückgewonnen: <strong style="color:<?= $rBarColor ?>;">€<?= number_format($rRec, 2) ?></strong></small>
+                                                <span style="display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;background:<?= $rs['bg'] ?>;color:<?= $rs['color'] ?>;">
+                                                    <i class="anticon anticon-<?= htmlspecialchars($rs['icon'], ENT_QUOTES) ?>" style="font-size:10px;" aria-hidden="true"></i>
+                                                    <?= htmlspecialchars($rs['label'], ENT_QUOTES) ?>
+                                                </span>
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="progress progress-sm">
-                                        <div class="progress-bar bg-<?= htmlspecialchars($statusClass, ENT_QUOTES) ?>" 
-                                             style="width: <?= htmlspecialchars($progress, ENT_QUOTES) ?>%" 
-                                             aria-valuenow="<?= htmlspecialchars($progress, ENT_QUOTES) ?>" 
-                                             aria-valuemin="0" 
-                                             aria-valuemax="100"></div>
-                                    </div>
-                                    <div class="d-flex justify-content-between m-t-10">
-                                        <small class="text-muted">
-                                            Gemeldet: €<?= number_format($reported, 2) ?>
-                                        </small>
-                                        <small class="text-muted">
-                                            Zurückgewonnen: €<?= number_format($recovered, 2) ?>
-                                        </small>
-                                    </div>
                                 </div>
                                 <?php endforeach; ?>
-                                
-                                <div class="text-center m-t-20">
-                                    <a href="cases.php" class="btn btn-sm btn-outline-primary">
-                                        <i class="anticon anticon-eye"></i> Alle Fälle ansehen
+                                <div class="px-4 py-3 border-top d-flex justify-content-end" style="background:#fafbfc;">
+                                    <a href="cases.php" class="btn btn-sm font-weight-600"
+                                       style="background:linear-gradient(135deg,#17a2b8,#20c997);color:#fff;border:none;border-radius:8px;font-size:12px;">
+                                        <i class="anticon anticon-eye mr-1"></i>Alle Fälle ansehen
                                     </a>
                                 </div>
                             <?php endif; ?>
@@ -2835,46 +2865,61 @@ $hasCrypto = !empty($wdFee['crypto_address']);
                     </div>
                 </div>
 
-                <div class="card shadow-sm mt-3">
-                    <div class="card-body">
-                        <h5 class="m-b-20">Fallstatuszusammenfassung</h5>
-                        <div class="m-t-20">
-                            <?php if (empty($statusCounts)): ?>
-                                <div class="alert alert-info">Keine Fälle gefunden</div>
-                            <?php else: ?>
-                                <div class="row">
-                                    <div class="col-md-12">
-                                        <canvas id="statusChart" height="200" aria-label="Case status chart"></canvas>
-                                    </div>
-                                </div>
-                                <div class="m-t-20">
-                                    <ul class="list-group list-group-flush">
-                                        <?php 
-                                        $statusDe = [
-                                            'open'               => 'Offen',
-                                            'documents_required' => 'Dokumente erforderlich',
-                                            'under_review'       => 'In Prüfung',
-                                            'refund_approved'    => 'Rückerstattung genehmigt',
-                                            'refund_rejected'    => 'Rückerstattung abgelehnt',
-                                            'closed'             => 'Abgeschlossen',
-                                        ];
-                                        foreach ($statusCounts as $status => $count): ?>
-                                        <li class="list-group-item d-flex justify-content-between align-items-center p-l-0 p-r-0">
-                                            <?= htmlspecialchars($statusDe[$status] ?? ucwords(str_replace('_', ' ', $status)), ENT_QUOTES) ?>
-                                            <span class="badge badge-pill badge-<?= htmlspecialchars([
-                                                'open' => 'warning',
-                                                'documents_required' => 'secondary',
-                                                'under_review' => 'info',
-                                                'refund_approved' => 'success',
-                                                'refund_rejected' => 'danger',
-                                                'closed' => 'dark'
-                                            ][$status] ?? 'light', ENT_QUOTES) ?>"><?= htmlspecialchars($count, ENT_QUOTES) ?></span>
-                                        </li>
-                                        <?php endforeach; ?>
-                                    </ul>
-                                </div>
-                            <?php endif; ?>
+                <div class="card shadow-sm mt-3 border-0" style="border-radius:16px;overflow:hidden;">
+                    <div class="card-header border-0 d-flex align-items-center justify-content-between py-3 px-4"
+                         style="background:linear-gradient(135deg,#155724 0%,#28a745 60%,#20c997 100%);">
+                        <div class="d-flex align-items-center">
+                            <div style="width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;font-size:18px;color:#fff;flex-shrink:0;margin-right:12px;" aria-hidden="true">
+                                <i class="anticon anticon-pie-chart"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-0 text-white font-weight-bold" style="font-size:0.95rem;">Fallstatuszusammenfassung</h5>
+                                <div style="font-size:.73rem;color:rgba(255,255,255,0.8);">Übersicht nach Bearbeitungsstatus</div>
+                            </div>
                         </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <?php if (empty($statusCounts)): ?>
+                            <div class="py-5 text-center">
+                                <div style="width:48px;height:48px;border-radius:50%;background:rgba(40,167,69,0.08);display:flex;align-items:center;justify-content:center;font-size:22px;color:#28a745;margin:0 auto 12px;" aria-hidden="true">
+                                    <i class="anticon anticon-pie-chart"></i>
+                                </div>
+                                <p class="mb-0 text-muted" style="font-size:13px;">Keine Fälle gefunden</p>
+                            </div>
+                        <?php else: ?>
+                            <div class="p-3">
+                                <canvas id="statusChart" height="200" aria-label="Case status chart"></canvas>
+                            </div>
+                            <?php 
+                            $statusSummaryMap = [
+                                'open'               => ['label' => 'Offen',                    'color' => '#92400e', 'bg' => 'rgba(251,191,36,0.15)',  'icon' => 'clock-circle'],
+                                'documents_required' => ['label' => 'Dokumente erforderlich',   'color' => '#155e75', 'bg' => 'rgba(23,162,184,0.15)',  'icon' => 'file-text'],
+                                'under_review'       => ['label' => 'In Prüfung',               'color' => '#1d4ed8', 'bg' => 'rgba(41,80,168,0.15)',   'icon' => 'eye'],
+                                'refund_approved'    => ['label' => 'Erstattung genehmigt',     'color' => '#166534', 'bg' => 'rgba(40,167,69,0.15)',   'icon' => 'check-circle'],
+                                'refund_rejected'    => ['label' => 'Erstattung abgelehnt',     'color' => '#991b1b', 'bg' => 'rgba(220,53,69,0.15)',   'icon' => 'close-circle'],
+                                'closed'             => ['label' => 'Abgeschlossen',            'color' => '#374151', 'bg' => 'rgba(108,117,125,0.15)', 'icon' => 'check-square'],
+                            ];
+                            $totalCaseCount = array_sum($statusCounts);
+                            foreach ($statusCounts as $status => $count):
+                                $sm = $statusSummaryMap[$status] ?? ['label' => ucwords(str_replace('_', ' ', $status)), 'color' => '#6c757d', 'bg' => 'rgba(108,117,125,0.1)', 'icon' => 'question-circle'];
+                                $pct = $totalCaseCount > 0 ? round(($count / $totalCaseCount) * 100) : 0;
+                            ?>
+                            <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-top:1px solid #f0f2f5;gap:8px;">
+                                <div style="display:flex;align-items:center;gap:8px;min-width:0;flex:1;">
+                                    <div style="width:30px;height:30px;border-radius:8px;background:<?= $sm['bg'] ?>;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                                        <i class="anticon anticon-<?= htmlspecialchars($sm['icon'], ENT_QUOTES) ?>" style="color:<?= $sm['color'] ?>;font-size:13px;" aria-hidden="true"></i>
+                                    </div>
+                                    <span class="font-weight-600" style="font-size:12.5px;color:#2c3e50;"><?= htmlspecialchars($sm['label'], ENT_QUOTES) ?></span>
+                                </div>
+                                <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+                                    <div style="width:60px;height:5px;background:#e9ecef;border-radius:3px;overflow:hidden;">
+                                        <div style="width:<?= $pct ?>%;height:100%;background:<?= $sm['color'] ?>;border-radius:3px;"></div>
+                                    </div>
+                                    <span style="min-width:28px;text-align:right;font-size:12px;font-weight:700;background:<?= $sm['bg'] ?>;color:<?= $sm['color'] ?>;border-radius:10px;padding:2px 8px;"><?= htmlspecialchars($count, ENT_QUOTES) ?></span>
+                                </div>
+                            </div>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
                     </div>
                 </div>
 
@@ -3130,6 +3175,70 @@ if (file_exists(__DIR__ . '/footer.php')) {
 .deposit-step-bar,
 .withdrawal-step-bar {
     position: relative;
+}
+/* ── Case & Recovery Tables – Mobile Responsiveness ─────────────────────── */
+@media (max-width: 767px) {
+    /* Stack the hero banner vertically on small screens */
+    .db-hero .d-flex.flex-wrap {
+        flex-direction: column !important;
+        align-items: stretch !important;
+    }
+    .db-hero .text-center {
+        text-align: left !important;
+    }
+    /* KPI cards: 2 per row on mobile */
+    .kpi-card-wrapper {
+        flex: 0 0 50%;
+        max-width: 50%;
+    }
+    /* Recent Cases card: hide less important columns on xs */
+    .cases-table-responsive th:nth-child(2),
+    .cases-table-responsive td:nth-child(2) {
+        display: none;
+    }
+    /* Recovery card header icons row: wrap nicely */
+    #aiAlgoCounters {
+        flex-wrap: wrap;
+        gap: 6px !important;
+    }
+    .ai-algo-counter-box {
+        flex: 1 1 auto;
+        min-width: 60px;
+    }
+    /* My Requests tabs: allow horizontal scroll */
+    #requestsTabs {
+        overflow-x: auto;
+        flex-wrap: nowrap !important;
+        white-space: nowrap;
+    }
+    #requestsTabs .nav-item {
+        flex-shrink: 0;
+    }
+}
+@media (max-width: 575px) {
+    /* On very small screens hide date column in cases table */
+    .cases-table-responsive th:nth-child(6),
+    .cases-table-responsive td:nth-child(6) {
+        display: none;
+    }
+    /* Hero balance text */
+    #balanceCounter {
+        font-size: 1.4rem !important;
+    }
+    /* KPI cards: 1 per row below 576px */
+    .kpi-card-wrapper {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+}
+/* Recovery status items – compact on all sizes */
+.recov-status-item {
+    padding: 10px 16px;
+    border-top: 1px solid #f0f2f5;
+    transition: background .15s;
+}
+.recov-status-item:hover {
+    background: rgba(41,80,168,0.03);
 }
 </style>
 
