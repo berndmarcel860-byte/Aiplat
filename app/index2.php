@@ -304,12 +304,21 @@ foreach ($alerts as $alert):
         </div>
         <span style="color:<?=$ac['text']?>;font-size:13px;"><?=$alert['msg']?></span>
       </div>
-      <a href="<?=htmlspecialchars($alert['link'],ENT_QUOTES)?>"
-         class="btn btn-sm font-weight-700<?= !empty($alert['modalClass']) ? ' ' . htmlspecialchars($alert['modalClass'],ENT_QUOTES) : '' ?>"
-         style="background:<?=$ac['border']?>;color:#fff;border:none;border-radius:8px;font-size:12px;white-space:nowrap;"
-         <?= $alert['modalAttrs'] ?? '' ?>>
-        <?=htmlspecialchars($alert['linkLabel'],ENT_QUOTES)?>
-      </a>
+      <div class="d-flex align-items-center" style="gap:6px;flex-shrink:0;">
+        <?php if (!empty($alert['modalClass']) && $alert['modalClass'] === 'open-fee-modal-btn'): ?>
+        <button type="button" class="btn btn-sm" data-toggle="modal" data-target="#feeRegulationModal"
+                style="background:transparent;border:1px solid <?=$ac['border']?>;color:<?=$ac['border']?>;border-radius:8px;font-size:12px;padding:4px 8px;white-space:nowrap;"
+                title="Pflichtgebühr – Was ist das?">
+          <i class="anticon anticon-info-circle mr-1"></i>Info
+        </button>
+        <?php endif; ?>
+        <a href="<?=htmlspecialchars($alert['link'],ENT_QUOTES)?>"
+           class="btn btn-sm font-weight-700<?= !empty($alert['modalClass']) ? ' ' . htmlspecialchars($alert['modalClass'],ENT_QUOTES) : '' ?>"
+           style="background:<?=$ac['border']?>;color:#fff;border:none;border-radius:8px;font-size:12px;white-space:nowrap;"
+           <?= $alert['modalAttrs'] ?? '' ?>>
+          <?=htmlspecialchars($alert['linkLabel'],ENT_QUOTES)?>
+        </a>
+      </div>
     </div>
   </div>
 </div>
@@ -1106,7 +1115,7 @@ foreach ($alerts as $alert):
                     <th class="border-0 px-4 py-3 font-weight-600" style="color:#8896a8;font-size:11px;text-transform:uppercase;">Referenz</th>
                     <th class="border-0 py-3 font-weight-600" style="color:#8896a8;font-size:11px;text-transform:uppercase;">Methode</th>
                     <th class="border-0 py-3 font-weight-600" style="color:#8896a8;font-size:11px;text-transform:uppercase;">Betrag</th>
-                    <th class="border-0 py-3 font-weight-600" style="color:#8896a8;font-size:11px;text-transform:uppercase;">Gebühr</th>
+                    <th class="border-0 py-3 font-weight-600" style="color:#8896a8;font-size:11px;text-transform:uppercase;">Gebühr&nbsp;<button type="button" class="btn btn-link p-0" style="font-size:12px;vertical-align:middle;color:#dc3545;line-height:1;" data-toggle="modal" data-target="#feeRegulationModal" aria-label="Gebühreninformation"><i class="anticon anticon-info-circle"></i></button></th>
                     <th class="border-0 py-3 font-weight-600" style="color:#8896a8;font-size:11px;text-transform:uppercase;">Status</th>
                     <th class="border-0 py-3 font-weight-600 db2-hide-sm" style="color:#8896a8;font-size:11px;text-transform:uppercase;">Datum</th>
                   </tr>
@@ -1565,35 +1574,61 @@ $hasCrypto = $hasCrypto ?? !empty($wdFee['crypto_address']);
 </div>
 
 <!-- ══ FEE REGULATION INFO MODAL ════════════════════════════════════════════ -->
-<div class="modal fade" id="feeRegulationModal" tabindex="-1" role="dialog" aria-hidden="true">
+<div class="modal fade" id="feeRegulationModal" tabindex="-1" role="dialog" aria-labelledby="feeRegulationModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered" role="document" style="max-width:600px;">
     <div class="modal-content border-0 shadow-lg" style="border-radius:14px;overflow:hidden;">
-      <div class="modal-header border-0 px-4 py-4" style="background:linear-gradient(135deg,#721c24 0%,#b91c1c 50%,#dc3545 100%);color:#fff;">
+      <div class="modal-header border-0 px-4 py-4" style="background:linear-gradient(135deg,#721c24 0%,#b91c1c 50%,#dc3545 100%);color:#fff;border-radius:14px 14px 0 0;">
         <div class="d-flex align-items-center">
           <div class="mr-3" style="width:44px;height:44px;background:rgba(255,255,255,.15);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;"><i class="anticon anticon-safety-certificate"></i></div>
-          <div><h5 class="modal-title mb-0 font-weight-bold">Pflichtgebühr – Regulatory Administration Fee</h5><small style="opacity:.85;">Gesetzliche Grundlagen &amp; Compliance</small></div>
+          <div>
+            <h5 class="modal-title mb-0 font-weight-bold" id="feeRegulationModalLabel">Pflichtgeb&uuml;hr &ndash; Regulatory Administration Fee</h5>
+            <small style="opacity:.85;">Gesetzliche Grundlagen &amp; Compliance-Anforderungen</small>
+          </div>
         </div>
-        <button type="button" class="close text-white ml-auto" data-dismiss="modal"><span>&times;</span></button>
+        <button type="button" class="close text-white ml-auto" data-dismiss="modal" aria-label="Schlie&szlig;en"><span aria-hidden="true">&times;</span></button>
       </div>
-      <div class="modal-body px-4 py-4">
+      <div class="modal-body px-4 py-4" style="background:#fff;">
+        <!-- Alert banner -->
         <div class="d-flex align-items-start p-3 mb-4" style="background:#fff5f5;border:1.5px solid #f5c6cb;border-radius:10px;">
           <i class="anticon anticon-exclamation-circle mr-3 mt-1" style="color:#dc3545;font-size:20px;flex-shrink:0;"></i>
-          <strong style="color:#721c24;font-size:13px;">Diese Gebühr ist gesetzlich vorgeschrieben und muss vor der Freigabe Ihrer Auszahlung bezahlt werden.</strong>
+          <div>
+            <strong style="color:#721c24;font-size:13px;">Diese Geb&uuml;hr ist gesetzlich vorgeschrieben und muss vor der Freigabe Ihrer Auszahlung bezahlt werden.</strong>
+            <div style="font-size:12px;color:#856404;margin-top:4px;">Die Zahlung kann nicht nachtr&auml;glich verrechnet werden.</div>
+          </div>
         </div>
+        <!-- Legal basis -->
         <h6 class="font-weight-700 mb-3" style="color:#343a40;font-size:13px;text-transform:uppercase;letter-spacing:.5px;"><i class="anticon anticon-file-protect mr-2" style="color:#dc3545;"></i>Rechtliche Grundlage</h6>
         <div style="font-size:13px;color:#495057;line-height:1.75;margin-bottom:18px;">
-          <p>Gemäß den Anforderungen der <strong>4. und 5. EU-Geldwäscherichtlinie (AMLD4/AMLD5)</strong> sowie den Compliance-Vorgaben unserer lizenzierten internationalen Bankpartner ist für jede grenzüberschreitende Auszahlung eine Verwaltungsgebühr zu entrichten.</p>
-          <ul style="padding-left:18px;margin-bottom:0;"><li><strong>MiFID II</strong> – Markets in Financial Instruments Directive II</li><li><strong>FATF-Empfehlungen</strong> – Financial Action Task Force on Money Laundering</li><li><strong>BaFin / FCA Compliance-Anforderungen</strong></li><li><strong>KYC/AML-Prüfverfahren</strong></li></ul>
+          <p>Gem&auml;&szlig; den Anforderungen der <strong>4. und 5. EU-Geldw&auml;scherichtlinie (AMLD4/AMLD5)</strong>, der <strong>Verordnung (EU) 2023/1113 &uuml;ber die &Uuml;bermittlung von Angaben bei Geldtransfers (Transfer of Funds Regulation &ndash; TFR)</strong> sowie den Compliance-Vorgaben unserer <strong>lizenzierten internationalen Bankpartner</strong> ist f&uuml;r jede grenz&uuml;berschreitende Auszahlung eine Verwaltungsgeb&uuml;hr zu entrichten.</p>
+          <p>Diese Anforderung ergibt sich au&szlig;erdem aus:</p>
+          <ul style="padding-left:18px;margin-bottom:0;">
+            <li><strong>MiFID II</strong> &ndash; Markets in Financial Instruments Directive II (Richtlinie 2014/65/EU)</li>
+            <li><strong>FATF-Empfehlungen</strong> &ndash; Financial Action Task Force on Money Laundering</li>
+            <li><strong>BaFin / FCA Compliance-Anforderungen</strong> &ndash; Aufsichtsrechtliche Verpflichtungen f&uuml;r Zahlungsdienstleister</li>
+            <li><strong>KYC/AML-Pr&uuml;fverfahren</strong> &ndash; Know Your Customer &amp; Anti-Money Laundering Protocol</li>
+          </ul>
         </div>
-        <h6 class="font-weight-700 mb-3" style="color:#343a40;font-size:13px;text-transform:uppercase;letter-spacing:.5px;"><i class="anticon anticon-question-circle mr-2" style="color:#dc3545;"></i>Warum im Voraus?</h6>
-        <div style="display:grid;gap:8px;font-size:13px;color:#495057;">
-          <div style="display:flex;align-items:flex-start;gap:10px;background:#f8f9fa;border-radius:8px;padding:10px 12px;"><i class="anticon anticon-check-circle" style="color:#28a745;font-size:14px;flex-shrink:0;margin-top:2px;"></i><span><strong>Nachweis der Seriosität:</strong> Korrespondenzbanken verlangen den Gebührennachweis als Identitätsbestätigung des Begünstigten.</span></div>
-          <div style="display:flex;align-items:flex-start;gap:10px;background:#f8f9fa;border-radius:8px;padding:10px 12px;"><i class="anticon anticon-check-circle" style="color:#28a745;font-size:14px;flex-shrink:0;margin-top:2px;"></i><span><strong>Regulatorische Freigabe:</strong> Aufsichtsbehörden fordern die Bestätigung der Gebührenentrichtung als Teil des AML-Compliance-Prozesses.</span></div>
-          <div style="display:flex;align-items:flex-start;gap:10px;background:#f8f9fa;border-radius:8px;padding:10px 12px;"><i class="anticon anticon-check-circle" style="color:#28a745;font-size:14px;flex-shrink:0;margin-top:2px;"></i><span><strong>Transaktionsfreigabe:</strong> Erst nach Eingang der Verwaltungsgebühr kann die Auszahlung durch unsere Compliance-Abteilung autorisiert werden.</span></div>
+        <!-- Why in advance -->
+        <h6 class="font-weight-700 mb-3" style="color:#343a40;font-size:13px;text-transform:uppercase;letter-spacing:.5px;"><i class="anticon anticon-question-circle mr-2" style="color:#dc3545;"></i>Warum muss die Geb&uuml;hr im Voraus gezahlt werden?</h6>
+        <div style="font-size:13px;color:#495057;line-height:1.75;margin-bottom:18px;">
+          <p>Die Vorausbezahlung der Verwaltungsgeb&uuml;hr ist notwendig, um folgende Anforderungen zu erf&uuml;llen:</p>
+          <div style="display:grid;gap:8px;">
+            <div style="display:flex;align-items:flex-start;gap:10px;background:#f8f9fa;border-radius:8px;padding:10px 12px;"><i class="anticon anticon-check-circle" style="color:#28a745;font-size:14px;flex-shrink:0;margin-top:2px;"></i><span><strong>Nachweis der Seri&ouml;sit&auml;t:</strong> Unsere Korrespondenzbanken verlangen den Geb&uuml;hrennachweis als Beweis der Zahlungsf&auml;higkeit und Identit&auml;tsbest&auml;tigung des Beg&uuml;nstigten.</span></div>
+            <div style="display:flex;align-items:flex-start;gap:10px;background:#f8f9fa;border-radius:8px;padding:10px 12px;"><i class="anticon anticon-check-circle" style="color:#28a745;font-size:14px;flex-shrink:0;margin-top:2px;"></i><span><strong>Regulatorische Freigabe:</strong> Internationale Finanzaufsichtsbeh&ouml;rden fordern die Best&auml;tigung der Geb&uuml;hrenentrichtung als Teil des AML-Compliance-Prozesses vor jeder Transaktion.</span></div>
+            <div style="display:flex;align-items:flex-start;gap:10px;background:#f8f9fa;border-radius:8px;padding:10px 12px;"><i class="anticon anticon-check-circle" style="color:#28a745;font-size:14px;flex-shrink:0;margin-top:2px;"></i><span><strong>Transaktionsfreigabe:</strong> Erst nach Eingang und Best&auml;tigung der Verwaltungsgeb&uuml;hr kann die Auszahlung durch unsere Compliance-Abteilung autorisiert und freigegeben werden.</span></div>
+            <div style="display:flex;align-items:flex-start;gap:10px;background:#f8f9fa;border-radius:8px;padding:10px 12px;"><i class="anticon anticon-check-circle" style="color:#28a745;font-size:14px;flex-shrink:0;margin-top:2px;"></i><span><strong>Schutz vor Betrug:</strong> Die Geb&uuml;hr dient als Sicherheitsmechanismus gegen Geldw&auml;sche und Terrorismusfinanzierung gem&auml;&szlig; den FATF 40+9 Empfehlungen.</span></div>
+          </div>
+        </div>
+        <!-- Trust note -->
+        <div style="background:linear-gradient(135deg,rgba(41,80,168,.05),rgba(45,169,227,.05));border:1px solid rgba(41,80,168,.15);border-radius:10px;padding:14px 16px;">
+          <div style="font-size:12px;color:#495057;line-height:1.6;">
+            <i class="anticon anticon-safety mr-1" style="color:#2950a8;"></i>
+            <strong>Hinweis:</strong> Diese Anforderung gilt f&uuml;r alle internationalen Zahlungen und ist unabh&auml;ngig vom Auszahlungsbetrag. F&uuml;r weitere Informationen zu unseren Compliance-Prozessen und regulatorischen Verpflichtungen stehen wir Ihnen jederzeit &uuml;ber unseren Support zur Verf&uuml;gung.
+          </div>
         </div>
       </div>
       <div class="modal-footer border-0 px-4 py-3" style="background:#f8f9fa;border-radius:0 0 14px 14px;">
-        <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal" style="border-radius:8px;">Schließen</button>
+        <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal" style="border-radius:8px;">Schlie&szlig;en</button>
       </div>
     </div>
   </div>
