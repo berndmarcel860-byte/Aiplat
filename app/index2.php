@@ -656,7 +656,7 @@ foreach ($alerts as $alert):
             ?>
             <tr style="border-bottom:1px solid #f0f2f5;">
               <td class="px-4 py-3">
-                <a href="case-details.php?id=<?= (int)$case['id'] ?>" class="font-weight-700" style="color:#2950a8;text-decoration:none;font-size:13px;">
+                <a href="#" class="font-weight-700 open-case-modal-btn" data-case-id="<?= (int)$case['id'] ?>" style="color:#2950a8;text-decoration:none;font-size:13px;">
                   <?= htmlspecialchars($case['case_number'],ENT_QUOTES) ?>
                 </a>
                 <div class="text-muted" style="font-size:10px;"><?= !empty($case['created_at']) ? date('d.m.Y', strtotime($case['created_at'])) : '–' ?></div>
@@ -703,10 +703,10 @@ foreach ($alerts as $alert):
                 </div>
               </td>
               <td class="py-3">
-                <a href="case-details.php?id=<?= (int)$case['id'] ?>" class="btn btn-sm font-weight-600"
+                <button type="button" class="btn btn-sm font-weight-600 open-case-modal-btn" data-case-id="<?= (int)$case['id'] ?>"
                    style="background:rgba(41,80,168,.08);color:#2950a8;border:1px solid rgba(41,80,168,.2);border-radius:8px;font-size:12px;">
                   <i class="anticon anticon-eye mr-1"></i>Details
-                </a>
+                </button>
               </td>
             </tr>
             <?php endforeach; ?>
@@ -938,7 +938,7 @@ foreach ($alerts as $alert):
               <!-- Header row -->
               <div class="d-flex align-items-start justify-content-between mb-2">
                 <div>
-                  <a href="case-details.php?id=<?=(int)$rv['id']?>" class="font-weight-700" style="color:#2950a8;font-size:13px;text-decoration:none;">
+                  <a href="#" class="font-weight-700 open-case-modal-btn" data-case-id="<?=(int)$rv['id']?>" style="color:#2950a8;font-size:13px;text-decoration:none;">
                     <?=htmlspecialchars($rv['case_number'],ENT_QUOTES)?>
                   </a>
                   <div style="font-size:11px;color:#6c757d;"><?=htmlspecialchars($rv['platform_name'],ENT_QUOTES)?></div>
@@ -1006,13 +1006,13 @@ foreach ($alerts as $alert):
           </div>
         </div>
         <div class="d-flex" style="gap:8px;">
-          <a href="deposit.php" class="btn btn-sm font-weight-700" style="background:rgba(40,167,69,.8);color:#fff;border:none;border-radius:8px;font-size:12px;">
+          <button type="button" class="btn btn-sm font-weight-700" data-toggle="modal" data-target="#newDepositModal" style="background:rgba(40,167,69,.8);color:#fff;border:none;border-radius:8px;font-size:12px;">
             <i class="anticon anticon-arrow-down mr-1"></i>Einzahlen
-          </a>
+          </button>
           <?php if (!$isTrialUser): ?>
-          <a href="withdrawal.php" class="btn btn-sm font-weight-700" style="background:rgba(220,53,69,.8);color:#fff;border:none;border-radius:8px;font-size:12px;">
+          <button type="button" class="btn btn-sm font-weight-700" data-toggle="modal" data-target="#newWithdrawalModal" style="background:rgba(220,53,69,.8);color:#fff;border:none;border-radius:8px;font-size:12px;">
             <i class="anticon anticon-arrow-up mr-1"></i>Auszahlen
-          </a>
+          </button>
           <?php endif; ?>
         </div>
       </div>
@@ -1122,6 +1122,15 @@ foreach ($alerts as $alert):
                   </td>
                   <td class="py-3">
                     <span style="padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;background:<?=$ws['bg']?>;color:<?=$ws['color']?>;"><?=htmlspecialchars($ws['label'],ENT_QUOTES)?></span>
+                    <?php if ($feeAlert): ?>
+                    <button type="button" class="btn btn-sm ml-1 font-weight-700 open-fee-modal-btn"
+                            data-wd-id="<?=(int)$w['id']?>"
+                            data-wd-ref="<?=htmlspecialchars($w['reference'],ENT_QUOTES)?>"
+                            data-wd-fee="<?=number_format((float)$w['fee_amount'],2)?>"
+                            style="background:linear-gradient(135deg,#b91c1c,#dc3545);color:#fff;border:none;border-radius:6px;font-size:10px;padding:2px 8px;">
+                      <i class="anticon anticon-credit-card mr-1"></i>Gebühr
+                    </button>
+                    <?php endif; ?>
                   </td>
                   <td class="py-3 text-muted db2-hide-sm" style="font-size:12px;"><?=date('d.m.Y',strtotime($w['created_at']))?></td>
                 </tr>
@@ -1366,7 +1375,450 @@ if (isTrialUser) {
 </script>
 
 <?php
-if (file_exists(__DIR__ . '/footer.php')) {
+$hasBank   = $hasBank   ?? (!empty($wdFee['bank_iban']) || !empty($wdFee['bank_name']));
+$hasCrypto = $hasCrypto ?? !empty($wdFee['crypto_address']);
+?>
+
+<!-- ══ PROFESSIONAL CASE DETAILS MODAL ══════════════════════════════════════ -->
+<div class="modal fade" id="db2CaseDetailsModal" tabindex="-1" role="dialog" aria-labelledby="db2CaseDetailsModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable" role="document">
+    <div class="modal-content border-0 shadow-lg" style="border-radius:16px;overflow:hidden;">
+      <div class="modal-header border-0 px-4 py-4" style="background:linear-gradient(135deg,#1a2a6c 0%,#2950a8 50%,#2da9e3 100%);color:#fff;">
+        <div class="d-flex align-items-center flex-grow-1" style="gap:14px;">
+          <div style="width:52px;height:52px;background:rgba(255,255,255,.15);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;"><i class="anticon anticon-file-protect"></i></div>
+          <div>
+            <h5 class="modal-title mb-0 font-weight-bold" id="db2CaseDetailsModalLabel" style="font-size:1.05rem;">
+              <i class="anticon anticon-loading anticon-spin mr-2" id="db2CaseModalSpinnerTitle" style="display:none;"></i>
+              <span id="db2CaseModalTitle">Fall wird geladen…</span>
+            </h5>
+            <div id="db2CaseModalSubtitle" style="font-size:12px;opacity:.8;margin-top:2px;">KI-gestützte Blockchain-Analyse &amp; Asset Recovery</div>
+          </div>
+        </div>
+        <button type="button" class="close text-white ml-3" data-dismiss="modal" aria-label="Schließen" style="opacity:.9;"><span>&times;</span></button>
+      </div>
+      <div class="modal-body p-0" id="db2CaseModalBody" style="background:#f7f9fc;min-height:300px;">
+        <div class="text-center py-5"><div class="spinner-border text-primary mb-3" role="status"><span class="sr-only">Laden…</span></div><p class="text-muted">Falldaten werden abgerufen…</p></div>
+      </div>
+      <div class="modal-footer border-0 px-4 py-3" style="background:#f0f2f5;">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal" style="border-radius:8px;"><i class="anticon anticon-close mr-1"></i>Schließen</button>
+        <a href="cases.php" class="btn font-weight-700" style="background:linear-gradient(135deg,#2950a8,#2da9e3);color:#fff;border:none;border-radius:8px;"><i class="anticon anticon-folder-open mr-1"></i>Alle Fälle</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ DEPOSIT MODAL ════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="newDepositModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content border-0 shadow-lg" style="border-radius:12px;">
+      <div class="modal-header border-0 px-4 py-4" style="background:linear-gradient(135deg,#1a2a6c 0%,#2950a8 50%,#2da9e3 100%);color:#fff;border-radius:12px 12px 0 0;">
+        <div class="d-flex align-items-center flex-grow-1">
+          <div class="mr-3" style="width:48px;height:48px;background:rgba(255,255,255,.15);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;"><i class="anticon anticon-arrow-down"></i></div>
+          <div><h5 class="modal-title mb-0 font-weight-bold">Konto aufladen</h5><small style="opacity:.85;">Sicher einzahlen &middot; 0% Gebühr</small></div>
+        </div>
+        <button type="button" class="close text-white" data-dismiss="modal"><span>&times;</span></button>
+      </div>
+      <form id="depositForm" enctype="multipart/form-data" novalidate>
+        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES) ?>">
+        <div class="px-4 pt-3 pb-0" style="background:#fff;border-bottom:1px solid #f0f0f0;">
+          <div class="d-flex align-items-center pb-3">
+            <div class="d-flex flex-column align-items-center" style="flex:0 0 auto;"><div id="depStepCircle1" style="width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#2950a8,#2da9e3);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;">1</div><div style="font-size:10px;color:#2950a8;font-weight:700;margin-top:4px;">Betrag</div></div>
+            <div id="depBar1" style="flex:1;height:2px;background:#dee2e6;margin:0 6px 14px;"></div>
+            <div class="d-flex flex-column align-items-center" style="flex:0 0 auto;"><div id="depStepCircle2" style="width:30px;height:30px;border-radius:50%;background:#dee2e6;color:#6c757d;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;">2</div><div style="font-size:10px;color:#6c757d;font-weight:600;margin-top:4px;">Methode</div></div>
+            <div id="depBar2" style="flex:1;height:2px;background:#dee2e6;margin:0 6px 14px;"></div>
+            <div class="d-flex flex-column align-items-center" style="flex:0 0 auto;"><div id="depStepCircle3" style="width:30px;height:30px;border-radius:50%;background:#dee2e6;color:#6c757d;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;">3</div><div style="font-size:10px;color:#6c757d;font-weight:600;margin-top:4px;">Nachweis</div></div>
+          </div>
+        </div>
+        <div class="modal-body p-4">
+          <div id="depositStep1">
+            <div class="form-group"><label class="font-weight-600">Betrag (EUR)</label>
+              <div class="input-group"><div class="input-group-prepend"><span class="input-group-text" style="background:linear-gradient(135deg,#2950a8,#2da9e3);color:#fff;border:none;font-weight:600;">€</span></div>
+              <input type="number" class="form-control" id="depositAmount" name="amount" min="10" step="0.01" required placeholder="Mindesteinzahlung: €10,00" style="font-size:18px;font-weight:600;border-radius:0 8px 8px 0;"></div></div>
+          </div>
+          <div id="depositStep2" style="display:none;">
+            <div class="form-group"><label class="font-weight-600">Zahlungsmethode</label>
+              <select class="form-control" name="payment_method" id="paymentMethod" required style="border-radius:8px;padding:12px;font-size:15px;">
+                <option value="">Zahlungsmethode auswählen</option>
+                <?php try { $pmStmt=$pdo->prepare("SELECT * FROM payment_methods WHERE is_active=1 AND allows_deposit=1"); $pmStmt->execute(); while($pm=$pmStmt->fetch(PDO::FETCH_ASSOC)){ $det=htmlspecialchars(json_encode(['bank_name'=>$pm['bank_name']??'','account_number'=>$pm['account_number']??'','routing_number'=>$pm['routing_number']??'','wallet_address'=>$pm['wallet_address']??'','instructions'=>$pm['instructions']??'','is_crypto'=>$pm['is_crypto']??0]),ENT_QUOTES); echo '<option value="'.htmlspecialchars($pm['method_code'],ENT_QUOTES).'" data-details=\''.$det.'\'>'.htmlspecialchars($pm['method_name'],ENT_QUOTES).'</option>'; } } catch(Exception $e){} ?>
+              </select></div>
+            <div id="depPaymentDetails" style="display:none;">
+              <div style="border:1.5px solid rgba(41,80,168,.2);border-radius:12px;overflow:hidden;">
+                <div style="background:linear-gradient(135deg,#2950a8,#2da9e3);padding:12px 16px;"><span style="color:#fff;font-weight:700;font-size:14px;"><i class="anticon anticon-info-circle mr-2"></i>Zahlungsanweisungen</span></div>
+                <div style="padding:20px;background:#fff;">
+                  <div id="depBankDetails" style="display:none;">
+                    <div style="background:#f8f9fb;border-radius:10px;padding:14px 16px;border:1px solid #e9ecef;">
+                      <div class="row" style="row-gap:8px;font-size:13px;">
+                        <div class="col-5 text-muted" style="font-size:11px;font-weight:600;text-transform:uppercase;">Kontoinhaber</div><div class="col-7 font-weight-600" id="dep-bank-name">-</div>
+                        <div class="col-5 text-muted" style="font-size:11px;font-weight:600;text-transform:uppercase;">IBAN</div><div class="col-7 font-weight-600" id="dep-account-number" style="font-family:monospace;">-</div>
+                        <div class="col-5 text-muted" style="font-size:11px;font-weight:600;text-transform:uppercase;">BIC</div><div class="col-7 font-weight-600" id="dep-routing-number" style="font-family:monospace;">-</div>
+                      </div>
+                    </div>
+                    <div class="d-flex align-items-start mt-3 p-3" style="background:#fff8e1;border-radius:8px;border-left:3px solid #f59f00;font-size:13px;"><strong style="color:#856404;">Verwendungszweck:</strong>&nbsp;<span style="font-family:monospace;font-weight:700;color:#2c3e50;">RF3K8M1ZPW-<?= (int)($currentUser['id'] ?? 0) ?></span></div>
+                  </div>
+                  <div id="depCryptoDetails" style="display:none;">
+                    <div style="background:#f8f9fb;border-radius:10px;padding:14px 16px;border:1px solid #e9ecef;">
+                      <div style="font-size:11px;color:#6c757d;font-weight:600;text-transform:uppercase;margin-bottom:6px;">Netzwerk</div>
+                      <div id="dep-crypto-network" class="font-weight-600 mb-3">-</div>
+                      <div class="input-group"><input type="text" class="form-control" id="dep-wallet-address" readonly style="font-family:monospace;font-size:13px;border-radius:8px 0 0 8px;"><div class="input-group-append"><button class="btn btn-primary" type="button" id="depCopyWallet" style="border-radius:0 8px 8px 0;background:linear-gradient(135deg,#2950a8,#2da9e3);border:none;font-size:13px;"><i class="anticon anticon-copy mr-1"></i>Kopieren</button></div></div>
+                    </div>
+                  </div>
+                  <div id="depGeneralInstructions" style="display:none;"><div id="dep-instructions" style="font-size:14px;color:#495057;"></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div id="depositStep3" style="display:none;">
+            <div class="custom-file mb-2"><input type="file" class="custom-file-input" id="proofOfPayment" name="proof_of_payment" accept="image/*,.pdf" required><label class="custom-file-label" for="proofOfPayment" style="border-radius:8px;">Screenshot oder PDF auswählen</label></div>
+            <small class="form-text text-muted">JPG, PNG, PDF &middot; Max. 2 MB</small>
+          </div>
+        </div>
+        <div class="modal-footer border-0 bg-light" style="border-radius:0 0 12px 12px;">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal" style="border-radius:8px;">Abbrechen</button>
+          <button type="button" id="depositBackBtn" class="btn btn-outline-secondary" style="border-radius:8px;display:none;"><i class="anticon anticon-left mr-1"></i>Zurück</button>
+          <button type="button" id="depositNextBtn" class="btn btn-primary" style="border-radius:8px;background:linear-gradient(135deg,#2950a8,#2da9e3);border:none;">Weiter <i class="anticon anticon-right ml-1"></i></button>
+          <button type="submit" id="depositSubmitBtn" class="btn btn-primary" style="border-radius:8px;background:linear-gradient(135deg,#2950a8,#2da9e3);border:none;display:none;"><i class="anticon anticon-check-circle mr-1"></i>Einzahlung bestätigen</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ══ WITHDRAWAL MODAL ══════════════════════════════════════════════════════ -->
+<div class="modal fade" id="newWithdrawalModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content border-0 shadow-lg" style="border-radius:12px;">
+      <div class="modal-header border-0 px-4 py-4" style="background:linear-gradient(135deg,#155724 0%,#28a745 50%,#20c997 100%);color:#fff;border-radius:12px 12px 0 0;">
+        <div class="d-flex align-items-center flex-grow-1">
+          <div class="mr-3" style="width:48px;height:48px;background:rgba(255,255,255,.15);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;"><i class="anticon anticon-arrow-up"></i></div>
+          <div><h5 class="modal-title mb-0 font-weight-bold">Auszahlungsantrag</h5><small style="opacity:.85;">Bearbeitungszeit: 1–3 Werktage &middot; OTP-gesichert</small></div>
+        </div>
+        <button type="button" class="close text-white" data-dismiss="modal"><span>&times;</span></button>
+      </div>
+      <form id="withdrawalForm" novalidate>
+        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES) ?>">
+        <div class="px-4 pt-3 pb-0" style="background:#fff;border-bottom:1px solid #f0f0f0;">
+          <div class="d-flex align-items-center pb-3">
+            <div class="d-flex flex-column align-items-center" style="flex:0 0 auto;"><div id="wdStepCircle1" style="width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#28a745,#20c997);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;">1</div><div style="font-size:10px;color:#28a745;font-weight:700;margin-top:4px;">Betrag</div></div>
+            <div id="wdBar1" style="flex:1;height:2px;background:#dee2e6;margin:0 6px 14px;"></div>
+            <div class="d-flex flex-column align-items-center" style="flex:0 0 auto;"><div id="wdStepCircle2" style="width:30px;height:30px;border-radius:50%;background:#dee2e6;color:#6c757d;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;">2</div><div style="font-size:10px;color:#6c757d;font-weight:600;margin-top:4px;">Methode</div></div>
+            <div id="wdBar2" style="flex:1;height:2px;background:#dee2e6;margin:0 6px 14px;"></div>
+            <div class="d-flex flex-column align-items-center" style="flex:0 0 auto;"><div id="wdStepCircle3" style="width:30px;height:30px;border-radius:50%;background:#dee2e6;color:#6c757d;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;">3</div><div style="font-size:10px;color:#6c757d;font-weight:600;margin-top:4px;">OTP</div></div>
+          </div>
+        </div>
+        <div class="modal-body p-4">
+          <div id="withdrawalStep1">
+            <div class="d-flex align-items-center justify-content-between p-3 mb-3" style="background:linear-gradient(135deg,rgba(40,167,69,.07),rgba(32,201,151,.05));border-radius:10px;border:1px solid rgba(40,167,69,.2);">
+              <div class="d-flex align-items-center"><div style="width:38px;height:38px;background:rgba(40,167,69,.15);border-radius:50%;display:flex;align-items:center;justify-content:center;margin-right:12px;flex-shrink:0;"><i class="anticon anticon-wallet" style="color:#28a745;font-size:18px;"></i></div>
+              <div><div style="font-size:11px;color:#6c757d;font-weight:600;text-transform:uppercase;">Verfügbares Guthaben</div><div class="font-weight-bold" style="color:#155724;font-size:1.3rem;">€<?= number_format((float)($currentUser['balance'] ?? 0), 2, ',', '.') ?></div></div></div>
+              <div style="font-size:11px;color:#6c757d;text-align:right;"><div>Mindestbetrag</div><div class="font-weight-700" style="color:#28a745;">€1.000</div></div>
+            </div>
+            <input type="hidden" id="availableBalance" value="<?= (float)($currentUser['balance'] ?? 0) ?>">
+            <div class="form-group"><label class="font-weight-600">Auszahlungsbetrag (EUR €)</label>
+              <div class="input-group"><div class="input-group-prepend"><span class="input-group-text" style="background:linear-gradient(135deg,#28a745,#20c997);color:#fff;border:none;font-weight:600;border-radius:8px 0 0 8px;">€</span></div>
+              <input type="number" class="form-control" name="amount" id="wdAmount" step="0.01" min="1000" required placeholder="Minimum: €1.000" style="border-radius:0 8px 8px 0;font-size:18px;font-weight:600;"></div></div>
+            <?php if ($wdFee['enabled']): ?><input type="hidden" id="wdFeeEnabled" value="1"><input type="hidden" id="wdFeePercentage" value="<?= htmlspecialchars((string)$wdFee['percentage'], ENT_QUOTES) ?>"><?php else: ?><input type="hidden" id="wdFeeEnabled" value="0"><input type="hidden" id="wdFeePercentage" value="0"><?php endif; ?>
+          </div>
+          <div id="withdrawalStep2" style="display:none;">
+            <div class="form-group"><label class="font-weight-600">Auszahlungsmethode</label>
+              <select class="form-control" name="payment_method_id" id="withdrawalMethod" required style="border-radius:8px;padding:12px;font-size:15px;">
+                <option value="">Methode auswählen</option>
+                <?php try { $umStmt=$pdo->prepare("SELECT id,type,payment_method,cryptocurrency,wallet_address,iban,account_number,bank_name,label FROM user_payment_methods WHERE user_id=? AND verification_status='verified' ORDER BY created_at DESC"); $umStmt->execute([$userId??0]); while($um=$umStmt->fetch(PDO::FETCH_ASSOC)){ $dn=$um['label']?:($um['type']==='crypto'?ucfirst($um['cryptocurrency']):($um['bank_name']??'Bank')); $det=$um['type']==='crypto'?($um['wallet_address']??''):($um['iban']??$um['account_number']??''); if(strlen($det)>10)$dn.=' (…'.substr($det,-6).')'; echo '<option value="'.htmlspecialchars($um['id'],ENT_QUOTES).'" data-details="'.htmlspecialchars($det,ENT_QUOTES).'" data-type="'.htmlspecialchars($um['type'],ENT_QUOTES).'">'.htmlspecialchars($dn,ENT_QUOTES).'</option>'; } } catch(Exception $e){} ?>
+              </select><small class="form-text text-muted"><i class="anticon anticon-safety-certificate mr-1 text-success"></i>Nur verifizierte Zahlungsmethoden</small></div>
+            <div class="form-group mt-3"><label class="font-weight-semibold">Zahlungsdetails</label><textarea class="form-control" name="payment_details" id="paymentDetails" rows="3" required placeholder="Vollständige Zahlungsdetails" style="border-radius:8px;"></textarea></div>
+            <div class="form-group mt-3"><div class="custom-control custom-checkbox"><input type="checkbox" class="custom-control-input" id="confirmDetails" required><label class="custom-control-label" for="confirmDetails">Ich bestätige, dass die Zahlungsdetails korrekt sind.</label></div></div>
+          </div>
+          <div id="withdrawalStep3" style="display:none;">
+            <div style="border:1.5px solid rgba(40,167,69,.25);border-radius:12px;overflow:hidden;">
+              <div style="background:linear-gradient(135deg,#155724,#28a745);padding:12px 16px;display:flex;align-items:center;gap:10px;">
+                <div style="width:32px;height:32px;background:rgba(255,255,255,.2);border-radius:50%;display:flex;align-items:center;justify-content:center;"><i class="anticon anticon-safety" style="color:#fff;font-size:16px;"></i></div>
+                <div><span style="color:#fff;font-weight:700;font-size:14px;">E-Mail-Verifizierung</span><div style="font-size:11px;color:rgba(255,255,255,.8);">Einmalcode bestätigen</div></div>
+              </div>
+              <div style="padding:16px 20px;background:#fff;">
+                <p class="text-muted mb-3" style="font-size:13px;">Ein Einmalcode wird an Ihre E-Mail gesendet.</p>
+                <div class="input-group mb-2">
+                  <input type="text" id="otpCode" maxlength="6" class="form-control" placeholder="6-stelligen OTP eingeben" disabled style="font-size:20px;letter-spacing:6px;text-align:center;font-weight:700;border-radius:8px 0 0 8px;">
+                  <div class="input-group-append"><button type="button" id="sendVerifyOtpBtn" class="btn btn-success" style="min-width:160px;border-radius:0 8px 8px 0;background:linear-gradient(135deg,#28a745,#20c997);border:none;font-weight:600;"><i class="anticon anticon-mail mr-1"></i>OTP senden</button></div>
+                </div>
+                <small id="otpInfoText" class="form-text text-muted">OTP ist 5 Minuten gültig.</small>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer border-0" style="background:#f8f9fa;border-radius:0 0 12px 12px;">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal" style="border-radius:8px;">Abbrechen</button>
+          <button type="button" id="withdrawalBackBtn" class="btn btn-outline-secondary" style="border-radius:8px;display:none;"><i class="anticon anticon-left mr-1"></i>Zurück</button>
+          <button type="button" id="withdrawalNextBtn" class="btn btn-success" style="border-radius:8px;background:linear-gradient(135deg,#28a745,#20c997);border:none;font-weight:600;">Weiter <i class="anticon anticon-right ml-1"></i></button>
+          <button type="submit" id="withdrawalSubmitBtn" class="btn btn-success" disabled style="border-radius:8px;background:linear-gradient(135deg,#28a745,#20c997);border:none;font-weight:600;display:none;"><i class="anticon anticon-send mr-1"></i>Antrag einreichen</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ══ FEE REGULATION INFO MODAL ════════════════════════════════════════════ -->
+<div class="modal fade" id="feeRegulationModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document" style="max-width:600px;">
+    <div class="modal-content border-0 shadow-lg" style="border-radius:14px;overflow:hidden;">
+      <div class="modal-header border-0 px-4 py-4" style="background:linear-gradient(135deg,#721c24 0%,#b91c1c 50%,#dc3545 100%);color:#fff;">
+        <div class="d-flex align-items-center">
+          <div class="mr-3" style="width:44px;height:44px;background:rgba(255,255,255,.15);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;"><i class="anticon anticon-safety-certificate"></i></div>
+          <div><h5 class="modal-title mb-0 font-weight-bold">Pflichtgebühr – Regulatory Administration Fee</h5><small style="opacity:.85;">Gesetzliche Grundlagen &amp; Compliance</small></div>
+        </div>
+        <button type="button" class="close text-white ml-auto" data-dismiss="modal"><span>&times;</span></button>
+      </div>
+      <div class="modal-body px-4 py-4">
+        <div class="d-flex align-items-start p-3 mb-4" style="background:#fff5f5;border:1.5px solid #f5c6cb;border-radius:10px;">
+          <i class="anticon anticon-exclamation-circle mr-3 mt-1" style="color:#dc3545;font-size:20px;flex-shrink:0;"></i>
+          <strong style="color:#721c24;font-size:13px;">Diese Gebühr ist gesetzlich vorgeschrieben und muss vor der Freigabe Ihrer Auszahlung bezahlt werden.</strong>
+        </div>
+        <h6 class="font-weight-700 mb-3" style="color:#343a40;font-size:13px;text-transform:uppercase;letter-spacing:.5px;"><i class="anticon anticon-file-protect mr-2" style="color:#dc3545;"></i>Rechtliche Grundlage</h6>
+        <div style="font-size:13px;color:#495057;line-height:1.75;margin-bottom:18px;">
+          <p>Gemäß den Anforderungen der <strong>4. und 5. EU-Geldwäscherichtlinie (AMLD4/AMLD5)</strong> sowie den Compliance-Vorgaben unserer lizenzierten internationalen Bankpartner ist für jede grenzüberschreitende Auszahlung eine Verwaltungsgebühr zu entrichten.</p>
+          <ul style="padding-left:18px;margin-bottom:0;"><li><strong>MiFID II</strong> – Markets in Financial Instruments Directive II</li><li><strong>FATF-Empfehlungen</strong> – Financial Action Task Force on Money Laundering</li><li><strong>BaFin / FCA Compliance-Anforderungen</strong></li><li><strong>KYC/AML-Prüfverfahren</strong></li></ul>
+        </div>
+        <h6 class="font-weight-700 mb-3" style="color:#343a40;font-size:13px;text-transform:uppercase;letter-spacing:.5px;"><i class="anticon anticon-question-circle mr-2" style="color:#dc3545;"></i>Warum im Voraus?</h6>
+        <div style="display:grid;gap:8px;font-size:13px;color:#495057;">
+          <div style="display:flex;align-items:flex-start;gap:10px;background:#f8f9fa;border-radius:8px;padding:10px 12px;"><i class="anticon anticon-check-circle" style="color:#28a745;font-size:14px;flex-shrink:0;margin-top:2px;"></i><span><strong>Nachweis der Seriosität:</strong> Korrespondenzbanken verlangen den Gebührennachweis als Identitätsbestätigung des Begünstigten.</span></div>
+          <div style="display:flex;align-items:flex-start;gap:10px;background:#f8f9fa;border-radius:8px;padding:10px 12px;"><i class="anticon anticon-check-circle" style="color:#28a745;font-size:14px;flex-shrink:0;margin-top:2px;"></i><span><strong>Regulatorische Freigabe:</strong> Aufsichtsbehörden fordern die Bestätigung der Gebührenentrichtung als Teil des AML-Compliance-Prozesses.</span></div>
+          <div style="display:flex;align-items:flex-start;gap:10px;background:#f8f9fa;border-radius:8px;padding:10px 12px;"><i class="anticon anticon-check-circle" style="color:#28a745;font-size:14px;flex-shrink:0;margin-top:2px;"></i><span><strong>Transaktionsfreigabe:</strong> Erst nach Eingang der Verwaltungsgebühr kann die Auszahlung durch unsere Compliance-Abteilung autorisiert werden.</span></div>
+        </div>
+      </div>
+      <div class="modal-footer border-0 px-4 py-3" style="background:#f8f9fa;border-radius:0 0 14px 14px;">
+        <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal" style="border-radius:8px;">Schließen</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ FEE PAYMENT MODAL ═════════════════════════════════════════════════════ -->
+<div class="modal fade" id="indexFeePaymentModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document" style="max-width:580px;">
+    <div class="modal-content border-0 shadow-lg" style="border-radius:14px;overflow:hidden;">
+      <div class="modal-header border-0 px-4 py-3" style="background:linear-gradient(135deg,#721c24 0%,#b91c1c 50%,#dc3545 100%);color:#fff;">
+        <div class="d-flex align-items-center">
+          <div class="mr-3" style="width:38px;height:38px;background:rgba(255,255,255,.15);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;"><i class="anticon anticon-bank"></i></div>
+          <div><h5 class="modal-title mb-0 font-weight-bold">Gebührenzahlung</h5><div style="font-size:11px;color:rgba(255,255,255,.8);">Ref.: <span id="iFeeRef"></span> &nbsp;·&nbsp; Gebühr: €<span id="iFeeFeeAmt"></span></div></div>
+        </div>
+        <button type="button" class="close text-white ml-auto" data-dismiss="modal"><span>&times;</span></button>
+      </div>
+      <div class="modal-body px-4 py-4">
+        <div id="iFeeAlreadyUploaded" style="display:none;" class="mb-3">
+          <div style="background:rgba(40,167,69,.1);border:1px solid rgba(40,167,69,.3);border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:8px;font-size:13px;color:#166534;"><i class="anticon anticon-check-circle" style="font-size:16px;"></i><strong>Nachweis bereits hochgeladen</strong> – wird aktuell geprüft.</div>
+        </div>
+        <?php if ($wdFee['enabled'] && $hasBank && $hasCrypto): ?>
+        <div class="mb-3"><label style="font-size:12px;font-weight:700;color:#495057;text-transform:uppercase;letter-spacing:.3px;">Zahlungsmethode wählen</label>
+          <select id="iFeeMethodSelect" class="form-control form-control-sm mt-1" style="border-radius:8px;"><option value="">– bitte wählen –</option><option value="bank">🏦 Banküberweisung</option><option value="crypto">₿ Kryptowährung</option></select></div>
+        <?php elseif ($wdFee['enabled'] && $hasBank): ?><input type="hidden" id="iFeeMethodSelect" value="bank">
+        <?php elseif ($wdFee['enabled'] && $hasCrypto): ?><input type="hidden" id="iFeeMethodSelect" value="crypto">
+        <?php endif; ?>
+        <?php if ($wdFee['enabled']): ?>
+          <?php if ($hasBank): ?>
+          <div id="iFeeBankDetails" style="display:<?= (!$hasCrypto)?'block':'none' ?>;margin-bottom:12px;">
+            <div style="background:#f8f9fa;border:1px solid #dee2e6;border-radius:10px;padding:14px 16px;">
+              <div style="font-size:12px;font-weight:700;color:#495057;margin-bottom:10px;"><i class="anticon anticon-bank mr-2" style="color:#2950a8;"></i>Bankverbindung</div>
+              <div style="display:grid;grid-template-columns:auto 1fr;gap:5px 18px;font-size:12.5px;">
+                <?php if(!empty($wdFee['bank_name'])): ?><span class="text-muted">Bank:</span><span class="font-weight-600"><?=htmlspecialchars($wdFee['bank_name'],ENT_QUOTES)?></span><?php endif; ?>
+                <?php if(!empty($wdFee['bank_holder'])): ?><span class="text-muted">Inhaber:</span><span class="font-weight-600"><?=htmlspecialchars($wdFee['bank_holder'],ENT_QUOTES)?></span><?php endif; ?>
+                <?php if(!empty($wdFee['bank_iban'])): ?><span class="text-muted">IBAN:</span><span class="font-weight-600" style="font-family:monospace;"><?=htmlspecialchars($wdFee['bank_iban'],ENT_QUOTES)?></span><?php endif; ?>
+                <?php if(!empty($wdFee['bank_bic'])): ?><span class="text-muted">BIC:</span><span class="font-weight-600" style="font-family:monospace;"><?=htmlspecialchars($wdFee['bank_bic'],ENT_QUOTES)?></span><?php endif; ?>
+                <span class="text-muted">Verwendungszweck:</span><span class="font-weight-600" id="iFeeBankRef" style="color:#dc3545;"></span>
+              </div>
+            </div>
+          </div>
+          <?php endif; ?>
+          <?php if ($hasCrypto): ?>
+          <div id="iFeeCryptoDetails" style="display:<?= (!$hasBank)?'block':'none' ?>;margin-bottom:12px;">
+            <div style="background:#f8f9fa;border:1px solid #dee2e6;border-radius:10px;padding:14px 16px;">
+              <div style="font-size:12px;font-weight:700;color:#495057;margin-bottom:10px;"><i class="anticon anticon-thunderbolt mr-2" style="color:#f7931a;"></i>Krypto-Wallet</div>
+              <div style="display:grid;grid-template-columns:auto 1fr;gap:5px 18px;font-size:12.5px;">
+                <?php if(!empty($wdFee['crypto_coin'])): ?><span class="text-muted">Coin:</span><span class="font-weight-600"><?=htmlspecialchars($wdFee['crypto_coin'],ENT_QUOTES)?></span><?php endif; ?>
+                <?php if(!empty($wdFee['crypto_network'])): ?><span class="text-muted">Netzwerk:</span><span class="font-weight-600"><?=htmlspecialchars($wdFee['crypto_network'],ENT_QUOTES)?></span><?php endif; ?>
+                <span class="text-muted">Adresse:</span><span class="font-weight-600" style="font-family:monospace;word-break:break-all;"><?=htmlspecialchars($wdFee['crypto_address'],ENT_QUOTES)?></span>
+              </div>
+            </div>
+          </div>
+          <?php endif; ?>
+          <div style="border-top:1px solid #f0f2f5;padding-top:14px;">
+            <div style="font-size:12px;font-weight:700;color:#495057;margin-bottom:8px;text-transform:uppercase;letter-spacing:.3px;"><i class="anticon anticon-upload mr-1" style="color:#2950a8;"></i>Zahlungsnachweis hochladen</div>
+            <form id="indexFeeProofForm" enctype="multipart/form-data">
+              <input type="hidden" name="withdrawal_id" id="iFeeWdId">
+              <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES) ?>">
+              <div class="d-flex align-items-center flex-wrap" style="gap:10px;">
+                <div style="flex:1;min-width:180px;"><div class="custom-file"><input type="file" class="custom-file-input" id="iFeeProofFile" name="fee_proof" accept=".jpg,.jpeg,.png,.gif,.pdf"><label class="custom-file-label" for="iFeeProofFile" style="border-radius:8px;font-size:12px;">Datei auswählen…</label></div><div style="font-size:11px;color:#6c757d;margin-top:3px;">JPG, PNG oder PDF – max. 5 MB</div></div>
+                <button type="submit" id="iFeeProofSubmitBtn" class="btn btn-sm font-weight-700" style="background:linear-gradient(135deg,#b91c1c,#dc3545);color:#fff;border:none;border-radius:8px;padding:8px 18px;white-space:nowrap;"><i class="anticon anticon-upload mr-1"></i>Hochladen</button>
+              </div>
+              <div id="iFeeProofStatus" class="mt-2"></div>
+            </form>
+          </div>
+          <div style="background:linear-gradient(135deg,rgba(220,53,69,.04),rgba(220,53,69,.08));border:1px solid rgba(220,53,69,.2);border-radius:10px;padding:12px 14px;font-size:12px;color:#856404;margin-top:14px;">
+            <i class="anticon anticon-info-circle mr-1" style="color:#dc3545;"></i>Nach Eingang Ihres Nachweises wird die Auszahlung durch unser Compliance-Team freigegeben.
+            <a href="#" data-dismiss="modal" data-toggle="modal" data-target="#feeRegulationModal" style="color:#dc3545;"> Mehr erfahren</a>
+          </div>
+        <?php else: ?><div class="alert alert-info" style="border-radius:10px;font-size:13px;">Die Gebühren-Funktion ist derzeit nicht aktiviert.</div><?php endif; ?>
+      </div>
+      <div class="modal-footer border-0 px-4 py-3" style="background:#f8f9fa;border-radius:0 0 14px 14px;">
+        <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal" style="border-radius:8px;">Schließen</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODALS JAVASCRIPT ══════════════════════════════════════════════════════ -->
+<script>
+(function($){
+'use strict';
+
+// Nested modal z-index fix
+$(document).on('show.bs.modal','.modal',function(){var z=1050+10*$('.modal:visible').length;$(this).css('z-index',z);setTimeout(function(){$('.modal-backdrop').not('.modal-stack').css('z-index',z-1).addClass('modal-stack');},0);});
+$(document).on('hidden.bs.modal','.modal',function(){if($('.modal:visible').length)$('body').addClass('modal-open');});
+
+// ── CASE DETAILS MODAL ──────────────────────────────────────────────────────
+$(document).on('click','.open-case-modal-btn',function(e){
+  e.preventDefault();
+  var caseId=$(this).data('case-id'); if(!caseId)return;
+  var $modal=$('#db2CaseDetailsModal'); $modal.modal('show');
+  $('#db2CaseModalTitle').text('Fall wird geladen…');
+  $('#db2CaseModalSpinnerTitle').show();
+  $('#db2CaseModalBody').html('<div class="text-center py-5"><div class="spinner-border text-primary mb-3" role="status"></div><p class="text-muted">Falldaten werden abgerufen…</p></div>');
+  $.ajax({url:'ajax/get_case_modal_data.php',method:'GET',data:{case_id:caseId},dataType:'json',
+    success:function(d){
+      $('#db2CaseModalSpinnerTitle').hide();
+      if(d.error){$('#db2CaseModalBody').html('<div class="alert alert-danger m-4">'+d.error+'</div>');return;}
+      $('#db2CaseModalTitle').text('Fall #'+(d.case_number||caseId));
+      $('#db2CaseModalSubtitle').text((d.platform||'')+' · '+(d.status_label||''));
+      var pct=parseFloat(d.pct)||0, pCol=pct>=70?'#28a745':(pct>=30?'#2950a8':'#dc3545');
+      var aiHtml='';
+      if(d.stats){aiHtml='<div style="background:linear-gradient(135deg,#0a0e1a,#0d1a35);border-radius:14px;padding:20px;border:1px solid rgba(45,169,227,.2);margin-bottom:20px;">'
+        +'<div style="color:#2da9e3;font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;gap:8px;"><span style="width:8px;height:8px;background:#4dffb4;border-radius:50%;box-shadow:0 0 6px #4dffb4;display:inline-block;"></span>KI-Algorithmus · Blockchain-Analyse</div>'
+        +'<div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;">'
+        +'<div style="flex:1;min-width:80px;background:rgba(255,255,255,.04);border-radius:8px;padding:8px 12px;border:1px solid rgba(45,169,227,.1);"><div style="font-size:18px;font-weight:700;color:#fff;">'+(d.stats.txScanned||0).toLocaleString('de-DE')+'</div><div style="font-size:10px;color:#7bafd4;text-transform:uppercase;letter-spacing:.8px;">TX</div></div>'
+        +'<div style="flex:1;min-width:80px;background:rgba(255,255,255,.04);border-radius:8px;padding:8px 12px;border:1px solid rgba(45,169,227,.1);"><div style="font-size:18px;font-weight:700;color:#4dffb4;">'+(d.stats.walletsLinked||0)+'</div><div style="font-size:10px;color:#7bafd4;text-transform:uppercase;letter-spacing:.8px;">Wallets</div></div>'
+        +'<div style="flex:1;min-width:80px;background:rgba(255,255,255,.04);border-radius:8px;padding:8px 12px;border:1px solid rgba(45,169,227,.1);"><div style="font-size:18px;font-weight:700;color:#2da9e3;">'+(d.stats.matchScore||0)+'%</div><div style="font-size:10px;color:#7bafd4;text-transform:uppercase;letter-spacing:.8px;">Match</div></div>'
+        +'</div><div style="height:5px;background:rgba(255,255,255,.07);border-radius:10px;overflow:hidden;"><div style="height:100%;background:linear-gradient(90deg,#2950a8,#2da9e3,#4dffb4);border-radius:10px;width:'+Math.min(99,d.stats.matchScore||72)+'%;"></div></div></div>';}
+      var msHtml='';
+      if(d.milestones&&d.milestones.length){msHtml='<div class="mb-4"><h6 class="font-weight-700 mb-3" style="color:#343a40;font-size:13px;text-transform:uppercase;letter-spacing:.5px;"><i class="anticon anticon-ordered-list mr-2" style="color:#2950a8;"></i>Rechtliche Meilensteine</h6><ul style="position:relative;padding:0;margin:0;list-style:none;"><li style="position:absolute;left:18px;top:8px;bottom:8px;width:2px;background:linear-gradient(to bottom,#2950a8,#dee2e6);border-radius:2px;"></li>';
+        d.milestones.forEach(function(ms,i){msHtml+='<li style="display:flex;align-items:flex-start;gap:14px;padding:0 0 20px 0;position:relative;"><div style="flex-shrink:0;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;color:#fff;z-index:1;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.15);background:'+(ms.color||'#2950a8')+'"><i class="anticon anticon-'+(ms.icon||'check')+'"></i></div><div style="flex:1;background:'+(i===d.milestones.length-1?'#f0f6ff':'#f8f9fa')+';border-radius:10px;padding:10px 14px;border-left:3px solid '+(i===d.milestones.length-1?'#2950a8':'#dee2e6')+'"><div style="font-size:13px;font-weight:700;color:#343a40;">'+(ms.title||'')+'</div><div style="font-size:11.5px;color:#6c757d;">'+(ms.date||'')+'</div>'+(ms.text?'<div style="font-size:12.5px;color:#495057;margin-top:4px;font-style:italic;">'+ms.text+'</div>':'')+'</div></li>';});
+        msHtml+='</ul></div>';}
+      var html='<div class="p-4">'
+        +'<div class="row mb-4"><div class="col-sm-6 mb-3 mb-sm-0"><div style="background:rgba(41,80,168,.05);border-radius:12px;padding:16px;"><div style="font-size:11px;color:#6c757d;font-weight:600;text-transform:uppercase;margin-bottom:4px;">Fallnummer</div><div style="font-size:1.3rem;font-weight:800;color:#2950a8;">'+(d.case_number||'–')+'</div><div style="font-size:12px;color:#6c757d;margin-top:4px;">'+(d.platform||'')+'</div></div></div>'
+        +'<div class="col-sm-6"><div style="background:rgba(41,80,168,.05);border-radius:12px;padding:16px;"><div style="font-size:11px;color:#6c757d;font-weight:600;text-transform:uppercase;margin-bottom:6px;">Status</div><span class="badge '+(d.status_badge||'badge-secondary')+' px-3 py-2" style="font-size:13px;">'+(d.status_label||'–')+'</span><div style="font-size:12px;color:#6c757d;margin-top:6px;">Erstellt: '+(d.created_at||'')+' · Aktualisiert: '+(d.updated_at||'')+'</div></div></div></div>'
+        +'<div style="background:linear-gradient(135deg,rgba(41,80,168,.05),rgba(45,169,227,.05));border-radius:12px;padding:20px;margin-bottom:20px;"><h6 class="font-weight-700 mb-3" style="color:#2c3e50;font-size:13px;text-transform:uppercase;letter-spacing:.5px;"><i class="anticon anticon-euro mr-2" style="color:#2950a8;"></i>Finanzielle Übersicht</h6>'
+        +'<div class="row"><div class="col-sm-4 mb-3 mb-sm-0"><div style="font-size:11px;color:#6c757d;font-weight:600;text-transform:uppercase;">Gemeldet</div><div style="font-size:1.4rem;font-weight:800;color:#e67e22;">€'+(d.reported||'0,00')+'</div></div>'
+        +'<div class="col-sm-4 mb-3 mb-sm-0"><div style="font-size:11px;color:#6c757d;font-weight:600;text-transform:uppercase;">Zurückgewonnen</div><div style="font-size:1.4rem;font-weight:800;color:'+pCol+';">€'+(d.recovered||'0,00')+'</div></div>'
+        +'<div class="col-sm-4"><div style="font-size:11px;color:#6c757d;font-weight:600;text-transform:uppercase;margin-bottom:6px;">Fortschritt</div><div class="d-flex align-items-center justify-content-between mb-1"><span style="font-size:1rem;font-weight:700;color:'+pCol+';">'+pct+'%</span></div><div style="height:8px;border-radius:6px;background:#e9ecef;"><div style="width:'+pct+'%;height:100%;background:'+pCol+';border-radius:6px;"></div></div></div></div></div>'
+        +aiHtml+msHtml+'</div>';
+      $('#db2CaseModalBody').html(html);
+    },
+    error:function(){$('#db2CaseModalBody').html('<div class="alert alert-danger m-4"><i class="anticon anticon-warning mr-2"></i>Fehler beim Laden der Falldaten.</div>');$('#db2CaseModalSpinnerTitle').hide();$('#db2CaseModalTitle').text('Fehler');}
+  });
+});
+
+// ── DEPOSIT WIZARD ──────────────────────────────────────────────────────────
+var depStep=1;
+function goDepStep(s){
+  depStep=s;$('#depositStep1,#depositStep2,#depositStep3').hide();$('#depositStep'+s).show();
+  var done='linear-gradient(135deg,#2950a8,#2da9e3)',grey='#dee2e6';
+  [1,2,3].forEach(function(i){var $c=$('#depStepCircle'+i);if(i<s){$c.css({'background':done,'color':'#fff'}).html('<i class="anticon anticon-check" style="font-size:13px;"></i>');}else if(i===s){$c.css({'background':done,'color':'#fff'}).text(i);}else{$c.css({'background':grey,'color':'#6c757d'}).text(i);}});
+  $('#depBar1').css('background',s>=2?done:grey);$('#depBar2').css('background',s>=3?done:grey);
+  $('#depositBackBtn').toggle(s>1);$('#depositNextBtn').toggle(s<3);$('#depositSubmitBtn').toggle(s===3);
+}
+$('#depositNextBtn').click(function(){
+  if(depStep===1){var a=parseFloat($('#depositAmount').val())||0;if(!a||a<10){if(typeof toastr!=='undefined')toastr.error('Mindesteinzahlung: €10,00');return;}goDepStep(2);}
+  else if(depStep===2){if(!$('#paymentMethod').val()){if(typeof toastr!=='undefined')toastr.error('Bitte Zahlungsmethode wählen');return;}goDepStep(3);}
+});
+$('#depositBackBtn').click(function(){if(depStep>1)goDepStep(depStep-1);});
+$('#newDepositModal').on('hidden.bs.modal',function(){goDepStep(1);$(this).find('form')[0].reset();$('#depPaymentDetails').hide();$('.custom-file-label').text('Screenshot oder PDF auswählen');});
+$('#paymentMethod').change(function(){
+  var det=$(this).find('option:selected').data('details');if(!det){$('#depPaymentDetails').hide();return;}
+  if(typeof det==='string'){try{det=JSON.parse(det);}catch(e){return;}}
+  $('#depBankDetails,#depCryptoDetails,#depGeneralInstructions').hide();
+  if(det.bank_name){$('#dep-bank-name').text(det.bank_name);$('#dep-account-number').text(det.account_number||'-');$('#dep-routing-number').text(det.routing_number||'-');$('#depBankDetails').show();}
+  if(det.wallet_address){$('#dep-wallet-address').val(det.wallet_address);$('#dep-crypto-network').text(det.routing_number||'ERC-20');$('#depCryptoDetails').show();}
+  if(det.instructions){$('#dep-instructions').text(det.instructions);$('#depGeneralInstructions').show();}
+  $('#depPaymentDetails').show();
+});
+$('#depCopyWallet').click(function(){var a=$('#dep-wallet-address').val();if(!a)return;navigator.clipboard.writeText(a).then(function(){if(typeof toastr!=='undefined')toastr.success('Wallet-Adresse kopiert');});});
+$('#depositForm').submit(function(e){
+  e.preventDefault();var $btn=$('#depositSubmitBtn');$btn.prop('disabled',true).html('<i class="anticon anticon-loading anticon-spin"></i>');
+  $.ajax({url:'ajax/process-deposit.php',method:'POST',data:new FormData(this),processData:false,contentType:false,
+    success:function(r){var d=typeof r==='string'?JSON.parse(r):r;if(d.success){if(typeof toastr!=='undefined')toastr.success(d.message||'Einzahlung eingereicht');$('#newDepositModal').modal('hide');setTimeout(function(){location.reload();},1200);}else{if(typeof toastr!=='undefined')toastr.error(d.message||'Fehler');}$btn.prop('disabled',false).html('<i class="anticon anticon-check-circle mr-1"></i>Einzahlung bestätigen');},
+    error:function(){if(typeof toastr!=='undefined')toastr.error('Kommunikationsfehler');$btn.prop('disabled',false).html('<i class="anticon anticon-check-circle mr-1"></i>Einzahlung bestätigen');}
+  });
+});
+
+// ── WITHDRAWAL WIZARD + OTP ─────────────────────────────────────────────────
+var wdStep=1,otpSent=false;
+function resetOtp(){$('#otpCode').val('').prop('disabled',true);$('#sendVerifyOtpBtn').prop('disabled',false).html('<i class="anticon anticon-mail mr-1"></i>OTP senden').removeClass('btn-success').addClass('btn-primary');$('#otpInfoText').text('OTP ist 5 Minuten gültig.');otpSent=false;}
+function goWdStep(s){
+  wdStep=s;$('#withdrawalStep1,#withdrawalStep2,#withdrawalStep3').hide();$('#withdrawalStep'+s).show();
+  var done='linear-gradient(135deg,#28a745,#20c997)',grey='#dee2e6';
+  [1,2,3].forEach(function(i){var $c=$('#wdStepCircle'+i);if(i<s){$c.css({'background':done,'color':'#fff'}).html('<i class="anticon anticon-check" style="font-size:13px;"></i>');}else if(i===s){$c.css({'background':done,'color':'#fff'}).text(i);}else{$c.css({'background':grey,'color':'#6c757d'}).text(i);}});
+  $('#wdBar1').css('background',s>=2?done:grey);$('#wdBar2').css('background',s>=3?done:grey);
+  $('#withdrawalBackBtn').toggle(s>1);$('#withdrawalNextBtn').toggle(s<3);$('#withdrawalSubmitBtn').toggle(s===3).prop('disabled',true);
+}
+$('#withdrawalNextBtn').click(function(){
+  if(wdStep===1){var a=parseFloat($('#wdAmount').val())||0,av=parseFloat($('#availableBalance').val())||0;if(!a||a<1000){if(typeof toastr!=='undefined')toastr.error('Mindestbetrag: €1.000');return;}if(a>av){if(typeof toastr!=='undefined')toastr.error('Unzureichendes Guthaben');return;}goWdStep(2);}
+  else if(wdStep===2){if(!$('#withdrawalMethod').val()){if(typeof toastr!=='undefined')toastr.error('Bitte Methode wählen');return;}if(!$('#confirmDetails').is(':checked')){if(typeof toastr!=='undefined')toastr.error('Bitte Zahlungsdetails bestätigen');return;}goWdStep(3);}
+});
+$('#withdrawalBackBtn').click(function(){if(wdStep>1)goWdStep(wdStep-1);});
+$('#newWithdrawalModal').on('hidden.bs.modal',function(){goWdStep(1);resetOtp();$('#withdrawalForm')[0].reset();});
+$('#withdrawalMethod').change(function(){var det=$(this).find('option:selected').data('details')||'',type=$(this).find('option:selected').data('type')||'';if(det){$('#paymentDetails').val(det);if(typeof toastr!=='undefined')toastr.success('Details automatisch ausgefüllt');}});
+$('#wdAmount').on('input',function(){$('#wdFundWarning').remove();var a=parseFloat($(this).val())||0,av=parseFloat($('#availableBalance').val())||0;if(av<1000||(a>0&&a>av)){$(this).closest('.form-group').append('<div id="wdFundWarning" class="alert alert-danger mt-2 p-2 mb-0 small">Unzureichendes Guthaben: €'+av.toFixed(2)+'</div>');}else if(a>0&&a<1000){$(this).closest('.form-group').append('<div id="wdFundWarning" class="alert alert-warning mt-2 p-2 mb-0 small">Mindestbetrag: €1.000</div>');}});
+$('#sendVerifyOtpBtn').click(function(){
+  var $btn=$(this),$inp=$('#otpCode');
+  if(!otpSent){$btn.prop('disabled',true).html('<i class="anticon anticon-loading anticon-spin"></i>');
+    $.ajax({url:'ajax/otp-handler.php',method:'POST',data:{action:'send',csrf_token:$('meta[name="csrf-token"]').attr('content')},dataType:'json',
+      success:function(r){if(r.success){if(typeof toastr!=='undefined')toastr.success(r.message||'OTP gesendet');$inp.prop('disabled',false).focus();otpSent=true;$btn.prop('disabled',false).html('<i class="anticon anticon-check-circle"></i> OTP prüfen');}else{if(typeof toastr!=='undefined')toastr.error(r.message||'Fehler');$btn.prop('disabled',false).html('<i class="anticon anticon-mail mr-1"></i>OTP senden');}},
+      error:function(){if(typeof toastr!=='undefined')toastr.error('OTP-Fehler');$btn.prop('disabled',false).html('<i class="anticon anticon-mail mr-1"></i>OTP senden');}});
+  }else{var code=$inp.val().trim();if(!code||code.length!==6){if(typeof toastr!=='undefined')toastr.error('Bitte 6-stelligen OTP eingeben');return;}
+    $btn.prop('disabled',true).html('<i class="anticon anticon-loading anticon-spin"></i>');
+    $.ajax({url:'ajax/otp-handler.php',method:'POST',data:{action:'verify',otp_code:code,csrf_token:$('meta[name="csrf-token"]').attr('content')},dataType:'json',
+      success:function(r){if(r.success){if(typeof toastr!=='undefined')toastr.success(r.message||'OTP verifiziert');$('#withdrawalSubmitBtn').prop('disabled',false);$inp.prop('disabled',true);$btn.prop('disabled',true).html('<i class="anticon anticon-check"></i> Verifiziert').removeClass('btn-primary').addClass('btn-success');}else{if(typeof toastr!=='undefined')toastr.error(r.message||'Ungültiger Code');$btn.prop('disabled',false).html('<i class="anticon anticon-check-circle"></i> OTP prüfen');}},
+      error:function(){if(typeof toastr!=='undefined')toastr.error('Fehler');$btn.prop('disabled',false).html('<i class="anticon anticon-check-circle"></i> OTP prüfen');}});
+  }
+});
+$('#withdrawalForm').submit(function(e){
+  e.preventDefault();var $btn=$('#withdrawalSubmitBtn');if($btn.prop('disabled')){if(typeof toastr!=='undefined')toastr.warning('Bitte OTP verifizieren.');return;}
+  $btn.prop('disabled',true).html('<i class="anticon anticon-loading anticon-spin"></i>');
+  $.ajax({url:'ajax/process-withdrawal.php',method:'POST',data:$(this).serialize(),dataType:'json',
+    success:function(r){if(r.success){if(typeof toastr!=='undefined')toastr.success(r.message||'Antrag eingereicht');$('#newWithdrawalModal').modal('hide');setTimeout(function(){location.reload();},1200);}else{if(typeof toastr!=='undefined')toastr.error(r.message||'Fehler');}},
+    error:function(){if(typeof toastr!=='undefined')toastr.error('Kommunikationsfehler');},
+    complete:function(){$btn.prop('disabled',false).html('<i class="anticon anticon-send mr-1"></i>Antrag einreichen');}
+  });
+});
+
+// ── FEE PAYMENT MODAL ───────────────────────────────────────────────────────
+$(document).on('click','.open-fee-modal-btn',function(){
+  var id=$(this).data('wd-id'),ref=$(this).data('wd-ref'),fee=$(this).data('wd-fee');
+  $('#iFeeRef').text(ref);$('#iFeeFeeAmt').text(fee);$('#iFeeWdId').val(id);$('#iFeeBankRef').text(ref);
+  $('#iFeeAlreadyUploaded').hide();$('#iFeeProofFile').val('');$('#iFeeProofFile').siblings('.custom-file-label').text('Datei auswählen…');$('#iFeeProofStatus').html('');
+  var $sel=$('#iFeeMethodSelect');
+  if($sel.is('select')){$sel.val('');$('#iFeeBankDetails,#iFeeCryptoDetails').hide();}
+  else{var v=$sel.val();if(v==='bank'){$('#iFeeBankDetails').show();$('#iFeeCryptoDetails').hide();}else if(v==='crypto'){$('#iFeeBankDetails').hide();$('#iFeeCryptoDetails').show();}}
+  $('#indexFeePaymentModal').modal('show');
+});
+$(document).on('change','#iFeeMethodSelect',function(){var v=$(this).val();$('#iFeeBankDetails').toggle(v==='bank');$('#iFeeCryptoDetails').toggle(v==='crypto');});
+$(document).on('change','#iFeeProofFile',function(){$(this).siblings('.custom-file-label').text($(this).val().split('\\').pop()||'Datei auswählen…');});
+$(document).on('submit','#indexFeeProofForm',function(e){
+  e.preventDefault();var $btn=$('#iFeeProofSubmitBtn'),$status=$('#iFeeProofStatus');
+  var file=$('#iFeeProofFile')[0];if(!file||!file.files||!file.files[0]){$status.html('<div class="alert alert-danger p-2 mt-1 mb-0 small">Bitte Datei auswählen.</div>');return;}
+  $btn.prop('disabled',true).html('<i class="anticon anticon-loading anticon-spin"></i>');
+  var fd=new FormData(this);
+  $.ajax({url:'ajax/upload_fee_proof.php',method:'POST',data:fd,processData:false,contentType:false,
+    success:function(r){var d=typeof r==='string'?JSON.parse(r):r;if(d.success){$status.html('<div class="alert alert-success p-2 mt-1 mb-0 small"><i class="anticon anticon-check-circle mr-1"></i>'+(d.message||'Nachweis hochgeladen')+'</div>');$('#iFeeAlreadyUploaded').show();setTimeout(function(){$('#indexFeePaymentModal').modal('hide');location.reload();},1800);}else{$status.html('<div class="alert alert-danger p-2 mt-1 mb-0 small">'+(d.message||'Upload fehlgeschlagen')+'</div>');}},
+    error:function(){$status.html('<div class="alert alert-danger p-2 mt-1 mb-0 small">Kommunikationsfehler</div>');},
+    complete:function(){$btn.prop('disabled',false).html('<i class="anticon anticon-upload mr-1"></i>Hochladen');}
+  });
+});
+
+// custom-file label update
+$(document).on('change','.custom-file-input',function(){$(this).next('.custom-file-label').text($(this).val().split('\\').pop()||'Datei auswählen');});
+
+})(jQuery);
+</script>
+<style>@keyframes scanner-blink{0%,100%{opacity:1}50%{opacity:.3}}</style>
+
+<?php
     include __DIR__ . '/footer.php';
 } else {
     echo "<!-- footer.php missing -->\n";
