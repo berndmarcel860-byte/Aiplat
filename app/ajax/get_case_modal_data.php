@@ -38,17 +38,30 @@ try {
         exit;
     }
 
-    // ── Algorithm stats (deterministic seed per case) ──────────────────────────
-    $seed = hexdec(substr(md5($case['case_number']), 0, 8));
-    mt_srand($seed);
-    $stats = [
-        'txScanned'     => mt_rand(12000, 450000),
-        'walletsLinked' => mt_rand(3, 41),
-        'exchanges'     => mt_rand(1, 8),
-        'hops'          => mt_rand(4, 18),
-        'matchScore'    => mt_rand(72, 99),
-    ];
+    // ── Algorithm stats – derived from real case attributes ────────────────────
+    // Scale log-linearly from €1 000 → min values  to  €2 000 000 → max values.
+    // A small per-case deterministic jitter keeps each case unique.
+    $amount    = max(1000.0, (float)$case['reported_amount']);
+    $ratio     = min(1.0, log10($amount / 1000.0) / log10(2000.0)); // log10(2 000 000/1 000)
+    $recovProg = max(0, min(100, (int)($case['recovery_progress'] ?? 0)));
+
+    $jSeed = hexdec(substr(md5($case['case_number']), 0, 8));
+    mt_srand($jSeed);
+    $jT = mt_rand(-8000, 8000);
+    $jW = mt_rand(-2,    2);
+    $jE = mt_rand(-1,    1);
+    $jH = mt_rand(-2,    2);
+    $jS = mt_rand(-3,    3);
     mt_srand();
+
+    $stats = [
+        'txScanned'     => max(12000, (int)round(12000 + $ratio * 428000) + $jT),
+        'walletsLinked' => max(3,     (int)round(3     + $ratio * 36)     + $jW),
+        'exchanges'     => max(1,     (int)round(1     + $ratio * 6)      + $jE),
+        'hops'          => max(4,     (int)round(4     + $ratio * 13)     + $jH),
+        'matchScore'    => min(99, max(72,
+                            (int)round(72 + $ratio * 22 + $recovProg * 0.05) + $jS)),
+    ];
 
     // ── Legal milestones – Step 1 = created_at, steps progress forward ─────────
     $seed2   = hexdec(substr(md5('legal_' . $case['case_number']), 0, 8));
@@ -131,7 +144,34 @@ try {
     }
     mt_srand();
 
-    // ── Status label ───────────────────────────────────────────────────────────
+    // ── Real recovery transactions ──────────────────────────────────────────────
+    $rtStmt = $pdo->prepare("
+        SELECT amount, transaction_date, notes
+        FROM case_recovery_transactions
+        WHERE case_id = ?
+        ORDER BY transaction_date DESC
+        LIMIT 10
+    ");
+    $rtStmt->execute([$caseId]);
+    $recoveryTransactions = array_map(function ($t) {
+        return [
+            'amount' => number_format((float)$t['amount'], 2, ',', '.'),
+            'date'   => date('d.m.Y', strtotime($t['transaction_date'])),
+            'notes'  => $t['notes'] ?? '',
+        ];
+    }, $rtStmt->fetchAll(PDO::FETCH_ASSOC));
+
+    // ── Status history (last 5, newest-first) ────────────────────────────────────
+    $shStmt = $pdo->prepare("
+        SELECT new_status, notes, created_at
+        FROM case_status_history
+        WHERE case_id = ?
+        ORDER BY created_at DESC
+        LIMIT 5
+    ");
+    $shStmt->execute([$caseId]);
+
+    // ── Status label (needed for both status history and main badge) ────────────
     $statusLabels = [
         'open'               => ['label' => 'Offen',                    'badge' => 'badge-info'],
         'documents_required' => ['label' => 'Dokumente ausstehend',     'badge' => 'badge-warning'],
@@ -140,23 +180,40 @@ try {
         'refund_rejected'    => ['label' => 'Abgelehnt',                'badge' => 'badge-danger'],
         'closed'             => ['label' => 'Geschlossen',              'badge' => 'badge-secondary'],
     ];
+
+    $statusHistory = array_map(function ($h) use ($statusLabels) {
+        $sl = $statusLabels[$h['new_status']]
+            ?? ['label' => ucfirst($h['new_status']), 'badge' => 'badge-secondary'];
+        return [
+            'status_label' => $sl['label'],
+            'status_badge' => $sl['badge'],
+            'notes'        => $h['notes'] ?? '',
+            'date'         => date('d.m.Y', strtotime($h['created_at'])),
+        ];
+    }, $shStmt->fetchAll(PDO::FETCH_ASSOC));
     $reported = (float)$case['reported_amount'];
     $pct      = ($reported > 0) ? min(100, round($recovered / $reported * 100, 1)) : 0;
     $sl       = $statusLabels[$case['status']] ?? ['label' => ucfirst($case['status']), 'badge' => 'badge-secondary'];
 
     echo json_encode([
-        'id'            => (int)$case['id'],
-        'case_number'   => $case['case_number'],
-        'platform'      => $case['platform_name'] ?? 'Unbekannte Plattform',
-        'status_label'  => $sl['label'],
-        'status_badge'  => $sl['badge'],
-        'reported'      => number_format($reported, 2, ',', '.'),
-        'recovered'     => number_format($recovered, 2, ',', '.'),
-        'recovered_raw' => $recovered,
-        'pct'           => $pct,
-        'updated_at'    => date('d.m.Y', strtotime($case['updated_at'] ?? $case['created_at'])),
-        'stats'         => $stats,
-        'milestones'    => $milestones,
+        'id'                   => (int)$case['id'],
+        'case_number'          => $case['case_number'],
+        'platform'             => $case['platform_name'] ?? 'Unbekannte Plattform',
+        'status_label'         => $sl['label'],
+        'status_badge'         => $sl['badge'],
+        'reported'             => number_format($reported, 2, ',', '.'),
+        'recovered'            => number_format($recovered, 2, ',', '.'),
+        'recovered_raw'        => $recovered,
+        'pct'                  => $pct,
+        'created_at'           => date('d.m.Y', $created),
+        'updated_at'           => date('d.m.Y', strtotime($case['updated_at'] ?? $case['created_at'])),
+        'recovery_stage'       => $case['recovery_stage']       ?? 'initial',
+        'recovery_progress'    => $recovProg,
+        'refund_difficulty'    => $case['refund_difficulty']     ?? 'medium',
+        'stats'                => $stats,
+        'milestones'           => $milestones,
+        'recovery_transactions'=> $recoveryTransactions,
+        'status_history'       => $statusHistory,
         'milestone_visibility' => [
             'step2' => $showStep2,
             'step3' => $showStep3,
