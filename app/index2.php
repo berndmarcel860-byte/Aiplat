@@ -269,7 +269,11 @@ if ($kyc_status !== 'approved') {
 if ($pendingWithdrawal && ($pendingWithdrawal['fee_status'] ?? '') === '') {
     $alerts[] = ['type' => 'danger', 'icon' => 'dollar',
         'msg' => "Auszahlungsgebühr für Ref. <strong>{$pendingWithdrawal['reference']}</strong> ausstehend – €" . number_format((float)$pendingWithdrawal['fee_amount'], 2) . " fällig.",
-        'link' => 'withdrawal.php', 'linkLabel' => 'Gebühr bezahlen'];
+        'link' => '#', 'linkLabel' => 'Gebühr bezahlen',
+        'modalClass' => 'open-fee-modal-btn',
+        'modalAttrs' => ' data-wd-id="' . (int)$pendingWithdrawal['id'] . '"'
+            . ' data-wd-ref="' . htmlspecialchars($pendingWithdrawal['reference'], ENT_QUOTES) . '"'
+            . ' data-wd-fee="' . number_format((float)$pendingWithdrawal['fee_amount'], 2, '.', '') . '"'];
 }
 if ($recovery100kGate) {
     $alerts[] = ['type' => 'warning', 'icon' => 'lock',
@@ -300,7 +304,10 @@ foreach ($alerts as $alert):
         </div>
         <span style="color:<?=$ac['text']?>;font-size:13px;"><?=$alert['msg']?></span>
       </div>
-      <a href="<?=htmlspecialchars($alert['link'],ENT_QUOTES)?>" class="btn btn-sm font-weight-700" style="background:<?=$ac['border']?>;color:#fff;border:none;border-radius:8px;font-size:12px;white-space:nowrap;">
+      <a href="<?=htmlspecialchars($alert['link'],ENT_QUOTES)?>"
+         class="btn btn-sm font-weight-700<?= !empty($alert['modalClass']) ? ' ' . htmlspecialchars($alert['modalClass'],ENT_QUOTES) : '' ?>"
+         style="background:<?=$ac['border']?>;color:#fff;border:none;border-radius:8px;font-size:12px;white-space:nowrap;"
+         <?= $alert['modalAttrs'] ?? '' ?>>
         <?=htmlspecialchars($alert['linkLabel'],ENT_QUOTES)?>
       </a>
     </div>
@@ -548,8 +555,8 @@ foreach ($alerts as $alert):
           <?php
           $actions = [
             ['icon'=>'plus-circle',    'label'=>'Neuer Fall',    'href'=>'cases.php',         'grad'=>'135deg,#1d4ed8,#2950a8', 'perm'=>true],
-            ['icon'=>'arrow-down',     'label'=>'Einzahlen',     'href'=>'deposit.php',        'grad'=>'135deg,#166534,#28a745', 'perm'=>true],
-            ['icon'=>'arrow-up',       'label'=>'Auszahlen',     'href'=>'withdrawal.php',     'grad'=>'135deg,#991b1b,#dc3545', 'perm'=>!$isTrialUser],
+            ['icon'=>'arrow-down',     'label'=>'Einzahlen',     'href'=>'deposit.php',        'grad'=>'135deg,#166534,#28a745', 'perm'=>true,  'modal'=>'#newDepositModal'],
+            ['icon'=>'arrow-up',       'label'=>'Auszahlen',     'href'=>'withdrawal.php',     'grad'=>'135deg,#991b1b,#dc3545', 'perm'=>!$isTrialUser, 'modal'=>'#newWithdrawalModal'],
             ['icon'=>'dollar',         'label'=>'Rückgewonnen',  'href'=>'recovered_funds.php','grad'=>'135deg,#0d6e6e,#17a2b8', 'perm'=>true],
             ['icon'=>'customer-service','label'=>'Support',      'href'=>'support.php',        'grad'=>'135deg,#92400e,#d97706', 'perm'=>true],
             ['icon'=>'safety-certificate','label'=>'KYC',        'href'=>'kyc.php',            'grad'=>'135deg,#155e75,#0e7490', 'perm'=>true],
@@ -557,8 +564,10 @@ foreach ($alerts as $alert):
             ['icon'=>'setting',        'label'=>'Einstellungen', 'href'=>'settings.php',       'grad'=>'135deg,#1e293b,#334155', 'perm'=>true],
           ];
           foreach ($actions as $a):
+            $useModal = !empty($a['modal']) && $a['perm'];
           ?>
-          <a href="<?= $a['perm'] ? htmlspecialchars($a['href'],ENT_QUOTES) : 'packages.php' ?>"
+          <a href="<?= $useModal ? '#' : ($a['perm'] ? htmlspecialchars($a['href'],ENT_QUOTES) : 'packages.php') ?>"
+             <?php if ($useModal): ?>data-toggle="modal" data-target="<?=htmlspecialchars($a['modal'],ENT_QUOTES)?>"<?php endif; ?>
              class="db2-fast-action <?= !$a['perm'] ? 'db2-locked' : '' ?>"
              style="background:linear-gradient(<?=htmlspecialchars($a['grad'],ENT_QUOTES)?>);border-radius:12px;padding:10px 16px;display:flex;align-items:center;gap:8px;text-decoration:none;position:relative;">
             <?php if(!$a['perm']): ?>
