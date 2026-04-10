@@ -330,10 +330,18 @@ $statusLabels = [
         'Cluster gefunden',
         'Off-Chain-Daten abgeglichen',
     ];
-    function startScanLog(logEl, totalTx, onComplete) {
-        var interval = Math.max(40, Math.round(2200 / Math.min(totalTx, 55)));
-        var shown = 0;
+    /* duration (ms) scaled to txScanned: 12 000 TX → 3 000 ms, 450 000 TX → 10 000 ms */
+    function scanDurationFor(txScanned) {
+        var TX_MIN = 12000, TX_MAX = 450000;
+        var MS_MIN = 3000,  MS_MAX = 10000;
+        var ratio = Math.min(1, Math.max(0, (txScanned - TX_MIN) / (TX_MAX - TX_MIN)));
+        return Math.round(MS_MIN + ratio * (MS_MAX - MS_MIN));
+    }
+
+    function startScanLog(logEl, totalTx, scanDuration, onComplete) {
         var maxLines = 55;
+        var interval = Math.max(40, Math.round(scanDuration / maxLines));
+        var shown = 0;
         var t = setInterval(function() {
             if (shown >= maxLines) { clearInterval(t); if (onComplete) onComplete(); return; }
             var action = TX_ACTIONS[rand(0, TX_ACTIONS.length - 1)];
@@ -359,8 +367,10 @@ $statusLabels = [
         { label:'KI-Bewertung',    pct: 88,  color:'#13c2c2' },
         { label:'Abgeschlossen ✓', pct: 100, color:'#52c41a' },
     ];
-    function runPhases(barEl, phaseEl, onDone) {
+    function runPhases(barEl, phaseEl, scanDuration, onDone) {
         var idx = 0;
+        /* each phase gets an equal slice, last phase fires immediately */
+        var phaseDelay = Math.round(scanDuration / PHASES.length);
         function next() {
             if (idx >= PHASES.length) { if (onDone) onDone(); return; }
             var p = PHASES[idx++];
@@ -368,7 +378,7 @@ $statusLabels = [
             barEl.style.background = p.color;
             phaseEl.textContent = p.label;
             if (p.pct === 100) phaseEl.classList.add('complete');
-            var t = setTimeout(next, idx < PHASES.length ? rand(320, 520) : 0);
+            var t = setTimeout(next, idx < PHASES.length ? phaseDelay : 0);
             _scanTimers.push(t);
         }
         next();
@@ -433,6 +443,9 @@ $statusLabels = [
         var logEl   = document.getElementById('rf-scan-log');
         if (!barEl || !logEl) return;
 
+        /* total duration driven by this case's txScanned value from the DB */
+        var dur = scanDurationFor(d.stats.txScanned);
+
         var statDefs = [
             { id:'cnt-tx',  target: d.stats.txScanned,    suffix:''  },
             { id:'cnt-w',   target: d.stats.walletsLinked, suffix:''  },
@@ -441,22 +454,22 @@ $statusLabels = [
             { id:'cnt-ai',  target: d.stats.matchScore,    suffix:'%' },
         ];
 
-        /* stagger counter animations */
+        /* stagger counter animations – all finish by scanDuration */
         statDefs.forEach(function(s, i) {
             var t = setTimeout(function() {
                 var el = document.getElementById(s.id);
-                if (el) animateCounter(el, s.target, s.suffix, 1600 + i * 120);
-            }, 200 + i * 120);
+                if (el) animateCounter(el, s.target, s.suffix, dur - 200 - i * 60);
+            }, 200 + i * 60);
             _scanTimers.push(t);
         });
 
-        /* scan progress phases */
-        runPhases(barEl, phaseEl, function() {
+        /* phase bar spans exactly scanDuration */
+        runPhases(barEl, phaseEl, dur, function() {
             /* nothing extra on done – log continues */
         });
 
-        /* scan log */
-        startScanLog(logEl, d.stats.txScanned, function() {
+        /* scan log finishes at scanDuration */
+        startScanLog(logEl, d.stats.txScanned, dur, function() {
             var finalLine = document.createElement('div');
             finalLine.style.color = '#52c41a';
             finalLine.style.fontWeight = 'bold';
