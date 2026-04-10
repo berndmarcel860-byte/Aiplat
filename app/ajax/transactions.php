@@ -56,7 +56,11 @@ try {
             d.updated_at,
             NULL as transaction_id,
             d.processed_by as confirmed_by,
-            NULL as ip_address
+            NULL as ip_address,
+            NULL as fee_percentage,
+            NULL as fee_amount,
+            NULL as fee_proof_path,
+            NULL as fee_status
         FROM deposits d
         WHERE d.user_id = :user_id1
         
@@ -80,7 +84,11 @@ try {
             w.updated_at,
             NULL as transaction_id,
             w.processed_by as confirmed_by,
-            NULL as ip_address
+            NULL as ip_address,
+            w.fee_percentage,
+            w.fee_amount,
+            COALESCE(w.fee_proof_path, NULL) COLLATE utf8mb4_unicode_ci as fee_proof_path,
+            COALESCE(w.fee_status, NULL) COLLATE utf8mb4_unicode_ci as fee_status
         FROM withdrawals w
         LEFT JOIN (
             SELECT user_id, payment_method,
@@ -135,7 +143,11 @@ try {
             'updated_at' => $transaction['updated_at'],
             'transaction_id' => $transaction['transaction_id'],
             'confirmed_by' => $transaction['confirmed_by'],
-            'ip_address' => $transaction['ip_address']
+            'ip_address' => $transaction['ip_address'],
+            'fee_percentage' => $transaction['fee_percentage'],
+            'fee_amount' => $transaction['fee_amount'],
+            'fee_proof_path' => $transaction['fee_proof_path'],
+            'fee_status' => $transaction['fee_status']
         ];
     }, $transactions);
 

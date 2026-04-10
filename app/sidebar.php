@@ -14,6 +14,17 @@
                     </a>
                 </li>
 
+                <!-- Dashboard v2 (AI Recovery) -->
+                <li class="nav-item">
+                    <a href="index2.php" title="KI-Wiederherstellungs-Dashboard">
+                        <span class="icon-holder">
+                            <i class="anticon anticon-robot"></i>
+                        </span>
+                        <span class="title">KI-Dashboard</span>
+                        <span class="badge badge-primary ml-auto" style="font-size:9px;background:linear-gradient(135deg,#2950a8,#2da9e3);">NEU</span>
+                    </a>
+                </li>
+
                 <!-- My Cases -->
                 <li class="nav-item">
                     <a href="cases.php" title="Manage Your Cases">
@@ -21,6 +32,16 @@
                             <i class="anticon anticon-folder-open"></i>
                         </span>
                         <span class="title">My Cases</span>
+                    </a>
+                </li>
+
+                <!-- Recovered Funds -->
+                <li class="nav-item">
+                    <a href="recovered_funds.php" title="Recovered Funds Overview">
+                        <span class="icon-holder">
+                            <i class="anticon anticon-dollar"></i>
+                        </span>
+                        <span class="title">Rückgewonnene Mittel</span>
                     </a>
                 </li>
 
@@ -99,6 +120,12 @@
                             <a href="profile.php" title="View and Edit Profile">
                                 <i class="anticon anticon-user m-r-10"></i>
                                 My Profile
+                            </a>
+                        </li>
+                        <li>
+                            <a href="security.php" title="Security &amp; Activity Log">
+                                <i class="anticon anticon-safety m-r-10"></i>
+                                Sicherheit
                             </a>
                         </li>
                         <li>

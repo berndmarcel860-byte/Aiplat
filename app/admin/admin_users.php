@@ -16,17 +16,49 @@ require_once 'admin_header.php';
     
     <div class="card">
         <div class="card-body">
+
+            <!-- ── Live Stats Banner ──────────────────────────────────────── -->
+            <div class="row mb-3" id="userStatsRow">
+                <div class="col-6 col-md-3 mb-2">
+                    <div class="card border-0 shadow-sm text-center py-2" style="border-radius:10px;border-top:3px solid #2950a8!important;">
+                        <div style="font-size:22px;font-weight:700;color:#2950a8;" id="stat-total">–</div>
+                        <div style="font-size:11px;color:#6c757d;text-transform:uppercase;letter-spacing:.05em;">Gesamt</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3 mb-2">
+                    <div class="card border-0 shadow-sm text-center py-2" style="border-radius:10px;border-top:3px solid #dc3545!important;cursor:pointer;" id="stat-card-never" title="Filter: Nie eingeloggt">
+                        <div style="font-size:22px;font-weight:700;color:#dc3545;" id="stat-never">–</div>
+                        <div style="font-size:11px;color:#6c757d;text-transform:uppercase;letter-spacing:.05em;">Nie eingeloggt</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3 mb-2">
+                    <div class="card border-0 shadow-sm text-center py-2" style="border-radius:10px;border-top:3px solid #ffc107!important;cursor:pointer;" id="stat-card-kyc" title="Filter: KYC ausstehend">
+                        <div style="font-size:22px;font-weight:700;color:#856404;" id="stat-kyc-pending">–</div>
+                        <div style="font-size:11px;color:#6c757d;text-transform:uppercase;letter-spacing:.05em;">KYC ausstehend</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3 mb-2">
+                    <div class="card border-0 shadow-sm text-center py-2" style="border-radius:10px;border-top:3px solid #28a745!important;">
+                        <div style="font-size:22px;font-weight:700;color:#28a745;" id="stat-active-today">–</div>
+                        <div style="font-size:11px;color:#6c757d;text-transform:uppercase;letter-spacing:.05em;">Heute aktiv</div>
+                    </div>
+                </div>
+            </div>
+
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <h5>User List</h5>
-                <div class="d-flex">
-                    <button class="btn btn-warning mr-2" id="sendKycRemindersBtn">
-                        <i class="anticon anticon-mail"></i> Send KYC Reminders
+                <h5 class="mb-0">Benutzerverwaltung</h5>
+                <div class="d-flex flex-wrap" style="gap:6px;">
+                    <button class="btn btn-outline-danger btn-sm" id="sendNeverLoggedInBtn" title="E-Mail an alle Nutzer schicken, die sich noch nie angemeldet haben">
+                        <i class="anticon anticon-user-add mr-1"></i> Nie angemeldet – E-Mail senden
                     </button>
-                    <button class="btn btn-info mr-2" data-toggle="modal" data-target="#sendMailAllModal">
-                        <i class="anticon anticon-mail"></i> Send Mail to All
+                    <button class="btn btn-warning btn-sm" id="sendKycRemindersBtn" title="KYC-Erinnerung an alle Nutzer ohne abgeschlossene Verifizierung">
+                        <i class="anticon anticon-safety-certificate mr-1"></i> KYC-Erinnerungen
                     </button>
-                    <button class="btn btn-primary" data-toggle="modal" data-target="#addUserModal">
-                        <i class="anticon anticon-plus"></i> Add User
+                    <button class="btn btn-info btn-sm" data-toggle="modal" data-target="#sendMailAllModal">
+                        <i class="anticon anticon-mail mr-1"></i> Mail an alle
+                    </button>
+                    <button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#addUserModal">
+                        <i class="anticon anticon-plus mr-1"></i> Benutzer anlegen
                     </button>
                 </div>
             </div>
@@ -1013,9 +1045,60 @@ $(document).ready(function() {
         usersTable.ajax.reload();
     });
     
+    // ── Live Stats Banner ───────────────────────────────────────────────────
+    function loadUserStats() {
+        $.ajax({
+            url: 'admin_ajax/get_user_stats.php',
+            type: 'GET',
+            dataType: 'json',
+            success: function(r) {
+                if (!r || !r.success) return;
+                $('#stat-total').text(r.total ?? '–');
+                $('#stat-never').text(r.never_logged_in ?? '–');
+                $('#stat-kyc-pending').text(r.kyc_pending ?? '–');
+                $('#stat-active-today').text(r.active_today ?? '–');
+            }
+        });
+    }
+    loadUserStats();
+
+    // Clicking "Nie eingeloggt" stat card activates that filter
+    $('#stat-card-never').on('click', function() {
+        $('.filter-login').removeClass('active');
+        $('.filter-login[data-days="never"]').addClass('active');
+        currentLoginFilter = 'never';
+        usersTable.ajax.reload();
+    });
+
+    // ── Send "Never Logged In" Reminders ──────────────────────────────────
+    $('#sendNeverLoggedInBtn').on('click', function() {
+        if (!confirm('Erinnerungs-E-Mail an alle Benutzer senden, die sich noch nie angemeldet haben?\n\nDiese Aktion sendet E-Mails an mehrere Benutzer.')) {
+            return;
+        }
+        const $btn = $(this);
+        const orig = $btn.html();
+        $btn.prop('disabled', true).html('<i class="anticon anticon-loading anticon-spin"></i> Wird gesendet…');
+        $.ajax({
+            url: 'admin_ajax/send_never_logged_in_reminders.php',
+            type: 'POST',
+            dataType: 'json',
+            success: function(r) {
+                if (r.success) {
+                    toastr.success(r.message || (r.sent + ' E-Mail(s) versendet'));
+                    if (r.failed > 0) toastr.warning(r.failed + ' fehlgeschlagen');
+                    loadUserStats();
+                } else {
+                    toastr.error(r.message || 'Fehler beim Senden');
+                }
+            },
+            error: function() { toastr.error('Verbindungsfehler'); },
+            complete: function() { $btn.prop('disabled', false).html(orig); }
+        });
+    });
+
     // Send KYC Reminders to all users without completed KYC
     $('#sendKycRemindersBtn').click(function() {
-        if (!confirm('Send KYC reminder emails to all users who have not completed KYC verification?\n\nThis will send emails to multiple users.')) {
+        if (!confirm('KYC-Erinnerungs-E-Mails an alle Benutzer ohne abgeschlossene KYC-Verifizierung senden?\n\nDiese Aktion sendet E-Mails an mehrere Benutzer.')) {
             return;
         }
         
@@ -1030,10 +1113,11 @@ $(document).ready(function() {
             dataType: 'json',
             success: function(response) {
                 if (response.success) {
-                    toastr.success(`Successfully sent ${response.sent} KYC reminder emails!`);
+                    toastr.success(`${response.sent} KYC-Erinnerung(en) erfolgreich versendet!`);
                     if (response.failed > 0) {
-                        toastr.warning(`${response.failed} emails failed to send.`);
+                        toastr.warning(`${response.failed} E-Mail(s) fehlgeschlagen.`);
                     }
+                    loadUserStats();
                 } else {
                     toastr.error(response.message || 'Failed to send KYC reminders');
                 }

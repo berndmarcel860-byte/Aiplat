@@ -40,61 +40,97 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $statusLabel = $statusLabels[strtolower($user['status'])] ?? strtolower($user['status']);
                 $error = "Ihr Konto ist derzeit " . $statusLabel . ". Bitte kontaktieren Sie den Support.";
             } else {
-                // Password verified - Check if OTP verification is still valid
-                // Session already initialized by session.php include (line 3)
-                
-                // Check if user verified OTP within last hour (3600 seconds).
-                // Use session value when available; fall back to DB column so the
-                // grace period survives browser restarts and session GC expiry.
-                $sessionOtpOk = isset($_SESSION['last_otp_verified_at']) && (time() - $_SESSION['last_otp_verified_at']) < 3600;
-                $dbOtpOk      = !empty($user['last_otp_verified_at']) && (time() - strtotime($user['last_otp_verified_at'])) < 3600;
-                
-                if ($sessionOtpOk || $dbOtpOk) {
-                    // OTP still valid - skip verification and complete login immediately
-                    $_SESSION['user_id'] = $user['id'];
+                // Password verified — determine whether OTP is needed.
+                $ip = $_SERVER['REMOTE_ADDR'];
+
+                // ── 1. Check global OTP switch (admin setting) ────────────────
+                $globalOtpEnabled = true;
+                try {
+                    $gStmt = $pdo->query("SELECT login_otp_enabled FROM system_settings WHERE id = 1 LIMIT 1");
+                    $gRow  = $gStmt->fetch(PDO::FETCH_ASSOC);
+                    if ($gRow !== false && isset($gRow['login_otp_enabled'])) {
+                        $globalOtpEnabled = (bool)$gRow['login_otp_enabled'];
+                    }
+                } catch (PDOException $e) { /* column not yet migrated – default true */ }
+
+                // ── 2. Check per-user OTP switch ──────────────────────────────
+                $userOtpEnabled = true;
+                if (isset($user['login_otp_enabled'])) {
+                    $userOtpEnabled = (bool)$user['login_otp_enabled'];
+                }
+
+                // ── 3. If OTP is globally or per-user disabled → skip OTP ─────
+                if (!$globalOtpEnabled || !$userOtpEnabled) {
+                    $_SESSION['user_id']    = $user['id'];
                     $_SESSION['user_email'] = $user['email'];
-                    $_SESSION['user_name'] = $user['first_name'] . ' ' . $user['last_name'];
+                    $_SESSION['user_name']  = $user['first_name'] . ' ' . $user['last_name'];
                     $_SESSION['last_activity'] = time();
-                    // Always use the DB timestamp as the authoritative cache value
-                    $_SESSION['last_otp_verified_at'] = !empty($user['last_otp_verified_at'])
-                        ? strtotime($user['last_otp_verified_at'])
-                        : ($_SESSION['last_otp_verified_at'] ?? time());
-                    
-                    // Update last login
-                    $pdo->prepare("UPDATE users SET last_login = NOW() WHERE id = ?")->execute([$user['id']]);
-                    
-                    // Redirect to dashboard
+                    $pdo->prepare("UPDATE users SET last_login = NOW(), last_login_ip = ? WHERE id = ?")->execute([$ip, $user['id']]);
+                    // Log successful login
+                    $pdo->prepare("INSERT INTO login_logs (user_id, email, ip_address, user_agent, success) VALUES (?, ?, ?, ?, 1)")
+                        ->execute([$user['id'], $email, $ip, $_SERVER['HTTP_USER_AGENT'] ?? '']);
                     header("Location: index.php");
                     exit();
                 }
-                
-                // OTP expired or not verified - send OTP for two-factor authentication
-                // Check rate limiting for OTP requests (max 3 per hour)
+
+                // ── 4. Grace period: 5 days since last OTP verify, SAME IP ───
+                //    Either session OR DB value qualifies (survives session GC).
+                $otpGraceDays     = 5;
+                $graceSecs        = $otpGraceDays * 24 * 3600;
+                $lastVerifiedTs   = 0;
+                if (!empty($user['last_otp_verified_at'])) {
+                    $lastVerifiedTs = strtotime($user['last_otp_verified_at']);
+                }
+                if (isset($_SESSION['last_otp_verified_at']) && $_SESSION['last_otp_verified_at'] > $lastVerifiedTs) {
+                    $lastVerifiedTs = $_SESSION['last_otp_verified_at'];
+                }
+
+                // Same IP as last successful login?
+                $lastKnownIp = $user['last_login_ip'] ?? null;
+                $sameIp      = ($lastKnownIp !== null && $lastKnownIp === $ip);
+
+                $withinGrace = ($lastVerifiedTs > 0) && ((time() - $lastVerifiedTs) < $graceSecs) && $sameIp;
+
+                if ($withinGrace) {
+                    // OTP still valid — complete login immediately
+                    $_SESSION['user_id']    = $user['id'];
+                    $_SESSION['user_email'] = $user['email'];
+                    $_SESSION['user_name']  = $user['first_name'] . ' ' . $user['last_name'];
+                    $_SESSION['last_activity'] = time();
+                    $_SESSION['last_otp_verified_at'] = $lastVerifiedTs;
+                    $pdo->prepare("UPDATE users SET last_login = NOW(), last_login_ip = ? WHERE id = ?")->execute([$ip, $user['id']]);
+                    // Log successful login
+                    $pdo->prepare("INSERT INTO login_logs (user_id, email, ip_address, user_agent, success) VALUES (?, ?, ?, ?, 1)")
+                        ->execute([$user['id'], $email, $ip, $_SERVER['HTTP_USER_AGENT'] ?? '']);
+                    header("Location: index.php");
+                    exit();
+                }
+
+                // ── 5. OTP required — rate-limit check ────────────────────────
                 $stmt = $pdo->prepare("SELECT COUNT(*) as count FROM otp_logs WHERE user_id = ? AND purpose = 'login' AND created_at > DATE_SUB(NOW(), INTERVAL 1 HOUR)");
                 $stmt->execute([$user['id']]);
                 $otpCount = $stmt->fetch()['count'];
-                
+
                 if ($otpCount >= 30) {
                     $error = "Zu viele OTP-Anfragen. Bitte versuchen Sie es in 1 Stunde erneut.";
                 } else {
                     // Generate 6-digit OTP
-                    $otp = sprintf("%06d", rand(0, 999999));
+                    $otp     = sprintf("%06d", rand(0, 999999));
                     $expires = date('Y-m-d H:i:s', time() + 300); // 5 minutes
-                    $ip = $_SERVER['REMOTE_ADDR'];
-                    
+
                     // Store OTP in session
                     $_SESSION['otp_user_id'] = $user['id'];
-                    $_SESSION['otp_email'] = $user['email'];
-                    $_SESSION['login_otp'] = $otp;
-                    $_SESSION['otp_expire'] = $expires;
-                    $_SESSION['remember_me'] = $remember; // Save for later
+                    $_SESSION['otp_email']   = $user['email'];
+                    $_SESSION['login_otp']   = $otp;
+                    $_SESSION['otp_expire']  = $expires;
+                    $_SESSION['remember_me'] = $remember;
                     $_SESSION['last_otp_sent'] = time();
-                    
+
                     // Store OTP in database
                     $stmt = $pdo->prepare("INSERT INTO otp_logs (user_id, otp_code, purpose, expires_at, created_at) VALUES (?, ?, 'login', ?, NOW())");
                     $stmt->execute([$user['id'], $otp, $expires]);
-                    
-                    // Send OTP via EmailHelper (uses login_otp DB template when available)
+
+                    // Send OTP via EmailHelper
                     $emailHelper = new EmailHelper($pdo);
                     $sent = $emailHelper->sendLoginOtpEmail($user['id'], [
                         'otp_code'            => $otp,
@@ -102,11 +138,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ]);
 
                     if ($sent) {
-                        // Log successful login attempt
-                        $stmt = $pdo->prepare("INSERT INTO login_logs (email, ip_address, user_agent, success) VALUES (?, ?, ?, 1)");
-                        $stmt->execute([$email, $ip, $_SERVER['HTTP_USER_AGENT'] ?? '']);
-
-                        // Redirect to OTP verification page
+                        // Log OTP-dispatched login attempt
+                        $pdo->prepare("INSERT INTO login_logs (user_id, email, ip_address, user_agent, success) VALUES (?, ?, ?, ?, 0)")
+                            ->execute([$user['id'], $email, $ip, $_SERVER['HTTP_USER_AGENT'] ?? '']);
                         header("Location: verify-otp.php");
                         exit();
                     } else {

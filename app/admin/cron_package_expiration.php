@@ -218,6 +218,15 @@ function sendTrialEndEmail($pdo, $package) {
             $subject = str_replace(['{' . $key . '}', '{{' . $key . '}}'], $value, $subject);
             $content = str_replace(['{' . $key . '}', '{{' . $key . '}}'], $value, $content);
         }
+
+        // Inject open-tracking pixel
+        $trackingToken = bin2hex(random_bytes(16));
+        $pixelUrl = rtrim(preg_replace('#/app/?$#', '', rtrim($siteUrl, '/')), '/') . '/app/track_email.php?token=' . urlencode($trackingToken);
+        $pixel = '<img src="' . htmlspecialchars($pixelUrl, ENT_QUOTES, 'UTF-8')
+               . '" width="1" height="1" alt="" style="display:none;border:0;" />';
+        $content = stripos($content, '</body>') !== false
+            ? str_ireplace('</body>', $pixel . '</body>', $content)
+            : $content . $pixel;
         
         // Configure PHPMailer
         $mail = new PHPMailer(true);
@@ -245,15 +254,16 @@ function sendTrialEndEmail($pdo, $package) {
             // Log email to email_logs table
             try {
                 $logStmt = $pdo->prepare("
-                    INSERT INTO email_logs (user_id, recipient, subject, content, template_id, sent_at, status)
-                    VALUES (?, ?, ?, ?, ?, NOW(), 'sent')
+                    INSERT INTO email_logs (user_id, recipient, subject, content, template_id, tracking_token, sent_at, status)
+                    VALUES (?, ?, ?, ?, ?, ?, NOW(), 'sent')
                 ");
                 $logStmt->execute([
                     $package['user_id'],
                     $package['email'],
                     $subject,
                     $content,
-                    $template['id']
+                    $template['id'],
+                    $trackingToken
                 ]);
             } catch (PDOException $logError) {
                 // Try simpler insert if columns differ

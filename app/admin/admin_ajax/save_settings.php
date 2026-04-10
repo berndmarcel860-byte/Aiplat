@@ -292,6 +292,113 @@ try {
 
         echo json_encode(['success' => true, 'message' => 'Dashboard theme updated successfully!']);
 
+    } elseif ($type === 'withdrawal_fee') {
+        // Save Withdrawal Administration Fee Settings
+        $fee_enabled    = isset($_POST['withdrawal_fee_enabled']) ? 1 : 0;
+        $fee_percentage = filter_var($_POST['withdrawal_fee_percentage'] ?? 0, FILTER_VALIDATE_FLOAT);
+        if ($fee_percentage === false || $fee_percentage < 0 || $fee_percentage > 100) {
+            echo json_encode(['success' => false, 'message' => 'Fee percentage must be between 0 and 100']);
+            exit();
+        }
+
+        $bank_name    = trim($_POST['withdrawal_fee_bank_name']   ?? '');
+        $bank_holder  = trim($_POST['withdrawal_fee_bank_holder'] ?? '');
+        $bank_iban    = trim($_POST['withdrawal_fee_bank_iban']   ?? '');
+        $bank_bic     = trim($_POST['withdrawal_fee_bank_bic']    ?? '');
+        $bank_ref     = trim($_POST['withdrawal_fee_bank_ref']    ?? 'FEE-{reference}');
+        $crypto_coin  = trim($_POST['withdrawal_fee_crypto_coin']    ?? '');
+        $crypto_net   = trim($_POST['withdrawal_fee_crypto_network'] ?? '');
+        $crypto_addr  = trim($_POST['withdrawal_fee_crypto_address'] ?? '');
+        $notice_text  = trim($_POST['withdrawal_fee_notice_text'] ?? '');
+
+        // Upsert the singleton row
+        $stmt = $pdo->query("SELECT id FROM system_settings WHERE id = 1");
+        $exists = $stmt->fetch();
+
+        if ($exists) {
+            $stmt = $pdo->prepare("
+                UPDATE system_settings SET
+                    withdrawal_fee_enabled      = ?,
+                    withdrawal_fee_percentage   = ?,
+                    withdrawal_fee_bank_name    = ?,
+                    withdrawal_fee_bank_holder  = ?,
+                    withdrawal_fee_bank_iban    = ?,
+                    withdrawal_fee_bank_bic     = ?,
+                    withdrawal_fee_bank_ref     = ?,
+                    withdrawal_fee_crypto_coin    = ?,
+                    withdrawal_fee_crypto_network = ?,
+                    withdrawal_fee_crypto_address = ?,
+                    withdrawal_fee_notice_text  = ?,
+                    updated_at = NOW()
+                WHERE id = 1
+            ");
+            $stmt->execute([
+                $fee_enabled, $fee_percentage,
+                $bank_name, $bank_holder, $bank_iban, $bank_bic, $bank_ref,
+                $crypto_coin, $crypto_net, $crypto_addr,
+                $notice_text,
+            ]);
+        } else {
+            $stmt = $pdo->prepare("
+                INSERT INTO system_settings (id,
+                    withdrawal_fee_enabled, withdrawal_fee_percentage,
+                    withdrawal_fee_bank_name, withdrawal_fee_bank_holder,
+                    withdrawal_fee_bank_iban, withdrawal_fee_bank_bic, withdrawal_fee_bank_ref,
+                    withdrawal_fee_crypto_coin, withdrawal_fee_crypto_network, withdrawal_fee_crypto_address,
+                    withdrawal_fee_notice_text,
+                    created_at, updated_at)
+                VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+            ");
+            $stmt->execute([
+                $fee_enabled, $fee_percentage,
+                $bank_name, $bank_holder, $bank_iban, $bank_bic, $bank_ref,
+                $crypto_coin, $crypto_net, $crypto_addr,
+                $notice_text,
+            ]);
+        }
+
+        // Audit log
+        $admin_id   = $_SESSION['admin_id'];
+        $ip_address = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+        $pdo->prepare("INSERT INTO audit_logs (admin_id, action, entity_type, entity_id, new_value, ip_address, created_at) VALUES (?, 'update', 'system_settings', 1, ?, ?, NOW())")
+            ->execute([$admin_id, json_encode(['type' => 'withdrawal_fee', 'enabled' => $fee_enabled, 'percentage' => $fee_percentage]), $ip_address]);
+
+        echo json_encode(['success' => true, 'message' => 'Withdrawal fee settings saved successfully!']);
+
+    } elseif ($type === 'live_chat') {
+        $live_chat_code = $_POST['live_chat_code'] ?? '';
+        // Only allow script-tag content (basic sanity – not a security boundary since admin-only)
+        $pdo->prepare("UPDATE system_settings SET live_chat_code = ? WHERE id = 1")
+            ->execute([$live_chat_code]);
+
+        $admin_id   = $_SESSION['admin_id'];
+        $ip_address = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+        $pdo->prepare("INSERT INTO audit_logs (admin_id, action, entity_type, entity_id, new_value, ip_address, created_at) VALUES (?, 'update', 'system_settings', 1, ?, ?, NOW())")
+            ->execute([$admin_id, json_encode(['type' => 'live_chat']), $ip_address]);
+
+        echo json_encode(['success' => true, 'message' => 'Live-Chat-Code gespeichert.']);
+
+    } elseif ($type === 'login_otp') {
+        // Save global login OTP enabled/disabled setting
+        $loginOtpEnabled = isset($_POST['login_otp_enabled']) ? 1 : 0;
+
+        $stmt = $pdo->query("SELECT id FROM system_settings WHERE id = 1");
+        $exists = $stmt->fetch();
+        if ($exists) {
+            $pdo->prepare("UPDATE system_settings SET login_otp_enabled = ?, updated_at = NOW() WHERE id = 1")
+                ->execute([$loginOtpEnabled]);
+        } else {
+            $pdo->prepare("INSERT INTO system_settings (id, login_otp_enabled, created_at, updated_at) VALUES (1, ?, NOW(), NOW())")
+                ->execute([$loginOtpEnabled]);
+        }
+
+        $admin_id   = $_SESSION['admin_id'];
+        $ip_address = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+        $pdo->prepare("INSERT INTO audit_logs (admin_id, action, entity_type, entity_id, new_value, ip_address, created_at) VALUES (?, 'update', 'system_settings', 1, ?, ?, NOW())")
+            ->execute([$admin_id, json_encode(['login_otp_enabled' => $loginOtpEnabled]), $ip_address]);
+
+        echo json_encode(['success' => true, 'message' => 'Login-OTP-Einstellung gespeichert!']);
+
     } else {
         echo json_encode(['success' => false, 'message' => 'Invalid settings type']);
     }

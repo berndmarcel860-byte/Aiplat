@@ -2,6 +2,67 @@
 /* modal_case_details.php – same folder as index.php */
 ?>
 <style>
+/* ── Status Timeline ─────────────────────────────────────── */
+.case-timeline { position: relative; padding: 0; margin: 0; list-style: none; }
+.case-timeline::before {
+    content: '';
+    position: absolute;
+    left: 18px;
+    top: 8px;
+    bottom: 8px;
+    width: 2px;
+    background: linear-gradient(to bottom, #2950a8, #dee2e6);
+    border-radius: 2px;
+}
+.case-tl-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 0 0 20px 0;
+    position: relative;
+}
+.case-tl-item:last-child { padding-bottom: 0; }
+.case-tl-dot {
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    color: #fff;
+    z-index: 1;
+    border: 3px solid #fff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+.case-tl-content {
+    flex: 1;
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 10px 14px;
+    border-left: 3px solid #dee2e6;
+}
+.case-tl-content.tl-latest {
+    background: #f0f6ff;
+    border-left-color: #2950a8;
+}
+.case-tl-status {
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 2px;
+}
+.case-tl-meta {
+    font-size: 11.5px;
+    color: #6c757d;
+}
+.case-tl-comment {
+    font-size: 12.5px;
+    color: #495057;
+    margin-top: 4px;
+    font-style: italic;
+}
+
 /* Blockchain Scanner Styles (used in case modal) */
 .blockchain-scanner-section{background:linear-gradient(135deg,#0a0e1a 0%,#0d1a35 50%,#0a1528 100%);border-radius:14px;padding:20px;position:relative;overflow:hidden;border:1px solid rgba(45,169,227,.2);box-shadow:0 4px 20px rgba(0,0,0,.4),inset 0 1px 0 rgba(45,169,227,.1)}
 .blockchain-scanner-section::before{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:radial-gradient(ellipse at center,rgba(41,80,168,.08) 0%,transparent 60%);animation:scanner-bg-rotate 8s linear infinite;pointer-events:none}
@@ -315,23 +376,42 @@ $(function(){
                                 <div class="card border-0 mb-4">
                                     <div class="card-body">
                                         <h6 class="mb-3" style="color: #2c3e50; font-weight: 600;">
-                                            <i class="anticon anticon-history mr-2" style="color: var(--brand);"></i>Status History
+                                            <i class="anticon anticon-history mr-2" style="color: var(--brand);"></i>Statusverlauf
                                         </h6>
-                                        <div class="timeline">
-                                            ${data.history.map((h, idx) => `
-                                                <div class="timeline-item ${idx === 0 ? 'timeline-item-active' : ''}">
-                                                    <div class="timeline-marker ${idx === 0 ? 'bg-primary' : 'bg-secondary'}"></div>
-                                                    <div class="timeline-content">
-                                                        <div class="d-flex justify-content-between align-items-start mb-1">
-                                                            <strong>${h.new_status ? h.new_status.replace(/_/g, ' ').toUpperCase() : 'Status Change'}</strong>
-                                                            <small class="text-muted">${h.created_at ? new Date(h.created_at).toLocaleDateString('en-US', {year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'}) : ''}</small>
-                                                        </div>
-                                                        ${h.comments ? `<p class="mb-1 text-muted small">${h.comments}</p>` : ''}
-                                                        ${h.first_name && h.last_name ? `<small class="text-muted">By: ${h.first_name} ${h.last_name}</small>` : ''}
+                                        <ul class="case-timeline">
+                                            ${data.history.map((h, idx) => {
+                                                const statusMap = {
+                                                    'open':                  { label: 'Fall eröffnet',              color: '#17a2b8', icon: 'anticon-folder-open' },
+                                                    'under_review':          { label: 'In Prüfung',                color: '#2950a8', icon: 'anticon-search' },
+                                                    'documents_required':    { label: 'Dokumente erforderlich',    color: '#ffc107', icon: 'anticon-file-exclamation' },
+                                                    'documents_submitted':   { label: 'Dokumente eingereicht',     color: '#6f42c1', icon: 'anticon-file-done' },
+                                                    'in_progress':           { label: 'In Bearbeitung',             color: '#2da9e3', icon: 'anticon-sync' },
+                                                    'refund_initiated':      { label: 'Rückzahlung eingeleitet',   color: '#20c997', icon: 'anticon-dollar' },
+                                                    'partially_recovered':   { label: 'Teilweise zurückerhalten',  color: '#28a745', icon: 'anticon-line-chart' },
+                                                    'resolved':              { label: 'Abgeschlossen',             color: '#28a745', icon: 'anticon-check-circle' },
+                                                    'closed':                { label: 'Geschlossen',               color: '#6c757d', icon: 'anticon-close-circle' },
+                                                    'refund_rejected':       { label: 'Rückzahlung abgelehnt',    color: '#dc3545', icon: 'anticon-exclamation-circle' },
+                                                    'escalated':             { label: 'Eskaliert',                 color: '#fd7e14', icon: 'anticon-alert' },
+                                                    'awaiting_response':     { label: 'Antwort ausstehend',        color: '#ffc107', icon: 'anticon-clock-circle' },
+                                                };
+                                                const rawStatus = (h.new_status || 'open').toLowerCase();
+                                                const sm = statusMap[rawStatus] || { label: rawStatus.replace(/_/g,' ').replace(/\b\w/g, c => c.toUpperCase()), color: '#6c757d', icon: 'anticon-info-circle' };
+                                                const dateStr = h.created_at ? new Date(h.created_at).toLocaleDateString('de-DE', {day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
+                                                const adminName = (h.first_name && h.last_name) ? h.first_name + ' ' + h.last_name : '';
+                                                return \`<li class="case-tl-item">
+                                                    <div class="case-tl-dot" style="background:\${sm.color};">
+                                                        <i class="anticon \${sm.icon}"></i>
                                                     </div>
-                                                </div>
-                                            `).join('')}
-                                        </div>
+                                                    <div class="case-tl-content \${idx === 0 ? 'tl-latest' : ''}">
+                                                        <div class="case-tl-status" style="color:\${sm.color};">\${sm.label}</div>
+                                                        <div class="case-tl-meta">
+                                                            \${dateStr}\${adminName ? ' &nbsp;·&nbsp; ' + adminName : ''}
+                                                        </div>
+                                                        \${h.comments ? \`<div class="case-tl-comment">&ldquo;\${h.comments}&rdquo;</div>\` : ''}
+                                                    </div>
+                                                </li>\`;
+                                            }).join('')}
+                                        </ul>
                                     </div>
                                 </div>
                                 ` : ''}

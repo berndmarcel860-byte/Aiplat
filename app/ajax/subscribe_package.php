@@ -83,6 +83,16 @@ try {
 
     $pdo->commit();
 
+    // === Mark onboarding complete if called from onboarding flow ===
+    if (!empty($_POST['from_onboarding'])) {
+        try {
+            $pdo->prepare("UPDATE user_onboarding SET completed = 1 WHERE user_id = ? AND completed = 0")
+                ->execute([$user_id]);
+        } catch (Exception $obEx) {
+            error_log("Onboarding complete update error: " . $obEx->getMessage());
+        }
+    }
+
     echo json_encode([
         'success' => true,
         'message' => $price > 0

@@ -139,6 +139,11 @@ $(document).ready(function() {
     $('#refreshEmailLogs').click(function() {
         emailLogsTable.ajax.reload();
     });
+
+    // Auto-refresh every 30 seconds so 'opened' status appears without manual click
+    setInterval(function() {
+        emailLogsTable.ajax.reload(null, false); // false = keep current page position
+    }, 30000);
     
     $(document).on('click', '.view-email', function() {
         const id = $(this).data('id');

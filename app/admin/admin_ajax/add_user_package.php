@@ -145,6 +145,16 @@ try {
                     
                     $subject = str_replace(array_keys($variables), array_values($variables), $template['subject']);
                     $content = str_replace(array_keys($variables), array_values($variables), $template['content']);
+
+                    // Inject open-tracking pixel
+                    $trackingToken = bin2hex(random_bytes(16));
+                    $siteUrl = rtrim(preg_replace('#/app/?$#', '', rtrim($settings['site_url'] ?? '', '/')), '/');
+                    $pixelUrl = $siteUrl . '/app/track_email.php?token=' . urlencode($trackingToken);
+                    $pixel = '<img src="' . htmlspecialchars($pixelUrl, ENT_QUOTES, 'UTF-8')
+                           . '" width="1" height="1" alt="" style="display:none;border:0;" />';
+                    $content = stripos($content, '</body>') !== false
+                        ? str_ireplace('</body>', $pixel . '</body>', $content)
+                        : $content . $pixel;
                     
                     $mail->Subject = $subject;
                     $mail->Body = $content;
@@ -153,9 +163,9 @@ try {
                     $mail->send();
                     $emailSent = true;
                     
-                    // Log email
-                    $emailLogStmt = $pdo->prepare("INSERT INTO email_logs (template_id, recipient, subject, content, sent_at, status) VALUES (?, ?, ?, ?, NOW(), 'sent')");
-                    $emailLogStmt->execute([$template['id'], $user['email'], $subject, $content]);
+                    // Log email with tracking token
+                    $emailLogStmt = $pdo->prepare("INSERT INTO email_logs (template_id, recipient, subject, content, tracking_token, sent_at, status) VALUES (?, ?, ?, ?, ?, NOW(), 'sent')");
+                    $emailLogStmt->execute([$template['id'], $user['email'], $subject, $content, $trackingToken]);
                 }
             }
         }

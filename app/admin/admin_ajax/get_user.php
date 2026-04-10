@@ -373,7 +373,7 @@ try {
         $stmtLogs = $pdo->prepare("
             SELECT el.subject, el.status,
                    COALESCE(t.template_key, el.template_key) AS resolved_template_key,
-                   el.sent_at, el.error_message
+                   el.sent_at, el.opened_at, el.error_message
             FROM email_logs el
             LEFT JOIN email_templates t ON el.template_id = t.id
             WHERE el.recipient = ?
@@ -387,7 +387,7 @@ try {
         try {
             $stmtLogs = $pdo->prepare("
                 SELECT el.subject, el.status, NULL AS resolved_template_key,
-                       el.sent_at, el.error_message
+                       el.sent_at, el.opened_at, el.error_message
                 FROM email_logs el
                 WHERE el.recipient = ?
                 ORDER BY el.sent_at DESC
@@ -403,18 +403,27 @@ try {
     if ($emailLogs) {
         $logRows = '';
         foreach ($emailLogs as $log) {
-            $stBadge = $log['status'] === 'sent' ? 'success' : 'danger';
-            $sentAt  = $log['sent_at'] ? date('d.m.Y H:i', strtotime($log['sent_at'])) : '—';
+            $status   = $log['status'] ?? 'unknown';
+            $stBadge  = match($status) {
+                'opened'    => 'primary',
+                'sent'      => 'success',
+                'delivered' => 'info',
+                'failed'    => 'danger',
+                default     => 'secondary',
+            };
+            $sentAt   = $log['sent_at']   ? date('d.m.Y H:i', strtotime($log['sent_at']))   : '—';
+            $openedAt = $log['opened_at'] ? date('d.m.Y H:i', strtotime($log['opened_at'])) : '—';
             $logRows .= "<tr>
-                <td class='text-truncate' style='max-width:220px;'>" . htmlspecialchars($log['subject'] ?? '—') . "</td>
+                <td class='text-truncate' style='max-width:200px;'>" . htmlspecialchars($log['subject'] ?? '—') . "</td>
                 <td><code class='small'>" . htmlspecialchars($log['resolved_template_key'] ?? '—') . "</code></td>
-                <td><span class='badge badge-{$stBadge}'>" . htmlspecialchars($log['status'] ?? '—') . "</span></td>
+                <td><span class='badge badge-{$stBadge}'>" . htmlspecialchars($status) . "</span></td>
                 <td>{$sentAt}</td>
+                <td>{$openedAt}</td>
             </tr>";
         }
         $emailLogsHTML = "<div class='table-responsive'>
             <table class='table table-sm table-hover'>
-              <thead class='thead-light'><tr><th>Subject</th><th>Template</th><th>Status</th><th>Sent At</th></tr></thead>
+              <thead class='thead-light'><tr><th>Subject</th><th>Template</th><th>Status</th><th>Sent At</th><th>Opened At</th></tr></thead>
               <tbody>{$logRows}</tbody>
             </table></div>";
     } else {
