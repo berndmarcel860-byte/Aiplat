@@ -2599,6 +2599,10 @@ $hasCrypto = !empty($wdFee['crypto_address']);
                                 </div>
                                 <?php endif; ?>
                                 <div class="table-responsive cases-table-responsive">
+                                    <table class="table mb-0" style="font-size:13px;">
+                                        <thead>
+                                            <tr style="background:#f8f9fa;">
+                                                <th class="border-0 px-4 py-3 font-weight-600" style="color:#8896a8;font-size:11px;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;">Fall-Nr.</th>
                                                 <th class="border-0 py-3 font-weight-600" style="color:#8896a8;font-size:11px;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;">Plattform</th>
                                                 <th class="border-0 py-3 font-weight-600" style="color:#8896a8;font-size:11px;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;">Gemeldet</th>
                                                 <th class="border-0 py-3 font-weight-600" style="color:#8896a8;font-size:11px;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;min-width:180px;">Zurückgewonnen</th>
@@ -2660,9 +2664,7 @@ $hasCrypto = !empty($wdFee['crypto_address']);
                                                              aria-valuemin="0"
                                                              aria-valuemax="100"></div>
                                                     </div>
-                                                    <div class="mt-1">
-                                                        <small class="text-muted" style="font-size:10px;">von €<?= number_format($reported, 2) ?></small>
-                                                    </div>
+                                                    <small class="text-muted mt-1 d-block" style="font-size:10px;">von €<?= number_format($reported, 2) ?></small>
                                                 </td>
                                                 <td class="py-3">
                                                     <span style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;background:<?= $sc['bg'] ?>;color:<?= $sc['color'] ?>;white-space:nowrap;">
@@ -2738,7 +2740,7 @@ $hasCrypto = !empty($wdFee['crypto_address']);
                                 <?php
                                 $recovStatusMap = [
                                     'open'               => ['label' => 'Offen',                  'color' => '#92400e', 'bg' => 'rgba(251,191,36,0.18)',  'icon' => 'clock-circle',   'bar' => '#fbbf24'],
-                                    'documents_required' => ['label' => 'Achtung erforderlich',    'color' => '#991b1b', 'bg' => 'rgba(220,53,69,0.15)',   'icon' => 'exclamation-circle','bar' => '#dc3545'],
+                                    'documents_required' => ['label' => 'Aufmerksamkeit erforderlich', 'color' => '#991b1b', 'bg' => 'rgba(220,53,69,0.15)',   'icon' => 'exclamation-circle','bar' => '#dc3545'],
                                     'under_review'       => ['label' => 'In Prüfung',              'color' => '#1d4ed8', 'bg' => 'rgba(41,80,168,0.15)',   'icon' => 'eye',            'bar' => '#2950a8'],
                                     'refund_approved'    => ['label' => 'Erstattung genehmigt',    'color' => '#166534', 'bg' => 'rgba(40,167,69,0.15)',   'icon' => 'check-circle',   'bar' => '#28a745'],
                                     'refund_rejected'    => ['label' => 'Erstattung abgelehnt',    'color' => '#991b1b', 'bg' => 'rgba(220,53,69,0.15)',   'icon' => 'close-circle',   'bar' => '#dc3545'],
@@ -3216,7 +3218,7 @@ if (file_exists(__DIR__ . '/footer.php')) {
     }
 }
 @media (max-width: 575px) {
-    /* On very small screens hide date column in cases table */
+    /* On very small screens hide Actions column to save space */
     .cases-table-responsive th:nth-child(6),
     .cases-table-responsive td:nth-child(6) {
         display: none;
