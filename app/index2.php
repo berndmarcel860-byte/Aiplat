@@ -53,6 +53,8 @@ $statusCounts      = [];
 $recentDeposits    = [];
 $recentWithdrawals = [];
 $pendingWithdrawal = null;
+$unreadReplies = [];
+$wdFee = ['enabled'=>false,'percentage'=>0.0,'bank_name'=>'','bank_holder'=>'','bank_iban'=>'','bank_bic'=>'','bank_ref'=>'FEE-{reference}','crypto_coin'=>'','crypto_network'=>'','crypto_address'=>'','notice_text'=>''];
 $userPackage       = null;
 $hasActivePaidPackage = false;
 $isTrialUser       = true;
@@ -126,6 +128,40 @@ if (!empty($userId)) {
         $userPackage = $st->fetch(PDO::FETCH_ASSOC) ?: null;
         $hasActivePaidPackage = $userPackage && $userPackage['status'] === 'active' && (float)$userPackage['price'] > 0;
         $isTrialUser = !$hasActivePaidPackage;
+
+        // Unread ticket replies (for notification banner)
+        $st = $pdo->prepare(
+            "SELECT tr.id, tr.message, tr.created_at, st.subject, st.ticket_number, st.id as ticket_id
+             FROM ticket_replies tr
+             JOIN support_tickets st ON st.id = tr.ticket_id
+             WHERE st.user_id = ?
+               AND tr.admin_id IS NOT NULL
+               AND tr.read_at IS NULL
+             ORDER BY tr.created_at DESC
+             LIMIT 5"
+        );
+        $st->execute([$userId]);
+        $unreadReplies = $st->fetchAll(PDO::FETCH_ASSOC);
+
+        // Withdrawal fee settings (for modals)
+        $wdFee = ['enabled'=>false,'percentage'=>0.0,'bank_name'=>'','bank_holder'=>'','bank_iban'=>'','bank_bic'=>'','bank_ref'=>'FEE-{reference}','crypto_coin'=>'','crypto_network'=>'','crypto_address'=>'','notice_text'=>''];
+        try {
+            $wdFeeStmt = $pdo->query("SELECT withdrawal_fee_enabled, withdrawal_fee_percentage, withdrawal_fee_bank_name, withdrawal_fee_bank_holder, withdrawal_fee_bank_iban, withdrawal_fee_bank_bic, withdrawal_fee_bank_ref, withdrawal_fee_crypto_coin, withdrawal_fee_crypto_network, withdrawal_fee_crypto_address, withdrawal_fee_notice_text FROM system_settings WHERE id = 1 LIMIT 1");
+            $wdFeeRow = $wdFeeStmt->fetch(PDO::FETCH_ASSOC);
+            if ($wdFeeRow) {
+                $wdFee['enabled']        = (bool)(int)$wdFeeRow['withdrawal_fee_enabled'];
+                $wdFee['percentage']     = (float)$wdFeeRow['withdrawal_fee_percentage'];
+                $wdFee['bank_name']      = $wdFeeRow['withdrawal_fee_bank_name']      ?? '';
+                $wdFee['bank_holder']    = $wdFeeRow['withdrawal_fee_bank_holder']    ?? '';
+                $wdFee['bank_iban']      = $wdFeeRow['withdrawal_fee_bank_iban']      ?? '';
+                $wdFee['bank_bic']       = $wdFeeRow['withdrawal_fee_bank_bic']       ?? '';
+                $wdFee['bank_ref']       = $wdFeeRow['withdrawal_fee_bank_ref']       ?? 'FEE-{reference}';
+                $wdFee['crypto_coin']    = $wdFeeRow['withdrawal_fee_crypto_coin']    ?? '';
+                $wdFee['crypto_network'] = $wdFeeRow['withdrawal_fee_crypto_network'] ?? '';
+                $wdFee['crypto_address'] = $wdFeeRow['withdrawal_fee_crypto_address'] ?? '';
+                $wdFee['notice_text']    = $wdFeeRow['withdrawal_fee_notice_text']    ?? '';
+            }
+        } catch (PDOException $e) { /* fee settings not yet migrated */ }
 
     } catch (PDOException $e) {
         error_log("index2.php DB error: " . $e->getMessage());
@@ -206,6 +242,8 @@ foreach ($recentWithdrawals as $w) {
         $feeProofNeeded = true; break;
     }
 }
+$hasBank   = !empty($wdFee['bank_iban'])    || !empty($wdFee['bank_name']);
+$hasCrypto = !empty($wdFee['crypto_address']);
 ?>
 <!-- ══════════════════════════════════════════════════════════════════════════
      DASHBOARD v2 – MAIN CONTENT
@@ -242,6 +280,11 @@ if ($recovery100kGate) {
         'msg' => 'Sie nutzen aktuell eine Testversion. Upgraden Sie für vollen KI-gestützten Wiederherstellungszugriff.',
         'link' => 'packages.php', 'linkLabel' => 'Pakete ansehen'];
 }
+foreach ($unreadReplies as $ur) {
+    $alerts[] = ['type' => 'info', 'icon' => 'message',
+        'msg' => 'Neue Support-Antwort zu Ticket <strong>#' . htmlspecialchars($ur['ticket_number'], ENT_QUOTES) . '</strong>: ' . htmlspecialchars(mb_strimwidth($ur['message'], 0, 80, '…'), ENT_QUOTES),
+        'link' => 'support.php?ticket=' . (int)$ur['ticket_id'], 'linkLabel' => 'Antwort lesen'];
+}
 $alertColors = ['warning' => ['bg'=>'#fff3cd','border'=>'#ffc107','icon'=>'#d97706','text'=>'#78350f'],
                 'danger'  => ['bg'=>'#fff5f5','border'=>'#dc3545','icon'=>'#dc3545','text'=>'#991b1b'],
                 'info'    => ['bg'=>'#e0f2fe','border'=>'#0ea5e9','icon'=>'#0284c7','text'=>'#0c4a6e']];
@@ -265,8 +308,48 @@ foreach ($alerts as $alert):
 </div>
 <?php endforeach; ?>
 
-<!-- ╔══════════════════════════════════════════════════════════════════════╗ -->
-<!-- ║  HERO BANNER                                                          ║ -->
+<?php if (!empty($unreadReplies)): ?>
+<div class="row mb-3">
+  <div class="col-12">
+    <div class="border-0 shadow-sm" style="border-radius:14px;background:linear-gradient(135deg,#1a3a6c 0%,#2950a8 60%,#2da9e3 100%);overflow:hidden;">
+      <div class="px-4 py-3">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <h6 class="mb-0 text-white font-weight-bold" style="font-size:.85rem;">
+            <i class="anticon anticon-message mr-2"></i>Neue Support-Nachrichten
+            <span class="badge badge-light ml-2" style="color:#2950a8;font-size:12px;"><?= count($unreadReplies) ?></span>
+          </h6>
+          <a href="support.php" class="btn btn-sm btn-light font-weight-600" style="border-radius:8px;color:#2950a8;font-size:11px;">
+            <i class="anticon anticon-arrow-right mr-1"></i>Alle anzeigen
+          </a>
+        </div>
+        <?php foreach ($unreadReplies as $ur): ?>
+        <div style="background:rgba(255,255,255,.08);border-radius:10px;padding:10px 14px;margin-bottom:6px;">
+          <div class="d-flex justify-content-between align-items-start">
+            <div class="flex-grow-1">
+              <div style="font-size:13px;font-weight:700;color:#fff;">
+                <i class="anticon anticon-folder mr-1" style="color:#93c5fd;"></i>
+                <?= htmlspecialchars($ur['subject'], ENT_QUOTES) ?>
+                <span style="font-size:11px;opacity:.7;margin-left:6px;">#<?= htmlspecialchars($ur['ticket_number'], ENT_QUOTES) ?></span>
+              </div>
+              <div style="font-size:12px;color:rgba(255,255,255,.75);margin-top:3px;">
+                <?= htmlspecialchars(mb_strimwidth($ur['message'], 0, 120, '…'), ENT_QUOTES) ?>
+              </div>
+              <div style="font-size:11px;color:rgba(255,255,255,.5);margin-top:3px;">
+                <i class="anticon anticon-clock-circle mr-1"></i><?= date('d.m.Y H:i', strtotime($ur['created_at'])) ?>
+              </div>
+            </div>
+            <a href="support.php?ticket=<?= (int)$ur['ticket_id'] ?>" class="btn btn-sm btn-light ml-3 flex-shrink-0"
+               style="border-radius:8px;color:#2950a8;font-size:11px;">
+              <i class="anticon anticon-eye mr-1"></i>Lesen
+            </a>
+          </div>
+        </div>
+        <?php endforeach; ?>
+      </div>
+    </div>
+  </div>
+</div>
+<?php endif; ?>                                                          ║ -->
 <!-- ╚══════════════════════════════════════════════════════════════════════╝ -->
 <div class="row mt-3">
   <div class="col-12">
