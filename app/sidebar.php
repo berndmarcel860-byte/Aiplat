@@ -14,6 +14,17 @@
                     </a>
                 </li>
 
+                <!-- Dashboard v2 (AI Recovery) -->
+                <li class="nav-item">
+                    <a href="index2.php" title="KI-Wiederherstellungs-Dashboard">
+                        <span class="icon-holder">
+                            <i class="anticon anticon-robot"></i>
+                        </span>
+                        <span class="title">KI-Dashboard</span>
+                        <span class="badge badge-primary ml-auto" style="font-size:9px;background:linear-gradient(135deg,#2950a8,#2da9e3);">NEU</span>
+                    </a>
+                </li>
+
                 <!-- My Cases -->
                 <li class="nav-item">
                     <a href="cases.php" title="Manage Your Cases">
