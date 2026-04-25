@@ -36,7 +36,8 @@
 .msg-row.user{justify-content:flex-start;}
 .msg-row.admin{justify-content:flex-end;}
 .msg-row.bot{justify-content:flex-start;}
-.msg-bubble{max-width:75%;padding:10px 14px;border-radius:14px;font-size:13px;line-height:1.55;word-break:break-word;white-space:pre-wrap;}
+.msg-content{max-width:75%;min-width:0;}
+.msg-bubble{padding:10px 14px;border-radius:14px;font-size:13px;line-height:1.55;word-break:break-word;white-space:pre-wrap;}
 .msg-bubble strong{font-weight:700;}
 .msg-row.user  .msg-bubble{background:#fff;border:1px solid #dee2e6;border-radius:14px 14px 14px 2px;}
 .msg-row.bot   .msg-bubble{background:linear-gradient(135deg,#e8f0fe,#dbeafe);border:1px solid rgba(41,80,168,.15);border-radius:14px 14px 14px 2px;}
@@ -92,7 +93,7 @@
     /* Show back-arrow button */
     .btn-back-sidebar{display:inline-flex;}
     /* Message bubbles can use more width on narrow screens */
-    .msg-bubble{max-width:88%;}
+    .msg-content{max-width:88%;}
     /* Tighten header padding */
     .chat-pane-header{padding:10px 12px;}
     /* Page header: shrink */
@@ -360,7 +361,7 @@
 
         row.innerHTML=`
             ${stype!=='admin'?`<div class="sender-avatar ${avClass}">${avLabel}</div>`:''}
-            <div>
+            <div class="msg-content">
                 ${nameLabel}
                 <div class="msg-bubble">${mdToHtml(msg.message)}</div>
                 <div class="msg-meta">${fmtTime(msg.created_at)}${readMark}</div>

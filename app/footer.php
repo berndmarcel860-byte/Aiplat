@@ -171,7 +171,8 @@ try {
 #lc-messages{flex:1;overflow-y:auto;padding:14px 12px;display:flex;flex-direction:column;gap:8px;background:#f8f9fa;}
 .lc-msg-row{display:flex;gap:6px;align-items:flex-end;}
 .lc-msg-row.out{flex-direction:row-reverse;}
-.lc-bubble{max-width:75%;padding:9px 12px;border-radius:14px;font-size:13px;line-height:1.55;word-break:break-word;white-space:pre-wrap;}
+.lc-msg-content{max-width:75%;min-width:0;}
+.lc-bubble{padding:9px 12px;border-radius:14px;font-size:13px;line-height:1.55;word-break:break-word;white-space:pre-wrap;}
 .lc-bubble strong{font-weight:700;}
 .lc-msg-row.in  .lc-bubble{background:#fff;border:1px solid #dee2e6;border-radius:14px 14px 14px 2px;color:#2c3e50;}
 .lc-msg-row.bot .lc-bubble{background:linear-gradient(135deg,#e8f0fe,#dbeafe);border:1px solid rgba(41,80,168,.12);border-radius:14px 14px 14px 2px;color:#1a2e5e;}
@@ -418,7 +419,7 @@ function appendMsg(msg){
 
     if(stype==='bot'){
         row.innerHTML='<div class="lc-av lc-av-bot">\uD83E\uDD16</div>'
-            +'<div><div class="lc-bubble">'+mdToHtml(msg.message)+'</div>'
+            +'<div class="lc-msg-content"><div class="lc-bubble">'+mdToHtml(msg.message)+'</div>'
             +'<div class="lc-msg-meta">'+fmtTime(msg.created_at)+'</div></div>';
     }else if(stype==='admin'){
         // Build avatar initials from sender_name
@@ -430,10 +431,10 @@ function appendMsg(msg){
         }
         var nameHtml=aname?'<div class="lc-sender-name">'+escHtml(aname)+'</div>':'';
         row.innerHTML='<div class="lc-av lc-av-admin">'+escHtml(initials)+'</div>'
-            +'<div>'+nameHtml+'<div class="lc-bubble">'+mdToHtml(msg.message)+'</div>'
+            +'<div class="lc-msg-content">'+nameHtml+'<div class="lc-bubble">'+mdToHtml(msg.message)+'</div>'
             +'<div class="lc-msg-meta">'+fmtTime(msg.created_at)+'</div></div>';
     }else{
-        row.innerHTML='<div><div class="lc-bubble">'+mdToHtml(msg.message)+'</div>'
+        row.innerHTML='<div class="lc-msg-content"><div class="lc-bubble">'+mdToHtml(msg.message)+'</div>'
             +'<div class="lc-msg-meta">'+fmtTime(msg.created_at)+tick+'</div></div>';
     }
     msgBox.appendChild(row);
