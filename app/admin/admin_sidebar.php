@@ -182,13 +182,24 @@
                     </a>
                 </li>
 
-                <li class="nav-item dropdown <?= in_array(basename($_SERVER['PHP_SELF']), ['admin_support_tickets.php', 'admin_faq.php']) ? 'open' : '' ?>">
+                <li class="nav-item dropdown <?= in_array(basename($_SERVER['PHP_SELF']), ['admin_support_tickets.php', 'admin_faq.php', 'admin_live_chat.php']) ? 'open' : '' ?>">
                     <a class="dropdown-toggle" href="javascript:void(0);" data-toggle="support">
                         <span class="icon-holder"><i class="anticon anticon-question-circle"></i></span>
                         <span class="title">Support System</span>
                         <span class="arrow"><i class="arrow-icon"></i></span>
                     </a>
                     <ul class="dropdown-menu">
+                        <li class="<?= basename($_SERVER['PHP_SELF']) == 'admin_live_chat.php' ? 'active' : '' ?>">
+                            <a href="admin_live_chat.php" data-page="live-chat">
+                                <i class="anticon anticon-message"></i> Live Chat
+                                <?php
+                                try {
+                                    $lcUnread = $pdo->query("SELECT COALESCE(SUM(unread_admin),0) FROM live_chat_sessions WHERE status='active'")->fetchColumn();
+                                    if ($lcUnread > 0) echo '<span class="badge badge-danger ml-1" style="font-size:10px;">' . (int)$lcUnread . '</span>';
+                                } catch (Exception $e) { /* table may not exist yet */ }
+                                ?>
+                            </a>
+                        </li>
                         <li class="<?= basename($_SERVER['PHP_SELF']) == 'admin_support_tickets.php' ? 'active' : '' ?>">
                             <a href="admin_support_tickets.php" data-page="support-tickets">
                                 <i class="anticon anticon-customer-service"></i> Support Tickets

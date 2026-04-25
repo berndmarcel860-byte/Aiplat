@@ -1,0 +1,344 @@
+<?php require_once 'admin_header.php'; ?>
+
+<style>
+/* ── Layout ───────────────────────────────────────────────────────────────── */
+.chat-wrap{display:flex;gap:0;height:calc(100vh - 140px);min-height:500px;border-radius:12px;overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,.1);}
+.chat-sidebar{width:300px;min-width:260px;background:#fff;border-right:1px solid #e9ecef;display:flex;flex-direction:column;}
+.chat-main{flex:1;display:flex;flex-direction:column;background:#f8f9fa;}
+
+/* Sidebar */
+.cs-header{padding:16px;background:linear-gradient(135deg,#2950a8,#2da9e3);color:#fff;}
+.cs-header h6{margin:0;font-size:14px;font-weight:700;}
+.cs-search{padding:10px 12px;border-bottom:1px solid #e9ecef;}
+.cs-search input{border-radius:20px;font-size:13px;padding:6px 14px;}
+.session-list{flex:1;overflow-y:auto;}
+.session-item{padding:12px 16px;border-bottom:1px solid #f0f2f5;cursor:pointer;transition:background .15s;}
+.session-item:hover{background:#f0f7ff;}
+.session-item.active{background:#e8f0fe;border-left:3px solid #2950a8;}
+.si-name{font-size:13px;font-weight:600;color:#2c3e50;}
+.si-preview{font-size:11px;color:#6c757d;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px;}
+.si-time{font-size:10px;color:#adb5bd;}
+.si-badge{background:#dc3545;color:#fff;border-radius:10px;font-size:10px;padding:1px 6px;font-weight:700;}
+.si-status{width:8px;height:8px;border-radius:50%;background:#28a745;display:inline-block;margin-right:4px;}
+.si-status.closed{background:#adb5bd;}
+
+/* Chat pane */
+.chat-pane-empty{flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;color:#adb5bd;}
+.chat-pane{display:none;flex:1;flex-direction:column;}
+.chat-pane.active{display:flex;}
+.chat-pane-header{padding:14px 20px;background:#fff;border-bottom:1px solid #e9ecef;display:flex;align-items:center;justify-content:space-between;}
+.chat-pane-header .user-info .name{font-size:14px;font-weight:700;color:#2c3e50;}
+.chat-pane-header .user-info .email{font-size:11px;color:#6c757d;}
+.chat-messages{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:10px;}
+.msg-row{display:flex;gap:8px;}
+.msg-row.user{justify-content:flex-start;}
+.msg-row.admin{justify-content:flex-end;}
+.msg-row.bot{justify-content:flex-start;}
+.msg-bubble{max-width:65%;padding:10px 14px;border-radius:14px;font-size:13px;line-height:1.55;word-break:break-word;white-space:pre-wrap;}
+.msg-bubble strong{font-weight:700;}
+.msg-row.user  .msg-bubble{background:#fff;border:1px solid #dee2e6;border-radius:14px 14px 14px 2px;}
+.msg-row.bot   .msg-bubble{background:linear-gradient(135deg,#e8f0fe,#dbeafe);border:1px solid rgba(41,80,168,.15);border-radius:14px 14px 14px 2px;}
+.msg-row.admin .msg-bubble{background:linear-gradient(135deg,#2950a8,#2da9e3);color:#fff;border-radius:14px 14px 2px 14px;}
+.msg-meta{font-size:10px;color:#adb5bd;margin-top:3px;text-align:right;}
+.msg-row.user  .msg-meta{text-align:left;}
+.msg-row.bot   .msg-meta{text-align:left;}
+.read-tick{color:rgba(255,255,255,.7);font-size:11px;}
+.read-tick.seen{color:#7ee8a2;}
+.sender-avatar{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;margin-top:4px;}
+.av-user{background:#e8f4fd;color:#2950a8;}
+.av-bot{background:#fff3e0;color:#e65100;}
+.av-admin{background:#2950a8;color:#fff;}
+.typing-indicator{display:none;font-size:12px;color:#6c757d;padding:4px 0 0 36px;height:22px;}
+.typing-dots span{display:inline-block;width:6px;height:6px;border-radius:50%;background:#adb5bd;margin:0 2px;animation:typingBounce 1.2s infinite;}
+.typing-dots span:nth-child(2){animation-delay:.2s;}
+.typing-dots span:nth-child(3){animation-delay:.4s;}
+@keyframes typingBounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-6px)}}
+.chat-input-bar{padding:12px 16px;background:#fff;border-top:1px solid #e9ecef;display:flex;gap:8px;align-items:flex-end;}
+.chat-input-bar textarea{resize:none;border-radius:10px;font-size:13px;padding:10px 14px;flex:1;max-height:120px;overflow-y:auto;}
+.btn-send{background:linear-gradient(135deg,#2950a8,#2da9e3);color:#fff;border:none;border-radius:10px;width:42px;height:42px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;}
+.btn-send:hover{opacity:.88;}
+</style>
+
+<div class="main-content">
+    <div class="page-header">
+        <h2>Live Chat</h2>
+        <div class="header-sub-title">
+            <nav class="breadcrumb breadcrumb-dash">
+                <a href="admin_dashboard.php" class="breadcrumb-item"><i class="anticon anticon-home"></i> Dashboard</a>
+                <span class="breadcrumb-item active">Live Chat</span>
+            </nav>
+        </div>
+    </div>
+
+    <div class="chat-wrap">
+        <!-- ── Sidebar ── -->
+        <div class="chat-sidebar">
+            <div class="cs-header">
+                <h6><i class="anticon anticon-message mr-2"></i>Live Chat Sessions</h6>
+                <div class="d-flex align-items-center mt-2" style="gap:6px;">
+                    <button class="btn btn-sm btn-light filter-btn active" data-status="active" style="border-radius:14px;font-size:11px;padding:3px 10px;">Aktiv</button>
+                    <button class="btn btn-sm btn-light filter-btn" data-status="closed" style="border-radius:14px;font-size:11px;padding:3px 10px;">Beendet</button>
+                    <button class="btn btn-sm btn-light filter-btn" data-status="all" style="border-radius:14px;font-size:11px;padding:3px 10px;">Alle</button>
+                    <span id="totalBadge" class="si-badge ml-auto">0</span>
+                </div>
+            </div>
+            <div class="cs-search">
+                <input type="text" id="sessionSearch" class="form-control form-control-sm" placeholder="Benutzer suchen…">
+            </div>
+            <div class="session-list" id="sessionList">
+                <div class="text-center text-muted py-4" style="font-size:12px;">Lade Sitzungen…</div>
+            </div>
+        </div>
+
+        <!-- ── Main Chat Pane ── -->
+        <div class="chat-main">
+            <!-- Empty state -->
+            <div class="chat-pane-empty" id="chatEmpty">
+                <i class="anticon anticon-message" style="font-size:48px;color:#dee2e6;margin-bottom:12px;"></i>
+                <p style="font-size:14px;">Wählen Sie eine Chat-Sitzung aus der Liste</p>
+            </div>
+
+            <!-- Active chat -->
+            <div class="chat-pane" id="chatPane">
+                <div class="chat-pane-header">
+                    <div class="user-info">
+                        <div class="name" id="chatUserName">—</div>
+                        <div class="email" id="chatUserEmail">—</div>
+                    </div>
+                    <div class="d-flex align-items-center" style="gap:8px;">
+                        <span id="chatStatusBadge" class="badge badge-success" style="font-size:11px;">Aktiv</span>
+                        <button class="btn btn-sm btn-outline-danger" id="btnCloseSession" style="border-radius:8px;font-size:12px;">
+                            <i class="anticon anticon-close-circle mr-1"></i>Schließen
+                        </button>
+                    </div>
+                </div>
+
+                <div class="chat-messages" id="chatMessages"></div>
+
+                <div class="typing-indicator" id="adminTypingIndicator">
+                    Benutzer schreibt<span class="typing-dots ml-1"><span></span><span></span><span></span></span>
+                </div>
+
+                <div class="chat-input-bar" id="chatInputBar">
+                    <textarea id="adminMsgInput" class="form-control" rows="1" placeholder="Nachricht eingeben… (Enter = Senden, Shift+Enter = neue Zeile)"></textarea>
+                    <button class="btn-send" id="btnAdminSend" title="Senden"><i class="anticon anticon-send"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function(){
+    'use strict';
+
+    let activeSessionId   = null;
+    let lastMsgId         = 0;
+    let currentStatus     = 'active';
+    let pollTimer         = null;
+    let sessionTimer      = null;
+    let typingTimer       = null;
+    const allSessions     = {};
+
+    // ── Helpers ─────────────────────────────────────────────────────────────
+    function fmtTime(dt){
+        const d = new Date(dt);
+        return d.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+    }
+    function escHtml(s){ const d=document.createElement('div');d.appendChild(document.createTextNode(s));return d.innerHTML; }
+    function mdToHtml(s){
+        return escHtml(s)
+            .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+            .replace(/• /g,'• ');
+    }
+    function scrollBottom(){
+        const el=document.getElementById('chatMessages');
+        if(el) el.scrollTop=el.scrollHeight;
+    }
+
+    // ── Load session list ────────────────────────────────────────────────────
+    function loadSessions(){
+        fetch('admin_ajax/chat_sessions.php?status='+currentStatus)
+            .then(r=>r.json())
+            .then(res=>{
+                if(!res.success) return;
+                const list=document.getElementById('sessionList');
+                const search=(document.getElementById('sessionSearch').value||'').toLowerCase();
+                const data=res.data.filter(s=>!search||s.user_name.toLowerCase().includes(search)||s.user_email.toLowerCase().includes(search));
+                document.getElementById('totalBadge').textContent=data.length;
+                list.innerHTML='';
+                if(!data.length){
+                    list.innerHTML='<div class="text-center text-muted py-4" style="font-size:12px;">Keine Sitzungen</div>';
+                    return;
+                }
+                data.forEach(s=>{
+                    allSessions[s.id]=s;
+                    const div=document.createElement('div');
+                    div.className='session-item'+(s.id==activeSessionId?' active':'');
+                    div.dataset.id=s.id;
+                    const preview=(s.last_message||'Keine Nachrichten').substring(0,50);
+                    div.innerHTML=`
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <div class="si-name"><span class="si-status${s.status=='closed'?' closed':''}"></span>${escHtml(s.user_name)}</div>
+                                <div class="si-preview">${escHtml(preview)}</div>
+                            </div>
+                            <div class="text-right">
+                                <div class="si-time">${fmtTime(s.updated_at)}</div>
+                                ${parseInt(s.unread_admin)>0?`<span class="si-badge">${s.unread_admin}</span>`:''}
+                            </div>
+                        </div>
+                    `;
+                    div.addEventListener('click',()=>openSession(s.id,s));
+                    list.appendChild(div);
+                });
+            })
+            .catch(()=>{});
+    }
+
+    // ── Open a session ───────────────────────────────────────────────────────
+    function openSession(id, meta){
+        activeSessionId=parseInt(id);
+        lastMsgId=0;
+
+        document.querySelectorAll('.session-item').forEach(el=>el.classList.toggle('active',parseInt(el.dataset.id)===activeSessionId));
+        document.getElementById('chatEmpty').style.display='none';
+        const pane=document.getElementById('chatPane');
+        pane.classList.add('active');
+        document.getElementById('chatUserName').textContent=meta.user_name;
+        document.getElementById('chatUserEmail').textContent=meta.user_email;
+
+        const isActive=meta.status==='active';
+        document.getElementById('chatStatusBadge').className='badge badge-'+(isActive?'success':'secondary');
+        document.getElementById('chatStatusBadge').textContent=isActive?'Aktiv':'Beendet';
+        document.getElementById('chatInputBar').style.display=isActive?'flex':'none';
+        document.getElementById('btnCloseSession').style.display=isActive?'':'none';
+
+        document.getElementById('chatMessages').innerHTML='';
+        fetchMessages(false);
+
+        clearInterval(pollTimer);
+        if(isActive){
+            pollTimer=setInterval(()=>fetchMessages(true),2000);
+        }
+    }
+
+    // ── Fetch messages ───────────────────────────────────────────────────────
+    function fetchMessages(poll){
+        const url='admin_ajax/chat_messages.php?session_id='+activeSessionId+(poll?'&since_id='+lastMsgId:'');
+        fetch(url)
+            .then(r=>r.json())
+            .then(res=>{
+                if(!res.success) return;
+                res.messages.forEach(appendMsg);
+                if(res.messages.length) scrollBottom();
+
+                // Typing
+                const ti=document.getElementById('adminTypingIndicator');
+                ti.style.display=res.user_typing?'block':'none';
+                if(res.user_typing) scrollBottom();
+            })
+            .catch(()=>{});
+    }
+
+    // ── Append message ───────────────────────────────────────────────────────
+    function appendMsg(msg){
+        if(msg.id>lastMsgId) lastMsgId=parseInt(msg.id);
+        const existing=document.querySelector('[data-msg-id="'+msg.id+'"]');
+        if(existing) return;
+
+        const stype=msg.sender_type;
+        const row=document.createElement('div');
+        row.className='msg-row '+stype;
+        row.dataset.msgId=msg.id;
+
+        const avClass=stype==='user'?'av-user':stype==='bot'?'av-bot':'av-admin';
+        const avLabel=stype==='user'?'U':stype==='bot'?'🤖':'A';
+        const isRead=parseInt(msg.is_read)===1;
+        const readMark=stype==='admin'?`<span class="read-tick${isRead?' seen':''}"> ${isRead?'✓✓':'✓'}</span>`:'';
+
+        row.innerHTML=`
+            ${stype!=='admin'?`<div class="sender-avatar ${avClass}">${avLabel}</div>`:''}
+            <div>
+                <div class="msg-bubble">${mdToHtml(msg.message)}</div>
+                <div class="msg-meta">${fmtTime(msg.created_at)}${readMark}</div>
+            </div>
+            ${stype==='admin'?`<div class="sender-avatar av-admin">A</div>`:''}
+        `;
+        document.getElementById('chatMessages').appendChild(row);
+    }
+
+    // ── Send admin message ───────────────────────────────────────────────────
+    function sendAdminMsg(){
+        const input=document.getElementById('adminMsgInput');
+        const text=input.value.trim();
+        if(!text||!activeSessionId) return;
+        input.value='';
+        input.style.height='auto';
+
+        fetch('admin_ajax/chat_send.php',{
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({session_id:activeSessionId,message:text})
+        })
+        .then(r=>r.json())
+        .then(res=>{
+            if(res.success) { appendMsg(res.message); scrollBottom(); }
+        });
+    }
+
+    // ── Close session ────────────────────────────────────────────────────────
+    document.getElementById('btnCloseSession').addEventListener('click',()=>{
+        if(!activeSessionId) return;
+        if(!confirm('Chat-Sitzung wirklich schließen?')) return;
+        fetch('admin_ajax/chat_close.php',{
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({session_id:activeSessionId})
+        })
+        .then(r=>r.json())
+        .then(res=>{
+            if(res.success){
+                clearInterval(pollTimer);
+                document.getElementById('chatInputBar').style.display='none';
+                document.getElementById('btnCloseSession').style.display='none';
+                document.getElementById('chatStatusBadge').className='badge badge-secondary';
+                document.getElementById('chatStatusBadge').textContent='Beendet';
+                loadSessions();
+            }
+        });
+    });
+
+    // ── Keyboard ─────────────────────────────────────────────────────────────
+    const input=document.getElementById('adminMsgInput');
+    input.addEventListener('keydown',e=>{
+        if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendAdminMsg();return;}
+        // Typing indicator
+        clearTimeout(typingTimer);
+        if(activeSessionId){
+            fetch('admin_ajax/chat_typing.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({session_id:activeSessionId})});
+        }
+    });
+    input.addEventListener('input',()=>{ input.style.height='auto'; input.style.height=Math.min(input.scrollHeight,120)+'px'; });
+    document.getElementById('btnAdminSend').addEventListener('click',sendAdminMsg);
+
+    // ── Filter buttons ───────────────────────────────────────────────────────
+    document.querySelectorAll('.filter-btn').forEach(btn=>{
+        btn.addEventListener('click',function(){
+            document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active','btn-primary'));
+            this.classList.add('active');
+            currentStatus=this.dataset.status;
+            loadSessions();
+        });
+    });
+
+    // ── Search ───────────────────────────────────────────────────────────────
+    document.getElementById('sessionSearch').addEventListener('input',loadSessions);
+
+    // ── Session refresh every 5 s ─────────────────────────────────────────────
+    loadSessions();
+    sessionTimer=setInterval(loadSessions,5000);
+})();
+</script>
+
+<?php require_once 'admin_footer.php'; ?>
