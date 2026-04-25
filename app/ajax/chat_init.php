@@ -3,7 +3,8 @@
  * chat_init.php — Create or resume the user's active chat session.
  * Returns session info + recent messages + AI greeting if brand-new.
  */
-require_once '../I.php';
+require_once __DIR__ . '/../config.php';
+require_once __DIR__ . '/../session.php';
 header('Content-Type: application/json');
 
 if (!isset($_SESSION['user_id'])) { echo json_encode(['success'=>false,'message'=>'Unauthorized']); exit; }

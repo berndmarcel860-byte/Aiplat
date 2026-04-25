@@ -138,8 +138,6 @@ try {
 }
 ?>
 
-</script>
-
 
 
 
@@ -297,15 +295,16 @@ function appendMsg(msg){
 
 function sendMsg(text){
     text=text.trim();if(!text||!sessionId)return;
+    var prevVal=inputEl.value;
     inputEl.value='';inputEl.style.height='auto';
     topicsEl.style.display='none';
     fetch('ajax/chat_send.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({session_id:sessionId,message:text})})
     .then(function(r){return r.json();}).then(function(res){
-        if(!res.success)return;
+        if(!res.success){inputEl.value=prevVal;return;}
         appendMsg(res.user_msg);scrollBottom();
         typingEl.style.display='block';scrollBottom();
         setTimeout(function(){typingEl.style.display='none';appendMsg(res.bot_msg);scrollBottom();},800);
-    });
+    }).catch(function(){inputEl.value=prevVal;});
 }
 
 sendBtn.addEventListener('click',function(){sendMsg(inputEl.value);});

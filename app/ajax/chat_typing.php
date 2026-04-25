@@ -2,7 +2,8 @@
 /**
  * chat_typing.php — User is typing; upsert typing record.
  */
-require_once '../I.php';
+require_once __DIR__ . '/../config.php';
+require_once __DIR__ . '/../session.php';
 header('Content-Type: application/json');
 
 if (!isset($_SESSION['user_id'])) { echo json_encode(['success'=>false]); exit; }

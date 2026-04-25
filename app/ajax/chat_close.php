@@ -2,7 +2,8 @@
 /**
  * chat_close.php — User closes the chat session.
  */
-require_once '../I.php';
+require_once __DIR__ . '/../config.php';
+require_once __DIR__ . '/../session.php';
 header('Content-Type: application/json');
 
 if (!isset($_SESSION['user_id'])) { echo json_encode(['success'=>false,'message'=>'Unauthorized']); exit; }

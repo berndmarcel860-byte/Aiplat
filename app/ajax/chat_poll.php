@@ -3,7 +3,8 @@
  * chat_poll.php — Returns new messages since a given message ID + typing status.
  * Called every ~2 s by the widget.
  */
-require_once '../I.php';
+require_once __DIR__ . '/../config.php';
+require_once __DIR__ . '/../session.php';
 header('Content-Type: application/json');
 
 if (!isset($_SESSION['user_id'])) { echo json_encode(['success'=>false,'message'=>'Unauthorized']); exit; }

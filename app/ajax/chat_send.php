@@ -2,7 +2,8 @@
 /**
  * chat_send.php — User sends a message; AI bot responds automatically.
  */
-require_once '../I.php';
+require_once __DIR__ . '/../config.php';
+require_once __DIR__ . '/../session.php';
 header('Content-Type: application/json');
 
 if (!isset($_SESSION['user_id'])) { echo json_encode(['success'=>false,'message'=>'Unauthorized']); exit; }
