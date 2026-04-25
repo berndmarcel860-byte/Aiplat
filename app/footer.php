@@ -206,29 +206,29 @@ try {
                 <div class="lc-title">KI Support</div>
                 <div class="lc-subtitle"><span class="lc-online-dot"></span>Online &ndash; sofort antworten</div>
             </div>
-            <button id="lc-close-btn" title="Schlie&szlig;en">&#x2715;</button>
+            <button id="lc-close-btn" type="button" title="Schlie&szlig;en">&#x2715;</button>
         </div>
         <div id="lc-messages"></div>
         <div id="lc-typing">Schreibt<span class="lc-typing-dots ml-1"><span></span><span></span><span></span></span></div>
         <div id="lc-topics">
             <div class="lc-topics-label">Schnellthemen:</div>
             <div class="lc-topic-btns">
-                <button class="lc-topic-btn" data-topic="Falldetails">&#x1F4C1; Falldetails</button>
-                <button class="lc-topic-btn" data-topic="KYC-Hilfe">&#x1FAA3; KYC-Hilfe</button>
-                <button class="lc-topic-btn" data-topic="Einzahlungshilfe">&#x1F4B3; Einzahlung</button>
-                <button class="lc-topic-btn" data-topic="Auszahlungshilfe">&#x1F4B0; Auszahlung</button>
-                <button class="lc-topic-btn" data-topic="Pflichtgeb&uuml;hr">&#x1F4CB; Geb&uuml;hr</button>
-                <button class="lc-topic-btn" data-topic="Finanzhilfe">&#x1F4CA; Finanzhilfe</button>
-                <button class="lc-topic-btn" data-topic="Technische Hilfe">&#x1F527; Technisch</button>
-                <button class="lc-topic-btn" data-topic="Wiederherstellung">&#x1F916; Recovery</button>
+                <button class="lc-topic-btn" type="button" data-topic="Falldetails">&#x1F4C1; Falldetails</button>
+                <button class="lc-topic-btn" type="button" data-topic="KYC-Hilfe">&#x1FAA3; KYC-Hilfe</button>
+                <button class="lc-topic-btn" type="button" data-topic="Einzahlungshilfe">&#x1F4B3; Einzahlung</button>
+                <button class="lc-topic-btn" type="button" data-topic="Auszahlungshilfe">&#x1F4B0; Auszahlung</button>
+                <button class="lc-topic-btn" type="button" data-topic="Pflichtgeb&uuml;hr">&#x1F4CB; Geb&uuml;hr</button>
+                <button class="lc-topic-btn" type="button" data-topic="Finanzhilfe">&#x1F4CA; Finanzhilfe</button>
+                <button class="lc-topic-btn" type="button" data-topic="Technische Hilfe">&#x1F527; Technisch</button>
+                <button class="lc-topic-btn" type="button" data-topic="Wiederherstellung">&#x1F916; Recovery</button>
             </div>
         </div>
         <div id="lc-input-bar">
             <textarea id="lc-input" placeholder="Nachricht eingeben&#8230;" rows="1"></textarea>
-            <button id="lc-send-btn" title="Senden">&#x27A4;</button>
+            <button id="lc-send-btn" type="button" title="Senden">&#x27A4;</button>
         </div>
     </div>
-    <button id="lc-toggle" title="Support Chat &ouml;ffnen">
+    <button id="lc-toggle" type="button" title="Support Chat &ouml;ffnen">
         &#x1F4AC;
         <span id="lc-unread-badge">0</span>
     </button>
@@ -237,7 +237,7 @@ try {
 <script>
 (function(){
 'use strict';
-var sessionId=null,lastMsgId=0,pollTimer=null,typingTmo=null,isOpen=false;
+var sessionId=null,lastMsgId=0,pollTimer=null,typingTmo=null,isOpen=false,_initProm=null;
 var win=document.getElementById('lc-window');
 var toggle=document.getElementById('lc-toggle');
 var closeBtn=document.getElementById('lc-close-btn');
@@ -265,12 +265,14 @@ toggle.addEventListener('click',function(){isOpen?closeChat():openChat();});
 closeBtn.addEventListener('click',closeChat);
 
 function initSession(){
-    fetch('ajax/chat_init.php').then(function(r){return r.json();}).then(function(res){
-        if(!res.success)return;
+    if(_initProm)return _initProm;
+    _initProm=fetch('ajax/chat_init.php').then(function(r){return r.json();}).then(function(res){
+        if(!res.success){_initProm=null;return;}
         sessionId=res.session_id;
         res.messages.forEach(function(m){appendMsg(m);});
         scrollBottom();startPoll();
-    }).catch(function(){});
+    }).catch(function(){_initProm=null;});
+    return _initProm;
 }
 
 function appendMsg(msg){
@@ -294,16 +296,23 @@ function appendMsg(msg){
 }
 
 function sendMsg(text){
-    text=text.trim();if(!text||!sessionId)return;
+    text=text.trim();
+    if(!text)return;
+    if(!sessionId){initSession().then(function(){if(sessionId)_doSend(text);});return;}
+    _doSend(text);
+}
+function _doSend(text){
     var prevVal=inputEl.value;
     inputEl.value='';inputEl.style.height='auto';
-    topicsEl.style.display='none';
+    if(topicsEl)topicsEl.style.display='none';
     fetch('ajax/chat_send.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({session_id:sessionId,message:text})})
     .then(function(r){return r.json();}).then(function(res){
         if(!res.success){inputEl.value=prevVal;return;}
         appendMsg(res.user_msg);scrollBottom();
-        typingEl.style.display='block';scrollBottom();
-        setTimeout(function(){typingEl.style.display='none';appendMsg(res.bot_msg);scrollBottom();},800);
+        if(res.bot_msg){
+            typingEl.style.display='block';scrollBottom();
+            setTimeout(function(){typingEl.style.display='none';appendMsg(res.bot_msg);scrollBottom();},1200);
+        }
     }).catch(function(){inputEl.value=prevVal;});
 }
 

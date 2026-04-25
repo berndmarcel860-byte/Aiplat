@@ -378,6 +378,27 @@ try {
 
         echo json_encode(['success' => true, 'message' => 'Live-Chat-Code gespeichert.']);
 
+    } elseif ($type === 'chat_ai') {
+        // Save AI auto-reply toggle for built-in live chat
+        $chatAiEnabled = isset($_POST['chat_ai_enabled']) ? 1 : 0;
+
+        $stmt = $pdo->query("SELECT id FROM system_settings WHERE id = 1");
+        $exists = $stmt->fetch();
+        if ($exists) {
+            $pdo->prepare("UPDATE system_settings SET chat_ai_enabled = ?, updated_at = NOW() WHERE id = 1")
+                ->execute([$chatAiEnabled]);
+        } else {
+            $pdo->prepare("INSERT INTO system_settings (id, chat_ai_enabled, created_at, updated_at) VALUES (1, ?, NOW(), NOW())")
+                ->execute([$chatAiEnabled]);
+        }
+
+        $admin_id   = $_SESSION['admin_id'];
+        $ip_address = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+        $pdo->prepare("INSERT INTO audit_logs (admin_id, action, entity_type, entity_id, new_value, ip_address, created_at) VALUES (?, 'update', 'system_settings', 1, ?, ?, NOW())")
+            ->execute([$admin_id, json_encode(['chat_ai_enabled' => $chatAiEnabled]), $ip_address]);
+
+        echo json_encode(['success' => true, 'message' => $chatAiEnabled ? 'KI-Auto-Antwort aktiviert.' : 'KI-Auto-Antwort deaktiviert. Nur Live-Agenten antworten jetzt.']);
+
     } elseif ($type === 'login_otp') {
         // Save global login OTP enabled/disabled setting
         $loginOtpEnabled = isset($_POST['login_otp_enabled']) ? 1 : 0;

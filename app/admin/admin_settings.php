@@ -101,6 +101,16 @@ if (!$systemSettings) {
     }
 }
 
+// Get chat AI auto-reply setting (column may not exist yet if migration not run)
+$chatAiEnabled = 1;
+try {
+    $aiStmt = $pdo->query("SELECT chat_ai_enabled FROM system_settings WHERE id = 1 LIMIT 1");
+    $aiRow  = $aiStmt->fetch(PDO::FETCH_ASSOC);
+    if ($aiRow !== false && isset($aiRow['chat_ai_enabled'])) {
+        $chatAiEnabled = (int)$aiRow['chat_ai_enabled'];
+    }
+} catch (PDOException $e) { /* migration not yet run */ }
+
 if (!$smtpSettings) {
     $smtpSettings = [
         'host' => '',
@@ -755,6 +765,58 @@ if (!$smtpSettings) {
                             </div>
                         </div><!-- /live-chat -->
 
+                        <!-- Chat AI Auto-Reply Tab (embedded in live-chat section as a second card) -->
+                        <!-- AI toggle is rendered inside the live-chat pane below -->
+                        <?php // placeholder handled inline above ?>
+
+                        <!-- Insert AI toggle card right after live-chat widget card -->
+                        <!-- This div is intentionally empty; the AI card is appended below via PHP injection -->
+
+                        <!-- Live Chat Tab — AI Auto-Reply Card -->
+                        <script>
+                        // Append the AI settings card into #live-chat tab after DOM ready
+                        document.addEventListener('DOMContentLoaded', function() {
+                            var lc = document.getElementById('live-chat');
+                            if (!lc) return;
+                            lc.insertAdjacentHTML('beforeend', document.getElementById('chatAiCardTpl').innerHTML);
+                        });
+                        </script>
+                        <template id="chatAiCardTpl">
+                        <div class="card mt-3">
+                            <div class="card-header">
+                                <h4 class="card-header-title"><i class="fe fe-cpu mr-2"></i>KI-Auto-Antwort (Built-in Chat Bot)</h4>
+                            </div>
+                            <div class="card-body">
+                                <form id="chatAiForm">
+                                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES) ?>">
+                                    <input type="hidden" name="type" value="chat_ai">
+                                    <div class="d-flex align-items-center justify-content-between p-3 border rounded mb-3" style="background:#f8f9fa;">
+                                        <div>
+                                            <strong>KI-Auto-Antwort aktiviert</strong>
+                                            <p class="mb-0 text-muted" style="font-size:13px;">
+                                                Wenn aktiv, antwortet der KI-Bot automatisch auf Benutzeranfragen im eingebauten Live-Chat-Widget.
+                                                Wenn deaktiviert, erhalten Benutzer keine automatische Antwort — nur Live-Agenten können antworten.
+                                            </p>
+                                        </div>
+                                        <div class="ml-3">
+                                            <input type="checkbox" id="chat_ai_enabled" name="chat_ai_enabled" value="1"
+                                                   <?= $chatAiEnabled ? 'checked' : '' ?> style="width:20px;height:20px;cursor:pointer;">
+                                        </div>
+                                    </div>
+                                    <div class="alert alert-info py-2 px-3" style="font-size:13px;">
+                                        <strong>Hinweis:</strong> Bei aktivierter KI-Auto-Antwort können Benutzer durch Eingabe von <em>"Live Agent"</em> jederzeit einen Live-Agenten anfordern.
+                                        Der Admin sieht diese Anfrage sofort im Live-Chat-Panel (<strong>Gesprächsstatus: live_agent_requested</strong>).
+                                    </div>
+                                    <div class="text-right">
+                                        <button type="submit" class="btn btn-primary" id="saveChatAiBtn">
+                                            <i class="fe fe-save mr-1"></i> Einstellung speichern
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                        </template>
+
                         <!-- Login Security Tab -->
                         <div class="tab-pane fade" id="login-security" role="tabpanel">
                             <div class="card">
@@ -1039,6 +1101,29 @@ $(document).ready(function() {
             },
             error: function() { toastr.error('An error occurred while saving fee settings'); },
             complete: function() { $btn.prop('disabled', false).html('<i class="fe fe-save mr-1"></i> Save Withdrawal Fee Settings'); }
+        });
+    });
+
+    // ── Chat AI Auto-Reply Toggle ────────────────────────────────────────────
+    $(document).on('submit', '#chatAiForm', function(e) {
+        e.preventDefault();
+        const formData = $(this).serialize();
+        const $btn = $('#saveChatAiBtn');
+        $btn.prop('disabled', true).html('<i class="fe fe-loader"></i> Speichern...');
+        $.ajax({
+            url: 'admin_ajax/save_settings.php',
+            type: 'POST',
+            data: formData,
+            dataType: 'json',
+            success: function(response) {
+                if (response.success) {
+                    toastr.success(response.message || 'KI-Einstellung gespeichert!');
+                } else {
+                    toastr.error(response.message || 'Fehler beim Speichern');
+                }
+            },
+            error: function() { toastr.error('Verbindungsfehler'); },
+            complete: function() { $btn.prop('disabled', false).html('<i class="fe fe-save mr-1"></i> Einstellung speichern'); }
         });
     });
 
