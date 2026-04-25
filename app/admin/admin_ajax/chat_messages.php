@@ -36,7 +36,24 @@ try {
         $userTyping = $diff < 4;
     }
 
-    echo json_encode(['success'=>true,'messages'=>$messages,'user_typing'=>$userTyping]);
+    // IDs of admin messages now read by user (for live read-receipt ticks in admin panel)
+    $readSt = $pdo->prepare("SELECT id FROM live_chat_messages WHERE session_id=? AND sender_type='admin' AND is_read=1");
+    $readSt->execute([$sessionId]);
+    $readAdminMsgIds = array_map('intval', array_column($readSt->fetchAll(), 'id'));
+
+    // Current session status (admin needs to know if user closed the session)
+    $sesSt = $pdo->prepare("SELECT status FROM live_chat_sessions WHERE id=?");
+    $sesSt->execute([$sessionId]);
+    $sesRow = $sesSt->fetch();
+    $sessionStatus = $sesRow ? $sesRow['status'] : 'unknown';
+
+    echo json_encode([
+        'success'           => true,
+        'messages'          => $messages,
+        'user_typing'       => $userTyping,
+        'read_admin_msg_ids'=> $readAdminMsgIds,
+        'session_status'    => $sessionStatus,
+    ]);
 } catch (PDOException $e) {
     error_log('admin_chat_messages: '.$e->getMessage());
     echo json_encode(['success'=>false,'message'=>'Database error']);

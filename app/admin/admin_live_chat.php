@@ -237,6 +237,36 @@
                 const ti=document.getElementById('adminTypingIndicator');
                 ti.style.display=res.user_typing?'block':'none';
                 if(res.user_typing) scrollBottom();
+
+                // Live read-receipt ticks: update ✓ → ✓✓ for admin messages user has now read
+                if(res.read_admin_msg_ids && res.read_admin_msg_ids.length){
+                    res.read_admin_msg_ids.forEach(id=>{
+                        const tick=document.querySelector('[data-msg-id="'+id+'"] .read-tick');
+                        if(tick && !tick.classList.contains('seen')){
+                            tick.classList.add('seen');
+                            tick.textContent=' \u2713\u2713';
+                        }
+                    });
+                }
+
+                // Detect session closed by user during active poll
+                if(poll && res.session_status==='closed'){
+                    const sb=document.getElementById('chatStatusBadge');
+                    if(sb && sb.textContent!=='Beendet'){
+                        clearInterval(pollTimer);
+                        sb.className='badge badge-secondary';
+                        sb.textContent='Beendet';
+                        document.getElementById('chatInputBar').style.display='none';
+                        document.getElementById('btnCloseSession').style.display='none';
+                        // Append system notice
+                        const sysRow=document.createElement('div');
+                        sysRow.style.cssText='display:flex;justify-content:center;padding:4px 0;';
+                        sysRow.innerHTML='<div style="font-size:11px;color:#adb5bd;padding:4px 12px;background:#f0f2f5;border-radius:10px;">Sitzung vom Benutzer beendet</div>';
+                        document.getElementById('chatMessages').appendChild(sysRow);
+                        scrollBottom();
+                        loadSessions();
+                    }
+                }
             })
             .catch(()=>{});
     }

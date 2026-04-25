@@ -190,8 +190,21 @@ try {
 .lc-topic-btns{display:flex;flex-wrap:wrap;gap:5px;}
 .lc-topic-btn{background:#f0f7ff;border:1px solid #cfe2ff;color:#2950a8;font-size:11px;border-radius:14px;padding:4px 10px;cursor:pointer;transition:background .15s,color .15s;}
 .lc-topic-btn:hover{background:#2950a8;color:#fff;border-color:#2950a8;}
-/* Input bar */
-#lc-input-bar{padding:10px 12px;background:#fff;border-top:1px solid #e9ecef;display:flex;gap:8px;align-items:flex-end;}
+/* End session button */
+#lc-end-btn{background:transparent;border:1px solid rgba(220,53,69,.5);color:#dc3545;border-radius:14px;font-size:11px;padding:4px 10px;cursor:pointer;white-space:nowrap;flex-shrink:0;}
+#lc-end-btn:hover{background:#dc3545;color:#fff;border-color:#dc3545;}
+/* Ticket suggestion banner */
+#lc-ticket-banner{padding:9px 12px;background:#fff8e1;border-top:1px solid #ffecb3;font-size:12px;color:#856404;display:none;align-items:center;gap:6px;}
+#lc-ticket-banner a{color:#2950a8;font-weight:600;}
+#lc-ticket-dismiss{background:none;border:none;color:#856404;cursor:pointer;font-size:14px;line-height:1;padding:0 2px;flex-shrink:0;}
+/* Closed bar */
+#lc-closed-bar{padding:12px;background:#f8f9fa;border-top:1px solid #e9ecef;text-align:center;display:none;}
+.lc-closed-msg{font-size:12px;color:#6c757d;margin-bottom:8px;}
+.lc-new-chat-btn{background:linear-gradient(135deg,#2950a8,#2da9e3);color:#fff;border:none;border-radius:20px;font-size:12px;padding:7px 18px;cursor:pointer;}
+.lc-new-chat-btn:hover{opacity:.85;}
+/* System notice message */
+.lc-msg-row.system{justify-content:center;}
+.lc-msg-row.system .lc-bubble{background:#e9ecef;color:#6c757d;font-size:11px;border-radius:10px;font-style:italic;text-align:center;max-width:90%;}
 #lc-input{flex:1;border:1px solid #dee2e6;border-radius:20px;padding:8px 14px;font-size:13px;resize:none;max-height:90px;overflow-y:auto;line-height:1.4;outline:none;}
 #lc-input:focus{border-color:#2950a8;box-shadow:0 0 0 2px rgba(41,80,168,.12);}
 #lc-send-btn{background:linear-gradient(135deg,#2950a8,#2da9e3);border:none;border-radius:50%;width:36px;height:36px;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:15px;}
@@ -210,6 +223,12 @@ try {
         </div>
         <div id="lc-messages"></div>
         <div id="lc-typing">Schreibt<span class="lc-typing-dots ml-1"><span></span><span></span><span></span></span></div>
+        <div id="lc-ticket-banner">
+            <span>⏳ Noch keine Antwort? </span>
+            <a href="support_ticket.php">Support-Ticket erstellen</a>
+            <span style="color:#adb5bd;">– garantierte Antwort innerhalb 24 h.</span>
+            <button type="button" id="lc-ticket-dismiss" title="Schlie&szlig;en">&#x2715;</button>
+        </div>
         <div id="lc-topics">
             <div class="lc-topics-label">Schnellthemen:</div>
             <div class="lc-topic-btns">
@@ -225,7 +244,12 @@ try {
         </div>
         <div id="lc-input-bar">
             <textarea id="lc-input" placeholder="Nachricht eingeben&#8230;" rows="1"></textarea>
+            <button id="lc-end-btn" type="button" title="Chat-Sitzung beenden">&#x2715; Beenden</button>
             <button id="lc-send-btn" type="button" title="Senden">&#x27A4;</button>
+        </div>
+        <div id="lc-closed-bar">
+            <div class="lc-closed-msg">&#x1F512; Diese Chat-Sitzung wurde beendet.</div>
+            <button class="lc-new-chat-btn" id="lc-new-chat-btn" type="button">&#x1F4AC; Neuen Chat starten</button>
         </div>
     </div>
     <button id="lc-toggle" type="button" title="Support Chat &ouml;ffnen">
@@ -237,7 +261,7 @@ try {
 <script>
 (function(){
 'use strict';
-var sessionId=null,lastMsgId=0,pollTimer=null,typingTmo=null,isOpen=false,_initProm=null;
+var sessionId=null,lastMsgId=0,pollTimer=null,typingTmo=null,isOpen=false,_initProm=null,sessionClosed=false;
 var win=document.getElementById('lc-window');
 var toggle=document.getElementById('lc-toggle');
 var closeBtn=document.getElementById('lc-close-btn');
@@ -247,6 +271,15 @@ var inputEl=document.getElementById('lc-input');
 var sendBtn=document.getElementById('lc-send-btn');
 var badge=document.getElementById('lc-unread-badge');
 var topicsEl=document.getElementById('lc-topics');
+var endBtn=document.getElementById('lc-end-btn');
+var closedBar=document.getElementById('lc-closed-bar');
+var newChatBtn=document.getElementById('lc-new-chat-btn');
+var ticketBanner=document.getElementById('lc-ticket-banner');
+var ticketDismiss=document.getElementById('lc-ticket-dismiss');
+var inputBar=document.getElementById('lc-input-bar');
+
+/* ── Inactivity tracking ── */
+var lastUserSentTime=0,lastReplyTime=0,inactivityTimer=null,ticketBannerShown=false;
 
 function fmtTime(dt){var d=new Date(dt);return d.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});}
 function escHtml(s){var d=document.createElement('div');d.appendChild(document.createTextNode(s));return d.innerHTML;}
@@ -258,17 +291,78 @@ function openChat(){
     isOpen=true;win.classList.add('open');showBadge(0);
     if(!sessionId)initSession();else startPoll();
     setTimeout(scrollBottom,120);
+    startInactivityTimer();
 }
 function closeChat(){isOpen=false;win.classList.remove('open');clearInterval(pollTimer);}
 
 toggle.addEventListener('click',function(){isOpen?closeChat():openChat();});
 closeBtn.addEventListener('click',closeChat);
 
+/* ── End session ── */
+endBtn.addEventListener('click',function(){
+    if(!sessionId)return;
+    if(!confirm('Chat-Sitzung wirklich beenden?\n\nSie können danach eine neue Sitzung starten.'))return;
+    _endSession();
+});
+function _endSession(){
+    fetch('ajax/chat_close.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({session_id:sessionId})})
+    .then(function(r){return r.json();}).then(function(res){
+        if(res.success)showClosedState('Sie haben diese Chat-Sitzung beendet.');
+    }).catch(function(){});
+}
+function showClosedState(msg){
+    sessionClosed=true;
+    clearInterval(pollTimer);
+    clearInterval(inactivityTimer);
+    inputBar.style.display='none';
+    if(ticketBanner)ticketBanner.style.display='none';
+    closedBar.style.display='block';
+    appendSystemMsg(msg||'\uD83D\uDD12 Diese Chat-Sitzung wurde beendet.');
+}
+function appendSystemMsg(text){
+    var row=document.createElement('div');
+    row.className='lc-msg-row system';
+    row.innerHTML='<div style="width:100%;text-align:center;"><div class="lc-bubble">'+escHtml(text)+'</div></div>';
+    msgBox.appendChild(row);
+    scrollBottom();
+}
+
+newChatBtn.addEventListener('click',function(){
+    sessionId=null;lastMsgId=0;_initProm=null;sessionClosed=false;
+    lastUserSentTime=0;lastReplyTime=0;ticketBannerShown=false;
+    closedBar.style.display='none';
+    inputBar.style.display='flex';
+    if(topicsEl)topicsEl.style.display='block';
+    msgBox.innerHTML='';
+    initSession();
+    startInactivityTimer();
+});
+
+/* ── Inactivity → suggest ticket ── */
+ticketDismiss.addEventListener('click',function(){ticketBanner.style.display='none';ticketBannerShown=true;});
+function startInactivityTimer(){
+    clearInterval(inactivityTimer);
+    inactivityTimer=setInterval(function(){
+        if(sessionClosed||ticketBannerShown||!sessionId)return;
+        if(!lastUserSentTime)return;
+        /* Show banner if user sent a message and has waited >5 min without any bot/admin reply */
+        if(lastUserSentTime>lastReplyTime&&Date.now()-lastUserSentTime>5*60*1000){
+            ticketBanner.style.display='flex';
+            ticketBannerShown=true;
+        }
+    },30000);
+}
+
 function initSession(){
     if(_initProm)return _initProm;
     _initProm=fetch('ajax/chat_init.php').then(function(r){return r.json();}).then(function(res){
         if(!res.success){_initProm=null;return;}
         sessionId=res.session_id;
+        if(res.session_status==='closed'){
+            showClosedState();
+            res.messages.forEach(function(m){appendMsg(m);});
+            return;
+        }
         res.messages.forEach(function(m){appendMsg(m);});
         scrollBottom();startPoll();
     }).catch(function(){_initProm=null;});
@@ -302,6 +396,7 @@ function sendMsg(text){
     _doSend(text);
 }
 function _doSend(text){
+    lastUserSentTime=Date.now();
     var prevVal=inputEl.value;
     inputEl.value='';inputEl.style.height='auto';
     if(topicsEl)topicsEl.style.display='none';
@@ -311,7 +406,13 @@ function _doSend(text){
         appendMsg(res.user_msg);scrollBottom();
         if(res.bot_msg){
             typingEl.style.display='block';scrollBottom();
-            setTimeout(function(){typingEl.style.display='none';appendMsg(res.bot_msg);scrollBottom();},1200);
+            setTimeout(function(){
+                typingEl.style.display='none';
+                appendMsg(res.bot_msg);
+                scrollBottom();
+                lastReplyTime=Date.now(); /* bot replied — reset inactivity */
+                if(ticketBanner&&!ticketBannerShown)ticketBanner.style.display='none';
+            },1200);
         }
     }).catch(function(){inputEl.value=prevVal;});
 }
@@ -333,23 +434,35 @@ document.querySelectorAll('.lc-topic-btn').forEach(function(btn){
 
 function startPoll(){clearInterval(pollTimer);pollTimer=setInterval(pollMessages,2500);}
 function pollMessages(){
-    if(!sessionId)return;
+    if(!sessionId||sessionClosed)return;
     fetch('ajax/chat_poll.php?session_id='+sessionId+'&since_id='+lastMsgId)
     .then(function(r){return r.json();}).then(function(res){
         if(!res.success)return;
+        var gotReply=false;
         res.messages.forEach(function(m){
             appendMsg(m);
+            if(m.sender_type!=='user'){gotReply=true;}
             if(!isOpen&&(m.sender_type==='admin'||m.sender_type==='bot')){
                 var cur=parseInt(badge.textContent||'0')+1;showBadge(cur);
             }
         });
+        if(gotReply){
+            lastReplyTime=Date.now();
+            ticketBanner.style.display='none'; /* hide ticket banner if reply arrived */
+            ticketBannerShown=false;
+        }
         if(res.messages.length&&isOpen)scrollBottom();
         typingEl.style.display=res.admin_typing?'block':'none';
         if(res.admin_typing&&isOpen)scrollBottom();
-        if(res.session_status==='closed'){
-            clearInterval(pollTimer);
-            var ib=document.getElementById('lc-input-bar');
-            ib.style.opacity='0.4';ib.style.pointerEvents='none';
+        /* Live read-receipt tick updates: ✓ → ✓✓ */
+        if(res.read_user_msg_ids&&res.read_user_msg_ids.length){
+            res.read_user_msg_ids.forEach(function(id){
+                var el=document.querySelector('[data-lc-id="'+id+'"] .lc-read-tick');
+                if(el&&!el.classList.contains('seen')){el.classList.add('seen');el.textContent='\u00a0\u2713\u2713';}
+            });
+        }
+        if(res.session_status==='closed'&&!sessionClosed){
+            showClosedState('Diese Chat-Sitzung wurde vom Support-Team beendet. Starten Sie eine neue Sitzung für weitere Hilfe.');
         }
     }).catch(function(){});
 }

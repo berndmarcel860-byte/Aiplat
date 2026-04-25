@@ -43,11 +43,17 @@ try {
         $adminTyping = $diff < 4;
     }
 
+    // IDs of user messages now read by admin (for live read-receipt ticks in widget)
+    $readSt = $pdo->prepare("SELECT id FROM live_chat_messages WHERE session_id=? AND sender_type='user' AND is_read=1");
+    $readSt->execute([$sessionId]);
+    $readUserMsgIds = array_map('intval', array_column($readSt->fetchAll(), 'id'));
+
     echo json_encode([
-        'success'      => true,
-        'messages'     => $newMessages,
-        'admin_typing' => $adminTyping,
-        'session_status' => $session['status'],
+        'success'          => true,
+        'messages'         => $newMessages,
+        'admin_typing'     => $adminTyping,
+        'session_status'   => $session['status'],
+        'read_user_msg_ids'=> $readUserMsgIds,
     ]);
 } catch (PDOException $e) {
     error_log('chat_poll: '.$e->getMessage());
