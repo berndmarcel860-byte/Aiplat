@@ -97,6 +97,7 @@
     /* Page header: shrink */
     .page-header h2{font-size:16px;}
 }
+</style>
 
 <div class="main-content">
     <div class="page-header">
