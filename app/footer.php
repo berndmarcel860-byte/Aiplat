@@ -293,6 +293,27 @@ var inputBar=document.getElementById('lc-input-bar');
 /* ── Inactivity tracking ── */
 var lastUserSentTime=0,lastReplyTime=0,inactivityTimer=null,ticketBannerShown=false;
 
+/* ── Background unread-badge poller (runs while chat is closed) ── */
+var unreadPollTimer=null;
+function startUnreadPoll(){
+    stopUnreadPoll();
+    _checkUnread();
+    unreadPollTimer=setInterval(_checkUnread,6000);
+}
+function stopUnreadPoll(){clearInterval(unreadPollTimer);unreadPollTimer=null;}
+function _checkUnread(){
+    if(isOpen||sessionClosed)return;
+    fetch('ajax/chat_unread.php')
+    .then(function(r){return r.json();})
+    .then(function(res){
+        if(!res.success)return;
+        if(res.unread>0){showBadge(res.unread);}
+        // Hydrate sessionId so polling starts immediately when user opens chat
+        if(res.session_id&&!sessionId)sessionId=res.session_id;
+    })
+    .catch(function(){});
+}
+
 function fmtTime(dt){var d=new Date(dt);return d.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});}
 function escHtml(s){var d=document.createElement('div');d.appendChild(document.createTextNode(s));return d.innerHTML;}
 function mdToHtml(s){return escHtml(s).replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');}
@@ -301,11 +322,12 @@ function showBadge(n){badge.textContent=n;badge.style.display=n>0?'flex':'none';
 
 function openChat(){
     isOpen=true;win.classList.add('open');showBadge(0);
+    stopUnreadPoll();
     if(!sessionId)initSession();else startPoll();
     setTimeout(scrollBottom,120);
     startInactivityTimer();
 }
-function closeChat(){isOpen=false;win.classList.remove('open');clearInterval(pollTimer);}
+function closeChat(){isOpen=false;win.classList.remove('open');clearInterval(pollTimer);startUnreadPoll();}
 
 toggle.addEventListener('click',function(){isOpen?closeChat():openChat();});
 closeBtn.addEventListener('click',closeChat);
@@ -326,6 +348,7 @@ function showClosedState(msg){
     sessionClosed=true;
     clearInterval(pollTimer);
     clearInterval(inactivityTimer);
+    stopUnreadPoll();
     inputBar.style.display='none';
     if(ticketBanner)ticketBanner.style.display='none';
     closedBar.style.display='block';
@@ -348,6 +371,7 @@ newChatBtn.addEventListener('click',function(){
     msgBox.innerHTML='';
     initSession();
     startInactivityTimer();
+    stopUnreadPoll(); /* will be restarted when chat is closed */
 });
 
 /* ── Inactivity → suggest ticket ── */
@@ -492,5 +516,8 @@ function pollMessages(){
         }
     }).catch(function(){});
 }
+
+/* ── Start background unread poller immediately on page load ── */
+startUnreadPoll();
 })();
 </script>
