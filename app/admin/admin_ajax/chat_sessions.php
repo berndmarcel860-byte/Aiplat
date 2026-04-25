@@ -8,8 +8,9 @@ header('Content-Type: application/json');
 try {
     $status = $_GET['status'] ?? 'active';
     $allowed = ['active','closed','all'];
-    if (!in_array($status, $allowed)) $status = 'active';
+    if (!in_array($status, $allowed, true)) $status = 'active';
 
+    // $status is strictly whitelisted above — safe to interpolate
     $where = $status === 'all' ? '' : "AND s.status = '$status'";
 
     $stmt = $pdo->query("
