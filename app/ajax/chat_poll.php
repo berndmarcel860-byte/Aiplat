@@ -22,7 +22,7 @@ try {
     if (!$session) { echo json_encode(['success'=>false,'message'=>'Session not found']); exit; }
 
     // New messages
-    $msgs = $pdo->prepare("SELECT id, sender_type, message, is_read, created_at FROM live_chat_messages WHERE session_id=? AND id>? ORDER BY id ASC LIMIT 30");
+    $msgs = $pdo->prepare("SELECT id, sender_type, sender_name, message, is_read, created_at FROM live_chat_messages WHERE session_id=? AND id>? ORDER BY id ASC LIMIT 30");
     $msgs->execute([$sessionId, $sinceId]);
     $newMessages = $msgs->fetchAll();
 

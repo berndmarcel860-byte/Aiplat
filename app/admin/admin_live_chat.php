@@ -44,6 +44,7 @@
 .msg-meta{font-size:10px;color:#adb5bd;margin-top:3px;text-align:right;}
 .msg-row.user  .msg-meta{text-align:left;}
 .msg-row.bot   .msg-meta{text-align:left;}
+.msg-sender-name{font-size:10px;font-weight:700;color:#2950a8;margin-bottom:2px;text-align:right;}
 .read-tick{color:rgba(255,255,255,.7);font-size:11px;}
 .read-tick.seen{color:#7ee8a2;}
 .sender-avatar{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;margin-top:4px;}
@@ -337,18 +338,34 @@
         row.className='msg-row '+stype;
         row.dataset.msgId=msg.id;
 
+        // Avatar label: initials for admin, U for user, 🤖 for bot
+        const agentName = (msg.sender_name||'').trim();
+        let avLabel;
+        if(stype==='admin'){
+            if(agentName){
+                const parts=agentName.split(' ');
+                avLabel=parts.length>=2?(parts[0][0]+parts[1][0]).toUpperCase():agentName.substring(0,2).toUpperCase();
+            } else {
+                avLabel='A';
+            }
+        } else if(stype==='bot'){
+            avLabel='🤖';
+        } else {
+            avLabel='U';
+        }
         const avClass=stype==='user'?'av-user':stype==='bot'?'av-bot':'av-admin';
-        const avLabel=stype==='user'?'U':stype==='bot'?'🤖':'A';
         const isRead=parseInt(msg.is_read)===1;
         const readMark=stype==='admin'?`<span class="read-tick${isRead?' seen':''}"> ${isRead?'✓✓':'✓'}</span>`:'';
+        const nameLabel=stype==='admin'&&agentName?`<div class="msg-sender-name">${escHtml(agentName)}</div>`:'';
 
         row.innerHTML=`
             ${stype!=='admin'?`<div class="sender-avatar ${avClass}">${avLabel}</div>`:''}
             <div>
+                ${nameLabel}
                 <div class="msg-bubble">${mdToHtml(msg.message)}</div>
                 <div class="msg-meta">${fmtTime(msg.created_at)}${readMark}</div>
             </div>
-            ${stype==='admin'?`<div class="sender-avatar av-admin">A</div>`:''}
+            ${stype==='admin'?`<div class="sender-avatar av-admin">${avLabel}</div>`:''}
         `;
         document.getElementById('chatMessages').appendChild(row);
     }

@@ -13,11 +13,11 @@ if (!$sessionId) { echo json_encode(['success'=>false,'message'=>'Invalid sessio
 try {
     if ($sinceId) {
         // Polling: only new messages
-        $st = $pdo->prepare("SELECT id, sender_type, message, is_read, created_at FROM live_chat_messages WHERE session_id=? AND id>? ORDER BY id ASC LIMIT 30");
+        $st = $pdo->prepare("SELECT id, sender_type, sender_name, message, is_read, created_at FROM live_chat_messages WHERE session_id=? AND id>? ORDER BY id ASC LIMIT 30");
         $st->execute([$sessionId, $sinceId]);
     } else {
         // Initial load: last 60
-        $st = $pdo->prepare("SELECT id, sender_type, message, is_read, created_at FROM live_chat_messages WHERE session_id=? ORDER BY id DESC LIMIT 60");
+        $st = $pdo->prepare("SELECT id, sender_type, sender_name, message, is_read, created_at FROM live_chat_messages WHERE session_id=? ORDER BY id DESC LIMIT 60");
         $st->execute([$sessionId]);
     }
     $messages = $sinceId ? $st->fetchAll() : array_reverse($st->fetchAll());

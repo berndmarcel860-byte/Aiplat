@@ -155,12 +155,17 @@ try {
 #lc-window{width:360px;height:520px;background:#fff;border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,.18);display:none;flex-direction:column;overflow:hidden;margin-bottom:10px;}
 #lc-window.open{display:flex;}
 /* Header */
-#lc-header{background:linear-gradient(135deg,#2950a8,#2da9e3);padding:14px 16px;display:flex;align-items:center;gap:10px;color:#fff;}
-.lc-avatar{width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
-.lc-header-info .lc-title{font-size:14px;font-weight:700;line-height:1.2;}
+#lc-header{background:linear-gradient(135deg,#2950a8,#2da9e3);padding:12px 14px;display:flex;align-items:center;gap:10px;color:#fff;flex-shrink:0;}
+.lc-avatar{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;}
+.lc-header-info{flex:1;min-width:0;}
+.lc-header-info .lc-title{font-size:13px;font-weight:700;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .lc-header-info .lc-subtitle{font-size:11px;opacity:.85;}
-.lc-online-dot{width:8px;height:8px;border-radius:50%;background:#7ee8a2;border:2px solid rgba(255,255,255,.5);display:inline-block;margin-right:4px;}
-#lc-close-btn{margin-left:auto;background:transparent;border:none;color:rgba(255,255,255,.75);font-size:18px;cursor:pointer;padding:2px 6px;border-radius:6px;}
+.lc-online-dot{width:7px;height:7px;border-radius:50%;background:#7ee8a2;border:2px solid rgba(255,255,255,.5);display:inline-block;margin-right:3px;}
+/* Header action buttons */
+.lc-header-actions{display:flex;align-items:center;gap:4px;flex-shrink:0;margin-left:auto;}
+#lc-end-btn{background:rgba(220,53,69,.15);border:1px solid rgba(220,53,69,.6);color:#ffc0c0;border-radius:12px;font-size:11px;padding:4px 9px;cursor:pointer;white-space:nowrap;transition:background .15s,color .15s;}
+#lc-end-btn:hover{background:#dc3545;color:#fff;border-color:#dc3545;}
+#lc-close-btn{background:transparent;border:none;color:rgba(255,255,255,.75);font-size:17px;cursor:pointer;padding:2px 5px;border-radius:6px;line-height:1;}
 #lc-close-btn:hover{background:rgba(255,255,255,.15);color:#fff;}
 /* Messages */
 #lc-messages{flex:1;overflow-y:auto;padding:14px 12px;display:flex;flex-direction:column;gap:8px;background:#f8f9fa;}
@@ -171,44 +176,49 @@ try {
 .lc-msg-row.in  .lc-bubble{background:#fff;border:1px solid #dee2e6;border-radius:14px 14px 14px 2px;color:#2c3e50;}
 .lc-msg-row.bot .lc-bubble{background:linear-gradient(135deg,#e8f0fe,#dbeafe);border:1px solid rgba(41,80,168,.12);border-radius:14px 14px 14px 2px;color:#1a2e5e;}
 .lc-msg-row.out .lc-bubble{background:linear-gradient(135deg,#2950a8,#2da9e3);color:#fff;border-radius:14px 14px 2px 14px;}
-.lc-msg-time{font-size:10px;color:#adb5bd;margin-top:2px;}
-.lc-msg-row.out .lc-msg-time{text-align:right;}
+.lc-msg-meta{font-size:10px;color:#adb5bd;margin-top:2px;}
+.lc-msg-row.out .lc-msg-meta{text-align:right;}
+.lc-sender-name{font-size:10px;font-weight:700;color:#2950a8;margin-bottom:2px;}
 .lc-read-tick{font-size:11px;}
 .lc-read-tick.seen{color:#7ee8a2;}
-.lc-av{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;}
-.lc-av-bot{background:#fff3e0;color:#e65100;border:1px solid #ffe0b2;}
+.lc-av{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;}
+.lc-av-bot{background:#fff3e0;color:#e65100;border:1px solid #ffe0b2;font-size:13px;}
 .lc-av-admin{background:#2950a8;color:#fff;}
 /* Typing */
-#lc-typing{padding:0 12px 6px;font-size:12px;color:#6c757d;display:none;height:22px;}
+#lc-typing{padding:0 12px 6px;font-size:12px;color:#6c757d;display:none;height:22px;flex-shrink:0;}
 .lc-typing-dots span{display:inline-block;width:5px;height:5px;border-radius:50%;background:#adb5bd;margin:0 1px;animation:lcBounce 1.2s infinite;}
 .lc-typing-dots span:nth-child(2){animation-delay:.2s;}
 .lc-typing-dots span:nth-child(3){animation-delay:.4s;}
 @keyframes lcBounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-5px)}}
 /* Quick topics */
-#lc-topics{padding:10px 12px;border-top:1px solid #e9ecef;background:#fff;}
+#lc-topics{padding:10px 12px;border-top:1px solid #e9ecef;background:#fff;flex-shrink:0;}
 .lc-topics-label{font-size:11px;color:#6c757d;margin-bottom:6px;}
 .lc-topic-btns{display:flex;flex-wrap:wrap;gap:5px;}
 .lc-topic-btn{background:#f0f7ff;border:1px solid #cfe2ff;color:#2950a8;font-size:11px;border-radius:14px;padding:4px 10px;cursor:pointer;transition:background .15s,color .15s;}
 .lc-topic-btn:hover{background:#2950a8;color:#fff;border-color:#2950a8;}
-/* End session button */
-#lc-end-btn{background:transparent;border:1px solid rgba(220,53,69,.5);color:#dc3545;border-radius:14px;font-size:11px;padding:4px 10px;cursor:pointer;white-space:nowrap;flex-shrink:0;}
-#lc-end-btn:hover{background:#dc3545;color:#fff;border-color:#dc3545;}
 /* Ticket suggestion banner */
-#lc-ticket-banner{padding:9px 12px;background:#fff8e1;border-top:1px solid #ffecb3;font-size:12px;color:#856404;display:none;align-items:center;gap:6px;}
+#lc-ticket-banner{padding:9px 12px;background:#fff8e1;border-top:1px solid #ffecb3;font-size:12px;color:#856404;display:none;align-items:center;gap:6px;flex-shrink:0;}
 #lc-ticket-banner a{color:#2950a8;font-weight:600;}
 #lc-ticket-dismiss{background:none;border:none;color:#856404;cursor:pointer;font-size:14px;line-height:1;padding:0 2px;flex-shrink:0;}
 /* Closed bar */
-#lc-closed-bar{padding:12px;background:#f8f9fa;border-top:1px solid #e9ecef;text-align:center;display:none;}
+#lc-closed-bar{padding:12px;background:#f8f9fa;border-top:1px solid #e9ecef;text-align:center;display:none;flex-shrink:0;}
 .lc-closed-msg{font-size:12px;color:#6c757d;margin-bottom:8px;}
 .lc-new-chat-btn{background:linear-gradient(135deg,#2950a8,#2da9e3);color:#fff;border:none;border-radius:20px;font-size:12px;padding:7px 18px;cursor:pointer;}
 .lc-new-chat-btn:hover{opacity:.85;}
 /* System notice message */
 .lc-msg-row.system{justify-content:center;}
 .lc-msg-row.system .lc-bubble{background:#e9ecef;color:#6c757d;font-size:11px;border-radius:10px;font-style:italic;text-align:center;max-width:90%;}
+/* Input bar */
+#lc-input-bar{padding:10px 12px;background:#fff;border-top:1px solid #e9ecef;display:flex;gap:8px;align-items:flex-end;flex-shrink:0;}
 #lc-input{flex:1;border:1px solid #dee2e6;border-radius:20px;padding:8px 14px;font-size:13px;resize:none;max-height:90px;overflow-y:auto;line-height:1.4;outline:none;}
 #lc-input:focus{border-color:#2950a8;box-shadow:0 0 0 2px rgba(41,80,168,.12);}
 #lc-send-btn{background:linear-gradient(135deg,#2950a8,#2da9e3);border:none;border-radius:50%;width:36px;height:36px;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:15px;}
 #lc-send-btn:hover{opacity:.85;}
+/* Mobile */
+@media(max-width:480px){
+    #lc-window{width:calc(100vw - 20px);height:calc(100vh - 90px);bottom:0;right:0;border-radius:16px 16px 0 0;}
+    #lc-widget{bottom:10px;right:10px;}
+}
 </style>
 
 <div id="lc-widget">
@@ -219,12 +229,15 @@ try {
                 <div class="lc-title">KI Support</div>
                 <div class="lc-subtitle"><span class="lc-online-dot"></span>Online &ndash; sofort antworten</div>
             </div>
-            <button id="lc-close-btn" type="button" title="Schlie&szlig;en">&#x2715;</button>
+            <div class="lc-header-actions">
+                <button id="lc-end-btn" type="button" title="Chat-Sitzung beenden">&#x2715; Beenden</button>
+                <button id="lc-close-btn" type="button" title="Chat minimieren">&#x2212;</button>
+            </div>
         </div>
         <div id="lc-messages"></div>
         <div id="lc-typing">Schreibt<span class="lc-typing-dots ml-1"><span></span><span></span><span></span></span></div>
         <div id="lc-ticket-banner">
-            <span>⏳ Noch keine Antwort? </span>
+            <span>&#x23F3; Noch keine Antwort? </span>
             <a href="support_ticket.php">Support-Ticket erstellen</a>
             <span style="color:#adb5bd;">– garantierte Antwort innerhalb 24 h.</span>
             <button type="button" id="lc-ticket-dismiss" title="Schlie&szlig;en">&#x2715;</button>
@@ -244,7 +257,6 @@ try {
         </div>
         <div id="lc-input-bar">
             <textarea id="lc-input" placeholder="Nachricht eingeben&#8230;" rows="1"></textarea>
-            <button id="lc-end-btn" type="button" title="Chat-Sitzung beenden">&#x2715; Beenden</button>
             <button id="lc-send-btn" type="button" title="Senden">&#x27A4;</button>
         </div>
         <div id="lc-closed-bar">
@@ -379,12 +391,26 @@ function appendMsg(msg){
     row.dataset.lcId=msg.id;
     var isRead=parseInt(msg.is_read)===1;
     var tick=stype==='user'?('<span class="lc-read-tick'+(isRead?' seen':'')+'">'+( isRead?' \u2713\u2713':' \u2713')+'</span>'):'';
+
     if(stype==='bot'){
-        row.innerHTML='<div class="lc-av lc-av-bot">\u{1F916}</div><div><div class="lc-bubble">'+mdToHtml(msg.message)+'</div><div class="lc-msg-time">'+fmtTime(msg.created_at)+'</div></div>';
+        row.innerHTML='<div class="lc-av lc-av-bot">\uD83E\uDD16</div>'
+            +'<div><div class="lc-bubble">'+mdToHtml(msg.message)+'</div>'
+            +'<div class="lc-msg-meta">'+fmtTime(msg.created_at)+'</div></div>';
     }else if(stype==='admin'){
-        row.innerHTML='<div class="lc-av lc-av-admin">A</div><div><div class="lc-bubble">'+mdToHtml(msg.message)+'</div><div class="lc-msg-time">'+fmtTime(msg.created_at)+'</div></div>';
+        // Build avatar initials from sender_name
+        var aname=(msg.sender_name||'').trim();
+        var initials='S';
+        if(aname){
+            var parts=aname.split(' ');
+            initials=parts.length>=2?(parts[0][0]+parts[1][0]).toUpperCase():aname.substring(0,2).toUpperCase();
+        }
+        var nameHtml=aname?'<div class="lc-sender-name">'+escHtml(aname)+'</div>':'';
+        row.innerHTML='<div class="lc-av lc-av-admin">'+escHtml(initials)+'</div>'
+            +'<div>'+nameHtml+'<div class="lc-bubble">'+mdToHtml(msg.message)+'</div>'
+            +'<div class="lc-msg-meta">'+fmtTime(msg.created_at)+'</div></div>';
     }else{
-        row.innerHTML='<div><div class="lc-bubble">'+mdToHtml(msg.message)+'</div><div class="lc-msg-time">'+fmtTime(msg.created_at)+tick+'</div></div>';
+        row.innerHTML='<div><div class="lc-bubble">'+mdToHtml(msg.message)+'</div>'
+            +'<div class="lc-msg-meta">'+fmtTime(msg.created_at)+tick+'</div></div>';
     }
     msgBox.appendChild(row);
 }

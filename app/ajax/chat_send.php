@@ -43,6 +43,20 @@ try {
         }
     } catch (PDOException $e) { /* column not yet added – default enabled */ }
 
+    // ── Suppress bot if a live admin has replied in the last 15 minutes ──────
+    if ($aiEnabled) {
+        $adminActiveSt = $pdo->prepare(
+            "SELECT id FROM live_chat_messages
+             WHERE session_id=? AND sender_type='admin'
+               AND created_at >= NOW() - INTERVAL 15 MINUTE
+             LIMIT 1"
+        );
+        $adminActiveSt->execute([$sessionId]);
+        if ($adminActiveSt->fetch()) {
+            $aiEnabled = false; // live agent is handling — skip bot
+        }
+    }
+
     $botMsgData = null;
 
     if ($aiEnabled) {

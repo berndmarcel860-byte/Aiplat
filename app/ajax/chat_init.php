@@ -32,7 +32,7 @@ try {
     $pdo->prepare("UPDATE live_chat_sessions SET unread_user=0 WHERE id=?")->execute([$sessionId]);
 
     // Fetch messages (last 60)
-    $msgs = $pdo->prepare("SELECT id, sender_type, message, is_read, created_at FROM live_chat_messages WHERE session_id=? ORDER BY id DESC LIMIT 60");
+    $msgs = $pdo->prepare("SELECT id, sender_type, sender_name, message, is_read, created_at FROM live_chat_messages WHERE session_id=? ORDER BY id DESC LIMIT 60");
     $msgs->execute([$sessionId]);
     $messages = array_reverse($msgs->fetchAll());
 
@@ -48,10 +48,10 @@ try {
                     "Bitte wählen Sie ein Thema:\n" .
                     "• Falldetails\n• KYC-Hilfe\n• Einzahlungshilfe\n• Auszahlungshilfe\n• Finanzhilfe\n• Technische Hilfe\n• Anderes";
 
-        $ins = $pdo->prepare("INSERT INTO live_chat_messages (session_id, sender_type, message, is_read) VALUES (?,?,?,1)");
-        $ins->execute([$sessionId, 'bot', $greeting]);
+        $ins = $pdo->prepare("INSERT INTO live_chat_messages (session_id, sender_type, sender_name, message, is_read) VALUES (?,?,?,?,1)");
+        $ins->execute([$sessionId, 'bot', null, $greeting]);
 
-        $msgs2 = $pdo->prepare("SELECT id, sender_type, message, is_read, created_at FROM live_chat_messages WHERE session_id=? ORDER BY id ASC");
+        $msgs2 = $pdo->prepare("SELECT id, sender_type, sender_name, message, is_read, created_at FROM live_chat_messages WHERE session_id=? ORDER BY id ASC");
         $msgs2->execute([$sessionId]);
         $messages = $msgs2->fetchAll();
     }
