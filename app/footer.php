@@ -198,9 +198,14 @@ try {
 .lc-topic-btn{background:#f0f7ff;border:1px solid #cfe2ff;color:#2950a8;font-size:11px;border-radius:14px;padding:4px 10px;cursor:pointer;transition:background .15s,color .15s;}
 .lc-topic-btn:hover{background:#2950a8;color:#fff;border-color:#2950a8;}
 /* Ticket suggestion banner */
-#lc-ticket-banner{padding:9px 12px;background:#fff8e1;border-top:1px solid #ffecb3;font-size:12px;color:#856404;display:none;align-items:center;gap:6px;flex-shrink:0;}
-#lc-ticket-banner a{color:#2950a8;font-weight:600;}
-#lc-ticket-dismiss{background:none;border:none;color:#856404;cursor:pointer;font-size:14px;line-height:1;padding:0 2px;flex-shrink:0;}
+#lc-ticket-banner{padding:9px 12px;background:#fff8e1;border-top:1px solid #ffecb3;font-size:12px;color:#856404;display:none;flex-direction:column;gap:6px;flex-shrink:0;}
+.lc-ticket-banner-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.lc-ticket-banner-btns{display:flex;gap:6px;flex-wrap:wrap;}
+.lc-banner-wait-btn{background:#fff3cd;border:1px solid #ffc107;color:#856404;border-radius:12px;font-size:11px;padding:4px 10px;cursor:pointer;}
+.lc-banner-wait-btn:hover{background:#ffc107;color:#fff;}
+#lc-ticket-banner a.lc-banner-ticket-link{background:#2950a8;color:#fff;border-radius:12px;font-size:11px;padding:4px 10px;text-decoration:none;font-weight:600;}
+#lc-ticket-banner a.lc-banner-ticket-link:hover{opacity:.85;}
+#lc-ticket-dismiss{background:none;border:none;color:#856404;cursor:pointer;font-size:14px;line-height:1;padding:0 2px;flex-shrink:0;margin-left:auto;}
 /* Closed bar */
 #lc-closed-bar{padding:12px;background:#f8f9fa;border-top:1px solid #e9ecef;text-align:center;display:none;flex-shrink:0;}
 .lc-closed-msg{font-size:12px;color:#6c757d;margin-bottom:8px;}
@@ -211,6 +216,13 @@ try {
 .lc-msg-row.system .lc-bubble{background:#e9ecef;color:#6c757d;font-size:11px;border-radius:10px;font-style:italic;text-align:center;max-width:90%;}
 /* Input bar */
 #lc-input-bar{padding:10px 12px;background:#fff;border-top:1px solid #e9ecef;display:flex;gap:8px;align-items:flex-end;flex-shrink:0;}
+#lc-attach-btn{background:transparent;border:none;color:#6c757d;cursor:pointer;padding:4px;font-size:18px;line-height:1;flex-shrink:0;border-radius:6px;}
+#lc-attach-btn:hover{color:#2950a8;background:#f0f7ff;}
+#lc-file-input{display:none;}
+/* Attachment preview inside bubble */
+.lc-attach-img{max-width:180px;max-height:160px;border-radius:8px;display:block;cursor:pointer;margin-top:4px;}
+.lc-attach-link{display:inline-flex;align-items:center;gap:4px;font-size:12px;padding:5px 8px;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.35);border-radius:8px;color:inherit;text-decoration:none;margin-top:4px;}
+.lc-msg-row.in .lc-attach-link,.lc-msg-row.bot .lc-attach-link{background:#f0f7ff;border-color:#cfe2ff;color:#2950a8;}
 #lc-input{flex:1;border:1px solid #dee2e6;border-radius:20px;padding:8px 14px;font-size:13px;resize:none;max-height:90px;overflow-y:auto;line-height:1.4;outline:none;}
 #lc-input:focus{border-color:#2950a8;box-shadow:0 0 0 2px rgba(41,80,168,.12);}
 #lc-send-btn{background:linear-gradient(135deg,#2950a8,#2da9e3);border:none;border-radius:50%;width:36px;height:36px;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:15px;}
@@ -238,10 +250,14 @@ try {
         <div id="lc-messages"></div>
         <div id="lc-typing">Schreibt<span class="lc-typing-dots ml-1"><span></span><span></span><span></span></span></div>
         <div id="lc-ticket-banner">
-            <span>&#x23F3; Noch keine Antwort? </span>
-            <a href="support_ticket.php">Support-Ticket erstellen</a>
-            <span style="color:#adb5bd;">– garantierte Antwort innerhalb 24 h.</span>
-            <button type="button" id="lc-ticket-dismiss" title="Schlie&szlig;en">&#x2715;</button>
+            <div class="lc-ticket-banner-row">
+                <span>&#x23F3; Noch keine Antwort vom Support-Team.</span>
+                <button type="button" id="lc-ticket-dismiss" title="Schlie&szlig;en">&#x2715;</button>
+            </div>
+            <div class="lc-ticket-banner-btns">
+                <button type="button" class="lc-banner-wait-btn" id="lc-banner-wait-btn">&#x1F64F; Ich warte weiter</button>
+                <a href="support.php" class="lc-banner-ticket-link">&#x1F4DD; Support-Ticket erstellen</a>
+            </div>
         </div>
         <div id="lc-topics">
             <div class="lc-topics-label">Schnellthemen:</div>
@@ -257,6 +273,8 @@ try {
             </div>
         </div>
         <div id="lc-input-bar">
+            <button id="lc-attach-btn" type="button" title="Datei oder Bild anhängen">&#x1F4CE;</button>
+            <input type="file" id="lc-file-input" accept="image/*,.pdf,.doc,.docx">
             <textarea id="lc-input" placeholder="Nachricht eingeben&#8230;" rows="1"></textarea>
             <button id="lc-send-btn" type="button" title="Senden">&#x27A4;</button>
         </div>
@@ -290,6 +308,9 @@ var newChatBtn=document.getElementById('lc-new-chat-btn');
 var ticketBanner=document.getElementById('lc-ticket-banner');
 var ticketDismiss=document.getElementById('lc-ticket-dismiss');
 var inputBar=document.getElementById('lc-input-bar');
+var attachBtn=document.getElementById('lc-attach-btn');
+var fileInput=document.getElementById('lc-file-input');
+var bannerWaitBtn=document.getElementById('lc-banner-wait-btn');
 
 /* ── Inactivity tracking ── */
 var lastUserSentTime=0,lastReplyTime=0,inactivityTimer=null,ticketBannerShown=false;
@@ -317,9 +338,42 @@ function _checkUnread(){
 
 function fmtTime(dt){var d=new Date(dt);return d.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});}
 function escHtml(s){var d=document.createElement('div');d.appendChild(document.createTextNode(s));return d.innerHTML;}
-function mdToHtml(s){return escHtml(s).replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');}
+function mdToHtml(s){
+    if(s&&s.substring(0,10)==='__ATTACH__'){
+        var payload=s.substring(11); // after "__ATTACH__:"
+        var parts=payload.split('|');
+        var url=parts[0]||'';
+        var name=parts[1]||'Datei';
+        var isImg=/\.(jpe?g|png|gif|webp)$/i.test(url);
+        var absUrl=url; // relative – works as-is from same origin
+        if(isImg){
+            return '<img src="'+escHtml(absUrl)+'" class="lc-attach-img" alt="'+escHtml(name)+'" onclick="window.open(this.src)">';
+        }
+        return '<a href="'+escHtml(absUrl)+'" class="lc-attach-link" target="_blank" rel="noopener">&#x1F4CE; '+escHtml(name)+'</a>';
+    }
+    return escHtml(s).replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+}
 function scrollBottom(){msgBox.scrollTop=msgBox.scrollHeight;}
 function showBadge(n){badge.textContent=n;badge.style.display=n>0?'flex':'none';}
+
+/* ── Notification sound (Web Audio API – no external file needed) ── */
+var _audioCtx=null;
+function playNotifSound(){
+    try{
+        if(!_audioCtx)_audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+        var ctx=_audioCtx;
+        var osc=ctx.createOscillator();
+        var gain=ctx.createGain();
+        osc.connect(gain);gain.connect(ctx.destination);
+        osc.type='sine';
+        osc.frequency.setValueAtTime(880,ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(660,ctx.currentTime+0.12);
+        gain.gain.setValueAtTime(0.28,ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.35);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime+0.35);
+    }catch(e){}
+}
 
 function openChat(){
     isOpen=true;win.classList.add('open');showBadge(0);
@@ -377,6 +431,13 @@ newChatBtn.addEventListener('click',function(){
 
 /* ── Inactivity → suggest ticket ── */
 ticketDismiss.addEventListener('click',function(){ticketBanner.style.display='none';ticketBannerShown=true;});
+if(bannerWaitBtn){
+    bannerWaitBtn.addEventListener('click',function(){
+        ticketBanner.style.display='none';
+        ticketBannerShown=true;
+        appendSystemMsg('Danke für Ihre Geduld! Unser Team wird sich bald bei Ihnen melden. ⏳');
+    });
+}
 function startInactivityTimer(){
     clearInterval(inactivityTimer);
     inactivityTimer=setInterval(function(){
@@ -469,6 +530,32 @@ function _doSend(text){
 }
 
 sendBtn.addEventListener('click',function(){sendMsg(inputEl.value);});
+
+/* ── File attach button ── */
+attachBtn.addEventListener('click',function(){
+    if(sessionClosed)return;
+    if(!sessionId){initSession().then(function(){if(sessionId)fileInput.click();});return;}
+    fileInput.click();
+});
+fileInput.addEventListener('change',function(){
+    var f=fileInput.files[0];
+    if(!f)return;
+    fileInput.value='';
+    if(!sessionId){initSession().then(function(){if(sessionId)_doUpload(f);});return;}
+    _doUpload(f);
+});
+function _doUpload(f){
+    if(topicsEl)topicsEl.style.display='none';
+    var fd=new FormData();
+    fd.append('session_id',sessionId);
+    fd.append('chat_file',f);
+    lastUserSentTime=Date.now();
+    fetch('ajax/chat_upload.php',{method:'POST',body:fd})
+    .then(function(r){return r.json();}).then(function(res){
+        if(!res.success){alert(res.message||'Upload fehlgeschlagen');return;}
+        appendMsg(res.user_msg);scrollBottom();
+    }).catch(function(){alert('Upload fehlgeschlagen');});
+}
 inputEl.addEventListener('keydown',function(e){
     if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg(inputEl.value);return;}
     clearTimeout(typingTmo);
@@ -493,8 +580,9 @@ function pollMessages(){
         res.messages.forEach(function(m){
             appendMsg(m);
             if(m.sender_type!=='user'){gotReply=true;}
-            if(!isOpen&&(m.sender_type==='admin'||m.sender_type==='bot')){
-                var cur=parseInt(badge.textContent||'0')+1;showBadge(cur);
+            if(m.sender_type==='admin'||m.sender_type==='bot'){
+                playNotifSound();
+                if(!isOpen){var cur=parseInt(badge.textContent||'0')+1;showBadge(cur);}
             }
         });
         if(gotReply){

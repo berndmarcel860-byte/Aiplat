@@ -190,6 +190,18 @@
     }
     function escHtml(s){ const d=document.createElement('div');d.appendChild(document.createTextNode(s));return d.innerHTML; }
     function mdToHtml(s){
+        if(s && s.substring(0,10)==='__ATTACH__'){
+            const payload=s.substring(11);
+            const parts=payload.split('|');
+            const url=parts[0]||'';
+            const name=parts[1]||'Datei';
+            const isImg=/\.(jpe?g|png|gif|webp)$/i.test(url);
+            const absUrl='../../'+url;
+            if(isImg){
+                return `<img src="${escHtml(absUrl)}" style="max-width:200px;max-height:180px;border-radius:8px;display:block;cursor:pointer;margin-top:4px;" alt="${escHtml(name)}" onclick="window.open(this.src)">`;
+            }
+            return `<a href="${escHtml(absUrl)}" style="display:inline-flex;align-items:center;gap:4px;font-size:12px;padding:5px 8px;background:#f0f7ff;border:1px solid #cfe2ff;border-radius:8px;color:#2950a8;text-decoration:none;margin-top:4px;" target="_blank" rel="noopener">&#x1F4CE; ${escHtml(name)}</a>`;
+        }
         return escHtml(s)
             .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
             .replace(/• /g,'• ');
