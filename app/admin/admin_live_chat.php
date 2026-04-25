@@ -196,7 +196,7 @@
             const url=parts[0]||'';
             const name=parts[1]||'Datei';
             const isImg=/\.(jpe?g|png|gif|webp)$/i.test(url);
-            const absUrl='../../'+url;
+            const absUrl='../'+url;
             if(isImg){
                 return `<img src="${escHtml(absUrl)}" style="max-width:200px;max-height:180px;border-radius:8px;display:block;cursor:pointer;margin-top:4px;" alt="${escHtml(name)}" onclick="window.open(this.src)">`;
             }

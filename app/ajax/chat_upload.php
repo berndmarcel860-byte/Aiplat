@@ -56,7 +56,7 @@ try {
 
     $ext      = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
     $safeName = 'chat_' . $uid . '_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
-    $dir      = __DIR__ . '/../../uploads/chat/';
+    $dir      = __DIR__ . '/../uploads/chat/';
 
     if (!is_dir($dir)) {
         mkdir($dir, 0755, true);
