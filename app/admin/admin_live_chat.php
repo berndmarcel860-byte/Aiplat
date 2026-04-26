@@ -141,6 +141,11 @@
                     <button class="btn btn-sm btn-light filter-btn" data-status="all" style="border-radius:14px;font-size:11px;padding:3px 10px;">Alle</button>
                     <span id="totalBadge" class="si-badge ml-auto">0</span>
                 </div>
+                <div class="mt-2">
+                    <button class="btn btn-sm btn-light w-100" id="btnNewChat" style="border-radius:14px;font-size:11px;padding:4px 10px;background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.4);">
+                        <i class="anticon anticon-plus-circle mr-1"></i>Neuen Chat starten
+                    </button>
+                </div>
             </div>
             <div class="cs-search">
                 <input type="text" id="sessionSearch" class="form-control form-control-sm" placeholder="Benutzer suchen…">
@@ -205,6 +210,31 @@
                     <textarea id="adminMsgInput" class="form-control" rows="1" placeholder="Nachricht eingeben… (Enter = Senden, Shift+Enter = neue Zeile)"></textarea>
                     <button class="btn-send" id="btnAdminSend" title="Senden"><i class="anticon anticon-send"></i></button>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── New Chat Modal ── -->
+<div class="modal fade" id="newChatModal" tabindex="-1" role="dialog" aria-labelledby="newChatModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document" style="max-width:460px;">
+        <div class="modal-content" style="border-radius:12px;">
+            <div class="modal-header" style="background:linear-gradient(135deg,#2950a8,#2da9e3);color:#fff;border-radius:12px 12px 0 0;">
+                <h5 class="modal-title" id="newChatModalLabel"><i class="anticon anticon-message mr-2"></i>Neuen Chat starten</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Schlie&szlig;en" style="color:#fff;opacity:1;">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted" style="font-size:13px;">Wählen Sie einen Benutzer aus, um eine Chat-Sitzung zu öffnen (oder eine bestehende fortzusetzen).</p>
+                <div class="form-group">
+                    <label for="newChatUserSearch" style="font-size:13px;font-weight:600;">Benutzer suchen</label>
+                    <input type="text" class="form-control" id="newChatUserSearch" placeholder="Name oder E-Mail eingeben…" autocomplete="off">
+                </div>
+                <div id="newChatUserList" style="max-height:260px;overflow-y:auto;border:1px solid #e9ecef;border-radius:8px;"></div>
+            </div>
+            <div class="modal-footer" style="border-top:1px solid #e9ecef;">
+                <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Abbrechen</button>
             </div>
         </div>
     </div>
@@ -712,6 +742,82 @@
             if(btnCallUser)btnCallUser.style.display='none';
         }
     };
+
+    // ── New Chat (admin starts chat with a user) ──────────────────────────────
+    var allUsersCache = null;
+
+    function renderUserList(filter) {
+        var list = document.getElementById('newChatUserList');
+        if (!allUsersCache) { list.innerHTML = '<div class="text-center text-muted py-3" style="font-size:12px;">Lade Benutzer…</div>'; return; }
+        var f = (filter || '').toLowerCase();
+        var filtered = allUsersCache.filter(function(u) {
+            return !f || (u.first_name + ' ' + u.last_name).toLowerCase().includes(f) || (u.email||'').toLowerCase().includes(f);
+        });
+        if (!filtered.length) {
+            list.innerHTML = '<div class="text-center text-muted py-3" style="font-size:12px;">Keine Benutzer gefunden</div>';
+            return;
+        }
+        list.innerHTML = '';
+        filtered.forEach(function(u) {
+            var item = document.createElement('div');
+            item.style.cssText = 'padding:10px 14px;border-bottom:1px solid #f0f2f5;cursor:pointer;transition:background .15s;';
+            item.innerHTML = '<div style="font-size:13px;font-weight:600;color:#2c3e50;">'
+                + escHtml(u.first_name + ' ' + u.last_name)
+                + '</div><div style="font-size:11px;color:#6c757d;">' + escHtml(u.email || '') + '</div>';
+            item.addEventListener('mouseenter', function(){ this.style.background='#f0f7ff'; });
+            item.addEventListener('mouseleave', function(){ this.style.background=''; });
+            item.addEventListener('click', function() {
+                startChatWithUser(u.id, u.first_name + ' ' + u.last_name, u.email);
+            });
+            list.appendChild(item);
+        });
+    }
+
+    function startChatWithUser(userId, userName, userEmail) {
+        fetch('admin_ajax/chat_create_session.php', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({user_id: userId})
+        })
+        .then(function(r){ return r.json(); })
+        .then(function(res) {
+            if (!res.success) { alert(res.message || 'Fehler beim Erstellen der Sitzung'); return; }
+            // Close modal
+            if (typeof $ !== 'undefined') { $('#newChatModal').modal('hide'); }
+            var s = res.session;
+            allSessions[s.id] = s;
+            openSession(s.id, s);
+            loadSessions();
+        })
+        .catch(function(){ alert('Netzwerkfehler'); });
+    }
+
+    var btnNewChat = document.getElementById('btnNewChat');
+    if (btnNewChat) {
+        btnNewChat.addEventListener('click', function() {
+            allUsersCache = null;
+            document.getElementById('newChatUserSearch').value = '';
+            document.getElementById('newChatUserList').innerHTML = '<div class="text-center text-muted py-3" style="font-size:12px;">Lade Benutzer…</div>';
+
+            if (typeof $ !== 'undefined') { $('#newChatModal').modal('show'); }
+
+            fetch('admin_ajax/get_users_for_select.php')
+            .then(function(r){ return r.json(); })
+            .then(function(res) {
+                if (res.success) {
+                    allUsersCache = res.users || [];
+                    renderUserList(document.getElementById('newChatUserSearch').value);
+                }
+            }).catch(function(){
+                document.getElementById('newChatUserList').innerHTML = '<div class="text-center text-muted py-3" style="font-size:12px;">Fehler beim Laden</div>';
+            });
+        });
+    }
+
+    var newChatSearch = document.getElementById('newChatUserSearch');
+    if (newChatSearch) {
+        newChatSearch.addEventListener('input', function(){ renderUserList(this.value); });
+    }
 })();
 </script>
 

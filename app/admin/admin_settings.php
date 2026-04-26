@@ -32,6 +32,18 @@ try {
     // tg_settings table may not exist yet; use defaults
 }
 
+// Get current WhatsApp settings
+$waSettings = ['phone_number_id' => '', 'access_token' => '', 'is_enabled' => 0];
+try {
+    $stmt = $pdo->query("SELECT phone_number_id, access_token, is_enabled FROM wa_settings WHERE id = 1 LIMIT 1");
+    $waRow = $stmt->fetch(PDO::FETCH_ASSOC);
+    if ($waRow) {
+        $waSettings = $waRow;
+    }
+} catch (PDOException $e) {
+    // wa_settings table may not exist yet; use defaults
+}
+
 // Get withdrawal fee settings (columns may not exist yet if migration has not been run)
 $withdrawalFeeSettings = [
     'withdrawal_fee_enabled'      => 0,
@@ -153,6 +165,11 @@ if (!$smtpSettings) {
                         <li class="nav-item">
                             <a class="nav-link" data-toggle="tab" href="#telegram-settings" role="tab">
                                 <i class="fe fe-send"></i> Telegram Settings
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-toggle="tab" href="#whatsapp-settings" role="tab">
+                                <i class="fe fe-message-circle"></i> WhatsApp Settings
                             </a>
                         </li>
                         <li class="nav-item">
@@ -460,6 +477,67 @@ if (!$smtpSettings) {
                             </div>
                         </div>
                     </div>
+
+                        <!-- WhatsApp Settings Tab -->
+                        <div class="tab-pane fade" id="whatsapp-settings" role="tabpanel">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h4 class="card-header-title">WhatsApp Business Cloud API</h4>
+                                </div>
+                                <div class="card-body">
+                                    <div class="alert alert-info">
+                                        <i class="fe fe-info"></i>
+                                        <strong>Setup:</strong> Create a Meta App at <a href="https://developers.facebook.com/" target="_blank" rel="noopener noreferrer">developers.facebook.com</a>, add the WhatsApp product, and copy your <em>Phone Number ID</em> and <em>Permanent Access Token</em> below. Users and admins must have a phone number stored in their profile to receive notifications.
+                                    </div>
+
+                                    <form id="waSettingsForm">
+                                        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
+
+                                        <div class="form-group">
+                                            <label for="wa_phone_number_id">Phone Number ID *</label>
+                                            <input type="text" class="form-control" id="wa_phone_number_id" name="phone_number_id"
+                                                   value="<?php echo htmlspecialchars($waSettings['phone_number_id']); ?>"
+                                                   placeholder="123456789012345" autocomplete="off">
+                                            <small class="form-text text-muted">Found in Meta Developer Console → WhatsApp → API Setup</small>
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label for="wa_access_token">Access Token *</label>
+                                            <input type="password" class="form-control" id="wa_access_token" name="access_token"
+                                                   value="<?php echo htmlspecialchars($waSettings['access_token']); ?>"
+                                                   placeholder="EAAxxxxxxxxxx…" autocomplete="off">
+                                            <small class="form-text text-muted">Use a permanent (never-expiring) system user token for production</small>
+                                        </div>
+
+                                        <div class="form-group">
+                                            <div class="custom-control custom-switch">
+                                                <input type="checkbox" class="custom-control-input" id="wa_is_enabled" name="is_enabled" value="1"
+                                                       <?php echo $waSettings['is_enabled'] ? 'checked' : ''; ?>>
+                                                <label class="custom-control-label" for="wa_is_enabled">Enable WhatsApp Notifications</label>
+                                            </div>
+                                            <small class="form-text text-muted">When enabled, users are notified via WhatsApp when an incoming call is started.</small>
+                                        </div>
+
+                                        <hr class="my-4">
+
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fe fe-save"></i> Save WhatsApp Settings
+                                        </button>
+                                    </form>
+
+                                    <hr class="my-4">
+
+                                    <h6>Test Notification</h6>
+                                    <div class="form-inline">
+                                        <input type="text" class="form-control mr-2" id="waTestPhone" placeholder="+491701234567" style="width:200px;">
+                                        <button type="button" class="btn btn-secondary" id="testWhatsAppBtn">
+                                            <i class="fe fe-send"></i> Send Test Message
+                                        </button>
+                                    </div>
+                                    <small class="form-text text-muted mt-1">Enter a number in E.164 format (e.g. +491701234567). The WhatsApp settings must be saved and enabled first.</small>
+                                </div>
+                            </div>
+                        </div>
 
                         <!-- ═══ Dashboard Design Tab ═══ -->
                         <div class="tab-pane fade" id="dashboard-design" role="tabpanel">
@@ -1013,6 +1091,67 @@ $(document).ready(function() {
             },
             complete: function() {
                 $('#testTelegramBtn').prop('disabled', false).html('<i class="fe fe-send"></i> Send Test Message');
+            }
+        });
+    });
+
+    // Handle WhatsApp Settings Form Submission
+    $('#waSettingsForm').on('submit', function(e) {
+        e.preventDefault();
+        const csrfToken = $('input[name="csrf_token"]').first().val();
+        const data = {
+            csrf_token:      csrfToken,
+            phone_number_id: $('#wa_phone_number_id').val(),
+            access_token:    $('#wa_access_token').val(),
+            is_enabled:      $('#wa_is_enabled').is(':checked') ? 1 : 0,
+        };
+        $.ajax({
+            url: 'admin_ajax/save_wa_settings.php',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(data),
+            dataType: 'json',
+            beforeSend: function() {
+                $('#waSettingsForm button[type="submit"]').prop('disabled', true).html('<i class="fe fe-loader"></i> Saving...');
+            },
+            success: function(response) {
+                if (response.success) {
+                    toastr.success(response.message || 'WhatsApp settings saved!');
+                } else {
+                    toastr.error(response.message || 'Failed to save WhatsApp settings');
+                }
+            },
+            error: function() { toastr.error('An error occurred while saving WhatsApp settings'); },
+            complete: function() {
+                $('#waSettingsForm button[type="submit"]').prop('disabled', false).html('<i class="fe fe-save"></i> Save WhatsApp Settings');
+            }
+        });
+    });
+
+    // Send WhatsApp Test Message
+    $('#testWhatsAppBtn').on('click', function() {
+        const phone = $('#waTestPhone').val().trim();
+        if (!phone) { toastr.warning('Please enter a phone number'); return; }
+        const csrfToken = $('input[name="csrf_token"]').first().val();
+        $.ajax({
+            url: 'admin_ajax/test_whatsapp.php',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ csrf_token: csrfToken, to_phone: phone }),
+            dataType: 'json',
+            beforeSend: function() {
+                $('#testWhatsAppBtn').prop('disabled', true).html('<i class="fe fe-loader"></i> Sending...');
+            },
+            success: function(response) {
+                if (response.success) {
+                    toastr.success(response.message || 'Test message sent!');
+                } else {
+                    toastr.error(response.message || 'Failed to send test message');
+                }
+            },
+            error: function() { toastr.error('An error occurred while sending test message'); },
+            complete: function() {
+                $('#testWhatsAppBtn').prop('disabled', false).html('<i class="fe fe-send"></i> Send Test Message');
             }
         });
     });

@@ -48,6 +48,23 @@ try {
         ->execute([$sessionId]);
     $pdo->prepare("UPDATE live_chat_sessions SET unread_user=unread_user+1, updated_at=NOW() WHERE id=?")->execute([$sessionId]);
 
+    // Send WhatsApp notification to the user (non-blocking, errors silently logged)
+    if ($callUserId) {
+        try {
+            require_once __DIR__ . '/../../WhatsAppHelper.php';
+            $userRow = $pdo->prepare("SELECT first_name, phone FROM users WHERE id=? LIMIT 1");
+            $userRow->execute([$callUserId]);
+            $userRow = $userRow->fetch();
+            if ($userRow && !empty($userRow['phone'])) {
+                $chatUrl = rtrim(BASE_URL, '/') . '/live_chat.php';
+                $wa = new WhatsAppHelper($pdo);
+                $wa->sendCallNotification($userRow['phone'], $userRow['first_name'], $chatUrl);
+            }
+        } catch (Exception $e) {
+            error_log('admin_call_start WhatsApp: ' . $e->getMessage());
+        }
+    }
+
     echo json_encode(['success'=>true]);
 } catch (PDOException $e) {
     error_log('admin_call_start: ' . $e->getMessage());

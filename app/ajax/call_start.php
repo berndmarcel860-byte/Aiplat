@@ -48,6 +48,33 @@ try {
         ->execute([$sessionId]);
     $pdo->prepare("UPDATE live_chat_sessions SET unread_admin=unread_admin+1, updated_at=NOW() WHERE id=?")->execute([$sessionId]);
 
+    // Send WhatsApp notification to admin(s) about the incoming call
+    try {
+        require_once __DIR__ . '/../../WhatsAppHelper.php';
+        // Fetch calling user's name
+        $userRow = $pdo->prepare("SELECT first_name, last_name FROM users WHERE id=? LIMIT 1");
+        $userRow->execute([$uid]);
+        $userRow = $userRow->fetch();
+        $callerName = $userRow ? trim($userRow['first_name'] . ' ' . $userRow['last_name']) : 'Ein Benutzer';
+        // Notify admins who have a phone number stored (column may not exist yet)
+        try {
+            $adminStmt = $pdo->query("SELECT phone FROM admins WHERE phone IS NOT NULL AND phone != ''");
+            $adminPhones = $adminStmt->fetchAll(PDO::FETCH_COLUMN);
+            if ($adminPhones) {
+                $chatUrl = rtrim(BASE_URL, '/') . '/admin/admin_live_chat.php';
+                $wa = new WhatsAppHelper($pdo);
+                foreach ($adminPhones as $adminPhone) {
+                    $text = "📞 Eingehender Anruf\n\n$callerName möchte einen Sprachanruf starten.\n\nZum Live-Chat: $chatUrl";
+                    $wa->sendTextMessage($adminPhone, $text);
+                }
+            }
+        } catch (PDOException $ignored) {
+            // admins table has no phone column yet — skip silently
+        }
+    } catch (Exception $e) {
+        error_log('user_call_start WhatsApp: ' . $e->getMessage());
+    }
+
     echo json_encode(['success'=>true, 'call_log_id'=>$callLogId]);
 } catch (PDOException $e) {
     error_log('call_start: ' . $e->getMessage());
