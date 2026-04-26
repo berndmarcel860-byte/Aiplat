@@ -73,13 +73,6 @@ try {
     $total = (int)$pdo->query("SELECT COUNT(*) FROM voice_call_logs")->fetchColumn();
 
     // Filtered count
-    $countParams = $params;
-    $filteredCount = (int)$pdo->prepare("
-        SELECT COUNT(*)
-        FROM voice_call_logs vcl
-        LEFT JOIN users u ON u.id = vcl.user_id
-        WHERE $whereSQL
-    ")->execute($countParams) ? 0 : 0;
     $countStmt = $pdo->prepare("
         SELECT COUNT(*)
         FROM voice_call_logs vcl
@@ -147,7 +140,7 @@ try {
 
         $data[] = [
             'id'           => (int)$r['id'],
-            'session_id'   => '<a href="admin_live_chat.php" class="btn-open-session" data-session="' . (int)$r['session_id'] . '" style="cursor:pointer;">#' . (int)$r['session_id'] . '</a>',
+            'session_id'   => '<a href="admin_live_chat.php?session=' . (int)$r['session_id'] . '" class="btn-open-session" data-session="' . (int)$r['session_id'] . '" target="_blank">#' . (int)$r['session_id'] . '</a>',
             'user_name'    => $userName,
             'initiated_by' => $initBadge,
             'status_badge' => $statusBadge,
