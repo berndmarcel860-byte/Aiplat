@@ -21,6 +21,19 @@ try {
 
     $pdo->prepare("UPDATE live_chat_sessions SET voice_call_status='ended', updated_at=NOW() WHERE id=?")->execute([$sessionId]);
 
+    // Update call log: ended — compute duration from answered_at if available
+    $pdo->prepare("
+        UPDATE voice_call_logs
+        SET status      = CASE WHEN status = 'answered' THEN 'ended' ELSE 'missed' END,
+            ended_at    = NOW(),
+            duration_sec= CASE
+                            WHEN answered_at IS NOT NULL THEN TIMESTAMPDIFF(SECOND, answered_at, NOW())
+                            ELSE NULL
+                          END
+        WHERE session_id=? AND status IN ('ringing','answered')
+        ORDER BY id DESC LIMIT 1
+    ")->execute([$sessionId]);
+
     // System message in chat
     $pdo->prepare("INSERT INTO live_chat_messages (session_id, sender_type, message, is_read) VALUES (?, 'bot', '\xF0\x9F\x93\x9E Anruf beendet.', 0)")
         ->execute([$sessionId]);

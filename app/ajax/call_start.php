@@ -38,12 +38,17 @@ try {
     // Update call status
     $pdo->prepare("UPDATE live_chat_sessions SET voice_call_status='ringing', updated_at=NOW() WHERE id=?")->execute([$sessionId]);
 
+    // Create call log entry
+    $pdo->prepare("INSERT INTO voice_call_logs (session_id, initiated_by, user_id, status, started_at) VALUES (?, 'user', ?, 'ringing', NOW())")
+        ->execute([$sessionId, $uid]);
+    $callLogId = (int)$pdo->lastInsertId();
+
     // System message visible to admin
     $pdo->prepare("INSERT INTO live_chat_messages (session_id, sender_type, message, is_read) VALUES (?, 'bot', '\xF0\x9F\x93\x9E Eingehender Sprachanruf vom Benutzer\xe2\x80\xa6', 0)")
         ->execute([$sessionId]);
     $pdo->prepare("UPDATE live_chat_sessions SET unread_admin=unread_admin+1, updated_at=NOW() WHERE id=?")->execute([$sessionId]);
 
-    echo json_encode(['success'=>true]);
+    echo json_encode(['success'=>true, 'call_log_id'=>$callLogId]);
 } catch (PDOException $e) {
     error_log('call_start: ' . $e->getMessage());
     echo json_encode(['success'=>false,'message'=>'Database error']);

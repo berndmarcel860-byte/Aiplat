@@ -182,7 +182,7 @@
                     </a>
                 </li>
 
-                <li class="nav-item dropdown <?= in_array(basename($_SERVER['PHP_SELF']), ['admin_support_tickets.php', 'admin_faq.php', 'admin_live_chat.php']) ? 'open' : '' ?>">
+                <li class="nav-item dropdown <?= in_array(basename($_SERVER['PHP_SELF']), ['admin_support_tickets.php', 'admin_faq.php', 'admin_live_chat.php', 'admin_call_logs.php']) ? 'open' : '' ?>">
                     <a class="dropdown-toggle" href="javascript:void(0);" data-toggle="support">
                         <span class="icon-holder"><i class="anticon anticon-question-circle"></i></span>
                         <span class="title">Support System</span>
@@ -198,6 +198,11 @@
                                     if ($lcUnread > 0) echo '<span class="badge badge-danger ml-1" style="font-size:10px;">' . (int)$lcUnread . '</span>';
                                 } catch (Exception $e) { /* table may not exist yet */ }
                                 ?>
+                            </a>
+                        </li>
+                        <li class="<?= basename($_SERVER['PHP_SELF']) == 'admin_call_logs.php' ? 'active' : '' ?>">
+                            <a href="admin_call_logs.php" data-page="call-logs">
+                                <i class="anticon anticon-phone"></i> Call Logs
                             </a>
                         </li>
                         <li class="<?= basename($_SERVER['PHP_SELF']) == 'admin_support_tickets.php' ? 'active' : '' ?>">

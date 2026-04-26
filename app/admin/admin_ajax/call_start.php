@@ -33,6 +33,16 @@ try {
 
     $pdo->prepare("UPDATE live_chat_sessions SET voice_call_status='ringing', updated_at=NOW() WHERE id=?")->execute([$sessionId]);
 
+    // Create call log entry (admin-initiated)
+    $adminId = isset($_SESSION['admin_id']) ? (int)$_SESSION['admin_id'] : null;
+    // Look up the user_id for this session
+    $sessionRow = $pdo->prepare("SELECT user_id FROM live_chat_sessions WHERE id=?");
+    $sessionRow->execute([$sessionId]);
+    $sessionRow = $sessionRow->fetch();
+    $callUserId = $sessionRow ? (int)$sessionRow['user_id'] : null;
+    $pdo->prepare("INSERT INTO voice_call_logs (session_id, initiated_by, user_id, status, started_at) VALUES (?, 'admin', ?, 'ringing', NOW())")
+        ->execute([$sessionId, $callUserId]);
+
     // System message visible to user
     $pdo->prepare("INSERT INTO live_chat_messages (session_id, sender_type, message, is_read) VALUES (?, 'bot', '\xF0\x9F\x93\x9E Eingehender Sprachanruf vom Support\xe2\x80\xa6', 0)")
         ->execute([$sessionId]);

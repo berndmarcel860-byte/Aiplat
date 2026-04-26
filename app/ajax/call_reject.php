@@ -23,6 +23,10 @@ try {
 
     $pdo->prepare("UPDATE live_chat_sessions SET voice_call_status=NULL, updated_at=NOW() WHERE id=?")->execute([$sessionId]);
 
+    // Update call log: rejected
+    $pdo->prepare("UPDATE voice_call_logs SET status='rejected', ended_at=NOW() WHERE session_id=? AND status='ringing' ORDER BY id DESC LIMIT 1")
+        ->execute([$sessionId]);
+
     echo json_encode(['success'=>true]);
 } catch (PDOException $e) {
     error_log('call_reject: ' . $e->getMessage());
