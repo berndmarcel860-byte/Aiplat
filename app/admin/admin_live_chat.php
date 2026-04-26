@@ -192,7 +192,7 @@
                     <div class="call-active-timer" id="adminCallTimer">00:00</div>
                     <div class="call-active-status" id="adminCallStatusTxt">Verbinde&#x2026;</div>
                     <button class="call-ctrl-mute" id="adminCallMuteBtn" type="button" title="Stummschalten">&#x1F399;</button>
-                    <button class="call-ctrl-end" id="adminCallEndBtn" type="button" title="Anruf beenden">&#x1F4DE;</button>
+                    <button class="call-ctrl-end" id="adminCallEndBtn" type="button" title="Anruf beenden">&#x1F6AB;</button>
                 </div>
 
                 <div class="chat-messages" id="chatMessages"></div>

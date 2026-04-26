@@ -227,6 +227,15 @@ try {
 /* Incoming call banner (sits above input bar) */
 #lc-call-incoming{padding:12px 14px;background:linear-gradient(135deg,#2950a8,#2da9e3);color:#fff;display:none;flex-direction:column;gap:7px;flex-shrink:0;animation:lcSlideUp .25s ease;}
 @keyframes lcSlideUp{from{transform:translateY(30px);opacity:0}to{transform:none;opacity:1}}
+/* Global floating incoming-call popup (always visible, even when chat widget is closed) */
+#lc-call-global-popup{position:fixed;bottom:80px;right:20px;z-index:2147483647;width:300px;background:linear-gradient(135deg,#2950a8,#2da9e3);color:#fff;border-radius:14px;padding:14px 16px;box-shadow:0 8px 32px rgba(0,0,0,.4);display:none;flex-direction:column;gap:8px;animation:lcCallPopIn .3s ease;}
+@keyframes lcCallPopIn{from{transform:translateY(24px) scale(.94);opacity:0}to{transform:none;opacity:1}}
+.lc-gcall-title{font-size:14px;font-weight:700;letter-spacing:.01em;}
+.lc-gcall-sub{font-size:12px;opacity:.88;}
+.lc-gcall-btns{display:flex;gap:8px;margin-top:2px;}
+#lc-gcall-ans-btn{flex:1;background:#28a745;border:none;color:#fff;border-radius:20px;padding:8px 0;font-size:13px;font-weight:700;cursor:pointer;}
+#lc-gcall-rej-btn{flex:1;background:#dc3545;border:none;color:#fff;border-radius:20px;padding:8px 0;font-size:13px;font-weight:700;cursor:pointer;}
+@media(max-width:480px){#lc-call-global-popup{right:8px;bottom:70px;width:calc(100vw - 16px);}}
 .lc-call-inc-title{font-size:13px;font-weight:700;}
 .lc-call-inc-sub{font-size:11px;opacity:.85;}
 .lc-call-inc-btns{display:flex;gap:8px;}
@@ -308,7 +317,7 @@ try {
             <div class="lc-call-timer" id="lc-call-timer">00:00</div>
             <div class="lc-call-controls">
                 <button class="lc-call-mute-btn" id="lc-call-mute-btn" type="button" title="Stummschalten">&#x1F399;</button>
-                <button class="lc-call-end-btn" id="lc-call-end-btn" type="button" title="Anruf beenden">&#x1F4DE;</button>
+                <button class="lc-call-end-btn" id="lc-call-end-btn" type="button" title="Anruf beenden">&#x1F6AB;</button>
             </div>
         </div>
         <div id="lc-input-bar">
@@ -326,6 +335,15 @@ try {
         &#x1F4AC;
         <span id="lc-unread-badge">0</span>
     </button>
+</div>
+<!-- Global incoming call popup — shown outside the chat widget so user is notified even when chat is closed -->
+<div id="lc-call-global-popup">
+    <div class="lc-gcall-title">&#x1F4DE; Eingehender Sprachanruf</div>
+    <div class="lc-gcall-sub" id="lc-gcall-sub">Support-Team m&ouml;chte Sie anrufen</div>
+    <div class="lc-gcall-btns">
+        <button id="lc-gcall-ans-btn" type="button">&#x2714; Annehmen</button>
+        <button id="lc-gcall-rej-btn" type="button">&#x2715; Ablehnen</button>
+    </div>
 </div>
 
 <script>
@@ -363,16 +381,22 @@ function startUnreadPoll(){
 }
 function stopUnreadPoll(){clearInterval(unreadPollTimer);unreadPollTimer=null;}
 function _checkUnread(){
-    if(isOpen||sessionClosed)return;
-    fetch('ajax/chat_unread.php')
-    .then(function(r){return r.json();})
-    .then(function(res){
-        if(!res.success)return;
-        if(res.unread>0){showBadge(res.unread);}
-        // Hydrate sessionId so polling starts immediately when user opens chat
-        if(res.session_id&&!sessionId)sessionId=res.session_id;
-    })
-    .catch(function(){});
+    if(sessionClosed)return;
+    if(!isOpen){
+        fetch('ajax/chat_unread.php')
+        .then(function(r){return r.json();})
+        .then(function(res){
+            if(!res.success)return;
+            if(res.unread>0){showBadge(res.unread);}
+            // Hydrate sessionId so polling starts immediately when user opens chat
+            if(res.session_id&&!sessionId)sessionId=res.session_id;
+        })
+        .catch(function(){});
+    }
+    // Poll for incoming call signals even while chat widget is closed
+    if(sessionId&&typeof window._lcBgCallPoll==='function'){
+        window._lcBgCallPoll();
+    }
 }
 
 function fmtTime(dt){var d=new Date(dt);return d.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});}
@@ -661,13 +685,56 @@ var lcCallStatus = document.getElementById('lc-call-status-txt');
 var lcMuteBtn    = document.getElementById('lc-call-mute-btn');
 var lcEndCallBtn = document.getElementById('lc-call-end-btn');
 
+/* Global popup refs */
+var lcGlobalPopup = document.getElementById('lc-call-global-popup');
+var lcGcallAnsBtn = document.getElementById('lc-gcall-ans-btn');
+var lcGcallRejBtn = document.getElementById('lc-gcall-rej-btn');
+
 var iceServers = [
     {urls:'stun:stun.l.google.com:19302'},
     {urls:'stun:stun1.l.google.com:19302'}
     /* For production behind strict firewalls add a TURN server:
        {urls:'turn:your-turn-server:3478',username:'user',credential:'pass'} */
 ];
-var vc = {pc:null, stream:null, timer:null, sigPoll:null, seconds:0, incomingOffer:null};
+var vc = {pc:null, stream:null, timer:null, sigPoll:null, ringTimer:null, seconds:0, incomingOffer:null, notif:null};
+
+/* ── Ring tone loop ── */
+function vcStartRing(){
+    vcStopRing();
+    playNotifSound();
+    vc.ringTimer=setInterval(playNotifSound,3000);
+}
+function vcStopRing(){clearInterval(vc.ringTimer);vc.ringTimer=null;}
+
+/* ── Browser / OS notification ── */
+function vcRequestNotifPerm(){
+    if('Notification' in window && Notification.permission==='default'){
+        Notification.requestPermission().catch(function(){});
+    }
+}
+function vcShowBrowserNotif(){
+    if(!('Notification' in window))return;
+    if(Notification.permission!=='granted')return;
+    try{
+        var n=new Notification('📞 Eingehender Sprachanruf',{
+            body:'Support-Team möchte Sie anrufen — klicken Sie zum Annehmen',
+            icon:'/favicon.ico',
+            requireInteraction:true,
+            tag:'lc-incoming-call'
+        });
+        n.onclick=function(){window.focus();n.close();vcAnswerCall();};
+        vc.notif=n;
+    }catch(e){}
+}
+function vcCloseBrowserNotif(){if(vc.notif){try{vc.notif.close();}catch(e){}vc.notif=null;}}
+
+/* ── Global popup helpers ── */
+function vcShowGlobalPopup(){
+    if(lcGlobalPopup)lcGlobalPopup.style.display='flex';
+}
+function vcHideGlobalPopup(){
+    if(lcGlobalPopup)lcGlobalPopup.style.display='none';
+}
 
 function vcResetPc(){
     if(vc.pc){try{vc.pc.close();}catch(e){}}
@@ -691,6 +758,9 @@ function vcResetPc(){
 }
 
 function vcShowActive(){
+    vcStopRing();
+    vcHideGlobalPopup();
+    vcCloseBrowserNotif();
     lcCallInc.style.display='none';
     lcCallOvr.style.display='flex';
     inputBar.style.display='none';
@@ -706,6 +776,9 @@ function vcShowActive(){
 }
 
 function vcHangup(sendSignal){
+    vcStopRing();
+    vcHideGlobalPopup();
+    vcCloseBrowserNotif();
     clearInterval(vc.timer);
     clearInterval(vc.sigPoll);
     vc.timer=null;vc.sigPoll=null;
@@ -719,6 +792,52 @@ function vcHangup(sendSignal){
     vc.incomingOffer=null;
     if(sendSignal&&sessionId){
         fetch('ajax/call_end.php',{method:'POST',headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({session_id:sessionId})}).catch(function(){});
+    }
+}
+
+/* ── Answer an incoming call (shared by in-widget and global popup) ── */
+function vcAnswerCall(){
+    if(!vc.incomingOffer)return;
+    var offer=vc.incomingOffer;
+    vc.incomingOffer=null;
+    vcStopRing();
+    vcHideGlobalPopup();
+    vcCloseBrowserNotif();
+    lcCallInc.style.display='none';
+    if(!isOpen)openChat();
+    navigator.mediaDevices.getUserMedia({audio:true,video:false})
+    .then(function(stream){
+        vc.stream=stream;
+        vcResetPc();
+        stream.getTracks().forEach(function(t){vc.pc.addTrack(t,stream);});
+        return vc.pc.setRemoteDescription(new RTCSessionDescription(offer));
+    })
+    .then(function(){return vc.pc.createAnswer();})
+    .then(function(ans){return vc.pc.setLocalDescription(ans).then(function(){return ans;});})
+    .then(function(ans){
+        return fetch('ajax/call_answer.php',{method:'POST',headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({session_id:sessionId,sdp:{type:ans.type,sdp:ans.sdp}})
+        }).then(function(r){return r.json();});
+    })
+    .then(function(res){
+        if(!res.success){vcHangup(false);return;}
+        vcShowActive();
+        vcStartSigPoll();
+    })
+    .catch(function(err){console.error('Answer error:',err);vcHangup(false);});
+}
+
+/* ── Reject an incoming call (shared) ── */
+function vcRejectCall(){
+    vcStopRing();
+    vcHideGlobalPopup();
+    vcCloseBrowserNotif();
+    lcCallInc.style.display='none';
+    vc.incomingOffer=null;
+    clearInterval(vc.sigPoll);vc.sigPoll=null;
+    if(sessionId){
+        fetch('ajax/call_reject.php',{method:'POST',headers:{'Content-Type':'application/json'},
             body:JSON.stringify({session_id:sessionId})}).catch(function(){});
     }
 }
@@ -756,44 +875,15 @@ lcCallBtn.addEventListener('click',function(){
     });
 });
 
-/* User answers admin-initiated call */
-lcCallAnsBtn.addEventListener('click',function(){
-    if(!vc.incomingOffer)return;
-    var offer=vc.incomingOffer;
-    vc.incomingOffer=null;
-    lcCallInc.style.display='none';
-    navigator.mediaDevices.getUserMedia({audio:true,video:false})
-    .then(function(stream){
-        vc.stream=stream;
-        vcResetPc();
-        stream.getTracks().forEach(function(t){vc.pc.addTrack(t,stream);});
-        return vc.pc.setRemoteDescription(new RTCSessionDescription(offer));
-    })
-    .then(function(){return vc.pc.createAnswer();})
-    .then(function(ans){return vc.pc.setLocalDescription(ans).then(function(){return ans;});})
-    .then(function(ans){
-        return fetch('ajax/call_answer.php',{method:'POST',headers:{'Content-Type':'application/json'},
-            body:JSON.stringify({session_id:sessionId,sdp:{type:ans.type,sdp:ans.sdp}})
-        }).then(function(r){return r.json();});
-    })
-    .then(function(res){
-        if(!res.success){vcHangup(false);return;}
-        vcShowActive();
-        vcStartSigPoll();
-    })
-    .catch(function(err){console.error('Answer error:',err);vcHangup(false);});
-});
+/* User answers admin-initiated call (in-widget banner button) */
+lcCallAnsBtn.addEventListener('click',function(){vcAnswerCall();});
 
-/* User rejects admin-initiated call */
-lcCallRejBtn.addEventListener('click',function(){
-    lcCallInc.style.display='none';
-    vc.incomingOffer=null;
-    clearInterval(vc.sigPoll);vc.sigPoll=null;
-    if(sessionId){
-        fetch('ajax/call_reject.php',{method:'POST',headers:{'Content-Type':'application/json'},
-            body:JSON.stringify({session_id:sessionId})}).catch(function(){});
-    }
-});
+/* User rejects admin-initiated call (in-widget banner button) */
+lcCallRejBtn.addEventListener('click',function(){vcRejectCall();});
+
+/* Global popup buttons */
+if(lcGcallAnsBtn)lcGcallAnsBtn.addEventListener('click',function(){vcAnswerCall();});
+if(lcGcallRejBtn)lcGcallRejBtn.addEventListener('click',function(){vcRejectCall();});
 
 /* Mute toggle */
 lcMuteBtn.addEventListener('click',function(){
@@ -827,9 +917,17 @@ function vcPollSignals(){
 function vcHandleSignal(sig){
     var type=sig.type, payload=sig.payload;
     if(type==='offer'){
+        if(vc.pc)return; /* already in a call, ignore duplicate offers */
         vc.incomingOffer=payload;
+        /* Show in-widget banner */
         lcCallInc.style.display='flex';
-        playNotifSound();
+        /* Show global floating popup (visible even if chat is closed) */
+        vcShowGlobalPopup();
+        /* Auto-open chat so the user sees the in-widget banner too */
+        if(!isOpen)openChat();
+        /* Ring + browser notification */
+        vcStartRing();
+        vcShowBrowserNotif();
         vcStartSigPoll();
     } else if(type==='answer'){
         if(vc.pc&&!vc.pc.remoteDescription){
@@ -850,12 +948,30 @@ function vcHandleSignal(sig){
     }
 }
 
+/* Background call poll — called by _checkUnread so incoming calls are
+   detected even when the chat widget is closed */
+window._lcBgCallPoll = function(){
+    if(!sessionId||vc.pc)return; /* skip if no session or already in a call */
+    fetch('ajax/call_poll.php?session_id='+sessionId)
+    .then(function(r){return r.json();})
+    .then(function(res){
+        if(!res.success)return;
+        res.signals.forEach(function(sig){vcHandleSignal(sig);});
+    }).catch(function(){});
+};
+
 /* Start signal polling when chat widget is opened and a session exists */
 var _origOpenChat=openChat;
 openChat=function(){
     _origOpenChat();
     if(sessionId&&!sessionClosed&&!vc.pc)vcStartSigPoll();
 };
+
+/* Request notification permission on first user interaction */
+document.addEventListener('click',function _reqNotif(){
+    vcRequestNotifPerm();
+    document.removeEventListener('click',_reqNotif);
+},{once:true});
 })();
 })();
 </script>
