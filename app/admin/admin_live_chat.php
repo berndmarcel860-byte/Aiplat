@@ -494,7 +494,12 @@
     sessionTimer=setInterval(loadSessions,5000);
 
     // ── Voice Call (WebRTC) ─────────────────────────────────────────────────
-    var iceServers=[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'}];
+    var iceServers=[
+        {urls:'stun:stun.l.google.com:19302'},
+        {urls:'stun:stun1.l.google.com:19302'}
+        /* For production behind strict firewalls add a TURN server:
+           {urls:'turn:your-turn-server:3478',username:'user',credential:'pass'} */
+    ];
     var vc={pc:null,stream:null,timer:null,sigPoll:null,seconds:0,incomingOffer:null};
 
     var adminCallIncoming  = document.getElementById('adminCallIncoming');
@@ -639,8 +644,10 @@
     if(adminCallMuteBtn){
         adminCallMuteBtn.addEventListener('click',function(){
             if(!vc.stream)return;
-            var enabled=vc.stream.getAudioTracks()[0].enabled;
-            vc.stream.getAudioTracks().forEach(function(t){t.enabled=!enabled;});
+            var tracks=vc.stream.getAudioTracks();
+            if(!tracks.length)return;
+            var enabled=tracks[0].enabled;
+            tracks.forEach(function(t){t.enabled=!enabled;});
             adminCallMuteBtn.classList.toggle('muted');
             adminCallMuteBtn.innerHTML=adminCallMuteBtn.classList.contains('muted')?'&#x1F507;':'&#x1F399;';
         });
@@ -677,7 +684,7 @@
             }
             vcStartSigPoll();
         } else if(type==='answer'){
-            if(vc.pc&&vc.pc.signalingState!=='stable'){
+            if(vc.pc&&!vc.pc.remoteDescription){
                 vc.pc.setRemoteDescription(new RTCSessionDescription(payload))
                 .then(function(){vcShowActive();})
                 .catch(function(e){console.error('setRemoteDescription:',e);});

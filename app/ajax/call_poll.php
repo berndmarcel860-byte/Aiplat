@@ -28,9 +28,9 @@ try {
     $sigs->execute([$sessionId]);
     $signals = $sigs->fetchAll();
 
-    // Mark consumed
+    // Mark consumed (SELECT has LIMIT 20 so at most 20 IDs)
     if (!empty($signals)) {
-        $ids = array_column($signals, 'id');
+        $ids = array_slice(array_column($signals, 'id'), 0, 20);
         $in  = implode(',', array_fill(0, count($ids), '?'));
         $pdo->prepare("UPDATE voice_call_signals SET is_consumed=1 WHERE id IN ($in)")->execute($ids);
     }

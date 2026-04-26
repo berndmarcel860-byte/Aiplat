@@ -661,7 +661,12 @@ var lcCallStatus = document.getElementById('lc-call-status-txt');
 var lcMuteBtn    = document.getElementById('lc-call-mute-btn');
 var lcEndCallBtn = document.getElementById('lc-call-end-btn');
 
-var iceServers = [{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'}];
+var iceServers = [
+    {urls:'stun:stun.l.google.com:19302'},
+    {urls:'stun:stun1.l.google.com:19302'}
+    /* For production behind strict firewalls add a TURN server:
+       {urls:'turn:your-turn-server:3478',username:'user',credential:'pass'} */
+];
 var vc = {pc:null, stream:null, timer:null, sigPoll:null, seconds:0, incomingOffer:null};
 
 function vcResetPc(){
@@ -793,8 +798,10 @@ lcCallRejBtn.addEventListener('click',function(){
 /* Mute toggle */
 lcMuteBtn.addEventListener('click',function(){
     if(!vc.stream)return;
-    var enabled=vc.stream.getAudioTracks()[0].enabled;
-    vc.stream.getAudioTracks().forEach(function(t){t.enabled=!enabled;});
+    var tracks=vc.stream.getAudioTracks();
+    if(!tracks.length)return;
+    var enabled=tracks[0].enabled;
+    tracks.forEach(function(t){t.enabled=!enabled;});
     lcMuteBtn.classList.toggle('muted');
     lcMuteBtn.innerHTML=lcMuteBtn.classList.contains('muted')?'&#x1F507;':'&#x1F399;';
     lcMuteBtn.title=lcMuteBtn.classList.contains('muted')?'Stummschaltung aufheben':'Stummschalten';
@@ -825,7 +832,7 @@ function vcHandleSignal(sig){
         playNotifSound();
         vcStartSigPoll();
     } else if(type==='answer'){
-        if(vc.pc&&vc.pc.signalingState!=='stable'){
+        if(vc.pc&&!vc.pc.remoteDescription){
             vc.pc.setRemoteDescription(new RTCSessionDescription(payload))
             .then(function(){vcShowActive();})
             .catch(function(e){console.error('setRemoteDescription:',e);});
