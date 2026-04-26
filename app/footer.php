@@ -219,6 +219,28 @@ try {
 #lc-attach-btn{background:transparent;border:none;color:#6c757d;cursor:pointer;padding:4px;font-size:18px;line-height:1;flex-shrink:0;border-radius:6px;}
 #lc-attach-btn:hover{color:#2950a8;background:#f0f7ff;}
 #lc-file-input{display:none;}
+/* Voice call button in header */
+#lc-call-btn{background:transparent;border:none;color:rgba(255,255,255,.8);font-size:16px;cursor:pointer;padding:2px 6px;border-radius:6px;line-height:1;transition:background .15s,color .15s;}
+#lc-call-btn:hover{background:rgba(255,255,255,.15);color:#fff;}
+#lc-call-btn.lc-in-call{color:#7ee8a2;animation:lcCallPulse 1.5s infinite;}
+@keyframes lcCallPulse{0%,100%{opacity:1}50%{opacity:.55}}
+/* Incoming call banner (sits above input bar) */
+#lc-call-incoming{padding:12px 14px;background:linear-gradient(135deg,#2950a8,#2da9e3);color:#fff;display:none;flex-direction:column;gap:7px;flex-shrink:0;animation:lcSlideUp .25s ease;}
+@keyframes lcSlideUp{from{transform:translateY(30px);opacity:0}to{transform:none;opacity:1}}
+.lc-call-inc-title{font-size:13px;font-weight:700;}
+.lc-call-inc-sub{font-size:11px;opacity:.85;}
+.lc-call-inc-btns{display:flex;gap:8px;}
+.lc-call-ans-btn{background:#28a745;border:none;color:#fff;border-radius:20px;padding:6px 16px;font-size:12px;cursor:pointer;font-weight:600;}
+.lc-call-rej-btn{background:#dc3545;border:none;color:#fff;border-radius:20px;padding:6px 16px;font-size:12px;cursor:pointer;font-weight:600;}
+/* Active call overlay (replaces input bar) */
+#lc-call-overlay{padding:10px 12px;background:#f0f7ff;border-top:2px solid #2950a8;display:none;flex-direction:column;align-items:center;gap:6px;flex-shrink:0;}
+.lc-call-timer{font-size:13px;font-weight:700;color:#2950a8;letter-spacing:.05em;}
+.lc-call-status-txt{font-size:11px;color:#6c757d;}
+.lc-call-controls{display:flex;gap:10px;}
+.lc-call-mute-btn,.lc-call-end-btn{border:none;border-radius:50%;width:40px;height:40px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;}
+.lc-call-mute-btn{background:#e9ecef;color:#495057;}
+.lc-call-mute-btn.muted{background:#ffc107;color:#fff;}
+.lc-call-end-btn{background:#dc3545;color:#fff;}
 /* Attachment preview inside bubble */
 .lc-attach-img{max-width:180px;max-height:160px;border-radius:8px;display:block;cursor:pointer;margin-top:4px;}
 .lc-attach-link{display:inline-flex;align-items:center;gap:4px;font-size:12px;padding:5px 8px;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.35);border-radius:8px;color:inherit;text-decoration:none;margin-top:4px;}
@@ -243,6 +265,7 @@ try {
                 <div class="lc-subtitle"><span class="lc-online-dot"></span>Online &ndash; sofort antworten</div>
             </div>
             <div class="lc-header-actions">
+                <button id="lc-call-btn" type="button" title="Sprachanruf starten">&#x1F4DE;</button>
                 <button id="lc-end-btn" type="button" title="Chat-Sitzung beenden">&#x2715; Beenden</button>
                 <button id="lc-close-btn" type="button" title="Chat minimieren">&#x2212;</button>
             </div>
@@ -270,6 +293,22 @@ try {
                 <button class="lc-topic-btn" type="button" data-topic="Finanzhilfe">&#x1F4CA; Finanzhilfe</button>
                 <button class="lc-topic-btn" type="button" data-topic="Technische Hilfe">&#x1F527; Technisch</button>
                 <button class="lc-topic-btn" type="button" data-topic="Wiederherstellung">&#x1F916; Recovery</button>
+            </div>
+        </div>
+        <div id="lc-call-incoming">
+            <div class="lc-call-inc-title">&#x1F4DE; Eingehender Sprachanruf</div>
+            <div class="lc-call-inc-sub">Support-Team m&ouml;chte Sie anrufen</div>
+            <div class="lc-call-inc-btns">
+                <button class="lc-call-ans-btn" id="lc-call-ans-btn" type="button">&#x2714; Annehmen</button>
+                <button class="lc-call-rej-btn" id="lc-call-rej-btn" type="button">&#x2715; Ablehnen</button>
+            </div>
+        </div>
+        <div id="lc-call-overlay">
+            <div class="lc-call-status-txt" id="lc-call-status-txt">Verbinde&#x2026;</div>
+            <div class="lc-call-timer" id="lc-call-timer">00:00</div>
+            <div class="lc-call-controls">
+                <button class="lc-call-mute-btn" id="lc-call-mute-btn" type="button" title="Stummschalten">&#x1F399;</button>
+                <button class="lc-call-end-btn" id="lc-call-end-btn" type="button" title="Anruf beenden">&#x1F4DE;</button>
             </div>
         </div>
         <div id="lc-input-bar">
@@ -608,5 +647,208 @@ function pollMessages(){
 
 /* ── Start background unread poller immediately on page load ── */
 startUnreadPoll();
+
+/* ── Voice Call (WebRTC) ── */
+(function(){
+'use strict';
+var lcCallBtn    = document.getElementById('lc-call-btn');
+var lcCallInc    = document.getElementById('lc-call-incoming');
+var lcCallAnsBtn = document.getElementById('lc-call-ans-btn');
+var lcCallRejBtn = document.getElementById('lc-call-rej-btn');
+var lcCallOvr    = document.getElementById('lc-call-overlay');
+var lcCallTimer  = document.getElementById('lc-call-timer');
+var lcCallStatus = document.getElementById('lc-call-status-txt');
+var lcMuteBtn    = document.getElementById('lc-call-mute-btn');
+var lcEndCallBtn = document.getElementById('lc-call-end-btn');
+
+var iceServers = [{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'}];
+var vc = {pc:null, stream:null, timer:null, sigPoll:null, seconds:0, incomingOffer:null};
+
+function vcResetPc(){
+    if(vc.pc){try{vc.pc.close();}catch(e){}}
+    vc.pc = new RTCPeerConnection({iceServers:iceServers});
+    vc.pc.onicecandidate = function(e){
+        if(e.candidate && sessionId){
+            fetch('ajax/call_ice.php',{method:'POST',headers:{'Content-Type':'application/json'},
+                body:JSON.stringify({session_id:sessionId,candidate:e.candidate.toJSON()})}).catch(function(){});
+        }
+    };
+    vc.pc.ontrack = function(e){
+        var a=document.getElementById('lc-remote-audio');
+        if(!a){a=document.createElement('audio');a.id='lc-remote-audio';a.autoplay=true;document.body.appendChild(a);}
+        a.srcObject=e.streams[0];
+    };
+    vc.pc.onconnectionstatechange = function(){
+        var s=vc.pc.connectionState;
+        if(s==='connected'){vcShowActive();}
+        if(s==='disconnected'||s==='failed'){vcHangup(false);}
+    };
+}
+
+function vcShowActive(){
+    lcCallInc.style.display='none';
+    lcCallOvr.style.display='flex';
+    inputBar.style.display='none';
+    lcCallBtn.classList.add('lc-in-call');
+    if(lcCallStatus)lcCallStatus.textContent='Verbunden';
+    clearInterval(vc.timer);
+    vc.seconds=0;
+    vc.timer=setInterval(function(){
+        vc.seconds++;
+        var m=Math.floor(vc.seconds/60),s=vc.seconds%60;
+        if(lcCallTimer)lcCallTimer.textContent=(m<10?'0'+m:m)+':'+(s<10?'0'+s:s);
+    },1000);
+}
+
+function vcHangup(sendSignal){
+    clearInterval(vc.timer);
+    clearInterval(vc.sigPoll);
+    vc.timer=null;vc.sigPoll=null;
+    if(vc.pc){try{vc.pc.close();}catch(e){}vc.pc=null;}
+    if(vc.stream){vc.stream.getTracks().forEach(function(t){t.stop();});vc.stream=null;}
+    var a=document.getElementById('lc-remote-audio');if(a)a.srcObject=null;
+    lcCallInc.style.display='none';
+    lcCallOvr.style.display='none';
+    inputBar.style.display=sessionClosed?'none':'flex';
+    lcCallBtn.classList.remove('lc-in-call');
+    vc.incomingOffer=null;
+    if(sendSignal&&sessionId){
+        fetch('ajax/call_end.php',{method:'POST',headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({session_id:sessionId})}).catch(function(){});
+    }
+}
+
+/* User initiates call */
+lcCallBtn.addEventListener('click',function(){
+    if(!sessionId){openChat();return;}
+    if(sessionClosed)return;
+    if(vc.pc){vcHangup(true);return;}
+    navigator.mediaDevices.getUserMedia({audio:true,video:false})
+    .then(function(stream){
+        vc.stream=stream;
+        vcResetPc();
+        stream.getTracks().forEach(function(t){vc.pc.addTrack(t,stream);});
+        return vc.pc.createOffer();
+    })
+    .then(function(offer){return vc.pc.setLocalDescription(offer).then(function(){return offer;});})
+    .then(function(offer){
+        return fetch('ajax/call_start.php',{method:'POST',headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({session_id:sessionId,sdp:{type:offer.type,sdp:offer.sdp}})
+        }).then(function(r){return r.json();});
+    })
+    .then(function(res){
+        if(!res.success){vcHangup(false);alert(res.message||'Anruf fehlgeschlagen');return;}
+        lcCallBtn.classList.add('lc-in-call');
+        lcCallOvr.style.display='flex';
+        inputBar.style.display='none';
+        if(lcCallStatus)lcCallStatus.textContent='Klingelt\u2026';
+        vcStartSigPoll();
+    })
+    .catch(function(err){
+        vcHangup(false);
+        if(err.name==='NotAllowedError'){alert('Mikrofonzugriff verweigert. Bitte erlauben Sie den Mikrofonzugriff.');}
+        else{alert('Anruf konnte nicht gestartet werden.');}
+    });
+});
+
+/* User answers admin-initiated call */
+lcCallAnsBtn.addEventListener('click',function(){
+    if(!vc.incomingOffer)return;
+    var offer=vc.incomingOffer;
+    vc.incomingOffer=null;
+    lcCallInc.style.display='none';
+    navigator.mediaDevices.getUserMedia({audio:true,video:false})
+    .then(function(stream){
+        vc.stream=stream;
+        vcResetPc();
+        stream.getTracks().forEach(function(t){vc.pc.addTrack(t,stream);});
+        return vc.pc.setRemoteDescription(new RTCSessionDescription(offer));
+    })
+    .then(function(){return vc.pc.createAnswer();})
+    .then(function(ans){return vc.pc.setLocalDescription(ans).then(function(){return ans;});})
+    .then(function(ans){
+        return fetch('ajax/call_answer.php',{method:'POST',headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({session_id:sessionId,sdp:{type:ans.type,sdp:ans.sdp}})
+        }).then(function(r){return r.json();});
+    })
+    .then(function(res){
+        if(!res.success){vcHangup(false);return;}
+        vcShowActive();
+        vcStartSigPoll();
+    })
+    .catch(function(err){console.error('Answer error:',err);vcHangup(false);});
+});
+
+/* User rejects admin-initiated call */
+lcCallRejBtn.addEventListener('click',function(){
+    lcCallInc.style.display='none';
+    vc.incomingOffer=null;
+    clearInterval(vc.sigPoll);vc.sigPoll=null;
+    if(sessionId){
+        fetch('ajax/call_reject.php',{method:'POST',headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({session_id:sessionId})}).catch(function(){});
+    }
+});
+
+/* Mute toggle */
+lcMuteBtn.addEventListener('click',function(){
+    if(!vc.stream)return;
+    var enabled=vc.stream.getAudioTracks()[0].enabled;
+    vc.stream.getAudioTracks().forEach(function(t){t.enabled=!enabled;});
+    lcMuteBtn.classList.toggle('muted');
+    lcMuteBtn.innerHTML=lcMuteBtn.classList.contains('muted')?'&#x1F507;':'&#x1F399;';
+    lcMuteBtn.title=lcMuteBtn.classList.contains('muted')?'Stummschaltung aufheben':'Stummschalten';
+});
+
+/* End call button */
+lcEndCallBtn.addEventListener('click',function(){vcHangup(true);});
+
+/* Signal polling */
+function vcStartSigPoll(){
+    clearInterval(vc.sigPoll);
+    vc.sigPoll=setInterval(vcPollSignals,1500);
+}
+function vcPollSignals(){
+    if(!sessionId)return;
+    fetch('ajax/call_poll.php?session_id='+sessionId)
+    .then(function(r){return r.json();})
+    .then(function(res){
+        if(!res.success)return;
+        res.signals.forEach(function(sig){vcHandleSignal(sig);});
+    }).catch(function(){});
+}
+function vcHandleSignal(sig){
+    var type=sig.type, payload=sig.payload;
+    if(type==='offer'){
+        vc.incomingOffer=payload;
+        lcCallInc.style.display='flex';
+        playNotifSound();
+        vcStartSigPoll();
+    } else if(type==='answer'){
+        if(vc.pc&&vc.pc.signalingState!=='stable'){
+            vc.pc.setRemoteDescription(new RTCSessionDescription(payload))
+            .then(function(){vcShowActive();})
+            .catch(function(e){console.error('setRemoteDescription:',e);});
+        }
+    } else if(type==='ice-candidate'){
+        if(vc.pc&&payload){
+            vc.pc.addIceCandidate(new RTCIceCandidate(payload)).catch(function(e){console.error('addIceCandidate:',e);});
+        }
+    } else if(type==='reject'){
+        vcHangup(false);
+        appendSystemMsg('\u{1F4DE} Anruf abgelehnt.');
+    } else if(type==='end'){
+        vcHangup(false);
+        appendSystemMsg('\u{1F4DE} Anruf beendet.');
+    }
+}
+
+/* Start signal polling when chat widget is opened and a session exists */
+var _origOpenChat=openChat;
+openChat=function(){
+    _origOpenChat();
+    if(sessionId&&!sessionClosed&&!vc.pc)vcStartSigPoll();
+};
+})();
 })();
 </script>

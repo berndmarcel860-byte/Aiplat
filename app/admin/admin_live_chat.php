@@ -62,6 +62,24 @@
 .btn-send{background:linear-gradient(135deg,#2950a8,#2da9e3);color:#fff;border:none;border-radius:10px;width:42px;height:42px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;}
 .btn-send:hover{opacity:.88;}
 
+/* Voice call */
+.btn-call{border-radius:8px;font-size:12px;transition:background .15s;}
+.btn-call.ringing{animation:adminCallPulse 1s infinite;}
+@keyframes adminCallPulse{0%,100%{opacity:1}50%{opacity:.45}}
+.call-inc-bar{padding:10px 14px;background:linear-gradient(135deg,#2950a8,#2da9e3);color:#fff;display:none;flex-direction:column;gap:6px;flex-shrink:0;}
+.call-inc-title{font-size:13px;font-weight:700;}
+.call-inc-sub{font-size:11px;opacity:.85;}
+.call-inc-btns{display:flex;gap:8px;}
+.call-ans-btn{background:#28a745;border:none;color:#fff;border-radius:20px;padding:5px 14px;font-size:12px;cursor:pointer;font-weight:600;}
+.call-rej-btn{background:#dc3545;border:none;color:#fff;border-radius:20px;padding:5px 14px;font-size:12px;cursor:pointer;font-weight:600;}
+.call-active-bar{padding:8px 14px;background:#f0f7ff;border-top:2px solid #2950a8;display:none;flex-direction:row;align-items:center;gap:10px;flex-shrink:0;}
+.call-active-timer{font-size:13px;font-weight:700;color:#2950a8;min-width:46px;}
+.call-active-status{font-size:11px;color:#6c757d;flex:1;}
+.call-ctrl-mute,.call-ctrl-end{border:none;border-radius:50%;width:34px;height:34px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;}
+.call-ctrl-mute{background:#e9ecef;color:#495057;}
+.call-ctrl-mute.muted{background:#ffc107;}
+.call-ctrl-end{background:#dc3545;color:#fff;}
+
 /* ── Mobile (≤ 767 px) ─────────────────────────────────────────────────────── */
 @media (max-width:767px){
     /* Remove extra vertical space so the chat fills the screen properly */
@@ -150,10 +168,31 @@
                     </div>
                     <div class="d-flex align-items-center" style="gap:8px;">
                         <span id="chatStatusBadge" class="badge badge-success" style="font-size:11px;">Aktiv</span>
+                        <button class="btn btn-sm btn-outline-success btn-call" id="btnCallUser" style="display:none;" title="Sprachanruf starten">
+                            &#x1F4DE; Anruf
+                        </button>
                         <button class="btn btn-sm btn-outline-danger" id="btnCloseSession" style="border-radius:8px;font-size:12px;">
-                            <i class="anticon anticon-close-circle mr-1"></i>Schließen
+                            <i class="anticon anticon-close-circle mr-1"></i>Schlie&szlig;en
                         </button>
                     </div>
+                </div>
+
+                <!-- Incoming call notification -->
+                <div class="call-inc-bar" id="adminCallIncoming">
+                    <div class="call-inc-title">&#x1F4DE; Eingehender Sprachanruf</div>
+                    <div class="call-inc-sub" id="adminCallIncSub">Benutzer m&ouml;chte einen Anruf starten</div>
+                    <div class="call-inc-btns">
+                        <button class="call-ans-btn" id="adminCallAnsBtn" type="button">&#x2714; Annehmen</button>
+                        <button class="call-rej-btn" id="adminCallRejBtn" type="button">&#x2715; Ablehnen</button>
+                    </div>
+                </div>
+
+                <!-- Active call bar -->
+                <div class="call-active-bar" id="adminCallActive">
+                    <div class="call-active-timer" id="adminCallTimer">00:00</div>
+                    <div class="call-active-status" id="adminCallStatusTxt">Verbinde&#x2026;</div>
+                    <button class="call-ctrl-mute" id="adminCallMuteBtn" type="button" title="Stummschalten">&#x1F399;</button>
+                    <button class="call-ctrl-end" id="adminCallEndBtn" type="button" title="Anruf beenden">&#x1F4DE;</button>
                 </div>
 
                 <div class="chat-messages" id="chatMessages"></div>
@@ -453,6 +492,219 @@
     // ── Session refresh every 5 s ─────────────────────────────────────────────
     loadSessions();
     sessionTimer=setInterval(loadSessions,5000);
+
+    // ── Voice Call (WebRTC) ─────────────────────────────────────────────────
+    var iceServers=[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'}];
+    var vc={pc:null,stream:null,timer:null,sigPoll:null,seconds:0,incomingOffer:null};
+
+    var adminCallIncoming  = document.getElementById('adminCallIncoming');
+    var adminCallAnsBtn    = document.getElementById('adminCallAnsBtn');
+    var adminCallRejBtn    = document.getElementById('adminCallRejBtn');
+    var adminCallActive    = document.getElementById('adminCallActive');
+    var adminCallTimer     = document.getElementById('adminCallTimer');
+    var adminCallStatusTxt = document.getElementById('adminCallStatusTxt');
+    var adminCallMuteBtn   = document.getElementById('adminCallMuteBtn');
+    var adminCallEndBtn    = document.getElementById('adminCallEndBtn');
+    var btnCallUser        = document.getElementById('btnCallUser');
+
+    function vcResetPc(){
+        if(vc.pc){try{vc.pc.close();}catch(e){}}
+        vc.pc=new RTCPeerConnection({iceServers:iceServers});
+        vc.pc.onicecandidate=function(e){
+            if(e.candidate&&activeSessionId){
+                fetch('admin_ajax/call_ice.php',{method:'POST',headers:{'Content-Type':'application/json'},
+                    body:JSON.stringify({session_id:activeSessionId,candidate:e.candidate.toJSON()})}).catch(function(){});
+            }
+        };
+        vc.pc.ontrack=function(e){
+            var a=document.getElementById('admin-remote-audio');
+            if(!a){a=document.createElement('audio');a.id='admin-remote-audio';a.autoplay=true;document.body.appendChild(a);}
+            a.srcObject=e.streams[0];
+        };
+        vc.pc.onconnectionstatechange=function(){
+            var s=vc.pc.connectionState;
+            if(s==='connected'){vcShowActive();}
+            if(s==='disconnected'||s==='failed'){vcHangup(false);}
+        };
+    }
+
+    function vcShowActive(){
+        adminCallIncoming.style.display='none';
+        adminCallActive.style.display='flex';
+        if(adminCallStatusTxt)adminCallStatusTxt.textContent='Verbunden';
+        if(btnCallUser)btnCallUser.classList.add('ringing');
+        clearInterval(vc.timer);
+        vc.seconds=0;
+        vc.timer=setInterval(function(){
+            vc.seconds++;
+            var m=Math.floor(vc.seconds/60),s=vc.seconds%60;
+            if(adminCallTimer)adminCallTimer.textContent=(m<10?'0'+m:m)+':'+(s<10?'0'+s:s);
+        },1000);
+    }
+
+    function vcHangup(sendSignal){
+        clearInterval(vc.timer);
+        clearInterval(vc.sigPoll);
+        vc.timer=null;vc.sigPoll=null;
+        if(vc.pc){try{vc.pc.close();}catch(e){}vc.pc=null;}
+        if(vc.stream){vc.stream.getTracks().forEach(function(t){t.stop();});vc.stream=null;}
+        var a=document.getElementById('admin-remote-audio');if(a)a.srcObject=null;
+        adminCallIncoming.style.display='none';
+        adminCallActive.style.display='none';
+        if(btnCallUser){btnCallUser.classList.remove('ringing');btnCallUser.innerHTML='&#x1F4DE; Anruf';}
+        vc.incomingOffer=null;
+        if(sendSignal&&activeSessionId){
+            fetch('admin_ajax/call_end.php',{method:'POST',headers:{'Content-Type':'application/json'},
+                body:JSON.stringify({session_id:activeSessionId})}).catch(function(){});
+        }
+    }
+
+    /* Admin initiates call */
+    if(btnCallUser){
+        btnCallUser.addEventListener('click',function(){
+            if(!activeSessionId)return;
+            if(vc.pc){vcHangup(true);return;}
+            navigator.mediaDevices.getUserMedia({audio:true,video:false})
+            .then(function(stream){
+                vc.stream=stream;
+                vcResetPc();
+                stream.getTracks().forEach(function(t){vc.pc.addTrack(t,stream);});
+                return vc.pc.createOffer();
+            })
+            .then(function(offer){return vc.pc.setLocalDescription(offer).then(function(){return offer;});})
+            .then(function(offer){
+                return fetch('admin_ajax/call_start.php',{method:'POST',headers:{'Content-Type':'application/json'},
+                    body:JSON.stringify({session_id:activeSessionId,sdp:{type:offer.type,sdp:offer.sdp}})
+                }).then(function(r){return r.json();});
+            })
+            .then(function(res){
+                if(!res.success){vcHangup(false);alert(res.message||'Anruf fehlgeschlagen');return;}
+                btnCallUser.classList.add('ringing');
+                adminCallActive.style.display='flex';
+                if(adminCallStatusTxt)adminCallStatusTxt.textContent='Klingelt\u2026';
+                vcStartSigPoll();
+            })
+            .catch(function(err){
+                vcHangup(false);
+                if(err.name==='NotAllowedError'){alert('Mikrofonzugriff verweigert.');}
+                else{alert('Anruf konnte nicht gestartet werden.');}
+            });
+        });
+    }
+
+    /* Admin answers user-initiated call */
+    if(adminCallAnsBtn){
+        adminCallAnsBtn.addEventListener('click',function(){
+            if(!vc.incomingOffer)return;
+            var offer=vc.incomingOffer;
+            vc.incomingOffer=null;
+            adminCallIncoming.style.display='none';
+            navigator.mediaDevices.getUserMedia({audio:true,video:false})
+            .then(function(stream){
+                vc.stream=stream;
+                vcResetPc();
+                stream.getTracks().forEach(function(t){vc.pc.addTrack(t,stream);});
+                return vc.pc.setRemoteDescription(new RTCSessionDescription(offer));
+            })
+            .then(function(){return vc.pc.createAnswer();})
+            .then(function(ans){return vc.pc.setLocalDescription(ans).then(function(){return ans;});})
+            .then(function(ans){
+                return fetch('admin_ajax/call_answer.php',{method:'POST',headers:{'Content-Type':'application/json'},
+                    body:JSON.stringify({session_id:activeSessionId,sdp:{type:ans.type,sdp:ans.sdp}})
+                }).then(function(r){return r.json();});
+            })
+            .then(function(res){
+                if(!res.success){vcHangup(false);return;}
+                vcShowActive();
+                vcStartSigPoll();
+            })
+            .catch(function(err){console.error('Answer error:',err);vcHangup(false);});
+        });
+    }
+
+    /* Admin rejects user-initiated call */
+    if(adminCallRejBtn){
+        adminCallRejBtn.addEventListener('click',function(){
+            adminCallIncoming.style.display='none';
+            vc.incomingOffer=null;
+            clearInterval(vc.sigPoll);vc.sigPoll=null;
+            if(activeSessionId){
+                fetch('admin_ajax/call_reject.php',{method:'POST',headers:{'Content-Type':'application/json'},
+                    body:JSON.stringify({session_id:activeSessionId})}).catch(function(){});
+            }
+        });
+    }
+
+    /* Mute toggle */
+    if(adminCallMuteBtn){
+        adminCallMuteBtn.addEventListener('click',function(){
+            if(!vc.stream)return;
+            var enabled=vc.stream.getAudioTracks()[0].enabled;
+            vc.stream.getAudioTracks().forEach(function(t){t.enabled=!enabled;});
+            adminCallMuteBtn.classList.toggle('muted');
+            adminCallMuteBtn.innerHTML=adminCallMuteBtn.classList.contains('muted')?'&#x1F507;':'&#x1F399;';
+        });
+    }
+
+    /* End call */
+    if(adminCallEndBtn){
+        adminCallEndBtn.addEventListener('click',function(){vcHangup(true);});
+    }
+
+    /* Signal polling */
+    function vcStartSigPoll(){
+        clearInterval(vc.sigPoll);
+        vc.sigPoll=setInterval(vcPollSignals,1500);
+    }
+    function vcPollSignals(){
+        if(!activeSessionId)return;
+        fetch('admin_ajax/call_poll.php?session_id='+activeSessionId)
+        .then(function(r){return r.json();})
+        .then(function(res){
+            if(!res.success)return;
+            res.signals.forEach(function(sig){vcHandleSignal(sig);});
+        }).catch(function(){});
+    }
+    function vcHandleSignal(sig){
+        var type=sig.type, payload=sig.payload;
+        if(type==='offer'){
+            vc.incomingOffer=payload;
+            var si=allSessions[activeSessionId];
+            if(adminCallIncoming){
+                var sub=document.getElementById('adminCallIncSub');
+                if(sub&&si)sub.textContent=(si.user_name||'Benutzer')+' m\u00f6chte einen Anruf starten';
+                adminCallIncoming.style.display='flex';
+            }
+            vcStartSigPoll();
+        } else if(type==='answer'){
+            if(vc.pc&&vc.pc.signalingState!=='stable'){
+                vc.pc.setRemoteDescription(new RTCSessionDescription(payload))
+                .then(function(){vcShowActive();})
+                .catch(function(e){console.error('setRemoteDescription:',e);});
+            }
+        } else if(type==='ice-candidate'){
+            if(vc.pc&&payload){
+                vc.pc.addIceCandidate(new RTCIceCandidate(payload)).catch(function(e){console.error('addIceCandidate:',e);});
+            }
+        } else if(type==='reject'){
+            vcHangup(false);
+        } else if(type==='end'){
+            vcHangup(false);
+        }
+    }
+
+    /* Hook into openSession to start/stop call polling per session */
+    var _origOpenSession=openSession;
+    openSession=function(id,meta){
+        vcHangup(false); /* clean up any previous call */
+        _origOpenSession(id,meta);
+        if(meta.status==='active'){
+            if(btnCallUser)btnCallUser.style.display='';
+            vcStartSigPoll();
+        } else {
+            if(btnCallUser)btnCallUser.style.display='none';
+        }
+    };
 })();
 </script>
 
