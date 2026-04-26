@@ -79,7 +79,7 @@ try {
         LEFT JOIN users u ON u.id = vcl.user_id
         WHERE $whereSQL
     ");
-    $countStmt->execute($countParams);
+    $countStmt->execute($params);
     $filteredCount = (int)$countStmt->fetchColumn();
 
     // Data
