@@ -14,7 +14,7 @@ try {
     $length = isset($_GET['length']) ? intval($_GET['length']) : 10;
     $searchValue = isset($_GET['search']['value']) ? $_GET['search']['value'] : '';
     $orderColumnIndex = isset($_GET['order'][0]['column']) ? intval($_GET['order'][0]['column']) : 0;
-    $orderDirection = isset($_GET['order'][0]['dir']) ? $_GET['order'][0]['dir'] : 'desc';
+    $orderDirection = (isset($_GET['order'][0]['dir']) && strtolower($_GET['order'][0]['dir']) === 'asc') ? 'ASC' : 'DESC';
     
     // Column mapping for ordering
     $columns = [
