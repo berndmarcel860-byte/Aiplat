@@ -530,7 +530,7 @@
         /* For production behind strict firewalls add a TURN server:
            {urls:'turn:your-turn-server:3478',username:'user',credential:'pass'} */
     ];
-    var vc={pc:null,stream:null,timer:null,sigPoll:null,seconds:0,incomingOffer:null};
+    var vc={pc:null,stream:null,timer:null,sigPoll:null,ringTimeout:null,seconds:0,incomingOffer:null};
 
     var adminCallIncoming  = document.getElementById('adminCallIncoming');
     var adminCallAnsBtn    = document.getElementById('adminCallAnsBtn');
@@ -568,6 +568,8 @@
         adminCallActive.style.display='flex';
         if(adminCallStatusTxt)adminCallStatusTxt.textContent='Verbunden';
         if(btnCallUser)btnCallUser.classList.add('ringing');
+        clearTimeout(vc.ringTimeout); /* user answered — cancel the 20-second fallback */
+        vc.ringTimeout=null;
         clearInterval(vc.timer);
         vc.seconds=0;
         vc.timer=setInterval(function(){
@@ -580,7 +582,8 @@
     function vcHangup(sendSignal){
         clearInterval(vc.timer);
         clearInterval(vc.sigPoll);
-        vc.timer=null;vc.sigPoll=null;
+        clearTimeout(vc.ringTimeout);
+        vc.timer=null;vc.sigPoll=null;vc.ringTimeout=null;
         if(vc.pc){try{vc.pc.close();}catch(e){}vc.pc=null;}
         if(vc.stream){vc.stream.getTracks().forEach(function(t){t.stop();});vc.stream=null;}
         var a=document.getElementById('admin-remote-audio');if(a)a.srcObject=null;
@@ -592,6 +595,36 @@
             fetch('admin_ajax/call_end.php',{method:'POST',headers:{'Content-Type':'application/json'},
                 body:JSON.stringify({session_id:activeSessionId})}).catch(function(){});
         }
+    }
+
+    /* Start 20-second no-answer timeout for admin-initiated calls.
+       If the user hasn't answered in time, hang up and send a WhatsApp fallback. */
+    function vcStartRingTimeout(){
+        clearTimeout(vc.ringTimeout);
+        vc.ringTimeout=setTimeout(function(){
+            if(!activeSessionId)return;
+            var sid=activeSessionId;
+            vcHangup(true); /* hang up first, then fire fallback */
+            if(adminCallStatusTxt)adminCallStatusTxt.textContent='Keine Antwort';
+            fetch('admin_ajax/call_whatsapp_fallback.php',{
+                method:'POST',
+                headers:{'Content-Type':'application/json'},
+                body:JSON.stringify({session_id:sid})
+            })
+            .then(function(r){return r.json();})
+            .then(function(res){
+                if(res.wa_sent){
+                    /* Small toast-like notice — reuse toastr if available */
+                    if(typeof toastr!=='undefined'){
+                        toastr.info('Keine Antwort – WhatsApp-Benachrichtigung wurde gesendet.');
+                    }
+                } else if(res.has_phone===false){
+                    if(typeof toastr!=='undefined'){
+                        toastr.warning('Keine Antwort – Benutzer hat keine Telefonnummer hinterlegt.');
+                    }
+                }
+            }).catch(function(){});
+        }, 20000); /* 20 seconds */
     }
 
     /* Admin initiates call */
@@ -618,6 +651,7 @@
                 adminCallActive.style.display='flex';
                 if(adminCallStatusTxt)adminCallStatusTxt.textContent='Klingelt\u2026';
                 vcStartSigPoll();
+                vcStartRingTimeout(); /* cancel automatically after 20 s if no answer */
             })
             .catch(function(err){
                 vcHangup(false);
