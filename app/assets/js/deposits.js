@@ -56,6 +56,21 @@ $(document).ready(function() {
                             return `<span class="badge badge-${statusClass}">${data.charAt(0).toUpperCase() + data.slice(1)}</span>`;
                         }
                     },
+                    {
+                        data: "escrow_status",
+                        render: function(data) {
+                            if (!data) return '<span class="badge badge-secondary" style="font-size:11px;">–</span>';
+                            const map = {
+                                'holding':   { cls: 'info',    icon: '🏦', label: 'In Treuhand' },
+                                'verified':  { cls: 'primary', icon: '✅', label: 'Verifiziert' },
+                                'released':  { cls: 'success', icon: '🎯', label: 'Freigegeben' },
+                                'refunded':  { cls: 'warning', icon: '↩️', label: 'Erstattet' },
+                                'cancelled': { cls: 'secondary', icon: '❌', label: 'Storniert' }
+                            };
+                            const s = map[data.toLowerCase()] || { cls: 'secondary', icon: '❓', label: data };
+                            return `<span class="badge badge-${s.cls}" style="font-size:11px;">${s.icon} ${s.label}</span>`;
+                        }
+                    },
                     { 
                         data: "created_at",
                         render: function(data, type, row) {
@@ -71,7 +86,7 @@ $(document).ready(function() {
                     }
                 ],
                 responsive: true,
-                order: [[4, 'desc']],
+                order: [[5, 'desc']],
                 language: {
                     processing: '<div class="spinner-border text-primary" role="status"><span class="sr-only">Loading...</span></div>',
                     emptyTable: "No deposits found",

@@ -69,7 +69,22 @@ try {
     }
 
     // =======================================================
-    // 5️⃣ Update user balance (only for deposits)
+    // 5️⃣ Update escrow status to 'released' on approval
+    // =======================================================
+    try {
+        $escrowStmt = $pdo->prepare("
+            UPDATE escrow_accounts e
+            INNER JOIN deposits d ON d.id = e.deposit_id
+            SET e.status = 'released', e.released_at = NOW(), e.released_by = ?
+            WHERE d.reference = ?
+        ");
+        $escrowStmt->execute([$_SESSION['admin_id'], $reference]);
+    } catch (Exception $e) {
+        error_log("Escrow update failed (non-fatal): " . $e->getMessage());
+    }
+
+    // =======================================================
+    // 6️⃣ Update user balance (only for deposits)
     // =======================================================
 /*
     if ($transaction['type'] === 'deposit') {

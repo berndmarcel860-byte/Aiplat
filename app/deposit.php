@@ -16,13 +16,29 @@
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">
-                            <table id="depositsTable" class="table table-bordered nowrap" style="width:100%">
+                            <!-- Escrow Trust Info Bar -->
+                        <div class="escrow-info-bar mb-3 p-3" style="border-radius:10px;background:linear-gradient(90deg,#0f4c81 0%,#1a6b3a 100%);color:#fff;display:flex;align-items:center;gap:12px;">
+                            <span style="font-size:24px;">🔒</span>
+                            <div>
+                                <strong style="font-size:14px;">Treuhand-Zahlungsschutz</strong>
+                                <div style="font-size:12px;opacity:.9;">Alle ausstehenden Einzahlungen werden sicher auf Treuhandkonten gehalten, bis sie verifiziert und freigegeben werden.</div>
+                            </div>
+                            <div class="ml-auto d-none d-md-flex align-items-center" style="gap:8px;white-space:nowrap;">
+                                <span class="badge" style="background:rgba(255,255,255,0.2);color:#fff;font-size:11px;padding:5px 10px;">🏦 Holding</span>
+                                <span style="opacity:.7;">→</span>
+                                <span class="badge" style="background:rgba(255,255,255,0.2);color:#fff;font-size:11px;padding:5px 10px;">✅ Verifiziert</span>
+                                <span style="opacity:.7;">→</span>
+                                <span class="badge" style="background:rgba(255,255,255,0.2);color:#fff;font-size:11px;padding:5px 10px;">🎯 Freigegeben</span>
+                            </div>
+                        </div>
+                        <table id="depositsTable" class="table table-bordered nowrap" style="width:100%">
                                 <thead>
                                     <tr>
                                         <th>Type</th>
                                         <th>Amount</th>
                                         <th>Method</th>
                                         <th>Status</th>
+                                        <th>Escrow</th>
                                         <th>Date</th>
                                     </tr>
                                 </thead>

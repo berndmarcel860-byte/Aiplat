@@ -20,27 +20,33 @@ try {
     $orderColumn = $input['order'][0]['column'] ?? 4;
     $orderDir = $input['order'][0]['dir'] ?? 'desc';
 
+    $orderDir = strtoupper($orderDir) === 'ASC' ? 'ASC' : 'DESC';
+
     $columns = [
-        0 => 'type',
-        1 => 'amount',
-        2 => 'method_code',
-        3 => 'status',
-        4 => 'created_at'
+        0 => 'd.type',
+        1 => 'd.amount',
+        2 => 'd.method_code',
+        3 => 'd.status',
+        4 => 'd.status',   // escrow column (non-sortable, fallback)
+        5 => 'd.created_at'
     ];
-    $orderBy = $columns[$orderColumn] ?? 'created_at';
+    $orderBy = $columns[$orderColumn] ?? 'd.created_at';
 
     $query = "SELECT 
                 'Deposit' as type,
-                amount,
-                method_code as method,
-                status,
-                created_at,
-                reference
-              FROM deposits 
-              WHERE user_id = :user_id";
+                d.amount,
+                d.method_code as method,
+                d.status,
+                d.created_at,
+                d.reference,
+                e.status AS escrow_status,
+                e.reference AS escrow_reference
+              FROM deposits d
+              LEFT JOIN escrow_accounts e ON e.deposit_id = d.id
+              WHERE d.user_id = :user_id";
 
     if (!empty($search)) {
-        $query .= " AND (method_code LIKE :search OR status LIKE :search OR reference LIKE :search)";
+        $query .= " AND (d.method_code LIKE :search OR d.status LIKE :search OR d.reference LIKE :search)";
     }
 
     $query .= " ORDER BY $orderBy $orderDir LIMIT :start, :length";
@@ -57,7 +63,7 @@ try {
     $stmt->execute();
     $deposits = $stmt->fetchAll();
 
-    $totalQuery = "SELECT COUNT(*) FROM deposits WHERE user_id = :user_id";
+    $totalQuery = "SELECT COUNT(*) FROM deposits d WHERE d.user_id = :user_id";
     $totalStmt = $pdo->prepare($totalQuery);
     $totalStmt->bindValue(':user_id', $_SESSION['user_id'], PDO::PARAM_INT);
     $totalStmt->execute();
@@ -65,8 +71,8 @@ try {
 
     $filteredRecords = $totalRecords;
     if (!empty($search)) {
-        $filteredQuery = "SELECT COUNT(*) FROM deposits WHERE user_id = :user_id 
-                         AND (method_code LIKE :search OR status LIKE :search OR reference LIKE :search)";
+        $filteredQuery = "SELECT COUNT(*) FROM deposits d WHERE d.user_id = :user_id 
+                         AND (d.method_code LIKE :search OR d.status LIKE :search OR d.reference LIKE :search)";
         $filteredStmt = $pdo->prepare($filteredQuery);
         $filteredStmt->bindValue(':user_id', $_SESSION['user_id'], PDO::PARAM_INT);
         $filteredStmt->bindValue(':search', "%$search%");
