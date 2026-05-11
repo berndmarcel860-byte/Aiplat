@@ -113,7 +113,7 @@ $(document).ready(function() {
 
         // Make rows look clickable
         $('#depositsTable').on('draw.dt', function () {
-            $(this).find('tbody tr').css('cursor', 'pointer').attr('title', 'Klicken für Details');
+            $(this).find('tbody tr').addClass('deposit-row-clickable').attr('title', 'Klicken für Details');
         });
 
         // Payment method details display

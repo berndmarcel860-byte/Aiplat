@@ -47,6 +47,6 @@ try {
     echo json_encode(['success' => true, 'deposit' => $deposit]);
 
 } catch (Exception $e) {
-    http_response_code($e->getCode() ?: 500);
+    http_response_code(in_array($e->getCode(), [400, 401, 403, 404, 405, 500]) ? $e->getCode() : 500);
     echo json_encode(['success' => false, 'message' => $e->getMessage()]);
 }

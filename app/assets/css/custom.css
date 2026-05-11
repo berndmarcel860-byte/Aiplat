@@ -1268,3 +1268,8 @@ h5, .h5 {
         padding: 1rem;
     }
 }
+
+/* Deposit table rows */
+.deposit-row-clickable { cursor: pointer; }
+.deposit-row-clickable:hover { background-color: rgba(41,80,168,0.04) !important; }
+

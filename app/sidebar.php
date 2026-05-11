@@ -65,14 +65,16 @@
                         <?php
                         try {
                             $depStmt = $pdo->prepare("SELECT COUNT(*) FROM deposits WHERE user_id = ? AND status = 'pending'");
-                            $depStmt->execute([$_SESSION['user_id']]);
+                            $depStmt->execute([(int)$_SESSION['user_id']]);
                             $pendingDeposits = (int)$depStmt->fetchColumn();
                             if ($pendingDeposits > 0): ?>
                                 <span class="badge badge-warning ml-auto" title="Ausstehende Einzahlungen in Treuhand">
                                     🔒 <?= $pendingDeposits ?>
                                 </span>
                             <?php endif;
-                        } catch (PDOException $e) { /* table may not exist yet */ }
+                        } catch (PDOException $e) {
+                            error_log('Sidebar deposit count error: ' . $e->getMessage());
+                        }
                         ?>
                     </a>
                 </li>
