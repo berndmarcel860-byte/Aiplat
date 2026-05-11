@@ -279,7 +279,6 @@ $(function(){
                             $('#paymentDetails').hide();
                             if (typeof location !== 'undefined') location.reload();
                         }, 6000);
-                        setTimeout(function(){ location.reload(); }, 1200);
                     } else {
                         toastr.error(data.message || 'Error processing deposit');
                     }

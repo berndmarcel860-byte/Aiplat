@@ -27,7 +27,7 @@ try {
         1 => 'd.amount',
         2 => 'd.method_code',
         3 => 'd.status',
-        4 => 'd.status',   // escrow column (non-sortable, fallback)
+        4 => 'e.status',   // escrow status column
         5 => 'd.created_at'
     ];
     $orderBy = $columns[$orderColumn] ?? 'd.created_at';

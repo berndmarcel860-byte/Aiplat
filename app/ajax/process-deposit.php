@@ -136,7 +136,7 @@ try {
         $depositId = $pdo->lastInsertId();
 
         // Create escrow record for this deposit
-        $escrowRef = 'ESC-' . strtoupper(substr(md5($reference . $depositId), 0, 10));
+        $escrowRef = 'ESC-' . strtoupper(bin2hex(random_bytes(5)));
         $escrowStmt = $pdo->prepare("INSERT INTO escrow_accounts 
                                      (deposit_id, user_id, amount, reference, status, held_at)
                                      VALUES (:deposit_id, :user_id, :amount, :reference, 'holding', NOW())");
