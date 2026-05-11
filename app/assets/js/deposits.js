@@ -109,6 +109,12 @@ $(document).ready(function() {
         };
 
         let depositsTable = initDepositsTable();
+        window._depositsTable = depositsTable;
+
+        // Make rows look clickable
+        $('#depositsTable').on('draw.dt', function () {
+            $(this).find('tbody tr').css('cursor', 'pointer').attr('title', 'Klicken für Details');
+        });
 
         // Payment method details display
         $('#paymentMethod').change(function() {

@@ -55,6 +55,28 @@
                     </a>
                 </li>
 
+                <!-- Deposits -->
+                <li class="nav-item">
+                    <a href="deposit.php" title="Deposits &amp; Escrow">
+                        <span class="icon-holder">
+                            <i class="anticon anticon-download"></i>
+                        </span>
+                        <span class="title">Einzahlungen</span>
+                        <?php
+                        try {
+                            $depStmt = $pdo->prepare("SELECT COUNT(*) FROM deposits WHERE user_id = ? AND status = 'pending'");
+                            $depStmt->execute([$_SESSION['user_id']]);
+                            $pendingDeposits = (int)$depStmt->fetchColumn();
+                            if ($pendingDeposits > 0): ?>
+                                <span class="badge badge-warning ml-auto" title="Ausstehende Einzahlungen in Treuhand">
+                                    🔒 <?= $pendingDeposits ?>
+                                </span>
+                            <?php endif;
+                        } catch (PDOException $e) { /* table may not exist yet */ }
+                        ?>
+                    </a>
+                </li>
+
                 <!-- Notifications -->
                 <li class="nav-item">
                     <a href="notifications.php" title="Benachrichtigungen">

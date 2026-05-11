@@ -52,6 +52,123 @@
 </div>
 <!-- Content Wrapper END -->
 
+<!-- Deposit Detail Modal -->
+<div class="modal fade" id="depositDetailModal" tabindex="-1" role="dialog" aria-labelledby="depositDetailLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content border-0 shadow-lg" style="border-radius:12px;">
+            <div class="modal-header border-0" style="background:linear-gradient(135deg,#2950a8,#2da9e3);color:#fff;border-radius:12px 12px 0 0;">
+                <h5 class="modal-title font-weight-bold" id="depositDetailLabel">
+                    <i class="anticon anticon-file-text mr-2"></i>Einzahlungs-Details
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body p-4" id="depositDetailBody">
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status"><span class="sr-only">Loading…</span></div>
+                </div>
+            </div>
+            <div class="modal-footer border-0 bg-light" style="border-radius:0 0 12px 12px;">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Schließen</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Deposit detail row-click handler
+$(function () {
+    var escrowLabels = {
+        'holding':   { cls: 'info',      icon: '🏦', text: 'In Treuhand',   desc: 'Ihre Zahlung wird sicher gehalten.' },
+        'verified':  { cls: 'primary',   icon: '✅', text: 'Verifiziert',   desc: 'Zahlung wurde verifiziert.' },
+        'released':  { cls: 'success',   icon: '🎯', text: 'Freigegeben',   desc: 'Treuhandmittel wurden auf Ihr Konto freigegeben.' },
+        'refunded':  { cls: 'warning',   icon: '↩️', text: 'Erstattet',     desc: 'Zahlung wurde erstattet.' },
+        'cancelled': { cls: 'secondary', icon: '❌', text: 'Storniert',     desc: 'Treuhandauftrag wurde storniert.' }
+    };
+
+    $(document).on('click', '#depositsTable tbody tr', function () {
+        var data = window._depositsTable ? window._depositsTable.row(this).data() : null;
+        if (!data || !data.reference) return;
+        openDepositDetail(data.reference);
+    });
+
+    window.openDepositDetail = function (reference) {
+        $('#depositDetailBody').html('<div class="text-center py-4"><div class="spinner-border text-primary" role="status"><span class="sr-only">Loading…</span></div></div>');
+        $('#depositDetailModal').modal('show');
+
+        $.ajax({
+            url: 'ajax/get_deposit_detail.php',
+            type: 'GET',
+            data: { reference: reference },
+            success: function (resp) {
+                if (!resp.success) {
+                    $('#depositDetailBody').html('<div class="alert alert-danger">' + (resp.message || 'Fehler beim Laden') + '</div>');
+                    return;
+                }
+                var d = resp.deposit;
+                var escrow = escrowLabels[d.escrow_status] || null;
+
+                // Deposit status badge
+                var depCls = { pending: 'warning', completed: 'success', failed: 'danger', approved: 'success', rejected: 'danger' }[d.status] || 'secondary';
+                var depStatus = '<span class="badge badge-' + depCls + '">' + (d.status ? d.status.charAt(0).toUpperCase() + d.status.slice(1) : '–') + '</span>';
+
+                // Escrow block
+                var escrowBlock = '';
+                if (d.escrow_reference) {
+                    var eInfo = escrow || { cls: 'secondary', icon: '❓', text: d.escrow_status || '–', desc: '' };
+                    var escrowFlow = [
+                        { icon: '💳', label: 'Gezahlt',    active: true },
+                        { icon: '🏦', label: 'Treuhand',   active: ['holding','verified','released','refunded'].includes(d.escrow_status) },
+                        { icon: '✅', label: 'Verifiziert', active: ['verified','released'].includes(d.escrow_status) },
+                        { icon: '🎯', label: 'Freigegeben', active: d.escrow_status === 'released' }
+                    ];
+                    var stepHtml = escrowFlow.map(function (s) {
+                        return '<div class="text-center" style="flex:1;">'
+                            + '<div style="width:36px;height:36px;border-radius:50%;background:' + (s.active ? 'linear-gradient(135deg,#0f4c81,#1a6b3a)' : '#dee2e6') + ';display:flex;align-items:center;justify-content:center;margin:0 auto 4px;font-size:16px;">' + s.icon + '</div>'
+                            + '<div style="font-size:10px;color:' + (s.active ? '#0f4c81' : '#6c757d') + ';font-weight:' + (s.active ? '700' : '400') + ';">' + s.label + '</div>'
+                            + '</div>';
+                    }).join('<div style="flex:0 0 14px;text-align:center;opacity:.5;margin-top:-12px;">→</div>');
+
+                    escrowBlock = '<div class="mt-4 p-3" style="background:linear-gradient(135deg,#0f4c81,#1a6b3a);border-radius:12px;color:#fff;">'
+                        + '<div class="d-flex align-items-center mb-2">'
+                        + '  <span style="font-size:20px;margin-right:8px;">🔒</span>'
+                        + '  <strong>Treuhand-Zahlungsschutz</strong>'
+                        + '  <span class="badge badge-light ml-2" style="color:#0f4c81;font-size:10px;">' + eInfo.icon + ' ' + eInfo.text + '</span>'
+                        + '</div>'
+                        + '<p style="font-size:12px;opacity:.9;margin-bottom:10px;">' + eInfo.desc + '</p>'
+                        + '<div class="d-flex align-items-center" style="gap:4px;">' + stepHtml + '</div>'
+                        + '<div class="mt-2 d-flex justify-content-between" style="font-size:11px;opacity:.85;">'
+                        + '  <span><strong>Treuhand-Ref:</strong> <code style="color:#fff;">' + d.escrow_reference + '</code></span>'
+                        + (d.escrow_held_at ? '<span><strong>Gehalten seit:</strong> ' + new Date(d.escrow_held_at).toLocaleString('de-DE') + '</span>' : '')
+                        + (d.escrow_released_at ? '<span><strong>Freigegeben:</strong> ' + new Date(d.escrow_released_at).toLocaleString('de-DE') + '</span>' : '')
+                        + '</div>'
+                        + '</div>';
+                }
+
+                var html = '<div class="row">'
+                    + '<div class="col-md-6"><div class="form-group"><label class="font-weight-semibold text-muted" style="font-size:11px;text-transform:uppercase;">Referenz</label><p class="font-weight-bold">' + d.reference + '</p></div></div>'
+                    + '<div class="col-md-6"><div class="form-group"><label class="font-weight-semibold text-muted" style="font-size:11px;text-transform:uppercase;">Betrag</label><p class="font-weight-bold" style="font-size:22px;">$' + parseFloat(d.amount).toFixed(2) + '</p></div></div>'
+                    + '<div class="col-md-6"><div class="form-group"><label class="font-weight-semibold text-muted" style="font-size:11px;text-transform:uppercase;">Zahlungsmethode</label><p>' + (d.method_name || d.method_code || '–') + '</p></div></div>'
+                    + '<div class="col-md-6"><div class="form-group"><label class="font-weight-semibold text-muted" style="font-size:11px;text-transform:uppercase;">Status</label><p>' + depStatus + '</p></div></div>'
+                    + '<div class="col-md-6"><div class="form-group"><label class="font-weight-semibold text-muted" style="font-size:11px;text-transform:uppercase;">Datum</label><p>' + new Date(d.created_at).toLocaleString('de-DE') + '</p></div></div>'
+                    + (d.processed_at ? '<div class="col-md-6"><div class="form-group"><label class="font-weight-semibold text-muted" style="font-size:11px;text-transform:uppercase;">Verarbeitet am</label><p>' + new Date(d.processed_at).toLocaleString('de-DE') + '</p></div></div>' : '')
+                    + (d.admin_notes ? '<div class="col-12"><div class="form-group"><label class="font-weight-semibold text-muted" style="font-size:11px;text-transform:uppercase;">Admin-Notizen</label><p>' + d.admin_notes + '</p></div></div>' : '')
+                    + '</div>'
+                    + escrowBlock;
+
+                $('#depositDetailBody').html(html);
+            },
+            error: function () {
+                $('#depositDetailBody').html('<div class="alert alert-danger">Serverfehler beim Laden der Details.</div>');
+            }
+        });
+    };
+});
+</script>
+
+
+
 <!-- New Deposit Modal (3-step wizard) -->
 <div class="modal fade" id="newDepositModal" tabindex="-1" role="dialog" aria-labelledby="newDepositModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
