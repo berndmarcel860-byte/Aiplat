@@ -78,7 +78,8 @@
 
 <script>
 // Deposit detail row-click handler
-$(function () {
+document.addEventListener('DOMContentLoaded', function () {
+    if (typeof window.jQuery === 'undefined') return;
     var escrowLabels = {
         'holding':   { cls: 'info',      icon: '🏦', text: 'In Treuhand',   desc: 'Ihre Zahlung wird sicher gehalten.' },
         'verified':  { cls: 'primary',   icon: '✅', text: 'Verifiziert',   desc: 'Zahlung wurde verifiziert.' },
@@ -312,7 +313,8 @@ $(function () {
 </div>
 
 <script>
-$(function () {
+document.addEventListener('DOMContentLoaded', function () {
+    if (typeof window.jQuery === 'undefined') return;
     var depCurrentStep = 1;
 
     function goToDepStep(step) {
