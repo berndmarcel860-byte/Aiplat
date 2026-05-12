@@ -220,7 +220,7 @@ $recoveredTotal = (float)($stats['total_recovered'] ?? 0.0);
 $openExposure = max(0, $reportedTotal - $recoveredTotal);
 $recoveryRate = ($reportedTotal > 0) ? round(($recoveredTotal / $reportedTotal) * 100, 1) : 0;
 $totalCases = (int)($stats['total_cases'] ?? 0);
-$recentTransactionCount = count($recentTransactions ?? []);
+$recentTransactionCount = is_array($recentTransactions) ? count($recentTransactions) : 0;
 
 $todoItems = [];
 if ($kycStatus !== 'approved') {
@@ -484,7 +484,7 @@ $statusBadgeMap = [
                         </div>
                         <div class="d-flex flex-wrap justify-content-between align-items-center" style="font-size:12px;color:rgba(255,255,255,.82);">
                             <span id="aiProgressLabel">18% geprüft</span>
-                            <span><strong id="aiTxCount" data-transaction-count="<?= (int)$recentTransactionCount ?>"><?= (int)$recentTransactionCount ?></strong> Transaktionen in der aktuellen Analyse</span>
+                            <span><strong id="aiTxCount"><?= (int)$recentTransactionCount ?></strong> Transaktionen in der aktuellen Momentaufnahme</span>
                         </div>
                         <div class="mt-3">
                             <div class="ai-feed-line">• Verhaltensbasierte Prüfung von Auszahlungs- und Einzahlungsströmen</div>
@@ -619,8 +619,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var statusEl = document.getElementById('aiStatusText');
     var barEl = document.getElementById('aiScanBar');
     var progressEl = document.getElementById('aiProgressLabel');
-    var txCountEl = document.getElementById('aiTxCount');
-    if (!statusEl || !barEl || !progressEl || !txCountEl) return;
+    if (!statusEl || !barEl || !progressEl) return;
 
     var statusMessages = [
         'Prüfe Transaktionsmuster und erkenne Auffälligkeiten …',
