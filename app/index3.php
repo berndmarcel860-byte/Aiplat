@@ -24,6 +24,7 @@ if (empty($_SESSION['csrf_token'])) {
 }
 
 const DASHBOARD_ITEMS_LIMIT = 6;
+const TICKET_MESSAGE_PREVIEW_LENGTH = 90;
 
 function escapeHtml(string $value): string
 {
@@ -38,6 +39,25 @@ function formatCurrency(float $amount): string
 function getTransactionColorClass(string $type): string
 {
     return in_array($type, ['refund', 'deposit'], true) ? 'text-success' : 'text-danger';
+}
+
+function extractDomainFromUrl(string $url): string
+{
+    $trimmedUrl = trim($url);
+    if ($trimmedUrl === '') {
+        return '';
+    }
+
+    $candidate = $trimmedUrl;
+    if (!preg_match('#^https?://#i', $candidate)) {
+        $candidate = 'https://' . ltrim($candidate, '/');
+    }
+
+    if (!filter_var($candidate, FILTER_VALIDATE_URL)) {
+        return '';
+    }
+
+    return (string)(parse_url($candidate, PHP_URL_HOST) ?? '');
 }
 
 $userId = $_SESSION['user_id'] ?? null;
@@ -129,14 +149,11 @@ if (!empty($userId)) {
 }
 
 try {
-    $settingsStmt = $pdo->query('SELECT site_url FROM system_settings WHERE id = 1 LIMIT 1');
+    $settingsStmt = $pdo->query('SELECT site_url FROM system_settings ORDER BY id ASC LIMIT 1');
     $settingsRow = $settingsStmt ? $settingsStmt->fetch(PDO::FETCH_ASSOC) : null;
     if (!empty($settingsRow['site_url'])) {
         $officialSiteUrl = trim((string)$settingsRow['site_url']);
-        $officialDomain = (string)parse_url($officialSiteUrl, PHP_URL_HOST);
-        if ($officialDomain === '') {
-            $officialDomain = (string)parse_url('https://' . ltrim($officialSiteUrl, '/'), PHP_URL_HOST);
-        }
+        $officialDomain = extractDomainFromUrl($officialSiteUrl);
     }
 } catch (PDOException $e) {
     error_log('index3.php settings error: ' . $e->getMessage());
@@ -206,9 +223,11 @@ $statusBadgeMap = [
         <div class="alert alert-warning d-flex flex-wrap align-items-center justify-content-between mb-3" role="alert">
             <div>
                 <strong>Sicherheitshinweis:</strong>
-                Bitte prüfen Sie, dass Sie sich auf
-                <strong><?= escapeHtml($officialDomain !== '' ? $officialDomain : 'der offiziellen Domain') ?></strong>
-                befinden.
+                <?php if ($officialDomain !== ''): ?>
+                    Bitte prüfen Sie, dass Sie sich auf <strong><?= escapeHtml($officialDomain) ?></strong> befinden.
+                <?php else: ?>
+                    Die offizielle Domain konnte nicht automatisch ermittelt werden. Bitte öffnen Sie den offiziellen Link nur über das Kundenportal.
+                <?php endif; ?>
             </div>
             <?php if ($officialSiteUrl !== ''): ?>
                 <a href="<?= escapeHtml($officialSiteUrl) ?>" class="btn btn-sm btn-outline-warning mt-2 mt-md-0" target="_blank" rel="noopener noreferrer">Offizielle Domain öffnen</a>
@@ -244,7 +263,7 @@ $statusBadgeMap = [
                         <div class="d-flex flex-wrap align-items-center justify-content-between border rounded px-3 py-2 mb-2">
                             <div class="mr-3">
                                 <div class="font-weight-semibold"><?= escapeHtml((string)$reply['subject']) ?> <small class="text-muted">#<?= escapeHtml((string)$reply['ticket_number']) ?></small></div>
-                                <small class="text-muted"><?= escapeHtml(mb_strimwidth((string)$reply['message'], 0, 90, '…')) ?></small>
+                                <small class="text-muted"><?= escapeHtml(mb_strimwidth((string)$reply['message'], 0, TICKET_MESSAGE_PREVIEW_LENGTH, '…')) ?></small>
                             </div>
                             <a href="support.php?ticket=<?= (int)$reply['ticket_id'] ?>" class="btn btn-sm btn-info mt-2 mt-md-0">Antwort lesen</a>
                         </div>
