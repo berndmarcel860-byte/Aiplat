@@ -205,6 +205,35 @@ document.addEventListener('DOMContentLoaded', function () {
                 <div class="modal-body p-4">
                     <!-- STEP 1: Amount -->
                     <div id="depositStep1">
+                        <!-- Escrow Protection Notice -->
+                        <div class="mb-4 p-3" style="background:linear-gradient(135deg,#0f4c81,#1a6b3a);border-radius:12px;color:#fff;">
+                            <div class="d-flex align-items-center mb-2">
+                                <span style="font-size:22px;margin-right:10px;">🔒</span>
+                                <strong style="font-size:15px;">Your Deposit is Protected by Escrow</strong>
+                            </div>
+                            <p style="font-size:13px;opacity:.95;margin-bottom:10px;">
+                                We use a <strong>secure escrow system</strong> to guarantee your funds are always safe. Here is how it works:
+                            </p>
+                            <div class="d-flex flex-column" style="gap:8px;font-size:13px;">
+                                <div class="d-flex align-items-start" style="gap:8px;">
+                                    <span style="flex:0 0 22px;font-size:16px;">🏦</span>
+                                    <span>Your deposit is <strong>held securely in escrow</strong> — it is never released to us until you confirm everything is in order.</span>
+                                </div>
+                                <div class="d-flex align-items-start" style="gap:8px;">
+                                    <span style="flex:0 0 22px;font-size:16px;">✅</span>
+                                    <span>Once you confirm that your <strong>withdrawal has been received</strong>, the funds are released from escrow to us.</span>
+                                </div>
+                                <div class="d-flex align-items-start" style="gap:8px;">
+                                    <span style="flex:0 0 22px;font-size:16px;">↩️</span>
+                                    <span>If your withdrawal is <strong>not received</strong> or there is any issue, your deposit is <strong>immediately refunded back to you</strong> from escrow — no questions asked.</span>
+                                </div>
+                            </div>
+                            <div class="mt-3 pt-2" style="border-top:1px solid rgba(255,255,255,0.25);font-size:12px;opacity:.85;">
+                                <i class="anticon anticon-safety-certificate mr-1"></i>
+                                You are fully protected at every step. Your money only moves when <strong>you are satisfied</strong>.
+                            </div>
+                        </div>
+                        <!-- /Escrow Protection Notice -->
                         <div class="form-group">
                             <label class="font-weight-600">Amount (USD)</label>
                             <div class="input-group">
