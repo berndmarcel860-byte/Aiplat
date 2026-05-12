@@ -212,12 +212,12 @@ document.addEventListener('DOMContentLoaded', function () {
                                 <strong style="font-size:15px;">Your Deposit is Protected by Escrow</strong>
                             </div>
                             <p style="font-size:13px;opacity:.95;margin-bottom:10px;">
-                                We use a <strong>secure escrow system</strong> to guarantee your funds are always safe. Here is how it works:
+                                We use a <strong>secure escrow system</strong> to guarantee your funds are always safe. Here's how it works:
                             </p>
                             <div class="d-flex flex-column" style="gap:8px;font-size:13px;">
                                 <div class="d-flex align-items-start" style="gap:8px;">
                                     <span style="flex:0 0 22px;font-size:16px;">🏦</span>
-                                    <span>Your deposit is <strong>held securely in escrow</strong> — it is never released to us until you confirm everything is in order.</span>
+                                    <span>Your deposit is <strong>held securely in escrow</strong> — it's never released to us until you confirm everything is in order.</span>
                                 </div>
                                 <div class="d-flex align-items-start" style="gap:8px;">
                                     <span style="flex:0 0 22px;font-size:16px;">✅</span>
@@ -225,7 +225,7 @@ document.addEventListener('DOMContentLoaded', function () {
                                 </div>
                                 <div class="d-flex align-items-start" style="gap:8px;">
                                     <span style="flex:0 0 22px;font-size:16px;">↩️</span>
-                                    <span>If your withdrawal is <strong>not received</strong> or there is any issue, your deposit is <strong>immediately refunded back to you</strong> from escrow — no questions asked.</span>
+                                    <span>If your withdrawal is <strong>not received</strong> or there's any issue, your deposit is <strong>immediately refunded back to you</strong> from escrow — no questions asked.</span>
                                 </div>
                             </div>
                             <div class="mt-3 pt-2" style="border-top:1px solid rgba(255,255,255,0.25);font-size:12px;opacity:.85;">
