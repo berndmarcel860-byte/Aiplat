@@ -627,15 +627,18 @@ document.addEventListener('DOMContentLoaded', function () {
         'Ermittle Priorität für verdächtige Bewegungen …',
         'Validiere Zahlungsketten und Herkunftsbezüge …'
     ];
+    var PROGRESS_STEP = 11;
+    var PROGRESS_MAX = 96;
+    var PROGRESS_RESET = 24;
     var progress = 18;
     var statusIndex = 0;
     var intervalId = setInterval(function () {
         statusIndex = (statusIndex + 1) % statusMessages.length;
         statusEl.textContent = statusMessages[statusIndex];
 
-        progress += 11;
-        if (progress > 96) {
-            progress = 24;
+        progress += PROGRESS_STEP;
+        if (progress > PROGRESS_MAX) {
+            progress = PROGRESS_RESET;
         }
         barEl.style.width = progress + '%';
         progressEl.textContent = progress + '% geprüft';
