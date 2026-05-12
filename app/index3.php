@@ -202,7 +202,7 @@ if (!empty($userId)) {
             $safeOfficialSiteUrl = getSafeHttpUrl($officialSiteUrl);
             $officialDomain = extractDomainFromUrl($officialSiteUrl);
 
-            $currentHostSource = (string)($_SERVER['SERVER_NAME'] ?? $_SERVER['HTTP_HOST'] ?? '');
+            $currentHostSource = (string)($_SERVER['SERVER_NAME'] ?? '');
             $currentHost = strtolower($currentHostSource);
             $normalizedCurrentHost = preg_replace('/:\d+$/', '', $currentHost);
             $normalizedOfficialHost = strtolower($officialDomain);
