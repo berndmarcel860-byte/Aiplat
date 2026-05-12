@@ -46,6 +46,11 @@ $userBalance = 0.0;
 $stats = ['total_cases' => 0, 'total_reported' => 0.0, 'total_recovered' => 0.0];
 $recentCases = [];
 $recentTransactions = [];
+$unreadReplies = [];
+$kycStatus = 'pending';
+$hasVerifiedPaymentMethod = false;
+$officialSiteUrl = '';
+$officialDomain = '';
 $itemLimit = DASHBOARD_ITEMS_LIMIT;
 
 if (!empty($userId)) {
@@ -67,6 +72,14 @@ if (!empty($userId)) {
         );
         $statsStmt->execute([$userId]);
         $stats = $statsStmt->fetch(PDO::FETCH_ASSOC) ?: $stats;
+
+        $kycStmt = $pdo->prepare('SELECT status FROM kyc_verification_requests WHERE user_id = ? ORDER BY id DESC LIMIT 1');
+        $kycStmt->execute([$userId]);
+        $kycStatus = ($kycRow = $kycStmt->fetch(PDO::FETCH_ASSOC)) ? (string)$kycRow['status'] : 'pending';
+
+        $verifiedPmStmt = $pdo->prepare("SELECT COUNT(*) FROM user_payment_methods WHERE user_id = ? AND type = 'crypto' AND verification_status = 'verified'");
+        $verifiedPmStmt->execute([$userId]);
+        $hasVerifiedPaymentMethod = ((int)$verifiedPmStmt->fetchColumn() > 0);
 
         $casesStmt = $pdo->prepare(
             'SELECT c.case_number,
@@ -97,9 +110,36 @@ if (!empty($userId)) {
         $txStmt->bindValue(':itemLimit', $itemLimit, PDO::PARAM_INT);
         $txStmt->execute();
         $recentTransactions = $txStmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $replyStmt = $pdo->prepare(
+            "SELECT tr.id, tr.message, tr.created_at, st.subject, st.ticket_number, st.id AS ticket_id
+             FROM ticket_replies tr
+             JOIN support_tickets st ON st.id = tr.ticket_id
+             WHERE st.user_id = ?
+               AND tr.admin_id IS NOT NULL
+               AND tr.read_at IS NULL
+             ORDER BY tr.created_at DESC
+             LIMIT 5"
+        );
+        $replyStmt->execute([$userId]);
+        $unreadReplies = $replyStmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (PDOException $e) {
         error_log('index3.php DB error: ' . $e->getMessage());
     }
+}
+
+try {
+    $settingsStmt = $pdo->query('SELECT site_url FROM system_settings WHERE id = 1 LIMIT 1');
+    $settingsRow = $settingsStmt ? $settingsStmt->fetch(PDO::FETCH_ASSOC) : null;
+    if (!empty($settingsRow['site_url'])) {
+        $officialSiteUrl = trim((string)$settingsRow['site_url']);
+        $officialDomain = (string)parse_url($officialSiteUrl, PHP_URL_HOST);
+        if ($officialDomain === '') {
+            $officialDomain = (string)parse_url('https://' . ltrim($officialSiteUrl, '/'), PHP_URL_HOST);
+        }
+    }
+} catch (PDOException $e) {
+    error_log('index3.php settings error: ' . $e->getMessage());
 }
 
 $reportedTotal = (float)($stats['total_reported'] ?? 0.0);
@@ -107,6 +147,29 @@ $recoveredTotal = (float)($stats['total_recovered'] ?? 0.0);
 $openExposure = max(0, $reportedTotal - $recoveredTotal);
 $recoveryRate = ($reportedTotal > 0) ? round(($recoveredTotal / $reportedTotal) * 100, 1) : 0;
 $totalCases = (int)($stats['total_cases'] ?? 0);
+
+$todoItems = [];
+if ($kycStatus !== 'approved') {
+    $todoItems[] = [
+        'text' => 'Bitte schließen Sie Ihre KYC-Verifizierung ab, um volle Sicherheits- und Auszahlungsfunktionen zu nutzen.',
+        'link' => 'kyc.php',
+        'linkLabel' => 'KYC abschließen',
+    ];
+}
+if (!$hasVerifiedPaymentMethod) {
+    $todoItems[] = [
+        'text' => 'Hinterlegen und verifizieren Sie eine Zahlungsmethode für sichere Auszahlungen über Escrow.',
+        'link' => 'payment-methods.php',
+        'linkLabel' => 'Zahlungsmethode einrichten',
+    ];
+}
+if ($totalCases === 0) {
+    $todoItems[] = [
+        'text' => 'Legen Sie Ihren ersten Fall an, damit unsere KI mit der Analyse starten kann.',
+        'link' => 'cases.php',
+        'linkLabel' => 'Ersten Fall anlegen',
+    ];
+}
 
 $statusLabelMap = [
     'open' => 'Offen',
@@ -132,10 +195,87 @@ $statusBadgeMap = [
             <div class="card-body p-4 p-lg-5">
                 <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
                     <div>
-                        <h2 class="mb-2 text-white">AI Fund Recovery Portfolio</h2>
+                        <h2 class="mb-2 text-white">KI-Fondsrückgewinnungs-Portfolio</h2>
                         <p class="mb-0" style="opacity:.92;">Willkommen zurück, <?= escapeHtml($currentUserName) ?>. Ihr Portfolio-Überblick in Echtzeit.</p>
                     </div>
-                    <a href="case_submit.php" class="btn btn-light font-weight-semibold">Neuen Fall melden</a>
+                    <a href="cases.php" class="btn btn-light font-weight-semibold">Fälle öffnen</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="alert alert-warning d-flex flex-wrap align-items-center justify-content-between mb-3" role="alert">
+            <div>
+                <strong>Sicherheitshinweis:</strong>
+                Bitte prüfen Sie, dass Sie sich auf
+                <strong><?= escapeHtml($officialDomain !== '' ? $officialDomain : 'der offiziellen Domain') ?></strong>
+                befinden.
+            </div>
+            <?php if ($officialSiteUrl !== ''): ?>
+                <a href="<?= escapeHtml($officialSiteUrl) ?>" class="btn btn-sm btn-outline-warning mt-2 mt-md-0" target="_blank" rel="noopener noreferrer">Offizielle Domain öffnen</a>
+            <?php endif; ?>
+        </div>
+
+        <div class="alert alert-danger mb-3" role="alert">
+            <strong>Wichtiger Schutz:</strong> Wir fordern niemals Zahlungen ohne Escrow-Verfahren an. Leisten Sie keine Direktzahlung außerhalb des Portals.
+        </div>
+
+        <?php if (!empty($todoItems)): ?>
+            <div class="card mb-3" style="border-left:4px solid #ffc107;">
+                <div class="card-body">
+                    <h6 class="mb-3">To-do &amp; Sicherheitsaufgaben</h6>
+                    <?php foreach ($todoItems as $todoItem): ?>
+                        <div class="d-flex flex-wrap align-items-center justify-content-between border rounded px-3 py-2 mb-2">
+                            <span class="text-muted mr-3"><?= escapeHtml($todoItem['text']) ?></span>
+                            <a href="<?= escapeHtml($todoItem['link']) ?>" class="btn btn-sm btn-warning mt-2 mt-md-0"><?= escapeHtml($todoItem['linkLabel']) ?></a>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+        <?php endif; ?>
+
+        <?php if (!empty($unreadReplies)): ?>
+            <div class="card mb-4" style="border-left:4px solid #17a2b8;">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <h6 class="mb-0">Ungelesene Support-Tickets</h6>
+                        <span class="badge badge-info"><?= count($unreadReplies) ?> neu</span>
+                    </div>
+                    <?php foreach ($unreadReplies as $reply): ?>
+                        <div class="d-flex flex-wrap align-items-center justify-content-between border rounded px-3 py-2 mb-2">
+                            <div class="mr-3">
+                                <div class="font-weight-semibold"><?= escapeHtml((string)$reply['subject']) ?> <small class="text-muted">#<?= escapeHtml((string)$reply['ticket_number']) ?></small></div>
+                                <small class="text-muted"><?= escapeHtml(mb_strimwidth((string)$reply['message'], 0, 90, '…')) ?></small>
+                            </div>
+                            <a href="support.php?ticket=<?= (int)$reply['ticket_id'] ?>" class="btn btn-sm btn-info mt-2 mt-md-0">Antwort lesen</a>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+        <?php endif; ?>
+
+        <div class="row mb-3">
+            <div class="col-md-4 mb-2 mb-md-0">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h6 class="mb-1">Vertrauensmerkmal</h6>
+                        <small class="text-muted">Transparente Escrow-Abwicklung ohne Direktforderungen.</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-2 mb-md-0">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h6 class="mb-1">Datensicherheit</h6>
+                        <small class="text-muted">Verschlüsselte Verarbeitung sensibler Fall- und Transaktionsdaten.</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h6 class="mb-1">Professioneller Support</h6>
+                        <small class="text-muted">Verbindliche Kommunikation über Tickets für nachvollziehbare Entscheidungen.</small>
+                    </div>
                 </div>
             </div>
         </div>
@@ -178,7 +318,7 @@ $statusBadgeMap = [
         <div class="card mb-4">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center mb-2">
-                    <h5 class="mb-0">Portfolio Recovery Score</h5>
+                    <h5 class="mb-0">Portfolio-Rückgewinnungsquote</h5>
                     <strong><?= escapeHtml((string)$recoveryRate) ?>%</strong>
                 </div>
                 <div class="progress" style="height:10px;">
