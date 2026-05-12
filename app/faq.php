@@ -110,7 +110,7 @@
                                     <div class="table-responsive">
                                         <table class="table table-sm table-bordered" style="border-radius:8px;overflow:hidden;">
                                             <thead style="background:#f0f4ff;">
-                                                <tr><th>Fall-Typ</th><th>Geschätzte Zeit</th><th>Erfolgswahrscheinlichkeit</th></tr>
+                                                <tr><th scope="col">Fall-Typ</th><th scope="col">Geschätzte Zeit</th><th scope="col">Erfolgswahrscheinlichkeit</th></tr>
                                             </thead>
                                             <tbody>
                                                 <tr><td>Einfache Krypto-Überweisung</td><td>3–7 Werktage</td><td style="color:#1a6b3a;font-weight:700;">Hoch (70–90%)</td></tr>
@@ -346,7 +346,7 @@
                                 <div class="table-responsive">
                                     <table class="table table-bordered" style="border-radius:8px;overflow:hidden;">
                                         <thead style="background:#f8f0ff;">
-                                            <tr><th>Status</th><th>Bedeutung</th><th>Aktion</th></tr>
+                                            <tr><th scope="col">Status</th><th scope="col">Bedeutung</th><th scope="col">Aktion</th></tr>
                                         </thead>
                                         <tbody>
                                             <tr>
@@ -565,7 +565,7 @@
                                 <div class="table-responsive">
                                     <table class="table table-bordered table-sm" style="border-radius:8px;overflow:hidden;">
                                         <thead style="background:#fff0f0;">
-                                            <tr><th>Methode</th><th>Bearbeitungszeit</th></tr>
+                                            <tr><th scope="col">Methode</th><th scope="col">Bearbeitungszeit</th></tr>
                                         </thead>
                                         <tbody>
                                             <tr><td>Kryptowährung (BTC/ETH/USDT)</td><td>1–3 Werktage</td></tr>
@@ -605,7 +605,7 @@ document.addEventListener('DOMContentLoaded', function () {
         btn.addEventListener('click', function () {
             var targetId = this.getAttribute('data-target');
             var body = document.getElementById(targetId);
-            var icon = this.querySelector('.anticon-down, .anticon-up');
+            var icon = this.querySelector('.anticon');
             if (!body) return;
             var isOpen = body.style.display !== 'none';
             body.style.display = isOpen ? 'none' : 'block';
