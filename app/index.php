@@ -5376,7 +5376,7 @@ $('#escrowReleaseConfirmBtn').on('click', function () {
         contentType: 'application/json',
         data: JSON.stringify({
             reference:  ref,
-            csrf_token: '<?= htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES) ?>'
+            csrf_token: <?= json_encode($_SESSION['csrf_token'] ?? '') ?>
         }),
         dataType: 'json',
         success: function (resp) {
@@ -5391,7 +5391,7 @@ $('#escrowReleaseConfirmBtn').on('click', function () {
         },
         error: function (xhr) {
             var msg = 'Serverfehler bei der Freigabe.';
-            try { msg = JSON.parse(xhr.responseText).message || msg; } catch (x) {}
+            try { msg = JSON.parse(xhr.responseText).message || msg; } catch (x) { /* use default message */ }
             toastr.error(msg);
             $btn.prop('disabled', false).html('<i class="anticon anticon-check-circle mr-1"></i>Freigabe bestätigen');
         }
