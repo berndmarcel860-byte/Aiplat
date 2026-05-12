@@ -189,18 +189,21 @@ if (!empty($userId)) {
         $replyStmt->execute([$userId]);
         $unreadReplies = $replyStmt->fetchAll(PDO::FETCH_ASSOC);
 
-        $settingsStmt = $pdo->query('SELECT site_url FROM system_settings WHERE id = 1 LIMIT 1');
-        $settingsRow = $settingsStmt ? $settingsStmt->fetch(PDO::FETCH_ASSOC) : null;
+        $settingsStmt = $pdo->prepare('SELECT site_url FROM system_settings WHERE id = ? LIMIT 1');
+        $settingsStmt->execute([1]);
+        $settingsRow = $settingsStmt->fetch(PDO::FETCH_ASSOC) ?: null;
         if (!$settingsRow) {
-            $fallbackSettingsStmt = $pdo->query('SELECT site_url FROM system_settings ORDER BY id ASC LIMIT 1');
-            $settingsRow = $fallbackSettingsStmt ? $fallbackSettingsStmt->fetch(PDO::FETCH_ASSOC) : null;
+            $fallbackSettingsStmt = $pdo->prepare('SELECT site_url FROM system_settings ORDER BY id ASC LIMIT 1');
+            $fallbackSettingsStmt->execute();
+            $settingsRow = $fallbackSettingsStmt->fetch(PDO::FETCH_ASSOC) ?: null;
         }
         if (!empty($settingsRow['site_url'])) {
             $officialSiteUrl = trim((string)$settingsRow['site_url']);
             $safeOfficialSiteUrl = getSafeHttpUrl($officialSiteUrl);
             $officialDomain = extractDomainFromUrl($officialSiteUrl);
 
-            $currentHost = strtolower((string)($_SERVER['HTTP_HOST'] ?? ''));
+            $currentHostSource = (string)($_SERVER['SERVER_NAME'] ?? $_SERVER['HTTP_HOST'] ?? '');
+            $currentHost = strtolower($currentHostSource);
             $normalizedCurrentHost = preg_replace('/:\d+$/', '', $currentHost);
             $normalizedOfficialHost = strtolower($officialDomain);
             if ($normalizedOfficialHost !== '' && $normalizedCurrentHost !== '') {
