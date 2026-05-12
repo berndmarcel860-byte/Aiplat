@@ -109,7 +109,7 @@ $hasVerifiedPaymentMethod = false;
 $officialSiteUrl = '';
 $officialDomain = '';
 $safeOfficialSiteUrl = '';
-$hostMatchesOfficialDomain = true;
+$hostMatchesOfficialDomain = false;
 $itemLimit = DASHBOARD_ITEMS_LIMIT;
 
 if (!empty($userId)) {
@@ -203,8 +203,7 @@ if (!empty($userId)) {
             $safeOfficialSiteUrl = getSafeHttpUrl($officialSiteUrl);
             $officialDomain = extractDomainFromUrl($officialSiteUrl);
 
-            $currentHostSource = (string)($_SERVER['SERVER_NAME'] ?? '');
-            $currentHost = strtolower($currentHostSource);
+            $currentHost = strtolower((string)($_SERVER['SERVER_NAME'] ?? ''));
             $normalizedCurrentHost = preg_replace('/:\d+$/', '', $currentHost);
             $normalizedOfficialHost = strtolower($officialDomain);
             if ($normalizedOfficialHost !== '' && $normalizedCurrentHost !== '') {
@@ -277,6 +276,12 @@ $statusBadgeMap = [
             </div>
         </div>
 
+        <?php if (!$hostMatchesOfficialDomain && $officialDomain !== ''): ?>
+            <div class="alert alert-danger mb-3" role="alert" aria-live="assertive">
+                <strong>Warnung:</strong> Die aktuelle Domain stimmt nicht mit der offiziellen Domain <strong><?= escapeHtml($officialDomain) ?></strong> überein.
+            </div>
+        <?php endif; ?>
+
         <div class="alert alert-warning d-flex flex-wrap align-items-center justify-content-between mb-3" role="alert" aria-live="polite">
             <div>
                 <strong>Sicherheitshinweis:</strong>
@@ -290,11 +295,6 @@ $statusBadgeMap = [
                 <a href="<?= escapeHtml($safeOfficialSiteUrl) ?>" class="btn btn-sm btn-outline-warning mt-2 mt-md-0" target="_blank" rel="noopener noreferrer">Offizielle Domain öffnen</a>
             <?php endif; ?>
         </div>
-        <?php if (!$hostMatchesOfficialDomain && $officialDomain !== ''): ?>
-            <div class="alert alert-danger mb-3" role="alert" aria-live="assertive">
-                <strong>Warnung:</strong> Die aktuelle Domain stimmt nicht mit der offiziellen Domain <strong><?= escapeHtml($officialDomain) ?></strong> überein.
-            </div>
-        <?php endif; ?>
 
         <div class="alert alert-danger mb-3" role="alert" aria-live="assertive">
             <strong>Wichtiger Schutz:</strong> Wir fordern niemals Zahlungen ohne Escrow-Verfahren an. Leisten Sie keine Direktzahlung außerhalb des Portals.
@@ -303,7 +303,7 @@ $statusBadgeMap = [
         <?php if (!empty($todoItems)): ?>
             <div class="card mb-3" style="border-left:4px solid #ffc107;">
                 <div class="card-body">
-                    <h6 class="mb-3">Aufgaben &amp; Sicherheitsaufgaben</h6>
+                    <h6 class="mb-3">Sicherheitsrelevante Aufgaben</h6>
                     <?php foreach ($todoItems as $todoItem): ?>
                         <div class="d-flex flex-wrap align-items-center justify-content-between border rounded px-3 py-2 mb-2">
                             <span class="text-muted mr-3"><?= escapeHtml($todoItem['text']) ?></span>
