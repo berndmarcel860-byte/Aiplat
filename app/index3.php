@@ -27,6 +27,7 @@ const DASHBOARD_ITEMS_LIMIT = 6;
 const TICKET_MESSAGE_PREVIEW_LENGTH = 90;
 const PAYMENT_METHOD_TYPE_CRYPTO = 'crypto';
 const PAYMENT_METHOD_STATUS_VERIFIED = 'verified';
+const SYSTEM_SETTINGS_PRIMARY_ID = 1;
 
 function escapeHtml(string $value): string
 {
@@ -190,7 +191,7 @@ if (!empty($userId)) {
         $unreadReplies = $replyStmt->fetchAll(PDO::FETCH_ASSOC);
 
         $settingsStmt = $pdo->prepare('SELECT site_url FROM system_settings WHERE id = ? LIMIT 1');
-        $settingsStmt->execute([1]);
+        $settingsStmt->execute([SYSTEM_SETTINGS_PRIMARY_ID]);
         $settingsRow = $settingsStmt->fetch(PDO::FETCH_ASSOC) ?: null;
         if (!$settingsRow) {
             $fallbackSettingsStmt = $pdo->prepare('SELECT site_url FROM system_settings ORDER BY id ASC LIMIT 1');
@@ -276,7 +277,7 @@ $statusBadgeMap = [
             </div>
         </div>
 
-        <div class="alert alert-warning d-flex flex-wrap align-items-center justify-content-between mb-3" role="alert">
+        <div class="alert alert-warning d-flex flex-wrap align-items-center justify-content-between mb-3" role="alert" aria-live="polite">
             <div>
                 <strong>Sicherheitshinweis:</strong>
                 <?php if ($officialDomain !== ''): ?>
@@ -290,12 +291,12 @@ $statusBadgeMap = [
             <?php endif; ?>
         </div>
         <?php if (!$hostMatchesOfficialDomain && $officialDomain !== ''): ?>
-            <div class="alert alert-danger mb-3" role="alert">
+            <div class="alert alert-danger mb-3" role="alert" aria-live="assertive">
                 <strong>Warnung:</strong> Die aktuelle Domain stimmt nicht mit der offiziellen Domain <strong><?= escapeHtml($officialDomain) ?></strong> überein.
             </div>
         <?php endif; ?>
 
-        <div class="alert alert-danger mb-3" role="alert">
+        <div class="alert alert-danger mb-3" role="alert" aria-live="assertive">
             <strong>Wichtiger Schutz:</strong> Wir fordern niemals Zahlungen ohne Escrow-Verfahren an. Leisten Sie keine Direktzahlung außerhalb des Portals.
         </div>
 
