@@ -484,7 +484,7 @@ $statusBadgeMap = [
                         </div>
                         <div class="d-flex flex-wrap justify-content-between align-items-center" style="font-size:12px;color:rgba(255,255,255,.82);">
                             <span id="aiProgressLabel">18% geprüft</span>
-                            <span><strong id="aiTxCount" data-transaction-count="<?= (int)$recentTransactionCount ?>"><?= escapeHtml((string)$recentTransactionCount) ?></strong> Transaktionen in der aktuellen Analyse</span>
+                            <span><strong id="aiTxCount" data-transaction-count="<?= (int)$recentTransactionCount ?>"><?= (int)$recentTransactionCount ?></strong> Transaktionen in der aktuellen Analyse</span>
                         </div>
                         <div class="mt-3">
                             <div class="ai-feed-line">• Verhaltensbasierte Prüfung von Auszahlungs- und Einzahlungsströmen</div>
@@ -630,8 +630,6 @@ document.addEventListener('DOMContentLoaded', function () {
     ];
     var progress = 18;
     var statusIndex = 0;
-    var txCount = parseInt(txCountEl.getAttribute('data-transaction-count') || '0', 10) || 0;
-
     var intervalId = setInterval(function () {
         statusIndex = (statusIndex + 1) % statusMessages.length;
         statusEl.textContent = statusMessages[statusIndex];
@@ -644,7 +642,6 @@ document.addEventListener('DOMContentLoaded', function () {
         progressEl.textContent = progress + '% geprüft';
     }, 2200);
 
-    txCountEl.textContent = String(txCount);
     window.addEventListener('pagehide', function () {
         clearInterval(intervalId);
     }, { once: true });
