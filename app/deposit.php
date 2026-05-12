@@ -205,35 +205,35 @@ document.addEventListener('DOMContentLoaded', function () {
                 <div class="modal-body p-4">
                     <!-- STEP 1: Amount -->
                     <div id="depositStep1">
-                        <!-- Escrow Protection Notice -->
+                        <!-- Treuhand-Schutzhinweis -->
                         <div class="mb-4 p-3" style="background:linear-gradient(135deg,#0f4c81,#1a6b3a);border-radius:12px;color:#fff;">
                             <div class="d-flex align-items-center mb-2">
                                 <span style="font-size:22px;margin-right:10px;">🔒</span>
-                                <strong style="font-size:15px;">Your Deposit is Protected by Escrow</strong>
+                                <strong style="font-size:15px;">Ihre Einzahlung ist durch Treuhand geschützt</strong>
                             </div>
                             <p style="font-size:13px;opacity:.95;margin-bottom:10px;">
-                                We use a <strong>secure escrow system</strong> to guarantee your funds are always safe. Here's how it works:
+                                Wir nutzen ein <strong>sicheres Treuhandsystem</strong>, um Ihr Geld jederzeit zu schützen. So funktioniert es:
                             </p>
                             <div class="d-flex flex-column" style="gap:8px;font-size:13px;">
                                 <div class="d-flex align-items-start" style="gap:8px;">
                                     <span style="flex:0 0 22px;font-size:16px;">🏦</span>
-                                    <span>Your deposit is <strong>held securely in escrow</strong> — it's never released to us until you confirm everything is in order.</span>
+                                    <span>Ihre Einzahlung wird <strong>sicher auf einem Treuhandkonto gehalten</strong> — das Geld wird uns erst freigegeben, nachdem Sie alles bestätigt haben.</span>
                                 </div>
                                 <div class="d-flex align-items-start" style="gap:8px;">
                                     <span style="flex:0 0 22px;font-size:16px;">✅</span>
-                                    <span>Once you confirm that your <strong>withdrawal has been received</strong>, the funds are released from escrow to us.</span>
+                                    <span>Sobald Sie bestätigen, dass Ihre <strong>Auszahlung erfolgreich eingegangen ist</strong>, werden die Treuhandmittel an uns freigegeben.</span>
                                 </div>
                                 <div class="d-flex align-items-start" style="gap:8px;">
                                     <span style="flex:0 0 22px;font-size:16px;">↩️</span>
-                                    <span>If your withdrawal is <strong>not received</strong> or there's any issue, your deposit is <strong>immediately refunded back to you</strong> from escrow — no questions asked.</span>
+                                    <span>Falls Ihre Auszahlung <strong>nicht eingegangen ist</strong> oder ein Problem aufgetreten ist, wird Ihre Einzahlung <strong>sofort und vollständig zurück an Sie überwiesen</strong> — ohne Rückfragen.</span>
                                 </div>
                             </div>
                             <div class="mt-3 pt-2" style="border-top:1px solid rgba(255,255,255,0.25);font-size:12px;opacity:.85;">
                                 <i class="anticon anticon-safety-certificate mr-1"></i>
-                                You are fully protected at every step. Your money only moves when <strong>you are satisfied</strong>.
+                                Sie sind bei jedem Schritt vollständig geschützt. Ihr Geld bewegt sich nur, wenn <strong>Sie zufrieden sind</strong>.
                             </div>
                         </div>
-                        <!-- /Escrow Protection Notice -->
+                        <!-- /Treuhand-Schutzhinweis -->
                         <div class="form-group">
                             <label class="font-weight-600">Amount (USD)</label>
                             <div class="input-group">
