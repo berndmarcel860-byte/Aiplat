@@ -130,6 +130,21 @@ document.addEventListener('DOMContentLoaded', function () {
                             + '</div>';
                     }).join('<div style="flex:0 0 14px;text-align:center;opacity:.5;margin-top:-12px;">→</div>');
 
+                    // Show "Auszahlung erhalten" release button only when escrow is holding/verified
+                    var releaseBtn = '';
+                    if (['holding', 'verified'].includes(d.escrow_status)) {
+                        releaseBtn = '<div class="mt-3 p-3" style="background:rgba(255,255,255,0.12);border-radius:10px;border:1px solid rgba(255,255,255,0.3);">'
+                            + '<div class="d-flex align-items-center mb-2">'
+                            + '  <span style="font-size:18px;margin-right:8px;">💸</span>'
+                            + '  <strong style="font-size:13px;">Auszahlung erhalten?</strong>'
+                            + '</div>'
+                            + '<p style="font-size:12px;opacity:.9;margin-bottom:10px;">Wenn Sie Ihre Auszahlung erfolgreich erhalten haben, klicken Sie auf den Button unten, um die Treuhandmittel freizugeben. Ihre Einzahlung wird danach an uns übertragen.</p>'
+                            + '<button type="button" class="btn btn-success btn-sm release-escrow-btn" data-reference="' + d.reference + '" style="border-radius:8px;font-weight:600;">'
+                            + '  ✅ Auszahlung bestätigen &amp; Treuhand freigeben'
+                            + '</button>'
+                            + '</div>';
+                    }
+
                     escrowBlock = '<div class="mt-4 p-3" style="background:linear-gradient(135deg,#0f4c81,#1a6b3a);border-radius:12px;color:#fff;">'
                         + '<div class="d-flex align-items-center mb-2">'
                         + '  <span style="font-size:20px;margin-right:8px;">🔒</span>'
@@ -143,6 +158,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         + (d.escrow_held_at ? '<span><strong>Gehalten seit:</strong> ' + new Date(d.escrow_held_at).toLocaleString('de-DE') + '</span>' : '')
                         + (d.escrow_released_at ? '<span><strong>Freigegeben:</strong> ' + new Date(d.escrow_released_at).toLocaleString('de-DE') + '</span>' : '')
                         + '</div>'
+                        + releaseBtn
                         + '</div>';
                 }
 
@@ -164,6 +180,48 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     };
+
+    // Handle "Auszahlung erhalten" / escrow release button
+    $(document).on('click', '.release-escrow-btn', function () {
+        var $btn = $(this);
+        var reference = $btn.data('reference');
+        if (!reference) return;
+
+        if (!confirm('Bestätigen Sie, dass Sie Ihre Auszahlung erhalten haben und die Treuhandmittel freigeben möchten?')) {
+            return;
+        }
+
+        $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm mr-1"></span> Wird freigegeben…');
+
+        $.ajax({
+            url: 'ajax/release_escrow.php',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                reference: reference,
+                csrf_token: '<?= htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES) ?>'
+            }),
+            success: function (resp) {
+                if (resp.success) {
+                    $btn.closest('.release-escrow-btn').parents('.p-3').first().html(
+                        '<div class="d-flex align-items-center" style="gap:8px;">'
+                        + '<span style="font-size:20px;">🎉</span>'
+                        + '<span style="font-size:13px;font-weight:600;">' + resp.message + '</span>'
+                        + '</div>'
+                    );
+                    // Reload detail to reflect updated escrow status
+                    setTimeout(function () { window.openDepositDetail(reference); }, 1800);
+                } else {
+                    alert('Fehler: ' + (resp.message || 'Unbekannter Fehler'));
+                    $btn.prop('disabled', false).html('✅ Auszahlung bestätigen &amp; Treuhand freigeben');
+                }
+            },
+            error: function () {
+                alert('Serverfehler. Bitte versuchen Sie es erneut.');
+                $btn.prop('disabled', false).html('✅ Auszahlung bestätigen &amp; Treuhand freigeben');
+            }
+        });
+    });
 });
 </script>
 

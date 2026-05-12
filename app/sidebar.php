@@ -177,6 +177,16 @@
                     </a>
                 </li>
 
+                <!-- FAQ -->
+                <li class="nav-item">
+                    <a href="faq.php" title="Häufig gestellte Fragen">
+                        <span class="icon-holder">
+                            <i class="anticon anticon-question-circle"></i>
+                        </span>
+                        <span class="title">FAQ &amp; Hilfe</span>
+                    </a>
+                </li>
+
             </ul>
         </div>
     </div>
