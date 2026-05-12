@@ -203,14 +203,14 @@ document.addEventListener('DOMContentLoaded', function () {
             }),
             success: function (resp) {
                 if (resp.success) {
-                    $btn.closest('.release-escrow-btn').parents('.p-3').first().html(
+                    $btn.closest('.p-3').html(
                         '<div class="d-flex align-items-center" style="gap:8px;">'
                         + '<span style="font-size:20px;">🎉</span>'
                         + '<span style="font-size:13px;font-weight:600;">' + resp.message + '</span>'
                         + '</div>'
                     );
                     // Reload detail to reflect updated escrow status
-                    setTimeout(function () { window.openDepositDetail(reference); }, 1800);
+                    setTimeout(function () { openDepositDetail(reference); }, 1800);
                 } else {
                     alert('Fehler: ' + (resp.message || 'Unbekannter Fehler'));
                     $btn.prop('disabled', false).html('✅ Auszahlung bestätigen &amp; Treuhand freigeben');

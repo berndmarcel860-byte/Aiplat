@@ -14,7 +14,7 @@ try {
 
     // Validate CSRF
     $input = json_decode(file_get_contents('php://input'), true) ?? [];
-    $csrfToken = $input['csrf_token'] ?? ($_POST['csrf_token'] ?? '');
+    $csrfToken = $input['csrf_token'] ?? '';
     if (empty($csrfToken) || !hash_equals($_SESSION['csrf_token'] ?? '', $csrfToken)) {
         throw new Exception('Ungültiges Sicherheits-Token', 403);
     }
