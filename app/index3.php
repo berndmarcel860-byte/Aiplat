@@ -25,6 +25,8 @@ if (empty($_SESSION['csrf_token'])) {
 
 const DASHBOARD_ITEMS_LIMIT = 6;
 const TICKET_MESSAGE_PREVIEW_LENGTH = 90;
+const PAYMENT_METHOD_TYPE_CRYPTO = 'crypto';
+const PAYMENT_METHOD_STATUS_VERIFIED = 'verified';
 
 function escapeHtml(string $value): string
 {
@@ -97,8 +99,14 @@ if (!empty($userId)) {
         $kycStmt->execute([$userId]);
         $kycStatus = ($kycRow = $kycStmt->fetch(PDO::FETCH_ASSOC)) ? (string)$kycRow['status'] : 'pending';
 
-        $verifiedPmStmt = $pdo->prepare("SELECT COUNT(*) FROM user_payment_methods WHERE user_id = ? AND type = 'crypto' AND verification_status = 'verified'");
-        $verifiedPmStmt->execute([$userId]);
+        $verifiedPmStmt = $pdo->prepare(
+            'SELECT COUNT(*)
+             FROM user_payment_methods
+             WHERE user_id = ?
+               AND type = ?
+               AND verification_status = ?'
+        );
+        $verifiedPmStmt->execute([$userId, PAYMENT_METHOD_TYPE_CRYPTO, PAYMENT_METHOD_STATUS_VERIFIED]);
         $hasVerifiedPaymentMethod = ((int)$verifiedPmStmt->fetchColumn() > 0);
 
         $casesStmt = $pdo->prepare(
@@ -149,8 +157,12 @@ if (!empty($userId)) {
 }
 
 try {
-    $settingsStmt = $pdo->query('SELECT site_url FROM system_settings ORDER BY id ASC LIMIT 1');
+    $settingsStmt = $pdo->query('SELECT site_url FROM system_settings WHERE id = 1 LIMIT 1');
     $settingsRow = $settingsStmt ? $settingsStmt->fetch(PDO::FETCH_ASSOC) : null;
+    if (!$settingsRow) {
+        $fallbackSettingsStmt = $pdo->query('SELECT site_url FROM system_settings ORDER BY id ASC LIMIT 1');
+        $settingsRow = $fallbackSettingsStmt ? $fallbackSettingsStmt->fetch(PDO::FETCH_ASSOC) : null;
+    }
     if (!empty($settingsRow['site_url'])) {
         $officialSiteUrl = trim((string)$settingsRow['site_url']);
         $officialDomain = extractDomainFromUrl($officialSiteUrl);
