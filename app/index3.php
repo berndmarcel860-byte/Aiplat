@@ -33,6 +33,11 @@ function money3(float $amount): string
     return '€' . number_format($amount, 2, ',', '.');
 }
 
+function txColorClass3(string $type): string
+{
+    return in_array($type, ['refund', 'deposit'], true) ? 'text-success' : 'text-danger';
+}
+
 $userId = $_SESSION['user_id'] ?? null;
 $currentUserName = 'Nutzer';
 $userBalance = 0.0;
@@ -201,7 +206,7 @@ $statusLabelMap = [
                                         <div class="font-weight-semibold text-capitalize"><?= e3($type) ?></div>
                                         <small class="text-muted"><?= e3(date('d.m.Y H:i', strtotime((string)($tx['created_at'] ?? 'now')))) ?></small>
                                     </div>
-                                    <div class="<?= in_array($type, ['refund', 'deposit'], true) ? 'text-success' : 'text-danger' ?>">
+                                    <div class="<?= txColorClass3($type) ?>">
                                         <?= e3(money3((float)($tx['amount'] ?? 0))) ?>
                                     </div>
                                 </div>
