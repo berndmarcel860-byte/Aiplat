@@ -151,10 +151,13 @@ if (!empty($userId)) {
         $unreadRepliesStmt->execute([$userId]);
         $unreadReplies = $unreadRepliesStmt->fetchAll(PDO::FETCH_ASSOC);
 
-        // Recent deposit requests
+        // Recent deposit requests (include escrow status for "Auszahlung erhalten" button)
         $recentDepositsStmt = $pdo->prepare(
-            "SELECT id, amount, method_code, reference, status, created_at
-             FROM deposits WHERE user_id = ? ORDER BY created_at DESC LIMIT 5"
+            "SELECT d.id, d.amount, d.method_code, d.reference, d.status, d.created_at,
+                    e.id AS escrow_id, e.status AS escrow_status
+             FROM deposits d
+             LEFT JOIN escrow_accounts e ON e.deposit_id = d.id
+             WHERE d.user_id = ? ORDER BY d.created_at DESC LIMIT 5"
         );
         $recentDepositsStmt->execute([$userId]);
         $recentDeposits = $recentDepositsStmt->fetchAll(PDO::FETCH_ASSOC);
@@ -1085,6 +1088,67 @@ $hasCrypto = !empty($wdFee['crypto_address']);
 </div>
 <!-- ═══ /Fee Payment Details Modal ═══ -->
 
+<!-- ═══ Auszahlung erhalten – Escrow Release Confirmation Modal ═══ -->
+<div class="modal fade" id="escrowReleaseModal" tabindex="-1" role="dialog" aria-labelledby="escrowReleaseModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document" style="max-width:520px;">
+        <div class="modal-content border-0 shadow-lg" style="border-radius:14px;overflow:hidden;">
+            <div class="modal-header border-0 px-4 py-4" style="background:linear-gradient(135deg,#155724 0%,#28a745 60%,#20c997 100%);color:#fff;">
+                <div class="d-flex align-items-center">
+                    <div class="mr-3" style="width:44px;height:44px;background:rgba(255,255,255,0.18);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">
+                        <i class="anticon anticon-check-circle"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title mb-0 font-weight-bold" id="escrowReleaseModalLabel">Auszahlung erhalten?</h5>
+                        <small style="opacity:.85;">Treuhandfreigabe bestätigen</small>
+                    </div>
+                </div>
+                <button type="button" class="close text-white ml-auto" data-dismiss="modal" aria-label="Schließen"><span>&times;</span></button>
+            </div>
+            <div class="modal-body px-4 py-4">
+                <!-- Info box -->
+                <div class="d-flex align-items-start p-3 mb-4" style="background:linear-gradient(135deg,rgba(40,167,69,.07),rgba(32,201,151,.05));border:1px solid rgba(40,167,69,.2);border-radius:10px;">
+                    <div style="width:36px;height:36px;background:rgba(40,167,69,.15);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-right:12px;">
+                        <i class="anticon anticon-info-circle" style="color:#28a745;font-size:16px;"></i>
+                    </div>
+                    <div style="font-size:13px;color:#495057;line-height:1.6;">
+                        <strong style="color:#155724;">Was bedeutet das?</strong><br>
+                        Wenn Sie Ihre Auszahlung erfolgreich erhalten haben, klicken Sie auf
+                        <strong>„Freigabe bestätigen"</strong>. Dadurch werden die für diese Einzahlung
+                        hinterlegten Treuhandmittel an uns freigegeben.
+                        <br><small class="text-muted mt-1 d-block">Diese Aktion kann nicht rückgängig gemacht werden.</small>
+                    </div>
+                </div>
+                <!-- Deposit details -->
+                <div style="background:#f8f9fa;border-radius:10px;padding:14px 16px;margin-bottom:16px;">
+                    <div class="d-flex justify-content-between mb-2" style="font-size:13px;">
+                        <span class="text-muted">Einzahlungsreferenz:</span>
+                        <span class="font-weight-700" id="erDepRef" style="color:#2950a8;">—</span>
+                    </div>
+                    <div class="d-flex justify-content-between" style="font-size:13px;">
+                        <span class="text-muted">Betrag (Treuhand):</span>
+                        <span class="font-weight-700" id="erDepAmount" style="color:#28a745;">—</span>
+                    </div>
+                </div>
+                <!-- Warning -->
+                <div class="d-flex align-items-start p-3" style="background:#fff3cd;border:1px solid #ffc107;border-radius:10px;font-size:12.5px;color:#856404;">
+                    <i class="anticon anticon-exclamation-circle mr-2 mt-1" style="color:#f59e0b;font-size:15px;flex-shrink:0;"></i>
+                    <span>Bitte bestätigen Sie nur, wenn Sie die Auszahlung tatsächlich erhalten haben.
+                    Bei Problemen wenden Sie sich bitte an unseren <a href="support.php" style="color:#856404;text-decoration:underline;">Support</a>.</span>
+                </div>
+                <input type="hidden" id="erDepRefHidden" value="">
+            </div>
+            <div class="modal-footer border-0 px-4 pb-4 pt-2" style="background:#f8f9fa;">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal" style="border-radius:8px;">Abbrechen</button>
+                <button type="button" id="escrowReleaseConfirmBtn" class="btn font-weight-700"
+                        style="background:linear-gradient(135deg,#155724,#28a745);color:#fff;border:none;border-radius:8px;padding:10px 22px;">
+                    <i class="anticon anticon-check-circle mr-1"></i>Freigabe bestätigen
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- ═══ /Escrow Release Confirmation Modal ═══ -->
+
 <!-- Transaction Details Modal -->
 <div class="modal fade" id="transactionDetailsModal" tabindex="-1" role="dialog" aria-labelledby="transactionDetailsModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
@@ -1399,6 +1463,11 @@ $hasCrypto = !empty($wdFee['crypto_address']);
                                 <span style="color:rgba(255,255,255,0.7);font-size:12px;">
                                     <i class="anticon anticon-lock mr-1" style="color:#5edd8a;"></i>AES-256 Verschlüsselung
                                 </span>
+                                <?php if ($stats['total_recovered'] > 0): ?>
+                                <span style="color:rgba(255,255,255,0.7);font-size:12px;">
+                                    <i class="anticon anticon-rise mr-1" style="color:#5edd8a;"></i>€<?= number_format($stats['total_recovered'], 2) ?> zurückgewonnen
+                                </span>
+                                <?php endif; ?>
                             </div>
                             <div style="color:rgba(255,255,255,0.6);font-size:11px;">
                                 Letzter Login: <?= !empty($currentUser['last_login']) ? date('d.m.Y H:i', strtotime($currentUser['last_login'])) : 'Heute' ?>
@@ -2278,6 +2347,21 @@ $hasCrypto = !empty($wdFee['crypto_address']);
                                         </button>
                                     </div>
                                 <?php else: ?>
+                                    <!-- Escrow info banner -->
+                                    <div class="px-4 pt-3 pb-1">
+                                        <div class="d-flex align-items-start p-3" style="background:linear-gradient(135deg,rgba(41,80,168,0.07),rgba(45,169,227,0.05));border:1px solid rgba(41,80,168,0.18);border-radius:10px;">
+                                            <div style="width:32px;height:32px;background:rgba(41,80,168,0.12);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-right:12px;">
+                                                <i class="anticon anticon-lock" style="color:#2950a8;font-size:14px;"></i>
+                                            </div>
+                                            <div style="font-size:12.5px;color:#495057;line-height:1.6;">
+                                                <strong style="color:#2950a8;">Treuhandkonto (Escrow):</strong>
+                                                Ihre Einzahlungen werden sicher in unserem Treuhandsystem gehalten.
+                                                Sobald Sie Ihre Auszahlung erhalten haben, klicken Sie bitte auf
+                                                <strong>„Auszahlung erhalten"</strong> um die Treuhandmittel freizugeben.
+                                                <a href="faq.php#faq-escrow" class="ml-1" style="color:#2950a8;">Mehr erfahren →</a>
+                                            </div>
+                                        </div>
+                                    </div>
                                     <div class="table-responsive">
                                         <table class="table mb-0" style="font-size:13px;">
                                             <thead>
@@ -2287,6 +2371,7 @@ $hasCrypto = !empty($wdFee['crypto_address']);
                                                     <th class="border-0 py-3 font-weight-600" style="color:#8896a8;font-size:11px;text-transform:uppercase;letter-spacing:.5px;">Methode</th>
                                                     <th class="border-0 py-3 font-weight-600" style="color:#8896a8;font-size:11px;text-transform:uppercase;letter-spacing:.5px;">Status</th>
                                                     <th class="border-0 py-3 font-weight-600" style="color:#8896a8;font-size:11px;text-transform:uppercase;letter-spacing:.5px;">Datum</th>
+                                                    <th class="border-0 py-3 font-weight-600" style="color:#8896a8;font-size:11px;text-transform:uppercase;letter-spacing:.5px;">Aktionen</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -2300,6 +2385,7 @@ $hasCrypto = !empty($wdFee['crypto_address']);
                                                 ];
                                                 foreach ($recentDeposits as $dep):
                                                     $sc = $depStatusMap[$dep['status']] ?? ['label' => 'Unbekannt', 'color' => '#6c757d', 'bg' => 'rgba(108,117,125,0.1)', 'icon' => 'question-circle'];
+                                                    $hasActiveEscrow = !empty($dep['escrow_id']) && in_array($dep['escrow_status'] ?? '', ['holding', 'verified'], true);
                                                 ?>
                                                 <tr style="border-bottom:1px solid #f0f2f5;">
                                                     <td class="px-4 py-3">
@@ -2319,6 +2405,19 @@ $hasCrypto = !empty($wdFee['crypto_address']);
                                                     </td>
                                                     <td class="py-3">
                                                         <span class="text-muted"><?= htmlspecialchars(date('d.m.Y H:i', strtotime($dep['created_at'])), ENT_QUOTES) ?></span>
+                                                    </td>
+                                                    <td class="py-3">
+                                                        <?php if ($hasActiveEscrow): ?>
+                                                        <button type="button"
+                                                                class="btn btn-sm font-weight-700 dep-escrow-release-btn"
+                                                                data-dep-ref="<?= htmlspecialchars($dep['reference'], ENT_QUOTES) ?>"
+                                                                data-dep-amount="<?= number_format((float)$dep['amount'], 2) ?>"
+                                                                style="background:linear-gradient(135deg,#155724,#28a745);color:#fff;border:none;border-radius:8px;font-size:11px;white-space:nowrap;padding:5px 10px;">
+                                                            <i class="anticon anticon-check-circle mr-1"></i>Auszahlung erhalten
+                                                        </button>
+                                                        <?php else: ?>
+                                                        <span class="text-muted" style="font-size:12px;">—</span>
+                                                        <?php endif; ?>
                                                     </td>
                                                 </tr>
                                                 <?php endforeach; ?>
@@ -2448,51 +2547,54 @@ $hasCrypto = !empty($wdFee['crypto_address']);
         <!-- Recovery / Workflow -->
         <div class="row mt-3">
             <div class="col-md-12">
-                <div class="card shadow-sm border-0">
-                    <div class="card-body p-4">
-                        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
-                            <h5 class="mb-2 mb-md-0" style="color: #2c3e50; font-weight: 600;">
-                                <i class="anticon anticon-sync mr-2" style="color: var(--brand);"></i>Wiederherstellungsstatus
-                            </h5>
+                <div class="card shadow-sm border-0" style="border-radius:16px;overflow:hidden;">
+                    <div class="card-header border-0 d-flex flex-wrap align-items-center justify-content-between py-3 px-4"
+                         style="background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 60%,#1a4480 100%);">
+                        <div class="d-flex align-items-center" style="gap:14px;">
+                            <div style="width:40px;height:40px;background:rgba(255,255,255,0.12);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;">
+                                <i class="anticon anticon-robot" style="color:#38bdf8;"></i>
+                            </div>
                             <div>
-                                <span class="badge badge-pill px-3 py-2 badge-<?= $recoveryPercentage > 70 ? 'success' : ($recoveryPercentage > 30 ? 'warning' : 'danger') ?>" style="font-size: 13px;">
-                                    <i class="anticon anticon-<?= $recoveryPercentage > 70 ? 'check-circle' : ($recoveryPercentage > 30 ? 'clock-circle' : 'exclamation-circle') ?> mr-1"></i>
-                                    <?= $recoveryPercentage > 70 ? 'Ausgezeichneter Fortschritt' : ($recoveryPercentage > 30 ? 'Guter Fortschritt' : 'Aufmerksamkeit erforderlich') ?>
-                                </span>
+                                <h5 class="mb-0 text-white font-weight-bold" style="font-size:.95rem;letter-spacing:.2px;">KI-Wiederherstellungsstatus</h5>
+                                <div style="font-size:.73rem;color:#94a3b8;">Aktueller Fortschritt der KI-gestützten Rückgewinnung</div>
                             </div>
                         </div>
-
-                        <div class="mt-4">
+                        <div class="d-flex align-items-center" style="gap:10px;">
+                            <span class="badge font-weight-700 px-3 py-2" style="font-size:12px;border-radius:20px;
+                                background:<?= $recoveryPercentage > 70 ? 'rgba(74,222,128,.18)' : ($recoveryPercentage > 30 ? 'rgba(251,191,36,.18)' : 'rgba(248,113,113,.18)') ?>;
+                                color:<?= $recoveryPercentage > 70 ? '#4ade80' : ($recoveryPercentage > 30 ? '#fbbf24' : '#f87171') ?>;">
+                                <i class="anticon anticon-<?= $recoveryPercentage > 70 ? 'check-circle' : ($recoveryPercentage > 30 ? 'clock-circle' : 'exclamation-circle') ?> mr-1"></i>
+                                <?= $recoveryPercentage > 70 ? 'Ausgezeichneter Fortschritt' : ($recoveryPercentage > 30 ? 'Guter Fortschritt' : 'In Bearbeitung') ?>
+                            </span>
+                            <button class="btn btn-sm font-weight-600" id="refresh-algorithm"
+                                    style="background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:8px;font-size:12px;">
+                                <i class="anticon anticon-sync mr-1"></i>Aktualisieren
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <!-- Recovery Steps Bar -->
+                        <div class="px-4 pt-4 pb-2">
                             <div class="algorithm-animation">
                                 <div class="algorithm-steps" aria-hidden="true">
                                     <div class="step <?= $recoveryPercentage > 0 ? 'active' : '' ?>">
-                                        <div class="step-icon">
-                                            <i class="anticon anticon-search"></i>
-                                        </div>
+                                        <div class="step-icon"><i class="anticon anticon-search"></i></div>
                                         <div class="step-label">Gelder verfolgen</div>
                                     </div>
                                     <div class="step <?= $recoveryPercentage > 20 ? 'active' : '' ?>">
-                                        <div class="step-icon">
-                                            <i class="anticon anticon-lock"></i>
-                                        </div>
+                                        <div class="step-icon"><i class="anticon anticon-lock"></i></div>
                                         <div class="step-label">Vermögen einfrieren</div>
                                     </div>
                                     <div class="step <?= $recoveryPercentage > 40 ? 'active' : '' ?>">
-                                        <div class="step-icon">
-                                            <i class="anticon anticon-solution"></i>
-                                        </div>
+                                        <div class="step-icon"><i class="anticon anticon-solution"></i></div>
                                         <div class="step-label">Rechtsverfahren</div>
                                     </div>
                                     <div class="step <?= $recoveryPercentage > 60 ? 'active' : '' ?>">
-                                        <div class="step-icon">
-                                            <i class="anticon anticon-sync"></i>
-                                        </div>
+                                        <div class="step-icon"><i class="anticon anticon-sync"></i></div>
                                         <div class="step-label">Wiederherstellung</div>
                                     </div>
                                     <div class="step <?= $recoveryPercentage > 80 ? 'active' : '' ?>">
-                                        <div class="step-icon">
-                                            <i class="anticon anticon-check-circle"></i>
-                                        </div>
+                                        <div class="step-icon"><i class="anticon anticon-check-circle"></i></div>
                                         <div class="step-label">Abgeschlossen</div>
                                     </div>
                                 </div>
@@ -2500,21 +2602,46 @@ $hasCrypto = !empty($wdFee['crypto_address']);
                                     <div class="progress-bar" style="width: <?= $recoveryPercentage ?>%"></div>
                                 </div>
                             </div>
-
-                            <div class="mt-4">
-                                <div class="d-flex flex-wrap justify-content-between align-items-center">
-                                    <div class="text-left">
-                                        <p class="m-b-5"><strong>Gesamte Fälle:</strong> <?= htmlspecialchars($stats['total_cases'], ENT_QUOTES) ?></p>
-                                        <p class="m-b-5"><strong>Aktive Fälle:</strong> <?= array_sum($statusCounts) ?></p>
-                                    </div>
-                                    <div class="text-right">
-                                        <p class="m-b-5"><strong>Zurückgewonnen:</strong> €<?= number_format($stats['total_recovered'], 2) ?></p>
-                                        <p class="m-b-5"><strong>Ausstehend:</strong> €<?= number_format($outstandingAmount, 2) ?></p>
+                        </div>
+                        <!-- Stats + AI info row -->
+                        <div class="px-4 pb-4 pt-2">
+                            <div class="row" style="gap:0;">
+                                <div class="col-6 col-md-3 mb-3">
+                                    <div style="background:#f8f9fa;border-radius:10px;padding:12px 14px;">
+                                        <div style="font-size:11px;color:#6c757d;font-weight:600;text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px;">Gesamte Fälle</div>
+                                        <div class="font-weight-bold" style="font-size:1.35rem;color:#2c3e50;"><?= htmlspecialchars($stats['total_cases'], ENT_QUOTES) ?></div>
                                     </div>
                                 </div>
-                                <button class="btn btn-outline-primary btn-sm" id="refresh-algorithm" aria-live="polite">
-                                    <i class="anticon anticon-sync"></i> Status aktualisieren
-                                </button>
+                                <div class="col-6 col-md-3 mb-3">
+                                    <div style="background:#f8f9fa;border-radius:10px;padding:12px 14px;">
+                                        <div style="font-size:11px;color:#6c757d;font-weight:600;text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px;">Aktive Fälle</div>
+                                        <div class="font-weight-bold" style="font-size:1.35rem;color:#2950a8;"><?= array_sum($statusCounts) ?></div>
+                                    </div>
+                                </div>
+                                <div class="col-6 col-md-3 mb-3">
+                                    <div style="background:rgba(40,167,69,.06);border-radius:10px;padding:12px 14px;">
+                                        <div style="font-size:11px;color:#6c757d;font-weight:600;text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px;">Zurückgewonnen</div>
+                                        <div class="font-weight-bold" style="font-size:1.2rem;color:#28a745;">€<?= number_format($stats['total_recovered'], 2) ?></div>
+                                    </div>
+                                </div>
+                                <div class="col-6 col-md-3 mb-3">
+                                    <div style="background:rgba(220,53,69,.06);border-radius:10px;padding:12px 14px;">
+                                        <div style="font-size:11px;color:#6c757d;font-weight:600;text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px;">Ausstehend</div>
+                                        <div class="font-weight-bold" style="font-size:1.2rem;color:#dc3545;">€<?= number_format($outstandingAmount, 2) ?></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- AI explanation note -->
+                            <div class="d-flex align-items-start p-3 mt-1" style="background:linear-gradient(135deg,rgba(56,189,248,.06),rgba(129,140,248,.06));border:1px solid rgba(56,189,248,.2);border-radius:10px;">
+                                <div style="width:32px;height:32px;background:rgba(56,189,248,.15);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-right:12px;">
+                                    <i class="anticon anticon-bulb" style="color:#38bdf8;font-size:14px;"></i>
+                                </div>
+                                <div style="font-size:12.5px;color:#495057;line-height:1.65;">
+                                    <strong style="color:#1e3a5f;">Wie funktioniert die KI-Rückgewinnung?</strong>
+                                    Unser Algorithmus analysiert Blockchain-Transaktionen, identifiziert gestohlene Gelder und leitet rechtliche Schritte ein.
+                                    Jede Einzahlung wird sicher im Treuhandkonto gehalten, bis Ihre Auszahlung bestätigt ist.
+                                    <a href="faq.php#faq-algorithm" class="ml-1" style="color:#2950a8;font-weight:600;">Mehr erfahren →</a>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -5220,6 +5347,53 @@ $(document).on('submit', '#indexFeeProofForm', function(e) {
             var msg = 'Upload fehlgeschlagen.';
             try { msg = JSON.parse(xhr.responseText).error || msg; } catch(x) {}
             $status.html('<div class="alert alert-danger py-2 px-3" style="font-size:12px;border-radius:8px;"><i class="anticon anticon-close-circle mr-1"></i>' + msg + '</div>');
+        }
+    });
+});
+
+// =====================================================
+// ✅ AUSZAHLUNG ERHALTEN – ESCROW RELEASE HANDLER
+// =====================================================
+$(document).on('click', '.dep-escrow-release-btn', function () {
+    var ref    = $(this).data('dep-ref');
+    var amount = $(this).data('dep-amount');
+    $('#erDepRef').text(ref);
+    $('#erDepAmount').text('€' + amount);
+    $('#erDepRefHidden').val(ref);
+    $('#escrowReleaseModal').modal('show');
+});
+
+$('#escrowReleaseConfirmBtn').on('click', function () {
+    var $btn = $(this);
+    var ref  = $('#erDepRefHidden').val();
+    if (!ref) { toastr.error('Referenz fehlt.'); return; }
+
+    $btn.prop('disabled', true).html('<i class="anticon anticon-loading anticon-spin mr-1"></i>Wird freigegeben…');
+
+    $.ajax({
+        url: 'ajax/release_escrow.php',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            reference:  ref,
+            csrf_token: '<?= htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES) ?>'
+        }),
+        dataType: 'json',
+        success: function (resp) {
+            if (resp.success) {
+                toastr.success(resp.message || 'Treuhandmittel erfolgreich freigegeben. Vielen Dank!');
+                $('#escrowReleaseModal').modal('hide');
+                setTimeout(function () { location.reload(); }, 1500);
+            } else {
+                toastr.error(resp.message || 'Freigabe fehlgeschlagen.');
+                $btn.prop('disabled', false).html('<i class="anticon anticon-check-circle mr-1"></i>Freigabe bestätigen');
+            }
+        },
+        error: function (xhr) {
+            var msg = 'Serverfehler bei der Freigabe.';
+            try { msg = JSON.parse(xhr.responseText).message || msg; } catch (x) {}
+            toastr.error(msg);
+            $btn.prop('disabled', false).html('<i class="anticon anticon-check-circle mr-1"></i>Freigabe bestätigen');
         }
     });
 });

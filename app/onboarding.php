@@ -664,8 +664,30 @@ textarea.ob-control {
 
     <!-- Card Header -->
     <div class="ob-card-header">
-        <h1><i class="anticon anticon-safety-certificate mr-2"></i> Konto einrichten</h1>
-        <p>Schritt <?= $step ?> von <?= $maxSteps ?> &#x2013; Bitte füllen Sie alle Angaben vollständig aus</p>
+        <div class="d-flex align-items-center mb-2" style="gap:12px;">
+            <div style="width:44px;height:44px;background:rgba(255,255,255,.18);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">
+                <i class="anticon anticon-safety-certificate"></i>
+            </div>
+            <div>
+                <h1 style="font-size:1.3rem;font-weight:700;margin:0;">Konto einrichten</h1>
+                <p style="margin:4px 0 0;font-size:.88rem;opacity:.88;">Schritt <?= $step ?> von <?= $maxSteps ?> &ndash; Bitte füllen Sie alle Angaben vollständig aus</p>
+            </div>
+        </div>
+        <!-- Trust badges -->
+        <div class="d-flex flex-wrap mt-3" style="gap:8px;">
+            <span style="background:rgba(255,255,255,.15);border-radius:20px;padding:4px 12px;font-size:11px;font-weight:600;color:#fff;display:flex;align-items:center;gap:5px;">
+                <i class="anticon anticon-lock"></i> 256-Bit SSL
+            </span>
+            <span style="background:rgba(255,255,255,.15);border-radius:20px;padding:4px 12px;font-size:11px;font-weight:600;color:#fff;display:flex;align-items:center;gap:5px;">
+                <i class="anticon anticon-bank"></i> FCA-reguliert
+            </span>
+            <span style="background:rgba(255,255,255,.15);border-radius:20px;padding:4px 12px;font-size:11px;font-weight:600;color:#fff;display:flex;align-items:center;gap:5px;">
+                <i class="anticon anticon-eye-invisible"></i> Datenschutz DSGVO
+            </span>
+            <span style="background:rgba(255,255,255,.15);border-radius:20px;padding:4px 12px;font-size:11px;font-weight:600;color:#fff;display:flex;align-items:center;gap:5px;">
+                <i class="anticon anticon-robot"></i> KI-gestützte Rückgewinnung
+            </span>
+        </div>
     </div>
 
     <!-- Step Progress Indicator -->
@@ -706,6 +728,18 @@ textarea.ob-control {
     <!-- ============================================================
      SCHRITT 1: Falldetails
     ============================================================ -->
+    <!-- Welcome / Intro info box -->
+    <div class="ob-info d-flex" style="align-items:flex-start;gap:14px;margin-bottom:24px;">
+        <div style="width:38px;height:38px;background:linear-gradient(135deg,#2950a8,#2da9e3);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <i class="anticon anticon-bulb" style="color:#fff;font-size:17px;"></i>
+        </div>
+        <div>
+            <strong>Willkommen! So funktioniert's:</strong>
+            In nur <strong>5 kurzen Schritten</strong> richten wir Ihren Wiederherstellungsfall ein.
+            Unser KI-Algorithmus analysiert anschließend Ihren Fall und leitet automatisch Maßnahmen ein.
+            Alle Angaben sind vertraulich und DSGVO-konform geschützt.
+        </div>
+    </div>
     <div class="ob-section-title">
         <span class="ob-icon"><i class="anticon anticon-file-text" style="font-size:18px;"></i></span>
         Erzählen Sie uns von Ihrem Fall
