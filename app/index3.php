@@ -46,7 +46,7 @@ $userBalance = 0.0;
 $stats = ['total_cases' => 0, 'total_reported' => 0.0, 'total_recovered' => 0.0];
 $recentCases = [];
 $recentTransactions = [];
-$itemLimit = (int) DASHBOARD_ITEMS_LIMIT;
+$itemLimit = DASHBOARD_ITEMS_LIMIT;
 
 if (!empty($userId)) {
     try {
@@ -217,7 +217,7 @@ $statusBadgeMap = [
                                             <tr>
                                                 <td><?= escapeHtml((string)($case['case_number'] ?? '-')) ?></td>
                                                 <td><?= escapeHtml((string)($case['platform_name'] ?? '-')) ?></td>
-                                                <td><span class="badge badge-pill <?= escapeHtml($statusBadgeMap[$case['status']] ?? 'badge-light') ?>"><?= escapeHtml($statusLabelMap[$case['status']] ?? (string)$case['status']) ?></span></td>
+                                                <td><span class="badge badge-pill <?= $statusBadgeMap[$case['status']] ?? 'badge-light' ?>"><?= escapeHtml($statusLabelMap[$case['status']] ?? (string)$case['status']) ?></span></td>
                                                 <td><?= escapeHtml(formatCurrency((float)($case['reported_amount'] ?? 0))) ?></td>
                                                 <td class="text-success"><?= escapeHtml(formatCurrency((float)($case['recovered_amount'] ?? 0))) ?></td>
                                             </tr>
