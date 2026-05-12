@@ -271,7 +271,7 @@ $statusBadgeMap = [
                         <h2 class="mb-2 text-white">KI-Fondsrückgewinnungs-Portfolio</h2>
                         <p class="mb-0" style="opacity:.92;">Willkommen zurück, <?= escapeHtml($currentUserName) ?>. Ihr Portfolio-Überblick in Echtzeit.</p>
                     </div>
-                    <a href="cases.php" class="btn btn-light font-weight-semibold">Neuen Fall melden</a>
+                    <a href="cases.php" class="btn btn-light font-weight-semibold">Fälle verwalten</a>
                 </div>
             </div>
         </div>
@@ -302,7 +302,7 @@ $statusBadgeMap = [
         <?php if (!empty($todoItems)): ?>
             <div class="card mb-3" style="border-left:4px solid #ffc107;">
                 <div class="card-body">
-                    <h6 class="mb-3">To-do &amp; Sicherheitsaufgaben</h6>
+                    <h6 class="mb-3">Aufgaben &amp; Sicherheitsaufgaben</h6>
                     <?php foreach ($todoItems as $todoItem): ?>
                         <div class="d-flex flex-wrap align-items-center justify-content-between border rounded px-3 py-2 mb-2">
                             <span class="text-muted mr-3"><?= escapeHtml($todoItem['text']) ?></span>
