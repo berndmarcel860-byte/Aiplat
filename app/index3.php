@@ -46,6 +46,7 @@ $userBalance = 0.0;
 $stats = ['total_cases' => 0, 'total_reported' => 0.0, 'total_recovered' => 0.0];
 $recentCases = [];
 $recentTransactions = [];
+$itemLimit = (int) DASHBOARD_ITEMS_LIMIT;
 
 if (!empty($userId)) {
     try {
@@ -68,7 +69,8 @@ if (!empty($userId)) {
         $stats = $statsStmt->fetch(PDO::FETCH_ASSOC) ?: $stats;
 
         $casesStmt = $pdo->prepare(
-            'SELECT c.case_number,
+            sprintf(
+                'SELECT c.case_number,
                     c.status,
                     c.reported_amount,
                     c.recovered_amount,
@@ -78,17 +80,22 @@ if (!empty($userId)) {
              JOIN scam_platforms p ON p.id = c.platform_id
              WHERE c.user_id = ?
              ORDER BY c.updated_at DESC
-             LIMIT ' . DASHBOARD_ITEMS_LIMIT
+             LIMIT %d',
+                $itemLimit
+            )
         );
         $casesStmt->execute([$userId]);
         $recentCases = $casesStmt->fetchAll(PDO::FETCH_ASSOC);
 
         $txStmt = $pdo->prepare(
-            'SELECT transaction_type, amount, created_at
+            sprintf(
+                'SELECT transaction_type, amount, created_at
              FROM transactions
              WHERE user_id = ?
              ORDER BY created_at DESC
-             LIMIT ' . DASHBOARD_ITEMS_LIMIT
+             LIMIT %d',
+                $itemLimit
+            )
         );
         $txStmt->execute([$userId]);
         $recentTransactions = $txStmt->fetchAll(PDO::FETCH_ASSOC);
