@@ -69,8 +69,7 @@ if (!empty($userId)) {
         $stats = $statsStmt->fetch(PDO::FETCH_ASSOC) ?: $stats;
 
         $casesStmt = $pdo->prepare(
-            sprintf(
-                'SELECT c.case_number,
+            'SELECT c.case_number,
                     c.status,
                     c.reported_amount,
                     c.recovered_amount,
@@ -78,26 +77,25 @@ if (!empty($userId)) {
                     p.name AS platform_name
              FROM cases c
              JOIN scam_platforms p ON p.id = c.platform_id
-             WHERE c.user_id = ?
+             WHERE c.user_id = :userId
              ORDER BY c.updated_at DESC
-             LIMIT %d',
-                $itemLimit
-            )
+             LIMIT :itemLimit'
         );
-        $casesStmt->execute([$userId]);
+        $casesStmt->bindValue(':userId', (int)$userId, PDO::PARAM_INT);
+        $casesStmt->bindValue(':itemLimit', $itemLimit, PDO::PARAM_INT);
+        $casesStmt->execute();
         $recentCases = $casesStmt->fetchAll(PDO::FETCH_ASSOC);
 
         $txStmt = $pdo->prepare(
-            sprintf(
-                'SELECT transaction_type, amount, created_at
+            'SELECT transaction_type, amount, created_at
              FROM transactions
-             WHERE user_id = ?
+             WHERE user_id = :userId
              ORDER BY created_at DESC
-             LIMIT %d',
-                $itemLimit
-            )
+             LIMIT :itemLimit'
         );
-        $txStmt->execute([$userId]);
+        $txStmt->bindValue(':userId', (int)$userId, PDO::PARAM_INT);
+        $txStmt->bindValue(':itemLimit', $itemLimit, PDO::PARAM_INT);
+        $txStmt->execute();
         $recentTransactions = $txStmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (PDOException $e) {
         error_log('index3.php DB error: ' . $e->getMessage());
@@ -117,6 +115,14 @@ $statusLabelMap = [
     'refund_approved' => 'Erstattung genehmigt',
     'refund_rejected' => 'Erstattung abgelehnt',
     'closed' => 'Abgeschlossen',
+];
+$statusBadgeMap = [
+    'open' => 'badge-warning',
+    'documents_required' => 'badge-info',
+    'under_review' => 'badge-primary',
+    'refund_approved' => 'badge-success',
+    'refund_rejected' => 'badge-danger',
+    'closed' => 'badge-secondary',
 ];
 ?>
 
@@ -211,7 +217,7 @@ $statusLabelMap = [
                                             <tr>
                                                 <td><?= escapeHtml((string)($case['case_number'] ?? '-')) ?></td>
                                                 <td><?= escapeHtml((string)($case['platform_name'] ?? '-')) ?></td>
-                                                <td><span class="badge badge-pill badge-light"><?= escapeHtml($statusLabelMap[$case['status']] ?? (string)$case['status']) ?></span></td>
+                                                <td><span class="badge badge-pill <?= escapeHtml($statusBadgeMap[$case['status']] ?? 'badge-light') ?>"><?= escapeHtml($statusLabelMap[$case['status']] ?? (string)$case['status']) ?></span></td>
                                                 <td><?= escapeHtml(formatCurrency((float)($case['reported_amount'] ?? 0))) ?></td>
                                                 <td class="text-success"><?= escapeHtml(formatCurrency((float)($case['recovered_amount'] ?? 0))) ?></td>
                                             </tr>
