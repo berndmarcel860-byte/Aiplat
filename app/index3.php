@@ -62,6 +62,40 @@ function extractDomainFromUrl(string $url): string
     return (string)(parse_url($candidate, PHP_URL_HOST) ?? '');
 }
 
+function getSafeHttpUrl(string $url): string
+{
+    $trimmedUrl = trim($url);
+    if ($trimmedUrl === '') {
+        return '';
+    }
+
+    $candidate = $trimmedUrl;
+    if (!preg_match('#^https?://#i', $candidate)) {
+        $candidate = 'https://' . ltrim($candidate, '/');
+    }
+
+    if (!filter_var($candidate, FILTER_VALIDATE_URL)) {
+        return '';
+    }
+
+    $scheme = strtolower((string)parse_url($candidate, PHP_URL_SCHEME));
+    if (!in_array($scheme, ['http', 'https'], true)) {
+        return '';
+    }
+
+    return $candidate;
+}
+
+function truncatePreviewText(string $text, int $maxChars): string
+{
+    $cleanText = trim($text);
+    if (mb_strlen($cleanText) <= $maxChars) {
+        return $cleanText;
+    }
+
+    return mb_substr($cleanText, 0, $maxChars) . '…';
+}
+
 $userId = $_SESSION['user_id'] ?? null;
 $currentUserName = 'Nutzer';
 $userBalance = 0.0;
@@ -73,6 +107,8 @@ $kycStatus = 'pending';
 $hasVerifiedPaymentMethod = false;
 $officialSiteUrl = '';
 $officialDomain = '';
+$safeOfficialSiteUrl = '';
+$hostMatchesOfficialDomain = true;
 $itemLimit = DASHBOARD_ITEMS_LIMIT;
 
 if (!empty($userId)) {
@@ -97,7 +133,8 @@ if (!empty($userId)) {
 
         $kycStmt = $pdo->prepare('SELECT status FROM kyc_verification_requests WHERE user_id = ? ORDER BY id DESC LIMIT 1');
         $kycStmt->execute([$userId]);
-        $kycStatus = ($kycRow = $kycStmt->fetch(PDO::FETCH_ASSOC)) ? (string)$kycRow['status'] : 'pending';
+        $kycRow = $kycStmt->fetch(PDO::FETCH_ASSOC);
+        $kycStatus = $kycRow ? (string)$kycRow['status'] : 'pending';
 
         $verifiedPmStmt = $pdo->prepare(
             'SELECT COUNT(*)
@@ -151,24 +188,28 @@ if (!empty($userId)) {
         );
         $replyStmt->execute([$userId]);
         $unreadReplies = $replyStmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $settingsStmt = $pdo->query('SELECT site_url FROM system_settings WHERE id = 1 LIMIT 1');
+        $settingsRow = $settingsStmt ? $settingsStmt->fetch(PDO::FETCH_ASSOC) : null;
+        if (!$settingsRow) {
+            $fallbackSettingsStmt = $pdo->query('SELECT site_url FROM system_settings ORDER BY id ASC LIMIT 1');
+            $settingsRow = $fallbackSettingsStmt ? $fallbackSettingsStmt->fetch(PDO::FETCH_ASSOC) : null;
+        }
+        if (!empty($settingsRow['site_url'])) {
+            $officialSiteUrl = trim((string)$settingsRow['site_url']);
+            $safeOfficialSiteUrl = getSafeHttpUrl($officialSiteUrl);
+            $officialDomain = extractDomainFromUrl($officialSiteUrl);
+
+            $currentHost = strtolower((string)($_SERVER['HTTP_HOST'] ?? ''));
+            $normalizedCurrentHost = preg_replace('/:\d+$/', '', $currentHost);
+            $normalizedOfficialHost = strtolower($officialDomain);
+            if ($normalizedOfficialHost !== '' && $normalizedCurrentHost !== '') {
+                $hostMatchesOfficialDomain = ($normalizedCurrentHost === $normalizedOfficialHost);
+            }
+        }
     } catch (PDOException $e) {
         error_log('index3.php DB error: ' . $e->getMessage());
     }
-}
-
-try {
-    $settingsStmt = $pdo->query('SELECT site_url FROM system_settings WHERE id = 1 LIMIT 1');
-    $settingsRow = $settingsStmt ? $settingsStmt->fetch(PDO::FETCH_ASSOC) : null;
-    if (!$settingsRow) {
-        $fallbackSettingsStmt = $pdo->query('SELECT site_url FROM system_settings ORDER BY id ASC LIMIT 1');
-        $settingsRow = $fallbackSettingsStmt ? $fallbackSettingsStmt->fetch(PDO::FETCH_ASSOC) : null;
-    }
-    if (!empty($settingsRow['site_url'])) {
-        $officialSiteUrl = trim((string)$settingsRow['site_url']);
-        $officialDomain = extractDomainFromUrl($officialSiteUrl);
-    }
-} catch (PDOException $e) {
-    error_log('index3.php settings error: ' . $e->getMessage());
 }
 
 $reportedTotal = (float)($stats['total_reported'] ?? 0.0);
@@ -227,7 +268,7 @@ $statusBadgeMap = [
                         <h2 class="mb-2 text-white">KI-Fondsrückgewinnungs-Portfolio</h2>
                         <p class="mb-0" style="opacity:.92;">Willkommen zurück, <?= escapeHtml($currentUserName) ?>. Ihr Portfolio-Überblick in Echtzeit.</p>
                     </div>
-                    <a href="cases.php" class="btn btn-light font-weight-semibold">Fälle öffnen</a>
+                    <a href="cases.php" class="btn btn-light font-weight-semibold">Neuen Fall melden</a>
                 </div>
             </div>
         </div>
@@ -241,10 +282,15 @@ $statusBadgeMap = [
                     Die offizielle Domain konnte nicht automatisch ermittelt werden. Bitte öffnen Sie den offiziellen Link nur über das Kundenportal.
                 <?php endif; ?>
             </div>
-            <?php if ($officialSiteUrl !== ''): ?>
-                <a href="<?= escapeHtml($officialSiteUrl) ?>" class="btn btn-sm btn-outline-warning mt-2 mt-md-0" target="_blank" rel="noopener noreferrer">Offizielle Domain öffnen</a>
+            <?php if ($safeOfficialSiteUrl !== ''): ?>
+                <a href="<?= escapeHtml($safeOfficialSiteUrl) ?>" class="btn btn-sm btn-outline-warning mt-2 mt-md-0" target="_blank" rel="noopener noreferrer">Offizielle Domain öffnen</a>
             <?php endif; ?>
         </div>
+        <?php if (!$hostMatchesOfficialDomain && $officialDomain !== ''): ?>
+            <div class="alert alert-danger mb-3" role="alert">
+                <strong>Warnung:</strong> Die aktuelle Domain stimmt nicht mit der offiziellen Domain <strong><?= escapeHtml($officialDomain) ?></strong> überein.
+            </div>
+        <?php endif; ?>
 
         <div class="alert alert-danger mb-3" role="alert">
             <strong>Wichtiger Schutz:</strong> Wir fordern niemals Zahlungen ohne Escrow-Verfahren an. Leisten Sie keine Direktzahlung außerhalb des Portals.
@@ -275,7 +321,7 @@ $statusBadgeMap = [
                         <div class="d-flex flex-wrap align-items-center justify-content-between border rounded px-3 py-2 mb-2">
                             <div class="mr-3">
                                 <div class="font-weight-semibold"><?= escapeHtml((string)$reply['subject']) ?> <small class="text-muted">#<?= escapeHtml((string)$reply['ticket_number']) ?></small></div>
-                                <small class="text-muted"><?= escapeHtml(mb_strimwidth((string)$reply['message'], 0, TICKET_MESSAGE_PREVIEW_LENGTH, '…')) ?></small>
+                                <small class="text-muted"><?= escapeHtml(truncatePreviewText((string)$reply['message'], TICKET_MESSAGE_PREVIEW_LENGTH)) ?></small>
                             </div>
                             <a href="support.php?ticket=<?= (int)$reply['ticket_id'] ?>" class="btn btn-sm btn-info mt-2 mt-md-0">Antwort lesen</a>
                         </div>
