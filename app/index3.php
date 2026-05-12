@@ -220,7 +220,7 @@ $recoveredTotal = (float)($stats['total_recovered'] ?? 0.0);
 $openExposure = max(0, $reportedTotal - $recoveredTotal);
 $recoveryRate = ($reportedTotal > 0) ? round(($recoveredTotal / $reportedTotal) * 100, 1) : 0;
 $totalCases = (int)($stats['total_cases'] ?? 0);
-$recentTransactionCount = count($recentTransactions);
+$recentTransactionCount = count($recentTransactions ?? []);
 
 $todoItems = [];
 if ($kycStatus !== 'approved') {
@@ -484,7 +484,7 @@ $statusBadgeMap = [
                         </div>
                         <div class="d-flex flex-wrap justify-content-between align-items-center" style="font-size:12px;color:rgba(255,255,255,.82);">
                             <span id="aiProgressLabel">18% geprüft</span>
-                            <span><strong id="aiTxCount"><?= escapeHtml((string)$recentTransactionCount) ?></strong> Transaktionen in der aktuellen Analyse</span>
+                            <span><strong id="aiTxCount" data-transaction-count="<?= (int)$recentTransactionCount ?>"><?= escapeHtml((string)$recentTransactionCount) ?></strong> Transaktionen in der aktuellen Analyse</span>
                         </div>
                         <div class="mt-3">
                             <div class="ai-feed-line">• Verhaltensbasierte Prüfung von Auszahlungs- und Einzahlungsströmen</div>
@@ -630,9 +630,9 @@ document.addEventListener('DOMContentLoaded', function () {
     ];
     var progress = 18;
     var statusIndex = 0;
-    var txCount = parseInt(txCountEl.textContent, 10) || 0;
+    var txCount = parseInt(txCountEl.getAttribute('data-transaction-count') || '0', 10) || 0;
 
-    setInterval(function () {
+    var intervalId = setInterval(function () {
         statusIndex = (statusIndex + 1) % statusMessages.length;
         statusEl.textContent = statusMessages[statusIndex];
 
@@ -642,10 +642,12 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         barEl.style.width = progress + '%';
         progressEl.textContent = progress + '% geprüft';
-
-        txCount += Math.floor(Math.random() * 3);
-        txCountEl.textContent = String(txCount);
     }, 2200);
+
+    txCountEl.textContent = String(txCount);
+    window.addEventListener('pagehide', function () {
+        clearInterval(intervalId);
+    }, { once: true });
 });
 </script>
 
