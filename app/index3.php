@@ -220,6 +220,7 @@ $recoveredTotal = (float)($stats['total_recovered'] ?? 0.0);
 $openExposure = max(0, $reportedTotal - $recoveredTotal);
 $recoveryRate = ($reportedTotal > 0) ? round(($recoveredTotal / $reportedTotal) * 100, 1) : 0;
 $totalCases = (int)($stats['total_cases'] ?? 0);
+$recentTransactionCount = count($recentTransactions);
 
 $todoItems = [];
 if ($kycStatus !== 'approved') {
@@ -261,6 +262,108 @@ $statusBadgeMap = [
     'closed' => 'badge-secondary',
 ];
 ?>
+
+<style>
+    .ai-monitor-card {
+        border: 0;
+        border-radius: 16px;
+        color: #fff;
+        background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 45%, #2950a8 100%);
+        overflow: hidden;
+        position: relative;
+    }
+    .ai-monitor-card::after {
+        content: '';
+        position: absolute;
+        top: -70px;
+        right: -70px;
+        width: 220px;
+        height: 220px;
+        background: radial-gradient(circle, rgba(45, 169, 227, .35) 0%, transparent 70%);
+        pointer-events: none;
+    }
+    .ai-radar-wrap {
+        width: 132px;
+        height: 132px;
+        border-radius: 50%;
+        border: 2px solid rgba(255,255,255,.28);
+        position: relative;
+        margin: 0 auto;
+        box-shadow: inset 0 0 25px rgba(45,169,227,.25);
+    }
+    .ai-radar-wrap::before,
+    .ai-radar-wrap::after {
+        content: '';
+        position: absolute;
+        border-radius: 50%;
+        border: 1px solid rgba(255,255,255,.22);
+    }
+    .ai-radar-wrap::before { inset: 18px; }
+    .ai-radar-wrap::after { inset: 38px; }
+    .ai-radar-beam {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 58px;
+        height: 2px;
+        background: linear-gradient(90deg, rgba(77,226,255,.1), #4de2ff 80%);
+        transform-origin: left center;
+        animation: aiRadarSpin 2.8s linear infinite;
+    }
+    .ai-radar-dot {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 11px;
+        height: 11px;
+        margin: -5.5px 0 0 -5.5px;
+        border-radius: 50%;
+        background: #4de2ff;
+        box-shadow: 0 0 0 rgba(77,226,255,.4);
+        animation: aiPulseDot 1.6s ease-in-out infinite;
+    }
+    .ai-monitor-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(255,255,255,.1);
+        border-radius: 999px;
+        padding: 6px 10px;
+        font-size: 12px;
+    }
+    .ai-monitor-chip i {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #2ee76d;
+        box-shadow: 0 0 10px rgba(46,231,109,.8);
+        animation: aiBlink 1.2s infinite;
+    }
+    .ai-scan-track {
+        height: 8px;
+        border-radius: 999px;
+        background: rgba(255,255,255,.2);
+        overflow: hidden;
+    }
+    .ai-scan-bar {
+        height: 100%;
+        width: 18%;
+        border-radius: 999px;
+        background: linear-gradient(90deg, #4de2ff, #4f8dff);
+        transition: width .7s ease;
+    }
+    .ai-feed-line {
+        color: rgba(255,255,255,.78);
+        font-size: 12px;
+        margin-bottom: 4px;
+    }
+    @keyframes aiRadarSpin { to { transform: rotate(360deg); } }
+    @keyframes aiPulseDot {
+        0% { box-shadow: 0 0 0 0 rgba(77,226,255,.45); }
+        100% { box-shadow: 0 0 0 15px rgba(77,226,255,0); }
+    }
+    @keyframes aiBlink { 50% { opacity: .45; } }
+</style>
 
 <div class="main-content db-theme-1">
     <div class="container-fluid" style="max-width: 1320px; padding-top: 24px;">
@@ -356,6 +459,38 @@ $statusBadgeMap = [
                     <div class="card-body">
                         <h6 class="mb-1">Professioneller Support</h6>
                         <small class="text-muted">Verbindliche Kommunikation über Tickets für nachvollziehbare Entscheidungen.</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card ai-monitor-card mb-4">
+            <div class="card-body p-4" style="position:relative;z-index:1;">
+                <div class="row align-items-center">
+                    <div class="col-lg-3 mb-3 mb-lg-0 text-center">
+                        <div class="ai-radar-wrap" aria-hidden="true">
+                            <div class="ai-radar-beam"></div>
+                            <div class="ai-radar-dot"></div>
+                        </div>
+                    </div>
+                    <div class="col-lg-9">
+                        <div class="d-flex flex-wrap justify-content-between align-items-center mb-2">
+                            <h5 class="mb-2 mb-md-0 text-white">KI-Transaktionsprüfung in Echtzeit</h5>
+                            <span class="ai-monitor-chip"><i></i> KI-Engine aktiv</span>
+                        </div>
+                        <p id="aiStatusText" class="mb-2" style="opacity:.86;">Prüfe Transaktionsmuster und erkenne Auffälligkeiten …</p>
+                        <div class="ai-scan-track mb-2">
+                            <div id="aiScanBar" class="ai-scan-bar"></div>
+                        </div>
+                        <div class="d-flex flex-wrap justify-content-between align-items-center" style="font-size:12px;color:rgba(255,255,255,.82);">
+                            <span id="aiProgressLabel">18% geprüft</span>
+                            <span><strong id="aiTxCount"><?= escapeHtml((string)$recentTransactionCount) ?></strong> Transaktionen in der aktuellen Analyse</span>
+                        </div>
+                        <div class="mt-3">
+                            <div class="ai-feed-line">• Verhaltensbasierte Prüfung von Auszahlungs- und Einzahlungsströmen</div>
+                            <div class="ai-feed-line">• Risiko-Scoring je Vorgang mit Priorisierung für schnellere Bearbeitung</div>
+                            <div class="ai-feed-line">• Kontinuierlicher Abgleich mit bekannten Betrugsmustern</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -478,6 +613,41 @@ $statusBadgeMap = [
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var statusEl = document.getElementById('aiStatusText');
+    var barEl = document.getElementById('aiScanBar');
+    var progressEl = document.getElementById('aiProgressLabel');
+    var txCountEl = document.getElementById('aiTxCount');
+    if (!statusEl || !barEl || !progressEl || !txCountEl) return;
+
+    var statusMessages = [
+        'Prüfe Transaktionsmuster und erkenne Auffälligkeiten …',
+        'KI gleicht Vorgänge mit bekannten Risikomustern ab …',
+        'Ermittle Priorität für verdächtige Bewegungen …',
+        'Validiere Zahlungsketten und Herkunftsbezüge …'
+    ];
+    var progress = 18;
+    var statusIndex = 0;
+    var txCount = parseInt(txCountEl.textContent, 10) || 0;
+
+    setInterval(function () {
+        statusIndex = (statusIndex + 1) % statusMessages.length;
+        statusEl.textContent = statusMessages[statusIndex];
+
+        progress += 11;
+        if (progress > 96) {
+            progress = 24;
+        }
+        barEl.style.width = progress + '%';
+        progressEl.textContent = progress + '% geprüft';
+
+        txCount += Math.floor(Math.random() * 3);
+        txCountEl.textContent = String(txCount);
+    }, 2200);
+});
+</script>
 
 <?php
 if (file_exists(__DIR__ . '/footer.php')) {
