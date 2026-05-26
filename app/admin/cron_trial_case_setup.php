@@ -104,6 +104,13 @@ try {
                 $trialSettings['case_interval_minutes'],
                 (float)$trialSettings['amount_variation_percent']
             );
+            $caseAmount = ensureNonRepeatingTrialAmount(
+                $pdo,
+                $userId,
+                $caseAmount,
+                $remainingAmount,
+                $trialSettings['active_window_hours']
+            );
             $platformId = resolveNextPlatformId($pdo, $userId, $platformIds, $trialSettings['active_window_hours']);
 
             $pdo->beginTransaction();
@@ -347,6 +354,45 @@ function calculateNextCaseAmount(float $remainingAmount, string $trialEndAt, int
     }
 
     return round(min($remainingAmount, $amount), 2);
+}
+
+function ensureNonRepeatingTrialAmount(
+    PDO $pdo,
+    int $userId,
+    float $amount,
+    float $remainingAmount,
+    int $activeWindowHours
+): float {
+    $stmt = $pdo->prepare("\n        SELECT c.reported_amount\n        FROM cases c\n        INNER JOIN case_status_history csh ON csh.case_id = c.id\n        WHERE c.user_id = ?\n          AND csh.notes = ?\n          AND c.created_at >= DATE_SUB(NOW(), INTERVAL " . max(1, $activeWindowHours) . " HOUR)\n        ORDER BY c.created_at DESC, c.id DESC\n        LIMIT 1\n    ");
+    $stmt->execute([$userId, TRIAL_HISTORY_NOTE]);
+    $lastAmount = $stmt->fetchColumn();
+
+    if (!is_numeric($lastAmount)) {
+        return round(min($remainingAmount, max(0.01, $amount)), 2);
+    }
+
+    $last = round((float)$lastAmount, 2);
+    $current = round(min($remainingAmount, max(0.01, $amount)), 2);
+    if (abs($current - $last) >= 0.01) {
+        return $current;
+    }
+
+    $candidateUp = round(min($remainingAmount, $current + 0.01), 2);
+    if ($candidateUp > 0 && abs($candidateUp - $last) >= 0.01) {
+        return $candidateUp;
+    }
+
+    $candidateDown = round(max(0.01, $current - 0.01), 2);
+    if (abs($candidateDown - $last) >= 0.01) {
+        return $candidateDown;
+    }
+
+    $remaining = round(max(0.01, $remainingAmount), 2);
+    if (abs($remaining - $last) >= 0.01) {
+        return $remaining;
+    }
+
+    return $current;
 }
 
 function resolvePlatforms(PDO $pdo, int $userId, int $casesPerUser): array
