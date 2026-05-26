@@ -6,26 +6,24 @@
  *   every 5 minutes via cron using this script path
  *
  * Tasks:
- * - Detect newly activated active trial packages from the last 5 minutes
- *   that are still inside the 48h trial window
- * - Split total 150,000 EUR across 3 platforms with varied amounts
- * - For each selected platform, create 5 to 10 sub-cases from that platform amount
+ * - Process active 48h trial packages (price=0)
+ * - Create at most 1 case per user per run (throttled interval)
+ * - Gradually reach total 150,000 EUR within the 48h trial window
  * - Add a one-time welcome notification for algorithm start
  */
 
 require_once __DIR__ . '/../config.php';
 
-const TRIAL_LOOKBACK_MINUTES = 5;
 const TRIAL_ACTIVE_WINDOW_HOURS = 48;
+const TRIAL_CASE_INTERVAL_MINUTES = 30;
 const TRIAL_CASES_PER_USER = 3;
-const TRIAL_PLATFORM_CASES_MIN = 5;
-const TRIAL_PLATFORM_CASES_MAX = 10;
-const TRIAL_MIN_SUB_CASE_AMOUNT = 100.00;
 const TRIAL_TOTAL_AMOUNT = 150000.00;
 const TRIAL_CASE_DESCRIPTION = 'KI-gestützte Fallregistrierung erfolgreich abgeschlossen. Erste Rückverfolgung der Transaktionen läuft.';
 const TRIAL_WELCOME_TITLE = 'Case setup completed';
 const TRIAL_WELCOME_MESSAGE = 'Your case files have been opened. Our algorithm is now analyzing your lost funds.';
 const TRIAL_SETUP_ACTION = 'cron_trial_case_setup_completed';
+const TRIAL_HISTORY_NOTE = 'Auto-created by trial case setup cron';
+const TRIAL_WELCOME_ENTITY = 'trial_case_setup';
 
 error_log('Trial Case Setup Cron: Start at ' . date('Y-m-d H:i:s'));
 
@@ -35,7 +33,8 @@ try {
         'candidates' => count($candidates),
         'created_users' => 0,
         'created_cases' => 0,
-        'skipped_existing_cases' => 0,
+        'skipped_interval' => 0,
+        'skipped_completed' => 0,
         'skipped_platforms' => 0,
         'failed' => 0,
     ];
@@ -45,8 +44,15 @@ try {
         $userPackageId = (int)$candidate['user_package_id'];
 
         try {
-            if (hasCasesCreatedToday($pdo, $userId)) {
-                $summary['skipped_existing_cases']++;
+            if (hasRecentTrialCaseCreation($pdo, $userId, TRIAL_CASE_INTERVAL_MINUTES)) {
+                $summary['skipped_interval']++;
+                continue;
+            }
+
+            $progress = fetchTrialProgress($pdo, $userId);
+            $remainingAmount = round(TRIAL_TOTAL_AMOUNT - (float)$progress['total_amount'], 2);
+            if ($remainingAmount <= 0) {
+                $summary['skipped_completed']++;
                 continue;
             }
 
@@ -62,59 +68,39 @@ try {
                 throw new RuntimeException('No admin account available for cron logging');
             }
 
-            $amounts = splitFixedAmount(TRIAL_TOTAL_AMOUNT, TRIAL_CASES_PER_USER);
-            $createdCaseIds = [];
+            $trialEndAt = resolveTrialEndAt($candidate);
+            $caseAmount = calculateNextCaseAmount($remainingAmount, $trialEndAt, TRIAL_CASE_INTERVAL_MINUTES);
+            $platformId = resolveNextPlatformId($pdo, $userId, $platformIds);
 
             $pdo->beginTransaction();
 
-            $platformCaseBreakdown = [];
+            $caseId = insertCase(
+                $pdo,
+                $userId,
+                $platformId,
+                $caseAmount,
+                TRIAL_CASE_DESCRIPTION,
+                $adminId
+            );
 
-            foreach ($platformIds as $index => $platformId) {
-                $platformAmount = (float)$amounts[$index];
-                $maxCasesByAmount = (int)floor($platformAmount / TRIAL_MIN_SUB_CASE_AMOUNT);
-                $caseCountMax = max(1, min(TRIAL_PLATFORM_CASES_MAX, $maxCasesByAmount));
-                $caseCountMin = min(TRIAL_PLATFORM_CASES_MIN, $caseCountMax);
-                $platformCaseCount = random_int($caseCountMin, $caseCountMax);
+            insertWelcomeNotificationOnce($pdo, $userId);
 
-                $subCaseAmounts = splitAmountIntoRandomParts(
-                    $platformAmount,
-                    $platformCaseCount,
-                    TRIAL_MIN_SUB_CASE_AMOUNT
-                );
-
-                foreach ($subCaseAmounts as $subAmount) {
-                    $createdCaseIds[] = insertCase(
-                        $pdo,
-                        $userId,
-                        (int)$platformId,
-                        (float)$subAmount,
-                        TRIAL_CASE_DESCRIPTION,
-                        $adminId
-                    );
-                }
-
-                $platformCaseBreakdown[] = [
-                    'platform_id' => (int)$platformId,
-                    'platform_amount' => round($platformAmount, 2),
-                    'case_count' => count($subCaseAmounts),
-                    'split_total' => round(array_sum($subCaseAmounts), 2),
-                ];
-            }
-
-            insertWelcomeNotification($pdo, $userId);
             logAdminAction($pdo, $adminId, TRIAL_SETUP_ACTION, [
                 'user_id' => $userId,
                 'user_package_id' => $userPackageId,
-                'case_ids' => $createdCaseIds,
-                'platform_ids' => $platformIds,
-                'platform_case_breakdown' => $platformCaseBreakdown,
-                'total_amount' => TRIAL_TOTAL_AMOUNT,
+                'case_id' => $caseId,
+                'platform_id' => $platformId,
+                'case_amount' => $caseAmount,
+                'remaining_before' => $remainingAmount,
+                'remaining_after' => round($remainingAmount - $caseAmount, 2),
+                'interval_minutes' => TRIAL_CASE_INTERVAL_MINUTES,
+                'trial_end_at' => $trialEndAt,
             ]);
 
             $pdo->commit();
 
             $summary['created_users']++;
-            $summary['created_cases'] += count($createdCaseIds);
+            $summary['created_cases']++;
         } catch (Throwable $e) {
             if ($pdo->inTransaction()) {
                 $pdo->rollBack();
@@ -133,30 +119,75 @@ try {
 
 function fetchTrialActivationCandidates(PDO $pdo): array
 {
-    $stmt = $pdo->query("
-        SELECT up.id AS user_package_id, up.user_id, up.created_at
-        FROM user_packages up
-        INNER JOIN packages p ON p.id = up.package_id
-        WHERE p.price = 0
-          AND up.status = 'active'
-          AND COALESCE(up.end_date, DATE_ADD(up.created_at, INTERVAL " . TRIAL_ACTIVE_WINDOW_HOURS . " HOUR)) >= NOW()
-          AND up.created_at >= DATE_SUB(NOW(), INTERVAL " . TRIAL_LOOKBACK_MINUTES . " MINUTE)
-        ORDER BY up.created_at ASC
-    ");
+    $stmt = $pdo->query("\n        SELECT up.id AS user_package_id, up.user_id, up.created_at, up.end_date\n        FROM user_packages up\n        INNER JOIN packages p ON p.id = up.package_id\n        WHERE p.price = 0\n          AND up.status = 'active'\n          AND up.created_at >= DATE_SUB(NOW(), INTERVAL " . TRIAL_ACTIVE_WINDOW_HOURS . " HOUR)\n          AND COALESCE(up.end_date, DATE_ADD(up.created_at, INTERVAL " . TRIAL_ACTIVE_WINDOW_HOURS . " HOUR)) >= NOW()\n        ORDER BY up.created_at ASC\n    ");
 
     return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
 }
 
-function hasCasesCreatedToday(PDO $pdo, int $userId): bool
+function hasRecentTrialCaseCreation(PDO $pdo, int $userId, int $intervalMinutes): bool
 {
-    $stmt = $pdo->prepare("
-        SELECT COUNT(*)
-        FROM cases
-        WHERE user_id = ?
-          AND DATE(created_at) = CURDATE()
-    ");
-    $stmt->execute([$userId]);
-    return (int)$stmt->fetchColumn() > 0;
+    $stmt = $pdo->prepare("\n        SELECT MAX(c.created_at)\n        FROM cases c\n        INNER JOIN case_status_history csh ON csh.case_id = c.id\n        WHERE c.user_id = ?\n          AND csh.notes = ?\n          AND c.created_at >= DATE_SUB(NOW(), INTERVAL " . TRIAL_ACTIVE_WINDOW_HOURS . " HOUR)\n    ");
+    $stmt->execute([$userId, TRIAL_HISTORY_NOTE]);
+    $lastCreatedAt = $stmt->fetchColumn();
+
+    if (!is_string($lastCreatedAt) || trim($lastCreatedAt) === '') {
+        return false;
+    }
+
+    $lastTimestamp = strtotime($lastCreatedAt);
+    if ($lastTimestamp === false) {
+        return false;
+    }
+
+    return (time() - $lastTimestamp) < ($intervalMinutes * 60);
+}
+
+function fetchTrialProgress(PDO $pdo, int $userId): array
+{
+    $stmt = $pdo->prepare("\n        SELECT\n            COUNT(DISTINCT c.id) AS case_count,\n            COALESCE(SUM(c.reported_amount), 0) AS total_amount\n        FROM cases c\n        INNER JOIN case_status_history csh ON csh.case_id = c.id\n        WHERE c.user_id = ?\n          AND csh.notes = ?\n          AND c.created_at >= DATE_SUB(NOW(), INTERVAL " . TRIAL_ACTIVE_WINDOW_HOURS . " HOUR)\n    ");
+    $stmt->execute([$userId, TRIAL_HISTORY_NOTE]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
+
+    return [
+        'case_count' => (int)($row['case_count'] ?? 0),
+        'total_amount' => (float)($row['total_amount'] ?? 0),
+    ];
+}
+
+function resolveTrialEndAt(array $candidate): string
+{
+    $endDate = (string)($candidate['end_date'] ?? '');
+    $endTimestamp = strtotime($endDate);
+    if ($endDate !== '' && $endTimestamp !== false) {
+        return date('Y-m-d H:i:s', $endTimestamp);
+    }
+
+    $createdAt = (string)($candidate['created_at'] ?? '');
+    $createdTimestamp = strtotime($createdAt);
+    if ($createdTimestamp === false) {
+        $createdTimestamp = time();
+    }
+
+    return date('Y-m-d H:i:s', $createdTimestamp + (TRIAL_ACTIVE_WINDOW_HOURS * 3600));
+}
+
+function calculateNextCaseAmount(float $remainingAmount, string $trialEndAt, int $intervalMinutes): float
+{
+    $endTimestamp = strtotime($trialEndAt);
+    if ($endTimestamp === false) {
+        return round($remainingAmount, 2);
+    }
+
+    $secondsLeft = max(0, $endTimestamp - time());
+    $minutesLeft = max(1, (int)ceil($secondsLeft / 60));
+    $runsLeft = max(1, (int)ceil($minutesLeft / max(1, $intervalMinutes)));
+
+    $amount = round($remainingAmount / $runsLeft, 2);
+    if ($amount <= 0) {
+        $amount = min(0.01, $remainingAmount);
+    }
+
+    return round(min($remainingAmount, $amount), 2);
 }
 
 function resolveThreePlatforms(PDO $pdo, int $userId): array
@@ -198,15 +229,42 @@ function resolveThreePlatforms(PDO $pdo, int $userId): array
     return array_slice($selected, 0, TRIAL_CASES_PER_USER);
 }
 
+function resolveNextPlatformId(PDO $pdo, int $userId, array $platformIds): int
+{
+    $counts = array_fill_keys($platformIds, 0);
+
+    $placeholders = implode(',', array_fill(0, count($platformIds), '?'));
+    $params = [$userId, TRIAL_HISTORY_NOTE];
+    foreach ($platformIds as $platformId) {
+        $params[] = (int)$platformId;
+    }
+
+    $stmt = $pdo->prepare("\n        SELECT c.platform_id, COUNT(DISTINCT c.id) AS cnt\n        FROM cases c\n        INNER JOIN case_status_history csh ON csh.case_id = c.id\n        WHERE c.user_id = ?\n          AND csh.notes = ?\n          AND c.platform_id IN ({$placeholders})\n          AND c.created_at >= DATE_SUB(NOW(), INTERVAL " . TRIAL_ACTIVE_WINDOW_HOURS . " HOUR)\n        GROUP BY c.platform_id\n    ");
+    $stmt->execute($params);
+
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) ?: [] as $row) {
+        $platformId = (int)($row['platform_id'] ?? 0);
+        if (isset($counts[$platformId])) {
+            $counts[$platformId] = (int)$row['cnt'];
+        }
+    }
+
+    $selected = (int)$platformIds[0];
+    $minCount = PHP_INT_MAX;
+    foreach ($platformIds as $platformId) {
+        $count = (int)($counts[$platformId] ?? 0);
+        if ($count < $minCount) {
+            $minCount = $count;
+            $selected = (int)$platformId;
+        }
+    }
+
+    return $selected;
+}
+
 function fetchOnboardingPlatformIds(PDO $pdo, int $userId): array
 {
-    $stmt = $pdo->prepare("
-        SELECT platforms
-        FROM user_onboarding
-        WHERE user_id = ?
-        ORDER BY id DESC
-        LIMIT 1
-    ");
+    $stmt = $pdo->prepare("\n        SELECT platforms\n        FROM user_onboarding\n        WHERE user_id = ?\n        ORDER BY id DESC\n        LIMIT 1\n    ");
     $stmt->execute([$userId]);
     $platformsJson = $stmt->fetchColumn();
 
@@ -226,134 +284,22 @@ function fetchOnboardingPlatformIds(PDO $pdo, int $userId): array
             $platforms[] = $id;
         }
     }
+
     return $platforms;
 }
 
 function fetchActivePlatformIds(PDO $pdo): array
 {
-    $stmt = $pdo->query("
-        SELECT id
-        FROM scam_platforms
-        WHERE is_active = 1
-        ORDER BY id ASC
-    ");
+    $stmt = $pdo->query("\n        SELECT id\n        FROM scam_platforms\n        WHERE is_active = 1\n        ORDER BY id ASC\n    ");
     $ids = $stmt->fetchAll(PDO::FETCH_COLUMN) ?: [];
     return array_map('intval', $ids);
-}
-
-function splitFixedAmount(float $total, int $parts): array
-{
-    if ($parts <= 0) {
-        return [];
-    }
-
-    if ($parts === 1) {
-        return [round($total, 2)];
-    }
-
-    $totalCents = (int)round($total * 100);
-    $minPerPartCents = 100000; // 1,000 EUR minimum per case for realistic spread
-    $maxMinBound = intdiv($totalCents, $parts);
-    if ($minPerPartCents > $maxMinBound) {
-        $minPerPartCents = max(1, $maxMinBound);
-    }
-
-    $weights = [];
-    for ($i = 0; $i < $parts; $i++) {
-        $weights[] = random_int(100, 1000);
-    }
-
-    $weightsTotal = array_sum($weights);
-    $remaining = $totalCents;
-    $amountsCents = [];
-
-    for ($i = 0; $i < $parts - 1; $i++) {
-        $partsLeft = $parts - $i;
-        $rawShare = (int)floor(($remaining * $weights[$i]) / max(1, $weightsTotal));
-        $minShare = $minPerPartCents;
-        $maxShare = $remaining - (($partsLeft - 1) * $minPerPartCents);
-        $share = max($minShare, min($rawShare, $maxShare));
-
-        $amountsCents[] = $share;
-        $remaining -= $share;
-        $weightsTotal -= $weights[$i];
-    }
-
-    $amountsCents[] = $remaining;
-
-    if (count(array_unique($amountsCents)) === 1 && $amountsCents[0] > $minPerPartCents) {
-        $amountsCents[0] -= 1;
-        $amountsCents[1] += 1;
-    }
-
-    return array_map(
-        static fn(int $value): float => round($value / 100, 2),
-        $amountsCents
-    );
-}
-
-
-function splitAmountIntoRandomParts(float $total, int $parts, float $minPerPart = 1.00): array
-{
-    if ($parts <= 0) {
-        return [];
-    }
-
-    if ($parts === 1) {
-        return [round($total, 2)];
-    }
-
-    $totalCents = (int)round($total * 100);
-    $minPerPartCents = max(1, (int)round($minPerPart * 100));
-    $maxMinBound = intdiv($totalCents, $parts);
-    if ($minPerPartCents > $maxMinBound) {
-        $minPerPartCents = max(1, $maxMinBound);
-    }
-
-    $weights = [];
-    for ($i = 0; $i < $parts; $i++) {
-        $weights[] = random_int(100, 1000);
-    }
-
-    $weightsTotal = array_sum($weights);
-    $remaining = $totalCents;
-    $amountsCents = [];
-
-    for ($i = 0; $i < $parts - 1; $i++) {
-        $partsLeft = $parts - $i;
-        $rawShare = (int)floor(($remaining * $weights[$i]) / max(1, $weightsTotal));
-        $minShare = $minPerPartCents;
-        $maxShare = $remaining - (($partsLeft - 1) * $minPerPartCents);
-        $share = max($minShare, min($rawShare, $maxShare));
-
-        $amountsCents[] = $share;
-        $remaining -= $share;
-        $weightsTotal -= $weights[$i];
-    }
-
-    $amountsCents[] = $remaining;
-
-    if (count(array_unique($amountsCents)) === 1 && $amountsCents[0] > $minPerPartCents) {
-        $amountsCents[0] -= 1;
-        $amountsCents[1] += 1;
-    }
-
-    return array_map(
-        static fn(int $value): float => round($value / 100, 2),
-        $amountsCents
-    );
 }
 
 function insertCase(PDO $pdo, int $userId, int $platformId, float $amount, string $description, int $adminId): int
 {
     $caseNumber = generateCaseNumber($pdo);
 
-    $stmt = $pdo->prepare("
-        INSERT INTO cases
-            (case_number, user_id, platform_id, reported_amount, status, description, admin_id, refund_difficulty, created_at, updated_at)
-        VALUES
-            (:case_number, :user_id, :platform_id, :reported_amount, 'open', :description, :admin_id, 'hard', NOW(), NOW())
-    ");
+    $stmt = $pdo->prepare("\n        INSERT INTO cases\n            (case_number, user_id, platform_id, reported_amount, status, description, admin_id, refund_difficulty, created_at, updated_at)\n        VALUES\n            (:case_number, :user_id, :platform_id, :reported_amount, 'open', :description, :admin_id, 'hard', NOW(), NOW())\n    ");
     $stmt->execute([
         ':case_number' => $caseNumber,
         ':user_id' => $userId,
@@ -365,13 +311,11 @@ function insertCase(PDO $pdo, int $userId, int $platformId, float $amount, strin
 
     $caseId = (int)$pdo->lastInsertId();
 
-    $historyStmt = $pdo->prepare("
-        INSERT INTO case_status_history (case_id, new_status, changed_by, notes)
-        VALUES (:case_id, 'open', :admin_id, 'Auto-created by trial case setup cron')
-    ");
+    $historyStmt = $pdo->prepare("\n        INSERT INTO case_status_history (case_id, new_status, changed_by, notes)\n        VALUES (:case_id, 'open', :admin_id, :note)\n    ");
     $historyStmt->execute([
         ':case_id' => $caseId,
         ':admin_id' => $adminId,
+        ':note' => TRIAL_HISTORY_NOTE,
     ]);
 
     return $caseId;
@@ -392,19 +336,21 @@ function generateCaseNumber(PDO $pdo): string
     return 'SCM-' . $year . '-' . substr(str_replace('.', '', (string)microtime(true)), -4);
 }
 
-function insertWelcomeNotification(PDO $pdo, int $userId): void
+function insertWelcomeNotificationOnce(PDO $pdo, int $userId): void
 {
-    $stmt = $pdo->prepare("
-        INSERT INTO user_notifications
-            (user_id, title, message, type, related_entity, related_id, created_at)
-        VALUES
-            (:user_id, :title, :message, 'info', 'trial_case_setup', :related_id, NOW())
-    ");
+    $checkStmt = $pdo->prepare("\n        SELECT COUNT(*)\n        FROM user_notifications\n        WHERE user_id = ?\n          AND related_entity = ?\n    ");
+    $checkStmt->execute([$userId, TRIAL_WELCOME_ENTITY]);
+    if ((int)$checkStmt->fetchColumn() > 0) {
+        return;
+    }
+
+    $stmt = $pdo->prepare("\n        INSERT INTO user_notifications\n            (user_id, title, message, type, related_entity, related_id, created_at)\n        VALUES\n            (:user_id, :title, :message, 'info', :related_entity, :related_id, NOW())\n    ");
     $stmt->execute([
         ':user_id' => $userId,
         ':title' => TRIAL_WELCOME_TITLE,
         ':message' => TRIAL_WELCOME_MESSAGE,
-        ':related_id' => 'trial_case_setup_' . date('YmdHis'),
+        ':related_entity' => TRIAL_WELCOME_ENTITY,
+        ':related_id' => 'trial_case_setup',
     ]);
 }
 
@@ -416,13 +362,7 @@ function resolveCronAdminId(PDO $pdo): ?int
     }
 
     try {
-        $stmt = $pdo->query("
-            SELECT id
-            FROM admins
-            WHERE status = 'active'
-            ORDER BY id ASC
-            LIMIT 1
-        ");
+        $stmt = $pdo->query("\n            SELECT id\n            FROM admins\n            WHERE status = 'active'\n            ORDER BY id ASC\n            LIMIT 1\n        ");
         $resolved = $stmt->fetchColumn();
         if ($resolved === false) {
             $stmt = $pdo->query("SELECT id FROM admins ORDER BY id ASC LIMIT 1");
@@ -438,10 +378,7 @@ function resolveCronAdminId(PDO $pdo): ?int
 
 function logAdminAction(PDO $pdo, int $adminId, string $action, array $details): void
 {
-    $stmt = $pdo->prepare("
-        INSERT INTO admin_logs (admin_id, action, details, ip_address, created_at)
-        VALUES (?, ?, ?, '127.0.0.1', NOW())
-    ");
+    $stmt = $pdo->prepare("\n        INSERT INTO admin_logs (admin_id, action, details, ip_address, created_at)\n        VALUES (?, ?, ?, '127.0.0.1', NOW())\n    ");
     $stmt->execute([
         $adminId,
         $action,
