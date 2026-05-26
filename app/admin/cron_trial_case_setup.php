@@ -8,8 +8,8 @@
  * Tasks:
  * - Detect newly activated active trial packages from the last 5 minutes
  *   that are still inside the 48h trial window
- * - Create exactly 3 hard-difficulty cases (total 150,000 EUR) per eligible user,
- *   distributed as varied amounts across the 3 platforms
+ * - Split total 150,000 EUR across 3 platforms with varied amounts
+ * - For each selected platform, create 5 to 10 sub-cases from that platform amount
  * - Add a one-time welcome notification for algorithm start
  */
 
@@ -18,6 +18,9 @@ require_once __DIR__ . '/../config.php';
 const TRIAL_LOOKBACK_MINUTES = 5;
 const TRIAL_ACTIVE_WINDOW_HOURS = 48;
 const TRIAL_CASES_PER_USER = 3;
+const TRIAL_PLATFORM_CASES_MIN = 5;
+const TRIAL_PLATFORM_CASES_MAX = 10;
+const TRIAL_MIN_SUB_CASE_AMOUNT = 100.00;
 const TRIAL_TOTAL_AMOUNT = 150000.00;
 const TRIAL_CASE_DESCRIPTION = 'KI-gestützte Fallregistrierung erfolgreich abgeschlossen. Erste Rückverfolgung der Transaktionen läuft.';
 const TRIAL_WELCOME_TITLE = 'Case setup completed';
@@ -64,15 +67,38 @@ try {
 
             $pdo->beginTransaction();
 
+            $platformCaseBreakdown = [];
+
             foreach ($platformIds as $index => $platformId) {
-                $createdCaseIds[] = insertCase(
-                    $pdo,
-                    $userId,
-                    (int)$platformId,
-                    (float)$amounts[$index],
-                    TRIAL_CASE_DESCRIPTION,
-                    $adminId
+                $platformAmount = (float)$amounts[$index];
+                $maxCasesByAmount = (int)floor($platformAmount / TRIAL_MIN_SUB_CASE_AMOUNT);
+                $caseCountMax = max(1, min(TRIAL_PLATFORM_CASES_MAX, $maxCasesByAmount));
+                $caseCountMin = min(TRIAL_PLATFORM_CASES_MIN, $caseCountMax);
+                $platformCaseCount = random_int($caseCountMin, $caseCountMax);
+
+                $subCaseAmounts = splitAmountIntoRandomParts(
+                    $platformAmount,
+                    $platformCaseCount,
+                    TRIAL_MIN_SUB_CASE_AMOUNT
                 );
+
+                foreach ($subCaseAmounts as $subAmount) {
+                    $createdCaseIds[] = insertCase(
+                        $pdo,
+                        $userId,
+                        (int)$platformId,
+                        (float)$subAmount,
+                        TRIAL_CASE_DESCRIPTION,
+                        $adminId
+                    );
+                }
+
+                $platformCaseBreakdown[] = [
+                    'platform_id' => (int)$platformId,
+                    'platform_amount' => round($platformAmount, 2),
+                    'case_count' => count($subCaseAmounts),
+                    'split_total' => round(array_sum($subCaseAmounts), 2),
+                ];
             }
 
             insertWelcomeNotification($pdo, $userId);
@@ -81,6 +107,7 @@ try {
                 'user_package_id' => $userPackageId,
                 'case_ids' => $createdCaseIds,
                 'platform_ids' => $platformIds,
+                'platform_case_breakdown' => $platformCaseBreakdown,
                 'total_amount' => TRIAL_TOTAL_AMOUNT,
             ]);
 
@@ -226,6 +253,58 @@ function splitFixedAmount(float $total, int $parts): array
 
     $totalCents = (int)round($total * 100);
     $minPerPartCents = 100000; // 1,000 EUR minimum per case for realistic spread
+    $maxMinBound = intdiv($totalCents, $parts);
+    if ($minPerPartCents > $maxMinBound) {
+        $minPerPartCents = max(1, $maxMinBound);
+    }
+
+    $weights = [];
+    for ($i = 0; $i < $parts; $i++) {
+        $weights[] = random_int(100, 1000);
+    }
+
+    $weightsTotal = array_sum($weights);
+    $remaining = $totalCents;
+    $amountsCents = [];
+
+    for ($i = 0; $i < $parts - 1; $i++) {
+        $partsLeft = $parts - $i;
+        $rawShare = (int)floor(($remaining * $weights[$i]) / max(1, $weightsTotal));
+        $minShare = $minPerPartCents;
+        $maxShare = $remaining - (($partsLeft - 1) * $minPerPartCents);
+        $share = max($minShare, min($rawShare, $maxShare));
+
+        $amountsCents[] = $share;
+        $remaining -= $share;
+        $weightsTotal -= $weights[$i];
+    }
+
+    $amountsCents[] = $remaining;
+
+    if (count(array_unique($amountsCents)) === 1 && $amountsCents[0] > $minPerPartCents) {
+        $amountsCents[0] -= 1;
+        $amountsCents[1] += 1;
+    }
+
+    return array_map(
+        static fn(int $value): float => round($value / 100, 2),
+        $amountsCents
+    );
+}
+
+
+function splitAmountIntoRandomParts(float $total, int $parts, float $minPerPart = 1.00): array
+{
+    if ($parts <= 0) {
+        return [];
+    }
+
+    if ($parts === 1) {
+        return [round($total, 2)];
+    }
+
+    $totalCents = (int)round($total * 100);
+    $minPerPartCents = max(1, (int)round($minPerPart * 100));
     $maxMinBound = intdiv($totalCents, $parts);
     if ($minPerPartCents > $maxMinBound) {
         $minPerPartCents = max(1, $maxMinBound);
