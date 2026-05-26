@@ -120,7 +120,7 @@ try {
     $deactivateCandidates = fetchUsersForDeactivation($pdo);
     $deactivateCount = 0;
     if (!empty($deactivateCandidates)) {
-        $deactivateStmt = $pdo->prepare("UPDATE users SET status = 'inactive' WHERE id = ? AND status = 'active'");
+        $deactivateStmt = $pdo->prepare("UPDATE users SET status = 'suspended' WHERE id = ? AND status = 'active'");
         foreach ($deactivateCandidates as $candidate) {
             try {
                 $deactivateStmt->execute([(int)$candidate['user_id']]);
@@ -131,7 +131,7 @@ try {
                         'user_email' => (string)$candidate['email'],
                         'last_trial_end_date' => (string)$candidate['last_trial_end_date'],
                         'grace_days' => TRIAL_DEACTIVATION_GRACE_DAYS,
-                        'new_status' => 'inactive',
+                        'new_status' => 'suspended',
                         'cron' => 'cron_package_expiration',
                     ]);
                 }
@@ -280,12 +280,50 @@ function buildPortalUrl(PDO $pdo, string $path): string
 function logAdminAction(PDO $pdo, string $action, array $details): void
 {
     try {
+        $adminId = resolveCronAdminId($pdo);
+        if ($adminId === null) {
+            return;
+        }
+
         $stmt = $pdo->prepare("
             INSERT INTO admin_logs (admin_id, action, details, ip_address, created_at)
-            VALUES (0, ?, ?, '127.0.0.1', NOW())
+            VALUES (?, ?, ?, '127.0.0.1', NOW())
         ");
-        $stmt->execute([$action, json_encode($details, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)]);
+        $stmt->execute([$adminId, $action, json_encode($details, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)]);
     } catch (Throwable $e) {
         error_log("Trial Expiration Cron: admin_logs insert failed for action {$action} - " . $e->getMessage());
     }
+}
+
+/**
+ * Resolve an existing admin ID for cron-created admin_logs rows.
+ */
+function resolveCronAdminId(PDO $pdo): ?int
+{
+    static $adminId = false;
+
+    if ($adminId !== false) {
+        return $adminId;
+    }
+
+    try {
+        $stmt = $pdo->query("
+            SELECT id
+            FROM admins
+            WHERE status = 'active'
+            ORDER BY id ASC
+            LIMIT 1
+        ");
+        $resolvedAdminId = $stmt->fetchColumn();
+        if ($resolvedAdminId === false) {
+            $stmt = $pdo->query("SELECT id FROM admins ORDER BY id ASC LIMIT 1");
+            $resolvedAdminId = $stmt->fetchColumn();
+        }
+
+        $adminId = $resolvedAdminId === false ? null : (int)$resolvedAdminId;
+    } catch (Throwable $e) {
+        $adminId = null;
+    }
+
+    return $adminId;
 }
