@@ -428,6 +428,7 @@ try {
         $casesPerUser = filter_var($_POST['trial_cases_per_user'] ?? null, FILTER_VALIDATE_INT);
         $totalAmount = filter_var($_POST['trial_total_amount'] ?? null, FILTER_VALIDATE_FLOAT);
         $amountVariationPercent = filter_var($_POST['trial_amount_variation_percent'] ?? null, FILTER_VALIDATE_FLOAT);
+        $intervalVariationPercent = filter_var($_POST['trial_interval_variation_percent'] ?? null, FILTER_VALIDATE_FLOAT);
 
         if ($activeWindowHours === false || $activeWindowHours < 1 || $activeWindowHours > 720) {
             echo json_encode(['success' => false, 'message' => 'Active window must be between 1 and 720 hours']);
@@ -457,6 +458,10 @@ try {
             echo json_encode(['success' => false, 'message' => 'Amount variation must be between 0 and 100 percent']);
             exit();
         }
+        if ($intervalVariationPercent === false || $intervalVariationPercent < 0 || $intervalVariationPercent > 100) {
+            echo json_encode(['success' => false, 'message' => 'Timing variation must be between 0 and 100 percent']);
+            exit();
+        }
 
         $stmt = $pdo->query("SELECT id FROM system_settings WHERE id = 1");
         $exists = $stmt->fetch();
@@ -470,6 +475,7 @@ try {
                     trial_cases_per_user = ?,
                     trial_total_amount = ?,
                     trial_amount_variation_percent = ?,
+                    trial_interval_variation_percent = ?,
                     updated_at = NOW()
                 WHERE id = 1
             ");
@@ -481,15 +487,16 @@ try {
                 $casesPerUser,
                 round((float)$totalAmount, 2),
                 round((float)$amountVariationPercent, 2),
+                round((float)$intervalVariationPercent, 2),
             ]);
         } else {
             $stmt = $pdo->prepare("
                 INSERT INTO system_settings (
                     id, trial_active_window_hours, trial_case_interval_minutes,
                     trial_initial_delay_minutes, trial_max_cases_per_run,
-                    trial_cases_per_user, trial_total_amount, trial_amount_variation_percent, created_at, updated_at
+                    trial_cases_per_user, trial_total_amount, trial_amount_variation_percent, trial_interval_variation_percent, created_at, updated_at
                 ) VALUES (
-                    1, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW()
+                    1, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW()
                 )
             ");
             $stmt->execute([
@@ -500,6 +507,7 @@ try {
                 $casesPerUser,
                 round((float)$totalAmount, 2),
                 round((float)$amountVariationPercent, 2),
+                round((float)$intervalVariationPercent, 2),
             ]);
         }
 
@@ -513,6 +521,7 @@ try {
             'trial_cases_per_user' => $casesPerUser,
             'trial_total_amount' => round((float)$totalAmount, 2),
             'trial_amount_variation_percent' => round((float)$amountVariationPercent, 2),
+            'trial_interval_variation_percent' => round((float)$intervalVariationPercent, 2),
         ];
         $pdo->prepare("INSERT INTO audit_logs (admin_id, action, entity_type, entity_id, new_value, ip_address, created_at) VALUES (?, 'update', 'system_settings', 1, ?, ?, NOW())")
             ->execute([$admin_id, json_encode($logData), $ip_address]);

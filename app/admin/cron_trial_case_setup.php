@@ -24,6 +24,7 @@ const DEFAULT_TRIAL_MAX_CASES_PER_RUN = 2;
 const DEFAULT_TRIAL_CASES_PER_USER = 3;
 const DEFAULT_TRIAL_TOTAL_AMOUNT = 150000.00;
 const DEFAULT_TRIAL_AMOUNT_VARIATION_PERCENT = 20.00;
+const DEFAULT_TRIAL_INTERVAL_VARIATION_PERCENT = 35.00;
 const TRIAL_CASE_DESCRIPTION = 'KI-gestützte Fallregistrierung erfolgreich abgeschlossen. Erste Rückverfolgung der Transaktionen läuft.';
 const TRIAL_WELCOME_TITLE = 'Case setup completed';
 const TRIAL_WELCOME_MESSAGE = 'Your case files have been opened. Our algorithm is now analyzing your lost funds.';
@@ -66,7 +67,13 @@ try {
                 continue;
             }
 
-            if (hasRecentTrialCaseCreation($pdo, $userId, $trialSettings['case_interval_minutes'], $trialSettings['active_window_hours'])) {
+            if (hasRecentTrialCaseCreation(
+                $pdo,
+                $userId,
+                $trialSettings['case_interval_minutes'],
+                $trialSettings['active_window_hours'],
+                (float)$trialSettings['interval_variation_percent']
+            )) {
                 $summary['skipped_interval']++;
                 continue;
             }
@@ -168,13 +175,14 @@ function loadTrialCaseSetupSettings(PDO $pdo): array
         'cases_per_user' => DEFAULT_TRIAL_CASES_PER_USER,
         'total_amount' => DEFAULT_TRIAL_TOTAL_AMOUNT,
         'amount_variation_percent' => DEFAULT_TRIAL_AMOUNT_VARIATION_PERCENT,
+        'interval_variation_percent' => DEFAULT_TRIAL_INTERVAL_VARIATION_PERCENT,
     ];
 
     try {
         $stmt = $pdo->query("
             SELECT trial_active_window_hours, trial_case_interval_minutes, trial_initial_delay_minutes,
                    trial_max_cases_per_run, trial_cases_per_user, trial_total_amount,
-                   trial_amount_variation_percent
+                   trial_amount_variation_percent, trial_interval_variation_percent
             FROM system_settings
             WHERE id = 1
             LIMIT 1
@@ -192,6 +200,7 @@ function loadTrialCaseSetupSettings(PDO $pdo): array
         'cases_per_user' => max(1, (int)($row['trial_cases_per_user'] ?? $defaults['cases_per_user'])),
         'total_amount' => max(0.01, round((float)($row['trial_total_amount'] ?? $defaults['total_amount']), 2)),
         'amount_variation_percent' => max(0, min(100, round((float)($row['trial_amount_variation_percent'] ?? $defaults['amount_variation_percent']), 2))),
+        'interval_variation_percent' => max(0, min(100, round((float)($row['trial_interval_variation_percent'] ?? $defaults['interval_variation_percent']), 2))),
     ];
 }
 
@@ -213,7 +222,7 @@ function hasPassedInitialDelay(array $candidate, int $delayMinutes): bool
     return (time() - $createdTimestamp) >= ($delayMinutes * 60);
 }
 
-function hasRecentTrialCaseCreation(PDO $pdo, int $userId, int $intervalMinutes, int $activeWindowHours): bool
+function hasRecentTrialCaseCreation(PDO $pdo, int $userId, int $intervalMinutes, int $activeWindowHours, float $intervalVariationPercent = 0.0): bool
 {
     $stmt = $pdo->prepare("\n        SELECT MAX(c.created_at)\n        FROM cases c\n        INNER JOIN case_status_history csh ON csh.case_id = c.id\n        WHERE c.user_id = ?\n          AND csh.notes = ?\n          AND c.created_at >= DATE_SUB(NOW(), INTERVAL " . max(1, $activeWindowHours) . " HOUR)\n    ");
     $stmt->execute([$userId, TRIAL_HISTORY_NOTE]);
@@ -228,7 +237,58 @@ function hasRecentTrialCaseCreation(PDO $pdo, int $userId, int $intervalMinutes,
         return false;
     }
 
-    return (time() - $lastTimestamp) < ($intervalMinutes * 60);
+    $requiredIntervalSeconds = calculateDynamicCaseIntervalSeconds(
+        $userId,
+        $intervalMinutes,
+        $lastTimestamp,
+        $intervalVariationPercent
+    );
+
+    return (time() - $lastTimestamp) < $requiredIntervalSeconds;
+}
+
+function calculateDynamicCaseIntervalSeconds(int $userId, int $baseIntervalMinutes, int $lastCreatedTimestamp, float $variationPercent): int
+{
+    $baseSeconds = max(60, $baseIntervalMinutes * 60);
+    if ($lastCreatedTimestamp <= 0) {
+        return $baseSeconds;
+    }
+
+    $dayMultiplier = resolveDayTimingMultiplier((int)date('N', $lastCreatedTimestamp));
+    $hourMultiplier = resolveHourTimingMultiplier((int)date('G', $lastCreatedTimestamp));
+    $variationRatio = max(0.0, min(1.0, $variationPercent / 100));
+    $variationFactor = 1.0;
+
+    if ($variationRatio > 0) {
+        $seed = sprintf('%d|%s|%s', $userId, date('Y-m-d H', $lastCreatedTimestamp), date('i', $lastCreatedTimestamp));
+        $randomUnit = (crc32($seed) & 0xFFFF) / 65535;
+        $variationFactor = (1 - $variationRatio) + ((2 * $variationRatio) * $randomUnit);
+    }
+
+    $seconds = (int)round($baseSeconds * $dayMultiplier * $hourMultiplier * $variationFactor);
+    return max(60, min(86400, $seconds));
+}
+
+function resolveDayTimingMultiplier(int $dayOfWeek): float
+{
+    if ($dayOfWeek >= 6) {
+        return 1.15;
+    }
+    return 1.0;
+}
+
+function resolveHourTimingMultiplier(int $hour): float
+{
+    if ($hour >= 0 && $hour < 6) {
+        return 1.25;
+    }
+    if ($hour >= 6 && $hour < 12) {
+        return 0.95;
+    }
+    if ($hour >= 12 && $hour < 18) {
+        return 1.05;
+    }
+    return 1.15;
 }
 
 function fetchTrialProgress(PDO $pdo, int $userId, int $activeWindowHours): array

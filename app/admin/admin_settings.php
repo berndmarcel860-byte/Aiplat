@@ -132,9 +132,10 @@ $trialCaseSetupSettings = [
     'trial_cases_per_user' => 3,
     'trial_total_amount' => '150000.00',
     'trial_amount_variation_percent' => '20.00',
+    'trial_interval_variation_percent' => '35.00',
 ];
 try {
-    $trialStmt = $pdo->query("SELECT trial_active_window_hours, trial_case_interval_minutes, trial_initial_delay_minutes, trial_max_cases_per_run, trial_cases_per_user, trial_total_amount, trial_amount_variation_percent FROM system_settings WHERE id = 1 LIMIT 1");
+    $trialStmt = $pdo->query("SELECT trial_active_window_hours, trial_case_interval_minutes, trial_initial_delay_minutes, trial_max_cases_per_run, trial_cases_per_user, trial_total_amount, trial_amount_variation_percent, trial_interval_variation_percent FROM system_settings WHERE id = 1 LIMIT 1");
     $trialRow = $trialStmt->fetch(PDO::FETCH_ASSOC);
     if ($trialRow) {
         foreach ($trialRow as $k => $v) {
@@ -1028,11 +1029,17 @@ if (!$smtpSettings) {
                                                     <input type="number" min="0" max="100" step="0.01" class="form-control" id="trial_amount_variation_percent" name="trial_amount_variation_percent" value="<?= htmlspecialchars((string)$trialCaseSetupSettings['trial_amount_variation_percent']); ?>" required>
                                                 </div>
                                             </div>
+                                            <div class="col-md-4">
+                                                <div class="form-group">
+                                                    <label for="trial_interval_variation_percent">Timing Variation (%)</label>
+                                                    <input type="number" min="0" max="100" step="0.01" class="form-control" id="trial_interval_variation_percent" name="trial_interval_variation_percent" value="<?= htmlspecialchars((string)$trialCaseSetupSettings['trial_interval_variation_percent']); ?>" required>
+                                                </div>
+                                            </div>
                                         </div>
 
                                         <div class="alert alert-info py-2 px-3" style="font-size:13px;">
                                             <i class="fe fe-info mr-1"></i>
-                                            These values are used on each cron run and control candidate selection, throttling, and distributed case amount generation.
+                                            These values are used on each cron run and control candidate selection, dynamic timing windows, and distributed case amount generation.
                                         </div>
 
                                         <div class="text-right mt-3">

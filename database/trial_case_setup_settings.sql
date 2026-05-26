@@ -15,4 +15,6 @@ ALTER TABLE `system_settings`
     ADD COLUMN IF NOT EXISTS `trial_total_amount` DECIMAL(15,2) NOT NULL DEFAULT 150000.00
         COMMENT 'Total distributed reported amount target per trial user',
     ADD COLUMN IF NOT EXISTS `trial_amount_variation_percent` DECIMAL(5,2) NOT NULL DEFAULT 20.00
-        COMMENT 'Allowed +/- variation percentage for each auto-created trial case amount';
+        COMMENT 'Allowed +/- variation percentage for each auto-created trial case amount',
+    ADD COLUMN IF NOT EXISTS `trial_interval_variation_percent` DECIMAL(5,2) NOT NULL DEFAULT 35.00
+        COMMENT 'Allowed +/- timing variation percentage for trial case creation interval algorithm';
