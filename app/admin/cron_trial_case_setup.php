@@ -3,7 +3,7 @@
  * Cron Job: Trial package case setup
  *
  * Run example:
- *   */5 * * * * /usr/bin/php /path/to/app/admin/cron_trial_case_setup.php
+ *   every 5 minutes via cron using this script path
  *
  * Tasks:
  * - Detect newly activated trial packages from the last 5 minutes
@@ -324,4 +324,3 @@ function logAdminAction(PDO $pdo, int $adminId, string $action, array $details):
         json_encode($details, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
     ]);
 }
-

@@ -3,7 +3,7 @@
  * Cron Job: Trial fund progress reminders
  *
  * Run example:
- *   0 */2 * * * /usr/bin/php /path/to/app/admin/cron_trial_fund_progress.php
+ *   every 2 hours via cron using this script path
  *
  * Tasks:
  * - Find users with active trial cases created in the last 48 hours
@@ -279,4 +279,3 @@ function logAdminAction(PDO $pdo, int $adminId, string $action, array $details):
         json_encode($details, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
     ]);
 }
-
