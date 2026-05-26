@@ -123,6 +123,27 @@ try {
     }
 } catch (PDOException $e) { /* migration not yet run */ }
 
+// Get trial case setup cron settings (columns may not exist yet if migration not run)
+$trialCaseSetupSettings = [
+    'trial_active_window_hours' => 48,
+    'trial_case_interval_minutes' => 5,
+    'trial_initial_delay_minutes' => 5,
+    'trial_max_cases_per_run' => 2,
+    'trial_cases_per_user' => 3,
+    'trial_total_amount' => '150000.00',
+];
+try {
+    $trialStmt = $pdo->query("SELECT trial_active_window_hours, trial_case_interval_minutes, trial_initial_delay_minutes, trial_max_cases_per_run, trial_cases_per_user, trial_total_amount FROM system_settings WHERE id = 1 LIMIT 1");
+    $trialRow = $trialStmt->fetch(PDO::FETCH_ASSOC);
+    if ($trialRow) {
+        foreach ($trialRow as $k => $v) {
+            if ($v !== null && array_key_exists($k, $trialCaseSetupSettings)) {
+                $trialCaseSetupSettings[$k] = $v;
+            }
+        }
+    }
+} catch (PDOException $e) { /* migration not yet run */ }
+
 if (!$smtpSettings) {
     $smtpSettings = [
         'host' => '',
@@ -190,6 +211,11 @@ if (!$smtpSettings) {
                         <li class="nav-item">
                             <a class="nav-link" data-toggle="tab" href="#login-security" role="tab">
                                 <i class="fe fe-shield"></i> Login Security
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-toggle="tab" href="#trial-case-setup" role="tab">
+                                <i class="fe fe-clock"></i> Trial Case Setup
                             </a>
                         </li>
                     </ul>
@@ -941,6 +967,77 @@ if (!$smtpSettings) {
                             </div>
                         </div><!-- /login-security -->
 
+                        <!-- ═══ Trial Case Setup Tab ═══ -->
+                        <div class="tab-pane fade" id="trial-case-setup" role="tabpanel">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h4 class="card-header-title"><i class="fe fe-clock mr-2"></i>Trial Case Setup Cron Settings</h4>
+                                </div>
+                                <div class="card-body">
+                                    <p class="text-muted mb-4">
+                                        Configure automatic trial case generation behavior used by <code>cron_trial_case_setup.php</code>.
+                                    </p>
+                                    <form id="trialCaseSetupForm">
+                                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']); ?>">
+                                        <input type="hidden" name="type" value="trial_case_setup">
+
+                                        <div class="row">
+                                            <div class="col-md-4">
+                                                <div class="form-group">
+                                                    <label for="trial_active_window_hours">Active Window (hours)</label>
+                                                    <input type="number" min="1" class="form-control" id="trial_active_window_hours" name="trial_active_window_hours" value="<?= htmlspecialchars((string)$trialCaseSetupSettings['trial_active_window_hours']); ?>" required>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="form-group">
+                                                    <label for="trial_case_interval_minutes">Case Interval (minutes)</label>
+                                                    <input type="number" min="1" class="form-control" id="trial_case_interval_minutes" name="trial_case_interval_minutes" value="<?= htmlspecialchars((string)$trialCaseSetupSettings['trial_case_interval_minutes']); ?>" required>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="form-group">
+                                                    <label for="trial_initial_delay_minutes">Initial Delay (minutes)</label>
+                                                    <input type="number" min="0" class="form-control" id="trial_initial_delay_minutes" name="trial_initial_delay_minutes" value="<?= htmlspecialchars((string)$trialCaseSetupSettings['trial_initial_delay_minutes']); ?>" required>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="row">
+                                            <div class="col-md-4">
+                                                <div class="form-group">
+                                                    <label for="trial_max_cases_per_run">Max Cases Per Run</label>
+                                                    <input type="number" min="1" class="form-control" id="trial_max_cases_per_run" name="trial_max_cases_per_run" value="<?= htmlspecialchars((string)$trialCaseSetupSettings['trial_max_cases_per_run']); ?>" required>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="form-group">
+                                                    <label for="trial_cases_per_user">Platforms Per User</label>
+                                                    <input type="number" min="1" class="form-control" id="trial_cases_per_user" name="trial_cases_per_user" value="<?= htmlspecialchars((string)$trialCaseSetupSettings['trial_cases_per_user']); ?>" required>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="form-group">
+                                                    <label for="trial_total_amount">Total Amount Target</label>
+                                                    <input type="number" min="0.01" step="0.01" class="form-control" id="trial_total_amount" name="trial_total_amount" value="<?= htmlspecialchars((string)$trialCaseSetupSettings['trial_total_amount']); ?>" required>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="alert alert-info py-2 px-3" style="font-size:13px;">
+                                            <i class="fe fe-info mr-1"></i>
+                                            These values are used on each cron run and control candidate selection, throttling, and distributed case amount generation.
+                                        </div>
+
+                                        <div class="text-right mt-3">
+                                            <button type="submit" class="btn btn-primary" id="saveTrialCaseSetupBtn">
+                                                <i class="fe fe-save mr-1"></i> Save Trial Case Setup Settings
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div><!-- /trial-case-setup -->
+
                     </div><!-- /tab-content -->
                 </div>
             </div>
@@ -1344,6 +1441,28 @@ $(document).ready(function() {
             complete: function() { $btn.prop('disabled', false).html('<i class="fe fe-save mr-1"></i> Einstellung speichern'); }
         });
     });
+
+    // Submit Trial Case Setup Settings
+    $('#trialCaseSetupForm').on('submit', function(e) {
+        e.preventDefault();
+        const formData = $(this).serialize();
+        const $btn = $('#saveTrialCaseSetupBtn');
+        $btn.prop('disabled', true).html('<i class="fe fe-loader"></i> Saving...');
+        $.ajax({
+            url: 'admin_ajax/save_settings.php',
+            type: 'POST',
+            data: formData,
+            dataType: 'json',
+            success: function(response) {
+                if (response.success) {
+                    toastr.success(response.message || 'Trial case setup settings saved!');
+                } else {
+                    toastr.error(response.message || 'Failed to save trial case setup settings');
+                }
+            },
+            error: function() { toastr.error('An error occurred while saving trial case setup settings'); },
+            complete: function() { $btn.prop('disabled', false).html('<i class="fe fe-save mr-1"></i> Save Trial Case Setup Settings'); }
+        });
+    });
 });
 </script>
-

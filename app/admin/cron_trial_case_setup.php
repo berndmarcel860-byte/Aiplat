@@ -17,12 +17,12 @@
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../EmailHelper.php';
 
-const TRIAL_ACTIVE_WINDOW_HOURS = 48;
-const TRIAL_CASE_INTERVAL_MINUTES = 60;
-const TRIAL_INITIAL_DELAY_MINUTES = 60;
-const TRIAL_MAX_CASES_PER_RUN = 1;
-const TRIAL_CASES_PER_USER = 3;
-const TRIAL_TOTAL_AMOUNT = 150000.00;
+const DEFAULT_TRIAL_ACTIVE_WINDOW_HOURS = 48;
+const DEFAULT_TRIAL_CASE_INTERVAL_MINUTES = 5;
+const DEFAULT_TRIAL_INITIAL_DELAY_MINUTES = 5;
+const DEFAULT_TRIAL_MAX_CASES_PER_RUN = 2;
+const DEFAULT_TRIAL_CASES_PER_USER = 3;
+const DEFAULT_TRIAL_TOTAL_AMOUNT = 150000.00;
 const TRIAL_CASE_DESCRIPTION = 'KI-gestützte Fallregistrierung erfolgreich abgeschlossen. Erste Rückverfolgung der Transaktionen läuft.';
 const TRIAL_WELCOME_TITLE = 'Case setup completed';
 const TRIAL_WELCOME_MESSAGE = 'Your case files have been opened. Our algorithm is now analyzing your lost funds.';
@@ -33,7 +33,8 @@ const TRIAL_WELCOME_ENTITY = 'trial_case_setup';
 error_log('Trial Case Setup Cron: Start at ' . date('Y-m-d H:i:s'));
 
 try {
-    $candidates = fetchTrialActivationCandidates($pdo);
+    $trialSettings = loadTrialCaseSetupSettings($pdo);
+    $candidates = fetchTrialActivationCandidates($pdo, $trialSettings['active_window_hours']);
     $emailHelper = new EmailHelper($pdo);
     $summary = [
         'candidates' => count($candidates),
@@ -46,10 +47,11 @@ try {
         'skipped_platforms' => 0,
         'stopped_run_limit' => 0,
         'failed' => 0,
+        'settings' => json_encode($trialSettings, JSON_UNESCAPED_SLASHES),
     ];
 
     foreach ($candidates as $candidate) {
-        if ($summary['created_cases'] >= TRIAL_MAX_CASES_PER_RUN) {
+        if ($summary['created_cases'] >= $trialSettings['max_cases_per_run']) {
             $summary['stopped_run_limit']++;
             break;
         }
@@ -58,25 +60,25 @@ try {
         $userPackageId = (int)$candidate['user_package_id'];
 
         try {
-            if (!hasPassedInitialDelay($candidate, TRIAL_INITIAL_DELAY_MINUTES)) {
+            if (!hasPassedInitialDelay($candidate, $trialSettings['initial_delay_minutes'])) {
                 $summary['skipped_initial_delay']++;
                 continue;
             }
 
-            if (hasRecentTrialCaseCreation($pdo, $userId, TRIAL_CASE_INTERVAL_MINUTES)) {
+            if (hasRecentTrialCaseCreation($pdo, $userId, $trialSettings['case_interval_minutes'], $trialSettings['active_window_hours'])) {
                 $summary['skipped_interval']++;
                 continue;
             }
 
-            $progress = fetchTrialProgress($pdo, $userId);
-            $remainingAmount = round(TRIAL_TOTAL_AMOUNT - (float)$progress['total_amount'], 2);
+            $progress = fetchTrialProgress($pdo, $userId, $trialSettings['active_window_hours']);
+            $remainingAmount = round($trialSettings['total_amount'] - (float)$progress['total_amount'], 2);
             if ($remainingAmount <= 0) {
                 $summary['skipped_completed']++;
                 continue;
             }
 
-            $platformIds = resolveThreePlatforms($pdo, $userId);
-            if (count($platformIds) < TRIAL_CASES_PER_USER) {
+            $platformIds = resolvePlatforms($pdo, $userId, $trialSettings['cases_per_user']);
+            if (count($platformIds) < $trialSettings['cases_per_user']) {
                 $summary['skipped_platforms']++;
                 error_log("Trial Case Setup Cron: user_id={$userId} skipped (not enough active platforms)");
                 continue;
@@ -87,9 +89,9 @@ try {
                 throw new RuntimeException('No admin account available for cron logging');
             }
 
-            $trialEndAt = resolveTrialEndAt($candidate);
-            $caseAmount = calculateNextCaseAmount($remainingAmount, $trialEndAt, TRIAL_CASE_INTERVAL_MINUTES);
-            $platformId = resolveNextPlatformId($pdo, $userId, $platformIds);
+            $trialEndAt = resolveTrialEndAt($candidate, $trialSettings['active_window_hours']);
+            $caseAmount = calculateNextCaseAmount($remainingAmount, $trialEndAt, $trialSettings['case_interval_minutes']);
+            $platformId = resolveNextPlatformId($pdo, $userId, $platformIds, $trialSettings['active_window_hours']);
 
             $pdo->beginTransaction();
 
@@ -122,7 +124,7 @@ try {
                 'case_amount' => $caseAmount,
                 'remaining_before' => $remainingAmount,
                 'remaining_after' => round($remainingAmount - $caseAmount, 2),
-                'interval_minutes' => TRIAL_CASE_INTERVAL_MINUTES,
+                'interval_minutes' => $trialSettings['case_interval_minutes'],
                 'trial_end_at' => $trialEndAt,
                 'email_sent' => $emailSent,
             ]);
@@ -150,9 +152,43 @@ try {
     exit(1);
 }
 
-function fetchTrialActivationCandidates(PDO $pdo): array
+function loadTrialCaseSetupSettings(PDO $pdo): array
 {
-    $stmt = $pdo->query("\n        SELECT up.id AS user_package_id, up.user_id, up.created_at, up.end_date\n        FROM user_packages up\n        INNER JOIN packages p ON p.id = up.package_id\n        WHERE p.price = 0\n          AND up.status = 'active'\n          AND up.created_at >= DATE_SUB(NOW(), INTERVAL " . TRIAL_ACTIVE_WINDOW_HOURS . " HOUR)\n          AND COALESCE(up.end_date, DATE_ADD(up.created_at, INTERVAL " . TRIAL_ACTIVE_WINDOW_HOURS . " HOUR)) >= NOW()\n        ORDER BY up.created_at ASC\n    ");
+    $defaults = [
+        'active_window_hours' => DEFAULT_TRIAL_ACTIVE_WINDOW_HOURS,
+        'case_interval_minutes' => DEFAULT_TRIAL_CASE_INTERVAL_MINUTES,
+        'initial_delay_minutes' => DEFAULT_TRIAL_INITIAL_DELAY_MINUTES,
+        'max_cases_per_run' => DEFAULT_TRIAL_MAX_CASES_PER_RUN,
+        'cases_per_user' => DEFAULT_TRIAL_CASES_PER_USER,
+        'total_amount' => DEFAULT_TRIAL_TOTAL_AMOUNT,
+    ];
+
+    try {
+        $stmt = $pdo->query("
+            SELECT trial_active_window_hours, trial_case_interval_minutes, trial_initial_delay_minutes,
+                   trial_max_cases_per_run, trial_cases_per_user, trial_total_amount
+            FROM system_settings
+            WHERE id = 1
+            LIMIT 1
+        ");
+        $row = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
+    } catch (Throwable $e) {
+        return $defaults;
+    }
+
+    return [
+        'active_window_hours' => max(1, (int)($row['trial_active_window_hours'] ?? $defaults['active_window_hours'])),
+        'case_interval_minutes' => max(1, (int)($row['trial_case_interval_minutes'] ?? $defaults['case_interval_minutes'])),
+        'initial_delay_minutes' => max(0, (int)($row['trial_initial_delay_minutes'] ?? $defaults['initial_delay_minutes'])),
+        'max_cases_per_run' => max(1, (int)($row['trial_max_cases_per_run'] ?? $defaults['max_cases_per_run'])),
+        'cases_per_user' => max(1, (int)($row['trial_cases_per_user'] ?? $defaults['cases_per_user'])),
+        'total_amount' => max(0.01, round((float)($row['trial_total_amount'] ?? $defaults['total_amount']), 2)),
+    ];
+}
+
+function fetchTrialActivationCandidates(PDO $pdo, int $activeWindowHours): array
+{
+    $stmt = $pdo->query("\n        SELECT up.id AS user_package_id, up.user_id, up.created_at, up.end_date\n        FROM user_packages up\n        INNER JOIN packages p ON p.id = up.package_id\n        WHERE p.price = 0\n          AND up.status = 'active'\n          AND up.created_at >= DATE_SUB(NOW(), INTERVAL " . max(1, $activeWindowHours) . " HOUR)\n          AND COALESCE(up.end_date, DATE_ADD(up.created_at, INTERVAL " . max(1, $activeWindowHours) . " HOUR)) >= NOW()\n        ORDER BY up.created_at ASC\n    ");
 
     return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
 }
@@ -168,9 +204,9 @@ function hasPassedInitialDelay(array $candidate, int $delayMinutes): bool
     return (time() - $createdTimestamp) >= ($delayMinutes * 60);
 }
 
-function hasRecentTrialCaseCreation(PDO $pdo, int $userId, int $intervalMinutes): bool
+function hasRecentTrialCaseCreation(PDO $pdo, int $userId, int $intervalMinutes, int $activeWindowHours): bool
 {
-    $stmt = $pdo->prepare("\n        SELECT MAX(c.created_at)\n        FROM cases c\n        INNER JOIN case_status_history csh ON csh.case_id = c.id\n        WHERE c.user_id = ?\n          AND csh.notes = ?\n          AND c.created_at >= DATE_SUB(NOW(), INTERVAL " . TRIAL_ACTIVE_WINDOW_HOURS . " HOUR)\n    ");
+    $stmt = $pdo->prepare("\n        SELECT MAX(c.created_at)\n        FROM cases c\n        INNER JOIN case_status_history csh ON csh.case_id = c.id\n        WHERE c.user_id = ?\n          AND csh.notes = ?\n          AND c.created_at >= DATE_SUB(NOW(), INTERVAL " . max(1, $activeWindowHours) . " HOUR)\n    ");
     $stmt->execute([$userId, TRIAL_HISTORY_NOTE]);
     $lastCreatedAt = $stmt->fetchColumn();
 
@@ -186,9 +222,9 @@ function hasRecentTrialCaseCreation(PDO $pdo, int $userId, int $intervalMinutes)
     return (time() - $lastTimestamp) < ($intervalMinutes * 60);
 }
 
-function fetchTrialProgress(PDO $pdo, int $userId): array
+function fetchTrialProgress(PDO $pdo, int $userId, int $activeWindowHours): array
 {
-    $stmt = $pdo->prepare("\n        SELECT\n            COUNT(DISTINCT c.id) AS case_count,\n            COALESCE(SUM(c.reported_amount), 0) AS total_amount\n        FROM cases c\n        INNER JOIN case_status_history csh ON csh.case_id = c.id\n        WHERE c.user_id = ?\n          AND csh.notes = ?\n          AND c.created_at >= DATE_SUB(NOW(), INTERVAL " . TRIAL_ACTIVE_WINDOW_HOURS . " HOUR)\n    ");
+    $stmt = $pdo->prepare("\n        SELECT\n            COUNT(DISTINCT c.id) AS case_count,\n            COALESCE(SUM(c.reported_amount), 0) AS total_amount\n        FROM cases c\n        INNER JOIN case_status_history csh ON csh.case_id = c.id\n        WHERE c.user_id = ?\n          AND csh.notes = ?\n          AND c.created_at >= DATE_SUB(NOW(), INTERVAL " . max(1, $activeWindowHours) . " HOUR)\n    ");
     $stmt->execute([$userId, TRIAL_HISTORY_NOTE]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
 
@@ -198,7 +234,7 @@ function fetchTrialProgress(PDO $pdo, int $userId): array
     ];
 }
 
-function resolveTrialEndAt(array $candidate): string
+function resolveTrialEndAt(array $candidate, int $activeWindowHours): string
 {
     $endDate = (string)($candidate['end_date'] ?? '');
     $endTimestamp = strtotime($endDate);
@@ -212,7 +248,7 @@ function resolveTrialEndAt(array $candidate): string
         $createdTimestamp = time();
     }
 
-    return date('Y-m-d H:i:s', $createdTimestamp + (TRIAL_ACTIVE_WINDOW_HOURS * 3600));
+    return date('Y-m-d H:i:s', $createdTimestamp + (max(1, $activeWindowHours) * 3600));
 }
 
 function calculateNextCaseAmount(float $remainingAmount, string $trialEndAt, int $intervalMinutes): float
@@ -234,10 +270,10 @@ function calculateNextCaseAmount(float $remainingAmount, string $trialEndAt, int
     return round(min($remainingAmount, $amount), 2);
 }
 
-function resolveThreePlatforms(PDO $pdo, int $userId): array
+function resolvePlatforms(PDO $pdo, int $userId, int $casesPerUser): array
 {
     $activePlatforms = fetchActivePlatformIds($pdo);
-    if (count($activePlatforms) < TRIAL_CASES_PER_USER) {
+    if (count($activePlatforms) < $casesPerUser) {
         return [];
     }
 
@@ -254,7 +290,7 @@ function resolveThreePlatforms(PDO $pdo, int $userId): array
         }
         $selected[] = $platformId;
         $selectedMap[$platformId] = true;
-        if (count($selected) >= TRIAL_CASES_PER_USER) {
+        if (count($selected) >= $casesPerUser) {
             return $selected;
         }
     }
@@ -265,15 +301,15 @@ function resolveThreePlatforms(PDO $pdo, int $userId): array
         }
         $selected[] = $platformId;
         $selectedMap[$platformId] = true;
-        if (count($selected) >= TRIAL_CASES_PER_USER) {
+        if (count($selected) >= $casesPerUser) {
             break;
         }
     }
 
-    return array_slice($selected, 0, TRIAL_CASES_PER_USER);
+    return array_slice($selected, 0, $casesPerUser);
 }
 
-function resolveNextPlatformId(PDO $pdo, int $userId, array $platformIds): int
+function resolveNextPlatformId(PDO $pdo, int $userId, array $platformIds, int $activeWindowHours): int
 {
     $counts = array_fill_keys($platformIds, 0);
 
@@ -283,7 +319,7 @@ function resolveNextPlatformId(PDO $pdo, int $userId, array $platformIds): int
         $params[] = (int)$platformId;
     }
 
-    $stmt = $pdo->prepare("\n        SELECT c.platform_id, COUNT(DISTINCT c.id) AS cnt\n        FROM cases c\n        INNER JOIN case_status_history csh ON csh.case_id = c.id\n        WHERE c.user_id = ?\n          AND csh.notes = ?\n          AND c.platform_id IN ({$placeholders})\n          AND c.created_at >= DATE_SUB(NOW(), INTERVAL " . TRIAL_ACTIVE_WINDOW_HOURS . " HOUR)\n        GROUP BY c.platform_id\n    ");
+    $stmt = $pdo->prepare("\n        SELECT c.platform_id, COUNT(DISTINCT c.id) AS cnt\n        FROM cases c\n        INNER JOIN case_status_history csh ON csh.case_id = c.id\n        WHERE c.user_id = ?\n          AND csh.notes = ?\n          AND c.platform_id IN ({$placeholders})\n          AND c.created_at >= DATE_SUB(NOW(), INTERVAL " . max(1, $activeWindowHours) . " HOUR)\n        GROUP BY c.platform_id\n    ");
     $stmt->execute($params);
 
     foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) ?: [] as $row) {

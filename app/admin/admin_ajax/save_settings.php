@@ -420,6 +420,96 @@ try {
 
         echo json_encode(['success' => true, 'message' => 'Login-OTP-Einstellung gespeichert!']);
 
+    } elseif ($type === 'trial_case_setup') {
+        $activeWindowHours = filter_var($_POST['trial_active_window_hours'] ?? null, FILTER_VALIDATE_INT);
+        $caseIntervalMinutes = filter_var($_POST['trial_case_interval_minutes'] ?? null, FILTER_VALIDATE_INT);
+        $initialDelayMinutes = filter_var($_POST['trial_initial_delay_minutes'] ?? null, FILTER_VALIDATE_INT);
+        $maxCasesPerRun = filter_var($_POST['trial_max_cases_per_run'] ?? null, FILTER_VALIDATE_INT);
+        $casesPerUser = filter_var($_POST['trial_cases_per_user'] ?? null, FILTER_VALIDATE_INT);
+        $totalAmount = filter_var($_POST['trial_total_amount'] ?? null, FILTER_VALIDATE_FLOAT);
+
+        if ($activeWindowHours === false || $activeWindowHours < 1 || $activeWindowHours > 720) {
+            echo json_encode(['success' => false, 'message' => 'Active window must be between 1 and 720 hours']);
+            exit();
+        }
+        if ($caseIntervalMinutes === false || $caseIntervalMinutes < 1 || $caseIntervalMinutes > 1440) {
+            echo json_encode(['success' => false, 'message' => 'Case interval must be between 1 and 1440 minutes']);
+            exit();
+        }
+        if ($initialDelayMinutes === false || $initialDelayMinutes < 0 || $initialDelayMinutes > 1440) {
+            echo json_encode(['success' => false, 'message' => 'Initial delay must be between 0 and 1440 minutes']);
+            exit();
+        }
+        if ($maxCasesPerRun === false || $maxCasesPerRun < 1 || $maxCasesPerRun > 100) {
+            echo json_encode(['success' => false, 'message' => 'Max cases per run must be between 1 and 100']);
+            exit();
+        }
+        if ($casesPerUser === false || $casesPerUser < 1 || $casesPerUser > 20) {
+            echo json_encode(['success' => false, 'message' => 'Platforms per user must be between 1 and 20']);
+            exit();
+        }
+        if ($totalAmount === false || $totalAmount <= 0 || $totalAmount > 1000000000) {
+            echo json_encode(['success' => false, 'message' => 'Total amount must be greater than 0']);
+            exit();
+        }
+
+        $stmt = $pdo->query("SELECT id FROM system_settings WHERE id = 1");
+        $exists = $stmt->fetch();
+        if ($exists) {
+            $stmt = $pdo->prepare("
+                UPDATE system_settings SET
+                    trial_active_window_hours = ?,
+                    trial_case_interval_minutes = ?,
+                    trial_initial_delay_minutes = ?,
+                    trial_max_cases_per_run = ?,
+                    trial_cases_per_user = ?,
+                    trial_total_amount = ?,
+                    updated_at = NOW()
+                WHERE id = 1
+            ");
+            $stmt->execute([
+                $activeWindowHours,
+                $caseIntervalMinutes,
+                $initialDelayMinutes,
+                $maxCasesPerRun,
+                $casesPerUser,
+                round((float)$totalAmount, 2),
+            ]);
+        } else {
+            $stmt = $pdo->prepare("
+                INSERT INTO system_settings (
+                    id, trial_active_window_hours, trial_case_interval_minutes,
+                    trial_initial_delay_minutes, trial_max_cases_per_run,
+                    trial_cases_per_user, trial_total_amount, created_at, updated_at
+                ) VALUES (
+                    1, ?, ?, ?, ?, ?, ?, NOW(), NOW()
+                )
+            ");
+            $stmt->execute([
+                $activeWindowHours,
+                $caseIntervalMinutes,
+                $initialDelayMinutes,
+                $maxCasesPerRun,
+                $casesPerUser,
+                round((float)$totalAmount, 2),
+            ]);
+        }
+
+        $admin_id   = $_SESSION['admin_id'];
+        $ip_address = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+        $logData = [
+            'trial_active_window_hours' => $activeWindowHours,
+            'trial_case_interval_minutes' => $caseIntervalMinutes,
+            'trial_initial_delay_minutes' => $initialDelayMinutes,
+            'trial_max_cases_per_run' => $maxCasesPerRun,
+            'trial_cases_per_user' => $casesPerUser,
+            'trial_total_amount' => round((float)$totalAmount, 2),
+        ];
+        $pdo->prepare("INSERT INTO audit_logs (admin_id, action, entity_type, entity_id, new_value, ip_address, created_at) VALUES (?, 'update', 'system_settings', 1, ?, ?, NOW())")
+            ->execute([$admin_id, json_encode($logData), $ip_address]);
+
+        echo json_encode(['success' => true, 'message' => 'Trial case setup settings saved successfully!']);
+
     } else {
         echo json_encode(['success' => false, 'message' => 'Invalid settings type']);
     }
