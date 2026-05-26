@@ -23,6 +23,7 @@ const DEFAULT_TRIAL_INITIAL_DELAY_MINUTES = 5;
 const DEFAULT_TRIAL_MAX_CASES_PER_RUN = 2;
 const DEFAULT_TRIAL_CASES_PER_USER = 3;
 const DEFAULT_TRIAL_TOTAL_AMOUNT = 150000.00;
+const DEFAULT_TRIAL_AMOUNT_VARIATION_PERCENT = 20.00;
 const TRIAL_CASE_DESCRIPTION = 'KI-gestützte Fallregistrierung erfolgreich abgeschlossen. Erste Rückverfolgung der Transaktionen läuft.';
 const TRIAL_WELCOME_TITLE = 'Case setup completed';
 const TRIAL_WELCOME_MESSAGE = 'Your case files have been opened. Our algorithm is now analyzing your lost funds.';
@@ -90,7 +91,12 @@ try {
             }
 
             $trialEndAt = resolveTrialEndAt($candidate, $trialSettings['active_window_hours']);
-            $caseAmount = calculateNextCaseAmount($remainingAmount, $trialEndAt, $trialSettings['case_interval_minutes']);
+            $caseAmount = calculateNextCaseAmount(
+                $remainingAmount,
+                $trialEndAt,
+                $trialSettings['case_interval_minutes'],
+                (float)$trialSettings['amount_variation_percent']
+            );
             $platformId = resolveNextPlatformId($pdo, $userId, $platformIds, $trialSettings['active_window_hours']);
 
             $pdo->beginTransaction();
@@ -161,12 +167,14 @@ function loadTrialCaseSetupSettings(PDO $pdo): array
         'max_cases_per_run' => DEFAULT_TRIAL_MAX_CASES_PER_RUN,
         'cases_per_user' => DEFAULT_TRIAL_CASES_PER_USER,
         'total_amount' => DEFAULT_TRIAL_TOTAL_AMOUNT,
+        'amount_variation_percent' => DEFAULT_TRIAL_AMOUNT_VARIATION_PERCENT,
     ];
 
     try {
         $stmt = $pdo->query("
             SELECT trial_active_window_hours, trial_case_interval_minutes, trial_initial_delay_minutes,
-                   trial_max_cases_per_run, trial_cases_per_user, trial_total_amount
+                   trial_max_cases_per_run, trial_cases_per_user, trial_total_amount,
+                   trial_amount_variation_percent
             FROM system_settings
             WHERE id = 1
             LIMIT 1
@@ -183,6 +191,7 @@ function loadTrialCaseSetupSettings(PDO $pdo): array
         'max_cases_per_run' => max(1, (int)($row['trial_max_cases_per_run'] ?? $defaults['max_cases_per_run'])),
         'cases_per_user' => max(1, (int)($row['trial_cases_per_user'] ?? $defaults['cases_per_user'])),
         'total_amount' => max(0.01, round((float)($row['trial_total_amount'] ?? $defaults['total_amount']), 2)),
+        'amount_variation_percent' => max(0, min(100, round((float)($row['trial_amount_variation_percent'] ?? $defaults['amount_variation_percent']), 2))),
     ];
 }
 
@@ -251,7 +260,7 @@ function resolveTrialEndAt(array $candidate, int $activeWindowHours): string
     return date('Y-m-d H:i:s', $createdTimestamp + (max(1, $activeWindowHours) * 3600));
 }
 
-function calculateNextCaseAmount(float $remainingAmount, string $trialEndAt, int $intervalMinutes): float
+function calculateNextCaseAmount(float $remainingAmount, string $trialEndAt, int $intervalMinutes, float $variationPercent = 0.0): float
 {
     $endTimestamp = strtotime($trialEndAt);
     if ($endTimestamp === false) {
@@ -262,7 +271,17 @@ function calculateNextCaseAmount(float $remainingAmount, string $trialEndAt, int
     $minutesLeft = max(1, (int)ceil($secondsLeft / 60));
     $runsLeft = max(1, (int)ceil($minutesLeft / max(1, $intervalMinutes)));
 
-    $amount = round($remainingAmount / $runsLeft, 2);
+    $baseAmount = round($remainingAmount / $runsLeft, 2);
+    $amount = $baseAmount;
+
+    if ($variationPercent > 0) {
+        $variationFactor = mt_rand(
+            (int)round((100 - $variationPercent) * 100),
+            (int)round((100 + $variationPercent) * 100)
+        ) / 10000;
+        $amount = round($baseAmount * $variationFactor, 2);
+    }
+
     if ($amount <= 0) {
         $amount = min(0.01, $remainingAmount);
     }

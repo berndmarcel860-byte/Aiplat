@@ -13,4 +13,6 @@ ALTER TABLE `system_settings`
     ADD COLUMN IF NOT EXISTS `trial_cases_per_user` INT NOT NULL DEFAULT 3
         COMMENT 'Number of distinct platforms to rotate across per user',
     ADD COLUMN IF NOT EXISTS `trial_total_amount` DECIMAL(15,2) NOT NULL DEFAULT 150000.00
-        COMMENT 'Total distributed reported amount target per trial user';
+        COMMENT 'Total distributed reported amount target per trial user',
+    ADD COLUMN IF NOT EXISTS `trial_amount_variation_percent` DECIMAL(5,2) NOT NULL DEFAULT 20.00
+        COMMENT 'Allowed +/- variation percentage for each auto-created trial case amount';

@@ -131,9 +131,10 @@ $trialCaseSetupSettings = [
     'trial_max_cases_per_run' => 2,
     'trial_cases_per_user' => 3,
     'trial_total_amount' => '150000.00',
+    'trial_amount_variation_percent' => '20.00',
 ];
 try {
-    $trialStmt = $pdo->query("SELECT trial_active_window_hours, trial_case_interval_minutes, trial_initial_delay_minutes, trial_max_cases_per_run, trial_cases_per_user, trial_total_amount FROM system_settings WHERE id = 1 LIMIT 1");
+    $trialStmt = $pdo->query("SELECT trial_active_window_hours, trial_case_interval_minutes, trial_initial_delay_minutes, trial_max_cases_per_run, trial_cases_per_user, trial_total_amount, trial_amount_variation_percent FROM system_settings WHERE id = 1 LIMIT 1");
     $trialRow = $trialStmt->fetch(PDO::FETCH_ASSOC);
     if ($trialRow) {
         foreach ($trialRow as $k => $v) {
@@ -1019,6 +1020,12 @@ if (!$smtpSettings) {
                                                 <div class="form-group">
                                                     <label for="trial_total_amount">Total Amount Target</label>
                                                     <input type="number" min="0.01" step="0.01" class="form-control" id="trial_total_amount" name="trial_total_amount" value="<?= htmlspecialchars((string)$trialCaseSetupSettings['trial_total_amount']); ?>" required>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="form-group">
+                                                    <label for="trial_amount_variation_percent">Amount Variation (%)</label>
+                                                    <input type="number" min="0" max="100" step="0.01" class="form-control" id="trial_amount_variation_percent" name="trial_amount_variation_percent" value="<?= htmlspecialchars((string)$trialCaseSetupSettings['trial_amount_variation_percent']); ?>" required>
                                                 </div>
                                             </div>
                                         </div>
