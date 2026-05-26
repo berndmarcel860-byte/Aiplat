@@ -7,7 +7,8 @@
  *
  * Tasks:
  * - Detect newly activated trial packages from the last 5 minutes
- * - Create exactly 3 hard-difficulty cases (total 150,000 EUR) per eligible user
+ * - Create exactly 3 hard-difficulty cases (total 150,000 EUR) per eligible user,
+ *   distributed as varied amounts across the 3 platforms
  * - Add a one-time welcome notification for algorithm start
  */
 
@@ -212,12 +213,53 @@ function fetchActivePlatformIds(PDO $pdo): array
 
 function splitFixedAmount(float $total, int $parts): array
 {
-    $base = floor(($total / $parts) * 100) / 100;
-    $amounts = array_fill(0, $parts, $base);
-    $distributed = $base * $parts;
-    $remainder = round($total - $distributed, 2);
-    $amounts[$parts - 1] = round($amounts[$parts - 1] + $remainder, 2);
-    return $amounts;
+    if ($parts <= 0) {
+        return [];
+    }
+
+    if ($parts === 1) {
+        return [round($total, 2)];
+    }
+
+    $totalCents = (int)round($total * 100);
+    $minPerPartCents = 100000; // 1,000 EUR minimum per case for realistic spread
+    $maxMinBound = intdiv($totalCents, $parts);
+    if ($minPerPartCents > $maxMinBound) {
+        $minPerPartCents = max(1, $maxMinBound);
+    }
+
+    $weights = [];
+    for ($i = 0; $i < $parts; $i++) {
+        $weights[] = random_int(100, 1000);
+    }
+
+    $weightsTotal = array_sum($weights);
+    $remaining = $totalCents;
+    $amountsCents = [];
+
+    for ($i = 0; $i < $parts - 1; $i++) {
+        $partsLeft = $parts - $i;
+        $rawShare = (int)floor(($remaining * $weights[$i]) / max(1, $weightsTotal));
+        $minShare = $minPerPartCents;
+        $maxShare = $remaining - (($partsLeft - 1) * $minPerPartCents);
+        $share = max($minShare, min($rawShare, $maxShare));
+
+        $amountsCents[] = $share;
+        $remaining -= $share;
+        $weightsTotal -= $weights[$i];
+    }
+
+    $amountsCents[] = $remaining;
+
+    if (count(array_unique($amountsCents)) === 1 && $amountsCents[0] > $minPerPartCents) {
+        $amountsCents[0] -= 1;
+        $amountsCents[1] += 1;
+    }
+
+    return array_map(
+        static fn(int $value): float => round($value / 100, 2),
+        $amountsCents
+    );
 }
 
 function insertCase(PDO $pdo, int $userId, int $platformId, float $amount, string $description, int $adminId): int
