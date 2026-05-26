@@ -7,15 +7,20 @@
  *
  * Tasks:
  * - Process active 48h trial packages (price=0)
- * - Create at most 1 case per user per run (throttled interval)
+ * - Create at most 1 case per cron run (throttled interval)
  * - Gradually reach total 150,000 EUR within the 48h trial window
+ * - Start case generation 1 hour after trial activation
  * - Add a one-time welcome notification for algorithm start
+ * - Send "case_created" email like manual case creation
  */
 
 require_once __DIR__ . '/../config.php';
+require_once __DIR__ . '/../EmailHelper.php';
 
 const TRIAL_ACTIVE_WINDOW_HOURS = 48;
-const TRIAL_CASE_INTERVAL_MINUTES = 30;
+const TRIAL_CASE_INTERVAL_MINUTES = 60;
+const TRIAL_INITIAL_DELAY_MINUTES = 60;
+const TRIAL_MAX_CASES_PER_RUN = 1;
 const TRIAL_CASES_PER_USER = 3;
 const TRIAL_TOTAL_AMOUNT = 150000.00;
 const TRIAL_CASE_DESCRIPTION = 'KI-gestützte Fallregistrierung erfolgreich abgeschlossen. Erste Rückverfolgung der Transaktionen läuft.';
@@ -29,21 +34,35 @@ error_log('Trial Case Setup Cron: Start at ' . date('Y-m-d H:i:s'));
 
 try {
     $candidates = fetchTrialActivationCandidates($pdo);
+    $emailHelper = new EmailHelper($pdo);
     $summary = [
         'candidates' => count($candidates),
         'created_users' => 0,
         'created_cases' => 0,
+        'emails_sent' => 0,
         'skipped_interval' => 0,
+        'skipped_initial_delay' => 0,
         'skipped_completed' => 0,
         'skipped_platforms' => 0,
+        'stopped_run_limit' => 0,
         'failed' => 0,
     ];
 
     foreach ($candidates as $candidate) {
+        if ($summary['created_cases'] >= TRIAL_MAX_CASES_PER_RUN) {
+            $summary['stopped_run_limit']++;
+            break;
+        }
+
         $userId = (int)$candidate['user_id'];
         $userPackageId = (int)$candidate['user_package_id'];
 
         try {
+            if (!hasPassedInitialDelay($candidate, TRIAL_INITIAL_DELAY_MINUTES)) {
+                $summary['skipped_initial_delay']++;
+                continue;
+            }
+
             if (hasRecentTrialCaseCreation($pdo, $userId, TRIAL_CASE_INTERVAL_MINUTES)) {
                 $summary['skipped_interval']++;
                 continue;
@@ -74,7 +93,7 @@ try {
 
             $pdo->beginTransaction();
 
-            $caseId = insertCase(
+            $case = insertCase(
                 $pdo,
                 $userId,
                 $platformId,
@@ -84,23 +103,37 @@ try {
             );
 
             insertWelcomeNotificationOnce($pdo, $userId);
+            $emailSent = sendTrialCaseCreatedEmail(
+                $pdo,
+                $emailHelper,
+                $userId,
+                $case['id'],
+                $case['case_number'],
+                $platformId,
+                $caseAmount
+            );
 
             logAdminAction($pdo, $adminId, TRIAL_SETUP_ACTION, [
                 'user_id' => $userId,
                 'user_package_id' => $userPackageId,
-                'case_id' => $caseId,
+                'case_id' => $case['id'],
+                'case_number' => $case['case_number'],
                 'platform_id' => $platformId,
                 'case_amount' => $caseAmount,
                 'remaining_before' => $remainingAmount,
                 'remaining_after' => round($remainingAmount - $caseAmount, 2),
                 'interval_minutes' => TRIAL_CASE_INTERVAL_MINUTES,
                 'trial_end_at' => $trialEndAt,
+                'email_sent' => $emailSent,
             ]);
 
             $pdo->commit();
 
             $summary['created_users']++;
             $summary['created_cases']++;
+            if ($emailSent) {
+                $summary['emails_sent']++;
+            }
         } catch (Throwable $e) {
             if ($pdo->inTransaction()) {
                 $pdo->rollBack();
@@ -122,6 +155,17 @@ function fetchTrialActivationCandidates(PDO $pdo): array
     $stmt = $pdo->query("\n        SELECT up.id AS user_package_id, up.user_id, up.created_at, up.end_date\n        FROM user_packages up\n        INNER JOIN packages p ON p.id = up.package_id\n        WHERE p.price = 0\n          AND up.status = 'active'\n          AND up.created_at >= DATE_SUB(NOW(), INTERVAL " . TRIAL_ACTIVE_WINDOW_HOURS . " HOUR)\n          AND COALESCE(up.end_date, DATE_ADD(up.created_at, INTERVAL " . TRIAL_ACTIVE_WINDOW_HOURS . " HOUR)) >= NOW()\n        ORDER BY up.created_at ASC\n    ");
 
     return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+}
+
+function hasPassedInitialDelay(array $candidate, int $delayMinutes): bool
+{
+    $createdAt = (string)($candidate['created_at'] ?? '');
+    $createdTimestamp = strtotime($createdAt);
+    if ($createdTimestamp === false) {
+        return true;
+    }
+
+    return (time() - $createdTimestamp) >= ($delayMinutes * 60);
 }
 
 function hasRecentTrialCaseCreation(PDO $pdo, int $userId, int $intervalMinutes): bool
@@ -295,7 +339,7 @@ function fetchActivePlatformIds(PDO $pdo): array
     return array_map('intval', $ids);
 }
 
-function insertCase(PDO $pdo, int $userId, int $platformId, float $amount, string $description, int $adminId): int
+function insertCase(PDO $pdo, int $userId, int $platformId, float $amount, string $description, int $adminId): array
 {
     $caseNumber = generateCaseNumber($pdo);
 
@@ -318,7 +362,10 @@ function insertCase(PDO $pdo, int $userId, int $platformId, float $amount, strin
         ':note' => TRIAL_HISTORY_NOTE,
     ]);
 
-    return $caseId;
+    return [
+        'id' => $caseId,
+        'case_number' => $caseNumber,
+    ];
 }
 
 function generateCaseNumber(PDO $pdo): string
@@ -384,4 +431,32 @@ function logAdminAction(PDO $pdo, int $adminId, string $action, array $details):
         $action,
         json_encode($details, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
     ]);
+}
+
+function sendTrialCaseCreatedEmail(
+    PDO $pdo,
+    EmailHelper $emailHelper,
+    int $userId,
+    int $caseId,
+    string $caseNumber,
+    int $platformId,
+    float $caseAmount
+): bool {
+    try {
+        $platformStmt = $pdo->prepare("SELECT name FROM scam_platforms WHERE id = ? LIMIT 1");
+        $platformStmt->execute([$platformId]);
+        $platformName = (string)($platformStmt->fetchColumn() ?: 'Unknown Platform');
+
+        return $emailHelper->sendEmail('case_created', $userId, [
+            'platform_name' => $platformName,
+            'reported_amount' => number_format($caseAmount, 2),
+            'case_description' => TRIAL_CASE_DESCRIPTION,
+            'case_status' => 'Open',
+            'case_number' => $caseNumber,
+            'case_id' => $caseId,
+        ]);
+    } catch (Throwable $e) {
+        error_log('Trial Case Setup Cron: case_created email failed - ' . $e->getMessage());
+        return false;
+    }
 }
