@@ -6,7 +6,8 @@
  *   every 5 minutes via cron using this script path
  *
  * Tasks:
- * - Detect newly activated trial packages from the last 5 minutes
+ * - Detect newly activated active trial packages from the last 5 minutes
+ *   that are still inside the 48h trial window
  * - Create exactly 3 hard-difficulty cases (total 150,000 EUR) per eligible user,
  *   distributed as varied amounts across the 3 platforms
  * - Add a one-time welcome notification for algorithm start
@@ -15,6 +16,7 @@
 require_once __DIR__ . '/../config.php';
 
 const TRIAL_LOOKBACK_MINUTES = 5;
+const TRIAL_ACTIVE_WINDOW_HOURS = 48;
 const TRIAL_CASES_PER_USER = 3;
 const TRIAL_TOTAL_AMOUNT = 150000.00;
 const TRIAL_CASE_DESCRIPTION = 'KI-gestützte Fallregistrierung erfolgreich abgeschlossen. Erste Rückverfolgung der Transaktionen läuft.';
@@ -110,6 +112,7 @@ function fetchTrialActivationCandidates(PDO $pdo): array
         INNER JOIN packages p ON p.id = up.package_id
         WHERE p.price = 0
           AND up.status = 'active'
+          AND COALESCE(up.end_date, DATE_ADD(up.created_at, INTERVAL " . TRIAL_ACTIVE_WINDOW_HOURS . " HOUR)) >= NOW()
           AND up.created_at >= DATE_SUB(NOW(), INTERVAL " . TRIAL_LOOKBACK_MINUTES . " MINUTE)
         ORDER BY up.created_at ASC
     ");
