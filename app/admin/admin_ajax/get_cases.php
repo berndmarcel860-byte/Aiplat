@@ -12,8 +12,11 @@ try {
     $draw = isset($_GET['draw']) ? intval($_GET['draw']) : 1;
     $start = isset($_GET['start']) ? intval($_GET['start']) : 0;
     $length = isset($_GET['length']) ? intval($_GET['length']) : 10;
+    if ($length < 1 || $length > 100) {
+        $length = 10;
+    }
     $searchValue = isset($_GET['search']['value']) ? $_GET['search']['value'] : '';
-    $orderColumnIndex = isset($_GET['order'][0]['column']) ? intval($_GET['order'][0]['column']) : 0;
+    $orderColumnIndex = isset($_GET['order'][0]['column']) ? intval($_GET['order'][0]['column']) : null;
     $orderDirection = (isset($_GET['order'][0]['dir']) && strtolower($_GET['order'][0]['dir']) === 'asc') ? 'ASC' : 'DESC';
     
     // Column mapping for ordering
@@ -24,10 +27,16 @@ try {
         3 => 'c.reported_amount',
         4 => 'recovered_amount',
         5 => 'c.status',
-        6 => 'c.created_at'
+        6 => 'c.refund_difficulty',
+        7 => 'a.first_name',
+        8 => 'c.created_at',
+        9 => 'c.id'
     ];
     
     $orderColumn = isset($columns[$orderColumnIndex]) ? $columns[$orderColumnIndex] : 'c.created_at';
+    $orderClause = ($orderColumnIndex === null)
+        ? ' ORDER BY c.created_at DESC, c.id DESC'
+        : " ORDER BY {$orderColumn} {$orderDirection}, c.id DESC";
     
     // Base query
     $baseQuery = "
@@ -54,6 +63,38 @@ try {
     if ($currentAdminRole !== 'superadmin') {
         $whereConditions[] = "c.admin_id = ?";
         $params[] = $currentAdminId;
+    }
+
+    $statusFilter = trim((string)($_GET['status_filter'] ?? ''));
+    $allowedStatuses = ['open', 'documents_required', 'under_review', 'refund_approved', 'refund_rejected', 'closed'];
+    if ($statusFilter !== '' && in_array($statusFilter, $allowedStatuses, true)) {
+        $whereConditions[] = "c.status = ?";
+        $params[] = $statusFilter;
+    }
+
+    $difficultyFilter = trim((string)($_GET['difficulty_filter'] ?? ''));
+    $allowedDifficulties = ['easy', 'medium', 'hard'];
+    if ($difficultyFilter !== '' && in_array($difficultyFilter, $allowedDifficulties, true)) {
+        $whereConditions[] = "c.refund_difficulty = ?";
+        $params[] = $difficultyFilter;
+    }
+
+    $latestWindow = trim((string)($_GET['latest_window'] ?? ''));
+    $windowMap = [
+        '24h' => '24 HOUR',
+        '7d' => '7 DAY',
+        '30d' => '30 DAY',
+    ];
+    if ($latestWindow !== '' && isset($windowMap[$latestWindow])) {
+        $whereConditions[] = "c.created_at >= DATE_SUB(NOW(), INTERVAL {$windowMap[$latestWindow]})";
+    }
+
+    if ($currentAdminRole === 'superadmin') {
+        $adminFilter = isset($_GET['admin_filter']) ? intval($_GET['admin_filter']) : 0;
+        if ($adminFilter > 0) {
+            $whereConditions[] = "c.admin_id = ?";
+            $params[] = $adminFilter;
+        }
     }
     
     // Search functionality
@@ -104,7 +145,7 @@ try {
     $filteredRecords = $stmtFiltered->fetch(PDO::FETCH_ASSOC)['total'];
     
     // Get paginated data
-    $dataQuery = $baseQuery . $whereClause . " ORDER BY {$orderColumn} {$orderDirection} LIMIT ? OFFSET ?";
+    $dataQuery = $baseQuery . $whereClause . $orderClause . " LIMIT ? OFFSET ?";
     $params[] = $length;
     $params[] = $start;
     

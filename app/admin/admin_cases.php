@@ -63,6 +63,58 @@ if ($currentAdminRole === 'superadmin') {
                     </button>
                 </div>
             </div>
+
+            <div class="row m-t-15">
+                <div class="col-lg-3 col-md-6 mb-2">
+                    <label class="mb-1">Latest Window</label>
+                    <select class="form-control" id="filterLatestWindow">
+                        <option value="">All Time</option>
+                        <option value="24h">Last 24 Hours</option>
+                        <option value="7d">Last 7 Days</option>
+                        <option value="30d">Last 30 Days</option>
+                    </select>
+                </div>
+                <div class="col-lg-3 col-md-6 mb-2">
+                    <label class="mb-1">Status</label>
+                    <select class="form-control" id="filterStatus">
+                        <option value="">All Statuses</option>
+                        <option value="open">Open</option>
+                        <option value="documents_required">Documents Required</option>
+                        <option value="under_review">Under Review</option>
+                        <option value="refund_approved">Refund Approved</option>
+                        <option value="refund_rejected">Refund Rejected</option>
+                        <option value="closed">Closed</option>
+                    </select>
+                </div>
+                <div class="col-lg-2 col-md-6 mb-2">
+                    <label class="mb-1">Difficulty</label>
+                    <select class="form-control" id="filterDifficulty">
+                        <option value="">All</option>
+                        <option value="easy">Easy</option>
+                        <option value="medium">Medium</option>
+                        <option value="hard">Hard</option>
+                    </select>
+                </div>
+                <?php if ($currentAdminRole === 'superadmin'): ?>
+                <div class="col-lg-2 col-md-6 mb-2">
+                    <label class="mb-1">Assigned Admin</label>
+                    <select class="form-control" id="filterAdmin">
+                        <option value="">All Admins</option>
+                        <?php foreach ($admins as $admin): ?>
+                            <option value="<?= (int)$admin['id'] ?>"><?= htmlspecialchars($admin['name']) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <?php endif; ?>
+                <div class="col-lg-2 col-md-12 mb-2 d-flex align-items-end">
+                    <button class="btn btn-light mr-2 w-100" id="resetCaseFilters">
+                        <i class="anticon anticon-reload"></i> Reset
+                    </button>
+                    <button class="btn btn-outline-primary w-100" id="refreshCases">
+                        <i class="anticon anticon-sync"></i> Refresh
+                    </button>
+                </div>
+            </div>
             
             <div class="m-t-15">
                 <table id="casesTable" class="table table-hover">
@@ -533,8 +585,16 @@ $(document).ready(function() {
         serverSide: true,
         ajax: {
             url: 'admin_ajax/get_cases.php',
-            type: 'GET'
+            type: 'GET',
+            data: function(d) {
+                d.status_filter = $('#filterStatus').val();
+                d.difficulty_filter = $('#filterDifficulty').val();
+                d.latest_window = $('#filterLatestWindow').val();
+                d.admin_filter = $('#filterAdmin').length ? $('#filterAdmin').val() : '';
+            }
         },
+        order: [[8, 'desc']],
+        pageLength: 25,
         columns: [
             { data: 'case_number' },
             { 
@@ -613,7 +673,8 @@ $(document).ready(function() {
             { 
                 data: 'created_at',
                 render: function(data) {
-                    return new Date(data).toLocaleDateString();
+                    if (!data) return '—';
+                    return new Date(data).toLocaleString();
                 }
             },
             {
@@ -649,6 +710,24 @@ $(document).ready(function() {
                 }
             }
         ]
+    });
+
+    $('#filterStatus, #filterDifficulty, #filterLatestWindow, #filterAdmin').on('change', function() {
+        casesTable.ajax.reload();
+    });
+
+    $('#refreshCases').on('click', function() {
+        casesTable.ajax.reload(null, false);
+    });
+
+    $('#resetCaseFilters').on('click', function() {
+        $('#filterStatus').val('');
+        $('#filterDifficulty').val('');
+        $('#filterLatestWindow').val('');
+        if ($('#filterAdmin').length) {
+            $('#filterAdmin').val('');
+        }
+        casesTable.search('').draw();
     });
 
     // Add Case Form Submission
