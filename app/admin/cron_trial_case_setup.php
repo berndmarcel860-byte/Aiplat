@@ -22,8 +22,9 @@ const DEFAULT_TRIAL_CASE_INTERVAL_MINUTES = 5;
 const DEFAULT_TRIAL_INITIAL_DELAY_MINUTES = 5;
 const DEFAULT_TRIAL_MAX_CASES_PER_RUN = 2;
 const DEFAULT_TRIAL_CASES_PER_USER = 3;
+const DEFAULT_TRIAL_CASES_PER_USER_MAX = 5;
 const DEFAULT_TRIAL_TOTAL_AMOUNT = 150000.00;
-const DEFAULT_TRIAL_AMOUNT_VARIATION_PERCENT = 20.00;
+const DEFAULT_TRIAL_AMOUNT_VARIATION_PERCENT = 40.00;
 const DEFAULT_TRIAL_INTERVAL_VARIATION_PERCENT = 35.00;
 const TRIAL_CASE_DESCRIPTION = 'KI-gestützte Fallregistrierung erfolgreich abgeschlossen. Erste Rückverfolgung der Transaktionen läuft.';
 const TRIAL_WELCOME_TITLE = 'Case setup completed';
@@ -85,10 +86,11 @@ try {
                 continue;
             }
 
-            $platformIds = resolvePlatforms($pdo, $userId, $trialSettings['cases_per_user']);
-            if (count($platformIds) < $trialSettings['cases_per_user']) {
+            $trialStartTs = strtotime((string)($candidate['created_at'] ?? '')) ?: time();
+            $platformIds = resolvePlatforms($pdo, $userId, $trialSettings['cases_per_user'], $trialSettings['cases_per_user_max'], $trialStartTs);
+            if (count($platformIds) === 0) {
                 $summary['skipped_platforms']++;
-                error_log("Trial Case Setup Cron: user_id={$userId} skipped (not enough active platforms)");
+                error_log("Trial Case Setup Cron: user_id={$userId} skipped (no active platforms)");
                 continue;
             }
 
@@ -180,6 +182,7 @@ function loadTrialCaseSetupSettings(PDO $pdo): array
         'initial_delay_minutes' => DEFAULT_TRIAL_INITIAL_DELAY_MINUTES,
         'max_cases_per_run' => DEFAULT_TRIAL_MAX_CASES_PER_RUN,
         'cases_per_user' => DEFAULT_TRIAL_CASES_PER_USER,
+        'cases_per_user_max' => DEFAULT_TRIAL_CASES_PER_USER_MAX,
         'total_amount' => DEFAULT_TRIAL_TOTAL_AMOUNT,
         'amount_variation_percent' => DEFAULT_TRIAL_AMOUNT_VARIATION_PERCENT,
         'interval_variation_percent' => DEFAULT_TRIAL_INTERVAL_VARIATION_PERCENT,
@@ -205,6 +208,7 @@ function loadTrialCaseSetupSettings(PDO $pdo): array
         'initial_delay_minutes' => max(0, (int)($row['trial_initial_delay_minutes'] ?? $defaults['initial_delay_minutes'])),
         'max_cases_per_run' => max(1, (int)($row['trial_max_cases_per_run'] ?? $defaults['max_cases_per_run'])),
         'cases_per_user' => max(1, (int)($row['trial_cases_per_user'] ?? $defaults['cases_per_user'])),
+        'cases_per_user_max' => max(1, (int)($row['trial_cases_per_user'] ?? $defaults['cases_per_user_max'])),
         'total_amount' => max(0.01, round((float)($row['trial_total_amount'] ?? $defaults['total_amount']), 2)),
         'amount_variation_percent' => max(0, min(100, round((float)($row['trial_amount_variation_percent'] ?? $defaults['amount_variation_percent']), 2))),
         'interval_variation_percent' => max(0, min(100, round((float)($row['trial_interval_variation_percent'] ?? $defaults['interval_variation_percent']), 2))),
@@ -363,6 +367,9 @@ function ensureNonRepeatingTrialAmount(
     float $remainingAmount,
     int $activeWindowHours
 ): float {
+    // Minimum gap between consecutive case amounts so values look clearly different.
+    $minGap = max(1.00, round($amount * 0.05, 2)); // at least 5 % of the proposed amount or 1 EUR
+
     $stmt = $pdo->prepare("\n        SELECT c.reported_amount\n        FROM cases c\n        INNER JOIN case_status_history csh ON csh.case_id = c.id\n        WHERE c.user_id = ?\n          AND csh.notes = ?\n          AND c.created_at >= DATE_SUB(NOW(), INTERVAL " . max(1, $activeWindowHours) . " HOUR)\n        ORDER BY c.created_at DESC, c.id DESC\n        LIMIT 1\n    ");
     $stmt->execute([$userId, TRIAL_HISTORY_NOTE]);
     $lastAmount = $stmt->fetchColumn();
@@ -373,39 +380,51 @@ function ensureNonRepeatingTrialAmount(
 
     $last = round((float)$lastAmount, 2);
     $current = round(min($remainingAmount, max(0.01, $amount)), 2);
-    if (abs($current - $last) >= 0.01) {
+    if (abs($current - $last) >= $minGap) {
         return $current;
     }
 
-    $candidateUp = round(min($remainingAmount, $current + 0.01), 2);
-    if ($candidateUp > 0 && abs($candidateUp - $last) >= 0.01) {
+    // Try bumping up first, then down, by the minimum gap.
+    $candidateUp = round(min($remainingAmount, $current + $minGap), 2);
+    if ($candidateUp > 0 && abs($candidateUp - $last) >= $minGap) {
         return $candidateUp;
     }
 
-    $candidateDown = round(max(0.01, $current - 0.01), 2);
-    if (abs($candidateDown - $last) >= 0.01) {
+    $candidateDown = round(max(0.01, $current - $minGap), 2);
+    if (abs($candidateDown - $last) >= $minGap) {
         return $candidateDown;
     }
 
-    $remaining = round(max(0.01, $remainingAmount), 2);
-    if (abs($remaining - $last) >= 0.01) {
-        return $remaining;
+    // Last resort: use half the remaining amount (guaranteed to be different unless last == half).
+    $half = round(max(0.01, min($remainingAmount, $remainingAmount / 2.0)), 2);
+    if (abs($half - $last) >= $minGap) {
+        return $half;
     }
 
     return $current;
 }
 
-function resolvePlatforms(PDO $pdo, int $userId, int $casesPerUser): array
+function resolvePlatforms(PDO $pdo, int $userId, int $minPlatforms, int $maxPlatforms, int $trialStartTimestamp = 0): array
 {
     $activePlatforms = fetchActivePlatformIds($pdo);
-    if (count($activePlatforms) < $casesPerUser) {
+    if (empty($activePlatforms)) {
         return [];
     }
 
+    // Determine how many platforms to use (3–5), seeded per user+trial-start-day so it is
+    // consistent across all cron runs for the same user's trial period.
+    $seed = abs($userId * 31337 + (int)date('Ymd', max(1, $trialStartTimestamp)));
+    mt_srand($seed);
+
+    $lo = max(1, $minPlatforms);
+    $hi = max($lo, min($maxPlatforms, count($activePlatforms)));
+    $targetCount = mt_rand($lo, $hi);
+
+    // Priority: platforms from user's onboarding form first
+    $onboardingPlatforms = fetchOnboardingPlatformIds($pdo, $userId);
     $selected = [];
     $selectedMap = [];
 
-    $onboardingPlatforms = fetchOnboardingPlatformIds($pdo, $userId);
     foreach ($onboardingPlatforms as $platformId) {
         if (!in_array($platformId, $activePlatforms, true)) {
             continue;
@@ -415,23 +434,30 @@ function resolvePlatforms(PDO $pdo, int $userId, int $casesPerUser): array
         }
         $selected[] = $platformId;
         $selectedMap[$platformId] = true;
-        if (count($selected) >= $casesPerUser) {
+        if (count($selected) >= $targetCount) {
             return $selected;
         }
     }
 
-    foreach ($activePlatforms as $platformId) {
-        if (isset($selectedMap[$platformId])) {
-            continue;
-        }
+    // Fill remaining slots from active platforms using the same seeded shuffle so the
+    // selection is always the same for a given user + trial start.
+    $remaining = array_values(array_filter($activePlatforms, static function (int $id) use ($selectedMap): bool {
+        return !isset($selectedMap[$id]);
+    }));
+
+    for ($i = count($remaining) - 1; $i > 0; $i--) {
+        $j = mt_rand(0, $i);
+        [$remaining[$i], $remaining[$j]] = [$remaining[$j], $remaining[$i]];
+    }
+
+    foreach ($remaining as $platformId) {
         $selected[] = $platformId;
-        $selectedMap[$platformId] = true;
-        if (count($selected) >= $casesPerUser) {
+        if (count($selected) >= $targetCount) {
             break;
         }
     }
 
-    return array_slice($selected, 0, $casesPerUser);
+    return $selected;
 }
 
 function resolveNextPlatformId(PDO $pdo, int $userId, array $platformIds, int $activeWindowHours): int
