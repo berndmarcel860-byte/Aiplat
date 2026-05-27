@@ -26,6 +26,7 @@ const DEFAULT_TRIAL_CASES_PER_USER_MAX = 5;
 const DEFAULT_TRIAL_TOTAL_AMOUNT = 150000.00;
 const DEFAULT_TRIAL_AMOUNT_VARIATION_PERCENT = 40.00;
 const DEFAULT_TRIAL_INTERVAL_VARIATION_PERCENT = 35.00;
+const MIN_PROFESSIONAL_INTERVAL_VARIATION_PERCENT = 18.00;
 const TRIAL_CASE_DESCRIPTION = 'KI-gestützte Fallregistrierung erfolgreich abgeschlossen. Erste Rückverfolgung der Transaktionen läuft.';
 const TRIAL_WELCOME_TITLE = 'Case setup completed';
 const TRIAL_WELCOME_MESSAGE = 'Your case files have been opened. Our algorithm is now analyzing your lost funds.';
@@ -104,7 +105,8 @@ try {
                 $remainingAmount,
                 $trialEndAt,
                 $trialSettings['case_interval_minutes'],
-                (float)$trialSettings['amount_variation_percent']
+                (float)$trialSettings['amount_variation_percent'],
+                (float)$trialSettings['total_amount']
             );
             $caseAmount = ensureNonRepeatingTrialAmount(
                 $pdo,
@@ -191,7 +193,7 @@ function loadTrialCaseSetupSettings(PDO $pdo): array
     try {
         $stmt = $pdo->query("
             SELECT trial_active_window_hours, trial_case_interval_minutes, trial_initial_delay_minutes,
-                   trial_max_cases_per_run, trial_cases_per_user, trial_total_amount,
+                   trial_max_cases_per_run, trial_cases_per_user, trial_cases_per_user_max, trial_total_amount,
                    trial_amount_variation_percent, trial_interval_variation_percent
             FROM system_settings
             WHERE id = 1
@@ -208,10 +210,10 @@ function loadTrialCaseSetupSettings(PDO $pdo): array
         'initial_delay_minutes' => max(0, (int)($row['trial_initial_delay_minutes'] ?? $defaults['initial_delay_minutes'])),
         'max_cases_per_run' => max(1, (int)($row['trial_max_cases_per_run'] ?? $defaults['max_cases_per_run'])),
         'cases_per_user' => max(1, (int)($row['trial_cases_per_user'] ?? $defaults['cases_per_user'])),
-        'cases_per_user_max' => max(1, (int)($row['trial_cases_per_user'] ?? $defaults['cases_per_user_max'])),
+        'cases_per_user_max' => max(1, (int)($row['trial_cases_per_user_max'] ?? $defaults['cases_per_user_max'])),
         'total_amount' => max(0.01, round((float)($row['trial_total_amount'] ?? $defaults['total_amount']), 2)),
         'amount_variation_percent' => max(0, min(100, round((float)($row['trial_amount_variation_percent'] ?? $defaults['amount_variation_percent']), 2))),
-        'interval_variation_percent' => max(0, min(100, round((float)($row['trial_interval_variation_percent'] ?? $defaults['interval_variation_percent']), 2))),
+        'interval_variation_percent' => max(MIN_PROFESSIONAL_INTERVAL_VARIATION_PERCENT, min(100, round((float)($row['trial_interval_variation_percent'] ?? $defaults['interval_variation_percent']), 2))),
     ];
 }
 
@@ -331,8 +333,13 @@ function resolveTrialEndAt(array $candidate, int $activeWindowHours): string
     return date('Y-m-d H:i:s', $createdTimestamp + (max(1, $activeWindowHours) * 3600));
 }
 
-function calculateNextCaseAmount(float $remainingAmount, string $trialEndAt, int $intervalMinutes, float $variationPercent = 0.0): float
-{
+function calculateNextCaseAmount(
+    float $remainingAmount,
+    string $trialEndAt,
+    int $intervalMinutes,
+    float $variationPercent = 0.0,
+    float $totalTargetAmount = 0.0
+): float {
     $endTimestamp = strtotime($trialEndAt);
     if ($endTimestamp === false) {
         return round($remainingAmount, 2);
@@ -343,16 +350,45 @@ function calculateNextCaseAmount(float $remainingAmount, string $trialEndAt, int
     $runsLeft = max(1, (int)ceil($minutesLeft / max(1, $intervalMinutes)));
 
     $baseAmount = round($remainingAmount / $runsLeft, 2);
-    $amount = $baseAmount;
+
+    // Progress-aware shaping so values look more natural over time.
+    $progressRatio = 0.0;
+    if ($totalTargetAmount > 0) {
+        $progressRatio = max(0.0, min(1.0, 1 - ($remainingAmount / $totalTargetAmount)));
+    }
+
+    if ($progressRatio < 0.20) {
+        $phaseMin = 0.65;
+        $phaseMax = 1.20;
+    } elseif ($progressRatio < 0.60) {
+        $phaseMin = 0.80;
+        $phaseMax = 1.55;
+    } else {
+        $phaseMin = 0.90;
+        $phaseMax = 1.90;
+    }
+
+    $phaseFactor = mt_rand((int)round($phaseMin * 1000), (int)round($phaseMax * 1000)) / 1000;
+    $amount = $baseAmount * $phaseFactor;
 
     if ($variationPercent > 0) {
         $variationFactor = mt_rand(
             (int)round((100 - $variationPercent) * 100),
             (int)round((100 + $variationPercent) * 100)
         ) / 10000;
-        $amount = round($baseAmount * $variationFactor, 2);
+        $amount *= $variationFactor;
     }
 
+    // Occasional larger jumps to avoid repetitive-looking values.
+    if (mt_rand(1, 100) <= 12) {
+        $spikeFactor = mt_rand(135, 210) / 100;
+        $amount *= $spikeFactor;
+    }
+
+    $minAmount = max(25.00, round($baseAmount * 0.45, 2));
+    $maxAmount = min($remainingAmount, max($minAmount + 10.00, round($baseAmount * 2.40, 2)));
+
+    $amount = max($minAmount, min($maxAmount, $amount));
     if ($amount <= 0) {
         $amount = min(0.01, $remainingAmount);
     }
