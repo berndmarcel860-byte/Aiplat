@@ -17,18 +17,15 @@ if (!isset($_SESSION['user_id'])) {
 // Include tracking function
 require_once 'tracking.php';
 
-// Onboarding check
+// Read onboarding status but do not block dashboard access.
 if (!isset($_SESSION['onboarding_completed'])) {
-    $stmt = $pdo->prepare("SELECT completed FROM user_onboarding WHERE user_id = ?");
-    $stmt->execute([$_SESSION['user_id']]);
-    $result = $stmt->fetch();
-    
-    if (!$result || !$result['completed']) {
+    try {
+        $stmt = $pdo->prepare("SELECT completed FROM user_onboarding WHERE user_id = ? ORDER BY id DESC LIMIT 1");
+        $stmt->execute([$_SESSION['user_id']]);
+        $result = $stmt->fetch();
+        $_SESSION['onboarding_completed'] = (bool)($result && (int)($result['completed'] ?? 0) === 1);
+    } catch (PDOException $e) {
         $_SESSION['onboarding_completed'] = false;
-        echo '<script>window.location.href = "onboarding.php";</script>';
-        exit();
-    } else {
-        $_SESSION['onboarding_completed'] = true;
     }
 }
 

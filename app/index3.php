@@ -385,22 +385,27 @@ $statusBadgeMap = [
             </div>
         <?php endif; ?>
 
-        <div class="alert alert-warning d-flex flex-wrap align-items-center justify-content-between mb-3" role="alert" aria-live="polite">
-            <div>
-                <strong>Sicherheitshinweis:</strong>
-                <?php if ($officialDomain !== ''): ?>
-                    Bitte prüfen Sie, dass Sie sich auf <strong><?= escapeHtml($officialDomain) ?></strong> befinden.
-                <?php else: ?>
-                    Die offizielle Domain konnte nicht automatisch ermittelt werden. Bitte öffnen Sie den offiziellen Link nur über das Kundenportal.
-                <?php endif; ?>
+        <div class="alert alert-warning mb-3" role="alert" aria-live="polite">
+            <div class="d-flex flex-wrap align-items-center justify-content-between mb-2">
+                <strong>Sicherheits-Check vor jeder Zahlung</strong>
+                <div class="d-flex flex-wrap align-items-center">
+                    <a href="deposit.php" class="btn btn-sm btn-warning mt-2 mt-md-0 mr-2">Einzahlen-Button nutzen</a>
+                    <?php if ($safeOfficialSiteUrl !== ''): ?>
+                        <a href="<?= escapeHtml($safeOfficialSiteUrl) ?>" class="btn btn-sm btn-outline-warning mt-2 mt-md-0" target="_blank" rel="noopener noreferrer">Offizielle Domain öffnen</a>
+                    <?php endif; ?>
+                </div>
             </div>
-            <?php if ($safeOfficialSiteUrl !== ''): ?>
-                <a href="<?= escapeHtml($safeOfficialSiteUrl) ?>" class="btn btn-sm btn-outline-warning mt-2 mt-md-0" target="_blank" rel="noopener noreferrer">Offizielle Domain öffnen</a>
-            <?php endif; ?>
-        </div>
-
-        <div class="alert alert-danger mb-3" role="alert" aria-live="assertive">
-            <strong>Wichtiger Schutz:</strong> Wir fordern niemals Zahlungen ohne Escrow-Verfahren an. Leisten Sie keine Direktzahlung außerhalb des Portals.
+            <ol class="mb-0 pl-3">
+                <li class="mb-1">
+                    <?php if ($officialDomain !== ''): ?>
+                        Bestätigen Sie vor dem Login die offizielle Domain <strong><?= escapeHtml($officialDomain) ?></strong>.
+                    <?php else: ?>
+                        Öffnen Sie das Portal ausschließlich über den offiziellen Link aus Ihrem Kundenkonto.
+                    <?php endif; ?>
+                </li>
+                <li class="mb-1">Führen Sie Einzahlungen nur über den <strong>Einzahlen-Button</strong> in diesem Portal durch.</li>
+                <li class="mb-0">Zahlungen außerhalb der Plattform sind nicht durch uns abgesichert und können nicht garantiert werden.</li>
+            </ol>
         </div>
 
         <?php if (!empty($todoItems)): ?>
