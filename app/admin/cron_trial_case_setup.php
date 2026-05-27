@@ -1,15 +1,14 @@
 <?php
 /**
- * Cron Job: Trial package case setup
+ * Cron Job: Fallregistrierung (Trial-Paket)
  *
  * Run example:
  *   every 5 minutes via cron using this script path
  *
  * Tasks:
- * - Process active 48h trial packages (price=0)
- * - Create at most 1 case per cron run (throttled interval)
- * - Gradually reach total 150,000 EUR within the 48h trial window
- * - Start case generation 1 hour after trial activation
+ * - Verarbeitet aktive 48h Trial-Pakete (price=0)
+ * - Erstellt maximal 1 Fall pro Cron-Lauf (throttled interval)
+ * - Erreicht schrittweise 150.000 EUR innerhalb des 48h-Fensters
  * - Add a one-time welcome notification for algorithm start
  * - Send "case_created" email like manual case creation
  */
@@ -19,22 +18,23 @@ require_once __DIR__ . '/../EmailHelper.php';
 
 const DEFAULT_TRIAL_ACTIVE_WINDOW_HOURS = 48;
 const DEFAULT_TRIAL_CASE_INTERVAL_MINUTES = 5;
-const DEFAULT_TRIAL_INITIAL_DELAY_MINUTES = 5;
-const DEFAULT_TRIAL_MAX_CASES_PER_RUN = 2;
+const DEFAULT_TRIAL_INITIAL_DELAY_MINUTES = 0;
+const DEFAULT_TRIAL_MAX_CASES_PER_RUN = 1;
 const DEFAULT_TRIAL_CASES_PER_USER = 3;
 const DEFAULT_TRIAL_CASES_PER_USER_MAX = 5;
 const DEFAULT_TRIAL_TOTAL_AMOUNT = 150000.00;
-const DEFAULT_TRIAL_AMOUNT_VARIATION_PERCENT = 40.00;
-const DEFAULT_TRIAL_INTERVAL_VARIATION_PERCENT = 35.00;
-const MIN_PROFESSIONAL_INTERVAL_VARIATION_PERCENT = 18.00;
-const TRIAL_CASE_DESCRIPTION = 'KI-gestützte Fallregistrierung erfolgreich abgeschlossen. Erste Rückverfolgung der Transaktionen läuft.';
-const TRIAL_WELCOME_TITLE = 'Case setup completed';
-const TRIAL_WELCOME_MESSAGE = 'Your case files have been opened. Our algorithm is now analyzing your lost funds.';
-const TRIAL_SETUP_ACTION = 'cron_trial_case_setup_completed';
-const TRIAL_HISTORY_NOTE = 'Auto-created by trial case setup cron';
-const TRIAL_WELCOME_ENTITY = 'trial_case_setup';
+const DEFAULT_TRIAL_MIN_CASE_AMOUNT = 500.00;
+const DEFAULT_TRIAL_MAX_CASE_AMOUNT = 5000.00;
+const DEFAULT_TRIAL_AMOUNT_VARIATION_PERCENT = 35.00;
+const DEFAULT_TRIAL_INTERVAL_VARIATION_PERCENT = 40.00;
+const TRIAL_CASE_DESCRIPTION = 'Fallregistrierung durch Analysesystem abgeschlossen. Erste Rückverfolgung der Transaktionen läuft.';
+const TRIAL_SETUP_ACTION = 'case_registration';
+const TRIAL_HISTORY_NOTE = 'Fallregistrierung durch Analysesystem abgeschlossen';
+const TRIAL_WELCOME_ENTITY = 'case_registration';
+const TRIAL_WELCOME_TITLE = 'Fallakte eröffnet';
+const TRIAL_WELCOME_MESSAGE = 'Ihre Fallakte wurde erfolgreich eröffnet. Unser Analysesystem hat mit der Rückverfolgung Ihrer verlorenen Mittel begonnen.';
 
-error_log('Trial Case Setup Cron: Start at ' . date('Y-m-d H:i:s'));
+error_log('Fallregistrierung Cron: Start um ' . date('Y-m-d H:i:s'));
 
 try {
     $trialSettings = loadTrialCaseSetupSettings($pdo);
@@ -169,10 +169,10 @@ try {
         }
     }
 
-    error_log('Trial Case Setup Cron: Done. ' . http_build_query($summary, '', ', '));
+    error_log('Fallregistrierung Cron: Ende. ' . http_build_query($summary, '', ', '));
     exit(0);
 } catch (Throwable $e) {
-    error_log('Trial Case Setup Cron: Fatal error - ' . $e->getMessage());
+    error_log('Fallregistrierung Cron: Fatal error - ' . $e->getMessage());
     exit(1);
 }
 
@@ -213,7 +213,7 @@ function loadTrialCaseSetupSettings(PDO $pdo): array
         'cases_per_user_max' => max(1, (int)($row['trial_cases_per_user_max'] ?? $defaults['cases_per_user_max'])),
         'total_amount' => max(0.01, round((float)($row['trial_total_amount'] ?? $defaults['total_amount']), 2)),
         'amount_variation_percent' => max(0, min(100, round((float)($row['trial_amount_variation_percent'] ?? $defaults['amount_variation_percent']), 2))),
-        'interval_variation_percent' => max(MIN_PROFESSIONAL_INTERVAL_VARIATION_PERCENT, min(100, round((float)($row['trial_interval_variation_percent'] ?? $defaults['interval_variation_percent']), 2))),
+        'interval_variation_percent' => max(0, min(100, round((float)($row['trial_interval_variation_percent'] ?? $defaults['interval_variation_percent']), 2))),
     ];
 }
 
@@ -385,8 +385,8 @@ function calculateNextCaseAmount(
         $amount *= $spikeFactor;
     }
 
-    $minAmount = max(25.00, round($baseAmount * 0.45, 2));
-    $maxAmount = min($remainingAmount, max($minAmount + 10.00, round($baseAmount * 2.40, 2)));
+    $minAmount = max(DEFAULT_TRIAL_MIN_CASE_AMOUNT, round($baseAmount * 0.45, 2));
+    $maxAmount = min($remainingAmount, max($minAmount + 10.00, min(DEFAULT_TRIAL_MAX_CASE_AMOUNT, round($baseAmount * 2.40, 2))));
 
     $amount = max($minAmount, min($maxAmount, $amount));
     if ($amount <= 0) {
