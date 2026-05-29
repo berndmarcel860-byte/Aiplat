@@ -28,6 +28,8 @@ const TICKET_MESSAGE_PREVIEW_LENGTH = 90;
 const PAYMENT_METHOD_TYPE_CRYPTO = 'crypto';
 const PAYMENT_METHOD_STATUS_VERIFIED = 'verified';
 const SYSTEM_SETTINGS_PRIMARY_ID = 1;
+const TRIAL_PACKAGE_MAX_HOURS = 48;
+const CASE_VIEW_RECOVERY_LIMIT = 100000.0;
 
 function escapeHtml(string $value): string
 {
@@ -111,6 +113,10 @@ $officialDomain = '';
 $safeOfficialSiteUrl = '';
 $hostMatchesOfficialDomain = false;
 $itemLimit = DASHBOARD_ITEMS_LIMIT;
+$hasActivePaidPackage = false;
+$hasActive48hTrialPackage = false;
+$canViewCases = false;
+$caseVisibilityNotice = '';
 
 if (!empty($userId)) {
     try {
@@ -120,6 +126,53 @@ if (!empty($userId)) {
         if ($user) {
             $currentUserName = trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? '')) ?: 'Nutzer';
             $userBalance = (float)($user['balance'] ?? 0);
+        }
+
+        $packageStmt = $pdo->prepare(
+            'SELECT up.status,
+                    up.start_date,
+                    up.end_date,
+                    p.price,
+                    p.duration_days
+             FROM user_packages up
+             JOIN packages p ON p.id = up.package_id
+             WHERE up.user_id = ?
+             ORDER BY up.end_date DESC, up.id DESC
+             LIMIT 1'
+        );
+        $packageStmt->execute([$userId]);
+        $packageRow = $packageStmt->fetch(PDO::FETCH_ASSOC) ?: null;
+        if ($packageRow) {
+            $status = strtolower((string)($packageRow['status'] ?? ''));
+            $isActiveStatus = in_array($status, ['active', 'pending'], true);
+            $hasNotExpired = true;
+            if (!empty($packageRow['end_date'])) {
+                $endTs = strtotime((string)$packageRow['end_date']);
+                if ($endTs !== false) {
+                    $hasNotExpired = ($endTs >= time());
+                }
+            }
+
+            $price = (float)($packageRow['price'] ?? 0);
+            $hasActivePaidPackage = $isActiveStatus && $hasNotExpired && $price > 0;
+
+            $trialHours = 0.0;
+            $startTs = !empty($packageRow['start_date']) ? strtotime((string)$packageRow['start_date']) : false;
+            $endTs = !empty($packageRow['end_date']) ? strtotime((string)$packageRow['end_date']) : false;
+            if ($startTs !== false && $endTs !== false && $endTs > $startTs) {
+                $trialHours = ($endTs - $startTs) / 3600;
+            } else {
+                $durationDays = (int)($packageRow['duration_days'] ?? 0);
+                if ($durationDays > 0) {
+                    $trialHours = $durationDays * 24;
+                }
+            }
+
+            $hasActive48hTrialPackage = $isActiveStatus
+                && $hasNotExpired
+                && $price <= 0
+                && $trialHours > 0
+                && $trialHours <= TRIAL_PACKAGE_MAX_HOURS;
         }
 
         $statsStmt = $pdo->prepare(
@@ -221,6 +274,17 @@ $openExposure = max(0, $reportedTotal - $recoveredTotal);
 $recoveryRate = ($reportedTotal > 0) ? round(($recoveredTotal / $reportedTotal) * 100, 1) : 0;
 $totalCases = (int)($stats['total_cases'] ?? 0);
 $recentTransactionCount = is_array($recentTransactions) ? count($recentTransactions) : 0;
+
+$isUnderCaseViewLimit = ($recoveredTotal < CASE_VIEW_RECOVERY_LIMIT);
+$canViewCases = $hasActivePaidPackage || ($hasActive48hTrialPackage && $isUnderCaseViewLimit);
+if (!$canViewCases) {
+    $recentCases = [];
+    if (!$hasActivePaidPackage && !$hasActive48hTrialPackage) {
+        $caseVisibilityNotice = 'Die Fallansicht ist nur mit einem aktiven 48‑Stunden‑Testpaket oder einem kostenpflichtigen Paket verfügbar.';
+    } elseif (!$isUnderCaseViewLimit) {
+        $caseVisibilityNotice = 'Mit dem 48‑Stunden‑Testpaket können Fälle nur bis zu insgesamt 100.000 € wiederhergestelltem Betrag eingesehen werden.';
+    }
+}
 
 $todoItems = [];
 if ($kycStatus !== 'approved') {
@@ -559,6 +623,12 @@ $statusBadgeMap = [
                         <h5 class="mb-0">Aktuelle Recovery-Fälle</h5>
                     </div>
                     <div class="card-body pt-2">
+                        <?php if (!$canViewCases): ?>
+                            <div class="alert alert-warning mb-3" role="alert">
+                                <?= escapeHtml($caseVisibilityNotice !== '' ? $caseVisibilityNotice : 'Die Fallansicht ist aktuell eingeschränkt.') ?>
+                                <a href="packages.php" class="alert-link">Paket upgraden</a>.
+                            </div>
+                        <?php endif; ?>
                         <div class="table-responsive">
                             <table class="table table-hover align-middle mb-0">
                                 <thead>
