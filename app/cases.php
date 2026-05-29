@@ -28,8 +28,8 @@ if (!empty($_SESSION['user_id'])) {
         $crecStmt->execute([$_SESSION['user_id']]);
         $cases_recoveredTotal   = (float)$crecStmt->fetchColumn();
         $cases_recovery100kGate = !$cases_hasActivePaidPkg && ($cases_recoveredTotal >= 100000.0);
-        // Blur cases table whenever the user has no active paid package
-        $cases_caseBlurActive   = $cases_isTrialUser;
+        // Blur cases table only once the 100k recovery gate is triggered
+        $cases_caseBlurActive   = $cases_recovery100kGate;
     } catch (PDOException $e) {
         error_log("cases.php gate check: " . $e->getMessage());
     }

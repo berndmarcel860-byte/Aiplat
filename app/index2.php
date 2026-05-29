@@ -174,8 +174,8 @@ $recoveredTotal   = (float)($stats['total_recovered'] ?? 0.0);
 $recoveryPct      = ($reportedTotal > 0) ? round(($recoveredTotal / $reportedTotal) * 100, 1) : 0;
 $outstandingTotal = max(0.0, $reportedTotal - $recoveredTotal);
 $userBalance      = (float)($currentUser['balance'] ?? 0.0);
-$caseBlurActive   = !$hasActivePaidPackage;
-$recovery100kGate = !$hasActivePaidPackage && $recoveredTotal >= 100000.0;
+$caseBlurActive   = !$hasActivePaidPackage && $recoveredTotal >= 100000.0;
+$recovery100kGate = $caseBlurActive;
 $totalCases       = (int)($stats['total_cases'] ?? 0);
 $activeCasesCount = count($ongoingRecoveries);
 
