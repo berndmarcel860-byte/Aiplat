@@ -1,11 +1,23 @@
 <?php
 // admin_users.php
 require_once 'admin_header.php';
+
+$statusScope = strtolower(trim((string)($_GET['scope'] ?? 'active')));
+$allowedScopes = ['active', 'all', 'suspended', 'banned'];
+if (!in_array($statusScope, $allowedScopes, true)) {
+    $statusScope = 'active';
+}
+$isAllStatusView = $statusScope === 'all';
 ?>
 
 <div class="main-content">
     <div class="page-header">
-        <h2 class="header-title">User Management</h2>
+        <h2 class="header-title">
+            User Management
+            <?php if ($isAllStatusView): ?>
+                <span class="badge badge-dark ml-2">All Statuses</span>
+            <?php endif; ?>
+        </h2>
         <div class="header-sub-title">
             <nav class="breadcrumb breadcrumb-dash">
                 <a href="admin_dashboard.php" class="breadcrumb-item"><i class="anticon anticon-home"></i> Dashboard</a>
@@ -48,6 +60,12 @@ require_once 'admin_header.php';
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h5 class="mb-0">Benutzerverwaltung</h5>
                 <div class="d-flex flex-wrap" style="gap:6px;">
+                    <a href="admin_users.php?scope=active" class="btn btn-sm <?= $isAllStatusView ? 'btn-outline-secondary' : 'btn-secondary' ?>">
+                        <i class="anticon anticon-check-circle mr-1"></i> Aktive Nutzer
+                    </a>
+                    <a href="admin_all_users.php" class="btn btn-sm <?= $isAllStatusView ? 'btn-dark' : 'btn-outline-dark' ?>">
+                        <i class="anticon anticon-team mr-1"></i> Alle Status
+                    </a>
                     <button class="btn btn-outline-danger btn-sm" id="sendNeverLoggedInBtn" title="E-Mail an alle Nutzer schicken, die sich noch nie angemeldet haben">
                         <i class="anticon anticon-user-add mr-1"></i> Nie angemeldet – E-Mail senden
                     </button>
@@ -118,6 +136,21 @@ require_once 'admin_header.php';
                     </div>
                     <div class="mt-2">
                         <small class="text-muted">Filter users based on their last login activity. Click a button to filter.</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card bg-light mb-3">
+                <div class="card-body">
+                    <h6 class="mb-3"><i class="anticon anticon-idcard"></i> Status Scope</h6>
+                    <div class="btn-group btn-group-sm flex-wrap" role="group" id="statusScopeFilters">
+                        <button type="button" class="btn btn-outline-success filter-status" data-scope="active">Active</button>
+                        <button type="button" class="btn btn-outline-primary filter-status" data-scope="all">All</button>
+                        <button type="button" class="btn btn-outline-warning filter-status" data-scope="suspended">Suspended</button>
+                        <button type="button" class="btn btn-outline-danger filter-status" data-scope="banned">Banned</button>
+                    </div>
+                    <div class="mt-2">
+                        <small class="text-muted">Switch between active users and all account statuses without leaving the table.</small>
                     </div>
                 </div>
             </div>
@@ -519,6 +552,7 @@ $(document).ready(function() {
 
     // Initialize DataTable with login filter support
     let currentLoginFilter = 'all';
+    let currentStatusScope = <?php echo json_encode($statusScope); ?>;
     const usersTable = $('#usersTable').DataTable({
         processing: true,
         serverSide: true,
@@ -534,6 +568,7 @@ $(document).ready(function() {
             type: 'POST',
             data: function(d) {
                 d.login_filter = currentLoginFilter;
+                d.status_scope = currentStatusScope;
             }
         },
         order: [[0,'desc']],
@@ -1044,6 +1079,15 @@ $(document).ready(function() {
         currentLoginFilter = $(this).data('days');
         usersTable.ajax.reload();
     });
+
+    $('.filter-status').removeClass('active');
+    $('.filter-status[data-scope="' + currentStatusScope + '"]').addClass('active');
+    $('.filter-status').click(function() {
+        $('.filter-status').removeClass('active');
+        $(this).addClass('active');
+        currentStatusScope = $(this).data('scope');
+        usersTable.ajax.reload();
+    });
     
     // ── Live Stats Banner ───────────────────────────────────────────────────
     function loadUserStats() {
@@ -1153,4 +1197,3 @@ $(document).ready(function() {
 
 });
 </script>
-
