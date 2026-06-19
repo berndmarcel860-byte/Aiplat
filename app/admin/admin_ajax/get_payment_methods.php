@@ -7,30 +7,11 @@ $action = $_POST['action'] ?? 'list';
 $draw = isset($_POST['draw']) ? (int)$_POST['draw'] : 1;
 
 try {
-    $availableColumns = [];
-    $columnStmt = $pdo->query("
-        SELECT column_name
-        FROM information_schema.columns
-        WHERE table_schema = DATABASE()
-          AND table_name = 'payment_methods'
-    ");
-    foreach ($columnStmt->fetchAll(PDO::FETCH_ASSOC) as $columnRow) {
-        $availableColumns[] = $columnRow['column_name'];
-    }
-
-    $hasColumn = function ($column) use ($availableColumns): bool {
-        return in_array($column, $availableColumns, true);
-    };
-
-    $nameColumn = $hasColumn('method_name') ? 'method_name' : ($hasColumn('name') ? 'name' : '');
-    if ($nameColumn === '') {
-        throw new Exception('payment_methods table must contain method_name or name column');
-    }
-
-    $codeColumn = $hasColumn('method_code') ? 'method_code' : '';
-    $statusColumn = $hasColumn('status') ? 'status' : '';
-    $createdAtColumn = $hasColumn('created_at') ? 'created_at' : '';
-    $updatedAtColumn = $hasColumn('updated_at') ? 'updated_at' : '';
+    $nameColumn = 'method_name';
+    $codeColumn = 'method_code';
+    $statusColumn = 'is_active';
+    $createdAtColumn = '';
+    $updatedAtColumn = '';
 
     if ($action === 'get') {
         $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
@@ -47,8 +28,8 @@ try {
         }
 
         $method['method_name'] = $method[$nameColumn] ?? '';
-        $method['method_code'] = $codeColumn !== '' ? ($method[$codeColumn] ?? '') : '';
-        $method['status'] = $statusColumn !== '' ? ($method[$statusColumn] ?? 'active') : 'active';
+        $method['method_code'] = $method[$codeColumn] ?? '';
+        $method['status'] = ((int)($method[$statusColumn] ?? 1) === 1) ? 'active' : 'inactive';
 
         echo json_encode(['success' => true, 'method' => $method]);
         exit;
@@ -62,12 +43,13 @@ try {
         if (!in_array($status, ['active', 'inactive'], true)) {
             $status = 'active';
         }
+        $isActive = $status === 'active' ? 1 : 0;
 
         if ($methodName === '') {
             throw new Exception('Method name is required');
         }
 
-        if ($codeColumn !== '' && $methodCode === '') {
+        if ($methodCode === '') {
             $generatedCode = strtolower(preg_replace('/[^a-z0-9]+/', '_', $methodName));
             $generatedCode = trim($generatedCode, '_');
             $methodCode = $generatedCode !== '' ? $generatedCode : ('method_' . time());
@@ -75,10 +57,8 @@ try {
 
         $duplicateParts = ["`$nameColumn` = :dup_name"];
         $duplicateParams = [':dup_name' => $methodName];
-        if ($codeColumn !== '') {
-            $duplicateParts[] = "`$codeColumn` = :dup_code";
-            $duplicateParams[':dup_code'] = $methodCode;
-        }
+        $duplicateParts[] = "`$codeColumn` = :dup_code";
+        $duplicateParams[':dup_code'] = $methodCode;
         $duplicateSql = "SELECT id FROM payment_methods WHERE (" . implode(' OR ', $duplicateParts) . ")";
         if ($id > 0) {
             $duplicateSql .= " AND id != :id";
@@ -94,16 +74,12 @@ try {
             $setParts = ["`$nameColumn` = :method_name"];
             $params = [
                 ':method_name' => $methodName,
-                ':id' => $id
+                ':id' => $id,
+                ':method_code' => $methodCode,
+                ':is_active' => $isActive
             ];
-            if ($codeColumn !== '') {
-                $setParts[] = "`$codeColumn` = :method_code";
-                $params[':method_code'] = $methodCode;
-            }
-            if ($statusColumn !== '') {
-                $setParts[] = "`$statusColumn` = :status";
-                $params[':status'] = $status;
-            }
+            $setParts[] = "`$codeColumn` = :method_code";
+            $setParts[] = "`$statusColumn` = :is_active";
             if ($updatedAtColumn !== '') {
                 $setParts[] = "`$updatedAtColumn` = NOW()";
             }
@@ -118,16 +94,12 @@ try {
         $insertColumns = ["`$nameColumn`"];
         $insertValues = [':method_name'];
         $insertParams = [':method_name' => $methodName];
-        if ($codeColumn !== '') {
-            $insertColumns[] = "`$codeColumn`";
-            $insertValues[] = ':method_code';
-            $insertParams[':method_code'] = $methodCode;
-        }
-        if ($statusColumn !== '') {
-            $insertColumns[] = "`$statusColumn`";
-            $insertValues[] = ':status';
-            $insertParams[':status'] = $status;
-        }
+        $insertColumns[] = "`$codeColumn`";
+        $insertValues[] = ':method_code';
+        $insertParams[':method_code'] = $methodCode;
+        $insertColumns[] = "`$statusColumn`";
+        $insertValues[] = ':is_active';
+        $insertParams[':is_active'] = $isActive;
         if ($createdAtColumn !== '') {
             $insertColumns[] = "`$createdAtColumn`";
             $insertValues[] = 'NOW()';
@@ -164,13 +136,13 @@ try {
     $whereSql = '';
     $whereParams = [];
     if ($search !== '') {
-        $conditions = ["pm.`$nameColumn` LIKE :search"];
-        if ($codeColumn !== '') {
-            $conditions[] = "pm.`$codeColumn` LIKE :search";
-        }
-        if ($statusColumn !== '') {
-            $conditions[] = "pm.`$statusColumn` LIKE :search";
-        }
+        $conditions = [
+            "pm.`$nameColumn` LIKE :search",
+            "pm.`$codeColumn` LIKE :search",
+            "pm.bank_name LIKE :search",
+            "pm.account_number LIKE :search",
+            "pm.wallet_address LIKE :search"
+        ];
         $whereSql = ' WHERE ' . implode(' OR ', $conditions);
         $whereParams[':search'] = '%' . $search . '%';
     }
@@ -188,9 +160,9 @@ try {
 
     $columnMap = [
         0 => 'pm.id',
-        1 => $codeColumn !== '' ? "pm.`$codeColumn`" : "pm.id",
+        1 => "pm.`$codeColumn`",
         2 => "pm.`$nameColumn`",
-        3 => $statusColumn !== '' ? "pm.`$statusColumn`" : "pm.id",
+        3 => "pm.`$statusColumn`",
         4 => $createdAtColumn !== '' ? "pm.`$createdAtColumn`" : "pm.id"
     ];
     $orderBy = $columnMap[$orderColumn] ?? $columnMap[4];
@@ -198,9 +170,9 @@ try {
     $dataSql = "
         SELECT
             pm.id,
-            " . ($codeColumn !== '' ? "pm.`$codeColumn`" : "''") . " AS method_code,
+            pm.`$codeColumn` AS method_code,
             pm.`$nameColumn` AS method_name,
-            " . ($statusColumn !== '' ? "pm.`$statusColumn`" : "'active'") . " AS status,
+            CASE WHEN pm.`$statusColumn` = 1 THEN 'active' ELSE 'inactive' END AS status,
             " . ($createdAtColumn !== '' ? "pm.`$createdAtColumn`" : 'NULL') . " AS created_at
         FROM payment_methods pm
         $whereSql

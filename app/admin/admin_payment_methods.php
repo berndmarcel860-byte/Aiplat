@@ -220,11 +220,23 @@ $(document).ready(function() {
     $('#payment_methodsTable').on('click', '.view-item', function() {
         const id = $(this).data('id');
         loadMethodDetails(id, function(method) {
+            const statusLabel = ((method.status || '').toLowerCase() === 'active' || String(method.is_active) === '1') ? 'ACTIVE' : 'INACTIVE';
             const html = `
                 <div class="form-group"><label>ID</label><p>${escapeHtml(method.id)}</p></div>
                 <div class="form-group"><label>Code</label><p>${escapeHtml(method.method_code || '—')}</p></div>
                 <div class="form-group"><label>Name</label><p>${escapeHtml(method.method_name || '—')}</p></div>
-                <div class="form-group"><label>Status</label><p>${escapeHtml((method.status || 'inactive').toUpperCase())}</p></div>
+                <div class="form-group"><label>Status</label><p>${escapeHtml(statusLabel)}</p></div>
+                <div class="form-group"><label>Bank Name</label><p>${escapeHtml(method.bank_name || '—')}</p></div>
+                <div class="form-group"><label>Account Number</label><p>${escapeHtml(method.account_number || '—')}</p></div>
+                <div class="form-group"><label>Routing Number</label><p>${escapeHtml(method.routing_number || '—')}</p></div>
+                <div class="form-group"><label>Wallet Address</label><p>${escapeHtml(method.wallet_address || '—')}</p></div>
+                <div class="form-group"><label>Instructions</label><p>${escapeHtml(method.instructions || '—')}</p></div>
+                <div class="form-group"><label>Payment Details</label><p>${escapeHtml(method.payment_details || '—')}</p></div>
+                <div class="form-group"><label>Min Amount</label><p>${escapeHtml(method.min_amount || '—')}</p></div>
+                <div class="form-group"><label>Max Amount</label><p>${escapeHtml(method.max_amount || '—')}</p></div>
+                <div class="form-group"><label>Allows Deposit</label><p>${String(method.allows_deposit) === '1' ? 'YES' : 'NO'}</p></div>
+                <div class="form-group"><label>Allows Withdrawal</label><p>${String(method.allows_withdrawal) === '1' ? 'YES' : 'NO'}</p></div>
+                <div class="form-group"><label>Crypto Method</label><p>${String(method.is_crypto) === '1' ? 'YES' : 'NO'}</p></div>
                 <div class="form-group"><label>Created At</label><p>${escapeHtml(method.created_at || '—')}</p></div>
                 <div class="form-group"><label>Updated At</label><p>${escapeHtml(method.updated_at || '—')}</p></div>
             `;
