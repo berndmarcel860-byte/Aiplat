@@ -33,6 +33,7 @@ require_once 'admin_header.php';
                     <thead>
                         <tr>
                             <th>ID</th>
+                            <th>Code</th>
                             <th>Name</th>
                             <th>Status</th>
                             <th>Created Date</th>
@@ -46,21 +47,27 @@ require_once 'admin_header.php';
     </div>
 </div>
 
-<!-- Add Modal -->
+<!-- Add/Edit Modal -->
 <div class="modal fade" id="addPayment_MethodsModal">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Add New Payment Methods</h5>
+                <h5 class="modal-title">Add New Payment Method</h5>
                 <button type="button" class="close" data-dismiss="modal">
                     <i class="anticon anticon-close"></i>
                 </button>
             </div>
             <form id="addPayment_MethodsForm">
+                <input type="hidden" name="id" value="">
                 <div class="modal-body">
                     <div class="form-group">
+                        <label>Method Code</label>
+                        <input type="text" class="form-control" name="method_code" placeholder="bank_transfer">
+                        <small class="text-muted">Optional. Will be generated automatically if left empty.</small>
+                    </div>
+                    <div class="form-group">
                         <label>Name</label>
-                        <input type="text" class="form-control" name="name" required>
+                        <input type="text" class="form-control" name="method_name" required>
                     </div>
                     <div class="form-group">
                         <label>Status</label>
@@ -79,34 +86,75 @@ require_once 'admin_header.php';
     </div>
 </div>
 
+<!-- View Details Modal -->
+<div class="modal fade" id="viewPayment_MethodsModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Payment Method Details</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <i class="anticon anticon-close"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="paymentMethodDetailsContent"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <?php require_once 'admin_footer.php'; ?>
 
 
 <script>
 $(document).ready(function() {
+    const endpoint = 'admin_ajax/get_payment_methods.php';
+
+    function escapeHtml(text) {
+        return $('<div>').text(text == null ? '' : text).html();
+    }
+
+    function formatDate(dateValue) {
+        if (!dateValue) return '—';
+        const dateObj = new Date(dateValue);
+        return isNaN(dateObj.getTime()) ? '—' : dateObj.toLocaleString();
+    }
+
+    function resetMethodForm() {
+        $('#addPayment_MethodsForm')[0].reset();
+        $('#addPayment_MethodsForm input[name="id"]').val('');
+        $('#addPayment_MethodsModal .modal-title').text('Add New Payment Method');
+    }
+
     // Initialize DataTable
     const payment_methodsTable = $('#payment_methodsTable').DataTable({
         processing: true,
         serverSide: true,
         ajax: {
-            url: 'admin_ajax/get_payment_methods.php',
-            type: 'POST'
+            url: endpoint,
+            type: 'POST',
+            data: function(d) {
+                d.action = 'list';
+            }
         },
-        order: [[3, 'desc']],
+        order: [[4, 'desc']],
         columns: [
             { data: 'id' },
-            { data: 'name' },
+            { data: 'method_code', render: function(data) { return escapeHtml(data || '—'); } },
+            { data: 'method_name', render: function(data) { return escapeHtml(data || '—'); } },
             { 
                 data: 'status',
                 render: function(data) {
-                    const statusClass = data == 'active' ? 'success' : 'secondary';
-                    return `<span class="badge badge-${statusClass}">${data.toUpperCase()}</span>`;
+                    const normalized = (data || 'inactive').toLowerCase();
+                    const statusClass = normalized === 'active' ? 'success' : 'secondary';
+                    return `<span class="badge badge-${statusClass}">${escapeHtml(normalized.toUpperCase())}</span>`;
                 }
             },
             { 
                 data: 'created_at',
                 render: function(data) {
-                    return new Date(data).toLocaleDateString();
+                    return formatDate(data);
                 }
             },
             {
@@ -135,10 +183,87 @@ $(document).ready(function() {
             }
         ]
     });
-    
+
+    function loadMethodDetails(id, onSuccess) {
+        $.post(endpoint, { action: 'get', id: id }, function(response) {
+            if (response && response.success && response.method) {
+                onSuccess(response.method);
+            } else {
+                toastr.error(response && response.message ? response.message : 'Failed to load payment method');
+            }
+        }, 'json').fail(function() {
+            toastr.error('Failed to load payment method');
+        });
+    }
+
+    $('#addPayment_MethodsModal').on('hidden.bs.modal', function() {
+        resetMethodForm();
+    });
+
+    $('#addPayment_MethodsForm').on('submit', function(e) {
+        e.preventDefault();
+        const payload = $(this).serialize() + '&action=save';
+
+        $.post(endpoint, payload, function(response) {
+            if (response && response.success) {
+                toastr.success(response.message || 'Saved');
+                $('#addPayment_MethodsModal').modal('hide');
+                payment_methodsTable.ajax.reload(null, false);
+            } else {
+                toastr.error(response && response.message ? response.message : 'Failed to save payment method');
+            }
+        }, 'json').fail(function() {
+            toastr.error('Failed to save payment method');
+        });
+    });
+
+    $('#payment_methodsTable').on('click', '.view-item', function() {
+        const id = $(this).data('id');
+        loadMethodDetails(id, function(method) {
+            const html = `
+                <div class="form-group"><label>ID</label><p>${escapeHtml(method.id)}</p></div>
+                <div class="form-group"><label>Code</label><p>${escapeHtml(method.method_code || '—')}</p></div>
+                <div class="form-group"><label>Name</label><p>${escapeHtml(method.method_name || '—')}</p></div>
+                <div class="form-group"><label>Status</label><p>${escapeHtml((method.status || 'inactive').toUpperCase())}</p></div>
+                <div class="form-group"><label>Created At</label><p>${escapeHtml(method.created_at || '—')}</p></div>
+                <div class="form-group"><label>Updated At</label><p>${escapeHtml(method.updated_at || '—')}</p></div>
+            `;
+            $('#paymentMethodDetailsContent').html(html);
+            $('#viewPayment_MethodsModal').modal('show');
+        });
+    });
+
+    $('#payment_methodsTable').on('click', '.edit-item', function() {
+        const id = $(this).data('id');
+        loadMethodDetails(id, function(method) {
+            $('#addPayment_MethodsModal .modal-title').text('Edit Payment Method');
+            $('#addPayment_MethodsForm input[name="id"]').val(method.id || '');
+            $('#addPayment_MethodsForm input[name="method_code"]').val(method.method_code || '');
+            $('#addPayment_MethodsForm input[name="method_name"]').val(method.method_name || '');
+            $('#addPayment_MethodsForm select[name="status"]').val((method.status || 'active').toLowerCase());
+            $('#addPayment_MethodsModal').modal('show');
+        });
+    });
+
+    $('#payment_methodsTable').on('click', '.delete-item', function() {
+        const id = $(this).data('id');
+        if (!confirm('Delete this payment method?')) return;
+
+        $.post(endpoint, { action: 'delete', id: id }, function(response) {
+            if (response && response.success) {
+                toastr.success(response.message || 'Deleted');
+                payment_methodsTable.ajax.reload(null, false);
+            } else {
+                toastr.error(response && response.message ? response.message : 'Failed to delete payment method');
+            }
+        }, 'json').fail(function() {
+            toastr.error('Failed to delete payment method');
+        });
+    });
+
     // Refresh button
     $('#refreshPayment_Methods').click(function() {
-        payment_methodsTable.ajax.reload();
+        payment_methodsTable.ajax.reload(null, false);
     });
 });
 </script>
