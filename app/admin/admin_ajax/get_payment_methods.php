@@ -3,11 +3,23 @@ require_once '../admin_session.php';
 
 header('Content-Type: application/json');
 
+$action = $_POST['action'] ?? 'list';
+$draw = isset($_POST['draw']) ? (int)$_POST['draw'] : 1;
+
 try {
-    $hasColumn = function ($column) use ($pdo): bool {
-        $stmt = $pdo->prepare("SHOW COLUMNS FROM payment_methods LIKE ?");
-        $stmt->execute([$column]);
-        return (bool)$stmt->fetch(PDO::FETCH_ASSOC);
+    $availableColumns = [];
+    $columnStmt = $pdo->query("
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_schema = DATABASE()
+          AND table_name = 'payment_methods'
+    ");
+    foreach ($columnStmt->fetchAll(PDO::FETCH_ASSOC) as $columnRow) {
+        $availableColumns[] = $columnRow['column_name'];
+    }
+
+    $hasColumn = function ($column) use ($availableColumns): bool {
+        return in_array($column, $availableColumns, true);
     };
 
     $nameColumn = $hasColumn('method_name') ? 'method_name' : ($hasColumn('name') ? 'name' : '');
@@ -19,8 +31,6 @@ try {
     $statusColumn = $hasColumn('status') ? 'status' : '';
     $createdAtColumn = $hasColumn('created_at') ? 'created_at' : '';
     $updatedAtColumn = $hasColumn('updated_at') ? 'updated_at' : '';
-
-    $action = $_POST['action'] ?? 'list';
 
     if ($action === 'get') {
         $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
@@ -147,7 +157,6 @@ try {
         exit;
     }
 
-    $draw = isset($_POST['draw']) ? (int)$_POST['draw'] : 1;
     $start = isset($_POST['start']) ? max(0, (int)$_POST['start']) : 0;
     $length = isset($_POST['length']) ? max(1, (int)$_POST['length']) : 10;
     $search = trim((string)($_POST['search']['value'] ?? ''));
@@ -214,9 +223,29 @@ try {
         'data' => $data
     ]);
 } catch (PDOException $e) {
+    if ($action === 'list') {
+        echo json_encode([
+            'draw' => $draw,
+            'recordsTotal' => 0,
+            'recordsFiltered' => 0,
+            'data' => [],
+            'error' => 'Failed to load payment methods'
+        ]);
+        exit;
+    }
     http_response_code(500);
-    echo json_encode(['error' => 'Database error: ' . $e->getMessage()]);
+    echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
 } catch (Exception $e) {
+    if ($action === 'list') {
+        echo json_encode([
+            'draw' => $draw,
+            'recordsTotal' => 0,
+            'recordsFiltered' => 0,
+            'data' => [],
+            'error' => $e->getMessage()
+        ]);
+        exit;
+    }
     http_response_code(400);
     echo json_encode(['success' => false, 'message' => $e->getMessage()]);
 }
