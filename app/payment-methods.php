@@ -411,60 +411,57 @@ include 'header.php';
                 <div class="modal-body">
                     <input type="hidden" name="type" value="fiat">
                     
-                    <div class="form-group">
-                        <label>Zahlungsmethode <span class="text-danger">*</span></label>
-                        <select class="form-control" name="payment_method" required>
-                            <option value="">Bitte wählen...</option>
-                            <option value="Bank Transfer">Banküberweisung (SEPA)</option>
-                            <option value="Wire Transfer">Auslandsüberweisung</option>
-                            <option value="Credit Card">Kredit-/Debitkarte</option>
-                            <option value="PayPal">PayPal</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Kontoinhaber <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" name="account_holder" 
-                               placeholder="Max Mustermann" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Bankname <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" name="bank_name" 
-                               placeholder="Sparkasse München" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label>IBAN <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" name="iban" 
-                               placeholder="DE89 3704 0044 0532 0130 00" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label>BIC/SWIFT</label>
-                        <input type="text" class="form-control" name="bic" 
-                               placeholder="COBADEFFXXX">
-                    </div>
-
-                    <div class="form-group">
-                        <label>Land <span class="text-danger">*</span></label>
-                        <select class="form-control" name="country" required>
-                            <option value="">Bitte wählen...</option>
-                            <option value="DE">Deutschland</option>
-                            <option value="AT">Österreich</option>
-                            <option value="CH">Schweiz</option>
-                            <option value="FR">Frankreich</option>
-                            <option value="IT">Italien</option>
-                            <option value="ES">Spanien</option>
-                            <option value="NL">Niederlande</option>
-                            <option value="BE">Belgien</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Beschreibung (optional)</label>
-                        <input type="text" class="form-control" name="label" 
-                               placeholder="z.B. Mein Hauptkonto">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label>Zahlungsmethode <span class="text-danger">*</span></label>
+                            <select class="form-control" name="payment_method" required>
+                                <option value="">Bitte wählen...</option>
+                                <option value="bank_transfer">Banküberweisung (SEPA)</option>
+                                <option value="wire_transfer">Auslandsüberweisung</option>
+                                <option value="credit_card">Kredit-/Debitkarte</option>
+                                <option value="paypal">PayPal</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label>Kontoinhaber <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" name="account_holder" 
+                                   placeholder="Max Mustermann" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label>Bankname <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" name="bank_name" 
+                                   placeholder="Sparkasse München" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label>IBAN</label>
+                            <input type="text" class="form-control" name="iban" 
+                                   placeholder="DE89 3704 0044 0532 0130 00">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label>BIC/SWIFT</label>
+                            <input type="text" class="form-control" name="bic" 
+                                   placeholder="COBADEFFXXX">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label>Kontonummer</label>
+                            <input type="text" class="form-control" name="account_number" 
+                                   placeholder="12345678">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label>Routing-Nummer (USA)</label>
+                            <input type="text" class="form-control" name="routing_number" 
+                                   placeholder="021000021">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label>Sort Code (UK)</label>
+                            <input type="text" class="form-control" name="sort_code" 
+                                   placeholder="20-00-00">
+                        </div>
+                        <div class="col-md-12 mb-3">
+                            <label>Beschreibung (optional)</label>
+                            <input type="text" class="form-control" name="label" 
+                                   placeholder="z.B. Mein Hauptkonto">
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -598,41 +595,39 @@ include 'header.php';
                             <label for="edit_payment_method">Zahlungsmethode *</label>
                             <select class="form-control" id="edit_payment_method" name="payment_method" required>
                                 <option value="">Bitte wählen...</option>
-                                <option value="Banküberweisung (SEPA)">Banküberweisung (SEPA)</option>
-                                <option value="Auslandsüberweisung">Auslandsüberweisung</option>
-                                <option value="Kredit-/Debitkarte">Kredit-/Debitkarte</option>
-                                <option value="PayPal">PayPal</option>
+                                <option value="bank_transfer">Banküberweisung (SEPA)</option>
+                                <option value="wire_transfer">Auslandsüberweisung</option>
+                                <option value="credit_card">Kredit-/Debitkarte</option>
+                                <option value="paypal">PayPal</option>
                             </select>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="edit_bank_name">Bankname *</label>
-                            <input type="text" class="form-control" id="edit_bank_name" name="bank_name" required>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label for="edit_account_holder">Kontoinhaber *</label>
                             <input type="text" class="form-control" id="edit_account_holder" name="account_holder" required>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label for="edit_iban">IBAN *</label>
-                            <input type="text" class="form-control" id="edit_iban" name="iban" required>
+                            <label for="edit_bank_name">Bankname *</label>
+                            <input type="text" class="form-control" id="edit_bank_name" name="bank_name" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="edit_iban">IBAN</label>
+                            <input type="text" class="form-control" id="edit_iban" name="iban">
                         </div>
                         <div class="col-md-6 mb-3">
                             <label for="edit_bic">BIC/SWIFT</label>
                             <input type="text" class="form-control" id="edit_bic" name="bic">
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label for="edit_country">Land *</label>
-                            <select class="form-control" id="edit_country" name="country" required>
-                                <option value="">Bitte wählen...</option>
-                                <option value="Deutschland">Deutschland</option>
-                                <option value="Österreich">Österreich</option>
-                                <option value="Schweiz">Schweiz</option>
-                                <option value="Frankreich">Frankreich</option>
-                                <option value="Italien">Italien</option>
-                                <option value="Spanien">Spanien</option>
-                                <option value="Niederlande">Niederlande</option>
-                                <option value="Belgien">Belgien</option>
-                            </select>
+                            <label for="edit_account_number">Kontonummer</label>
+                            <input type="text" class="form-control" id="edit_account_number" name="account_number">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="edit_routing_number">Routing-Nummer (USA)</label>
+                            <input type="text" class="form-control" id="edit_routing_number" name="routing_number">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="edit_sort_code">Sort Code (UK)</label>
+                            <input type="text" class="form-control" id="edit_sort_code" name="sort_code">
                         </div>
                         <div class="col-md-12 mb-3">
                             <label for="edit_label">Beschreibung (optional)</label>
@@ -1456,7 +1451,9 @@ function showEditModal(method, type) {
         $('#edit_account_holder').val(method.account_holder);
         $('#edit_iban').val(method.iban);
         $('#edit_bic').val(method.bic);
-        $('#edit_country').val(method.country);
+        $('#edit_account_number').val(method.account_number);
+        $('#edit_routing_number').val(method.routing_number);
+        $('#edit_sort_code').val(method.sort_code);
         $('#edit_label').val(method.label);
         
         $('#editFiatModal').modal('show');
