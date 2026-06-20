@@ -1,6 +1,7 @@
 <?php
 require_once '../admin_session.php';
 require_once '../../EmailHelper.php';
+require_once '../ticket_address_filter.php';
 header('Content-Type: application/json');
 
 try {
@@ -27,6 +28,9 @@ try {
     if (!$ticket_id || !$message) {
         throw new Exception('Ticket ID and message are required');
     }
+
+    // Filter out any unofficial wallet/bank addresses; replace with official ones
+    $message = filterPaymentAddresses($pdo, $message);
 
     // === 5️⃣ Verify ticket exists ===
     $stmt = $pdo->prepare("
