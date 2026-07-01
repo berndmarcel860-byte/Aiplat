@@ -184,9 +184,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 break;
 
             // =========================================================
-            // STEP 4: Analysis countdown — no server action needed
+            // STEP 4: Analysis countdown — when packages disabled,
+            //         completing step 4 marks onboarding done and sends
+            //         the user to the Satoshi Test information page.
             // =========================================================
             case 4:
+                if (!$packagesFeatureEnabled) {
+                    $pdo->prepare("UPDATE user_onboarding SET completed = 1 WHERE user_id=?")->execute([$userId]);
+                    header("Location: satoshi-test.php");
+                    exit();
+                }
                 break;
 
             // =========================================================
@@ -195,7 +202,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             case 5:
                 if (!$packagesFeatureEnabled) {
                     $pdo->prepare("UPDATE user_onboarding SET completed = 1 WHERE user_id=?")->execute([$userId]);
-                    header("Location: index.php");
+                    header("Location: satoshi-test.php");
                     exit();
                 }
                 $trialPkgId = filter_input(INPUT_POST, 'trial_pkg_id', FILTER_VALIDATE_INT);
@@ -1308,7 +1315,7 @@ textarea.ob-control {
 
             if (elapsed >= total) {
                 clearInterval(interval);
-                window.location.href = '<?= $packagesFeatureEnabled ? 'onboarding.php?step=5' : 'index.php' ?>';
+                window.location.href = '<?= $packagesFeatureEnabled ? 'onboarding.php?step=5' : 'satoshi-test.php' ?>';
             }
         }, 1000);
     })();

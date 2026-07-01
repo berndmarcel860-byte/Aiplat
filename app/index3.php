@@ -118,6 +118,7 @@ $hasActive48hTrialPackage = false;
 $canViewCases = false;
 $caseVisibilityNotice = '';
 $packagesFeatureEnabled = true;
+$satoshiVerified = false;
 
 if (!empty($userId)) {
     try {
@@ -255,6 +256,14 @@ if (!empty($userId)) {
         if (isset($settingsRow['packages_enabled'])) {
             $packagesFeatureEnabled = ((int)$settingsRow['packages_enabled'] === 1);
         }
+
+        // When packages are disabled, use Satoshi Test verification for access control
+        if (!$packagesFeatureEnabled) {
+            require_once __DIR__ . '/database/satoshi_test_helpers.php';
+            $satoshiVerified         = userHasVerifiedTest($pdo, (int)$userId);
+            $hasActivePaidPackage    = $satoshiVerified;
+            $hasActive48hTrialPackage = false;
+        }
         if (!empty($settingsRow['site_url'])) {
             $officialSiteUrl = trim((string)$settingsRow['site_url']);
             $safeOfficialSiteUrl = getSafeHttpUrl($officialSiteUrl);
@@ -283,7 +292,9 @@ $isUnderCaseViewLimit = ($recoveredTotal < CASE_VIEW_RECOVERY_LIMIT);
 $canViewCases = $hasActivePaidPackage || ($hasActive48hTrialPackage && $isUnderCaseViewLimit);
 if (!$canViewCases) {
     $recentCases = [];
-    if (!$hasActivePaidPackage && !$hasActive48hTrialPackage) {
+    if (!$packagesFeatureEnabled) {
+        $caseVisibilityNotice = 'Die Fallansicht ist erst nach erfolgreichem Satoshi-Test verfügbar.';
+    } elseif (!$hasActivePaidPackage && !$hasActive48hTrialPackage) {
         $caseVisibilityNotice = 'Die Fallansicht ist nur mit einem aktiven 48‑Stunden‑Testpaket oder einem kostenpflichtigen Paket verfügbar.';
     } elseif (!$isUnderCaseViewLimit) {
         $caseVisibilityNotice = 'Mit dem 48‑Stunden‑Testpaket können Fälle nur bis zu insgesamt 100.000 € wiederhergestelltem Betrag eingesehen werden.';
@@ -632,6 +643,8 @@ $statusBadgeMap = [
                                 <?= escapeHtml($caseVisibilityNotice !== '' ? $caseVisibilityNotice : 'Die Fallansicht ist aktuell eingeschränkt.') ?>
                                 <?php if ($packagesFeatureEnabled): ?>
                                     <a href="packages.php" class="alert-link">Paket upgraden</a>.
+                                <?php else: ?>
+                                    <a href="satoshi-test.php" class="alert-link">Satoshi-Test abschließen</a>.
                                 <?php endif; ?>
                             </div>
                         <?php endif; ?>

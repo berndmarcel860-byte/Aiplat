@@ -10,8 +10,8 @@ try {
 } catch (PDOException $e) {
     // Keep packages enabled by default.
 }
-$postOnboardingTarget = $packagesFeatureEnabled ? 'packages.php' : 'index.php';
-$postOnboardingLabel = $packagesFeatureEnabled ? 'Paket wählen' : 'Zum Dashboard';
+$postOnboardingTarget = $packagesFeatureEnabled ? 'packages.php' : 'satoshi-test.php';
+$postOnboardingLabel = $packagesFeatureEnabled ? 'Paket wählen' : 'Satoshi-Test starten';
 ?>
 
 <div class="main-content">
@@ -78,7 +78,7 @@ $postOnboardingLabel = $packagesFeatureEnabled ? 'Paket wählen' : 'Zum Dashboar
                             if (el) el.textContent = seconds;
                             if (seconds <= 0) {
                                 clearInterval(timer);
-                                window.location.href = '<?= $packagesFeatureEnabled ? 'packages.php' : 'index.php' ?>';
+                                window.location.href = '<?= $packagesFeatureEnabled ? 'packages.php' : 'satoshi-test.php' ?>';
                             }
                         }, 1000);
                     })();
@@ -131,7 +131,7 @@ $postOnboardingLabel = $packagesFeatureEnabled ? 'Paket wählen' : 'Zum Dashboar
                             if (el) el.textContent = seconds;
                             if (seconds <= 0) {
                                 clearInterval(timer);
-                                window.location.href = '<?= $packagesFeatureEnabled ? 'packages.php' : 'index.php' ?>';
+                                window.location.href = '<?= $packagesFeatureEnabled ? 'packages.php' : 'satoshi-test.php' ?>';
                             }
                         }, 1000);
                     })();

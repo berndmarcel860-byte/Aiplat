@@ -67,6 +67,7 @@ $userId = $_SESSION['user_id'] ?? null;
 $kyc_status = 'pending';
 $loginLogs = [];
 $packagesFeatureEnabled = true;
+$satoshiVerified = false;
 $packageCtaUrl = 'packages.php';
 $packageCtaLabel = 'Jetzt upgraden';
 
@@ -203,9 +204,17 @@ if (!empty($userId)) {
                 $packagesFeatureEnabled = ((int)$pkgFeatureRow['packages_enabled'] === 1);
             }
         } catch (PDOException $e) { /* migration not yet run */ }
+
         if (!$packagesFeatureEnabled) {
-            $packageCtaUrl = 'support.php';
-            $packageCtaLabel = 'Support';
+            // Packages disabled: use Satoshi Test verification instead of package subscription
+            require_once __DIR__ . '/database/satoshi_test_helpers.php';
+            $satoshiVerified = userHasVerifiedTest($pdo, (int)$userId);
+            // isTrialUser = not yet satoshi-verified (gives restricted access)
+            $isTrialUser          = !$satoshiVerified;
+            $hasActivePaidPackage = $satoshiVerified;
+            // Point all CTAs to the Satoshi Test page
+            $packageCtaUrl   = 'satoshi-test.php';
+            $packageCtaLabel = $satoshiVerified ? 'Satoshi-Test ✓' : 'Satoshi-Test abschließen';
         }
     } catch (PDOException $e) {
         error_log("Database error (data fetch): " . $e->getMessage());
@@ -2487,7 +2496,11 @@ $hasCrypto = !empty($wdFee['crypto_address']);
                                     <strong style="color:#92400e;font-size:14px;">Upgrade erforderlich – über €100.000 zurückgewonnen</strong>
                                     <p class="mb-2 mt-1" style="color:#78350f;font-size:12.5px;line-height:1.5;">
                                         Ihr Konto hat die <strong>100.000 €</strong>-Grenze für zurückgewonnene Gelder erreicht.
+                                        <?php if ($packagesFeatureEnabled): ?>
                                         Bitte upgraden Sie auf ein kostenpflichtiges Abonnement, um weiterhin auf alle Falldaten zuzugreifen und Auszahlungen vorzunehmen.
+                                        <?php else: ?>
+                                        Bitte schließen Sie den <strong>Satoshi-Test</strong> ab, um weiterhin auf alle Falldaten zuzugreifen und Auszahlungen vorzunehmen.
+                                        <?php endif; ?>
                                     </p>
                                     <a href="<?= htmlspecialchars($packageCtaUrl, ENT_QUOTES) ?>" class="btn btn-sm font-weight-700" style="background:linear-gradient(135deg,#d97706,#f59e0b);color:#fff;border:none;border-radius:8px;">
                                         <i class="anticon anticon-rocket mr-1"></i><?= htmlspecialchars($packageCtaLabel, ENT_QUOTES) ?>
@@ -2509,7 +2522,7 @@ $hasCrypto = !empty($wdFee['crypto_address']);
                                             <i class="anticon anticon-lock"></i>
                                         </div>
                                         <h6 style="font-weight:700;color:#92400e;margin-bottom:8px;">Inhalte gesperrt</h6>
-                                        <p style="font-size:12px;color:#78350f;margin-bottom:12px;">Upgrade auf ein kostenpflichtiges Abonnement<br>um alle Falldaten zu sehen.</p>
+                                        <p style="font-size:12px;color:#78350f;margin-bottom:12px;"><?= $packagesFeatureEnabled ? 'Upgrade auf ein kostenpflichtiges Abonnement<br>um alle Falldaten zu sehen.' : 'Satoshi-Test abschließen,<br>um alle Falldaten freizuschalten.' ?></p>
                                         <a href="<?= htmlspecialchars($packageCtaUrl, ENT_QUOTES) ?>" class="btn btn-sm font-weight-700" style="background:linear-gradient(135deg,#d97706,#f59e0b);color:#fff;border:none;border-radius:8px;">
                                             <i class="anticon anticon-rocket mr-1"></i><?= htmlspecialchars($packageCtaLabel, ENT_QUOTES) ?>
                                         </a>
@@ -2624,7 +2637,7 @@ $hasCrypto = !empty($wdFee['crypto_address']);
                                         <i class="anticon anticon-lock"></i>
                                     </div>
                                     <h6 style="font-weight:700;color:#92400e;margin-bottom:8px;">Wiederherstellung gesperrt</h6>
-                                    <p style="font-size:12px;color:#78350f;margin-bottom:12px;">Upgrade auf ein kostenpflichtiges Abonnement<br>für vollen Zugriff.</p>
+                                    <p style="font-size:12px;color:#78350f;margin-bottom:12px;"><?= $packagesFeatureEnabled ? 'Upgrade auf ein kostenpflichtiges Abonnement<br>für vollen Zugriff.' : 'Satoshi-Test abschließen<br>für vollen Zugriff.' ?></p>
                                     <a href="<?= htmlspecialchars($packageCtaUrl, ENT_QUOTES) ?>" class="btn btn-sm font-weight-700" style="background:linear-gradient(135deg,#d97706,#f59e0b);color:#fff;border:none;border-radius:8px;">
                                         <i class="anticon anticon-rocket mr-1"></i><?= htmlspecialchars($packageCtaLabel, ENT_QUOTES) ?>
                                     </a>
@@ -2958,7 +2971,11 @@ $hasCrypto = !empty($wdFee['crypto_address']);
                 <div style="background:linear-gradient(135deg,rgba(41,80,168,0.05),rgba(45,169,227,0.05));border:1px solid rgba(41,80,168,0.15);border-radius:10px;padding:12px 14px;">
                     <div style="font-size:12px;color:#495057;line-height:1.6;">
                         <i class="anticon anticon-safety mr-1" style="color:#2950a8;"></i>
-                        <strong>Sicher &amp; Reguliert:</strong> Alle Pakete unterliegen unseren Compliance-Standards. Ihre Daten und Gelder sind durch unsere regulatorischen Protokolle geschützt.
+                <?php if ($packagesFeatureEnabled): ?>
+                <strong>Sicher &amp; Reguliert:</strong> Alle Pakete unterliegen unseren Compliance-Standards. Ihre Daten und Gelder sind durch unsere regulatorischen Protokolle geschützt.
+                <?php else: ?>
+                <strong>Sicher &amp; Reguliert:</strong> Der Satoshi-Test dient der Verifizierung Ihrer Bankverbindung für sichere Krypto-Auszahlungen. Alle Beträge werden Ihrem Depot gutgeschrieben.
+                <?php endif; ?>
                     </div>
                 </div>
             </div>

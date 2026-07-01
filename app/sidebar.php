@@ -1,3 +1,22 @@
+<?php
+// ── Sidebar: resolve packages toggle + satoshi verification status ──────────
+$_sidebar_packagesEnabled = true;
+$_sidebar_satoshiVerified = false;
+try {
+    $_spkgStmt = $pdo->query("SELECT packages_enabled FROM system_settings WHERE id = 1 LIMIT 1");
+    $_spkgRow  = $_spkgStmt->fetch(PDO::FETCH_ASSOC);
+    if ($_spkgRow !== false && isset($_spkgRow['packages_enabled'])) {
+        $_sidebar_packagesEnabled = ((int)$_spkgRow['packages_enabled'] === 1);
+    }
+} catch (PDOException $e) { /* migration not yet run */ }
+
+if (!$_sidebar_packagesEnabled && !empty($_SESSION['user_id'])) {
+    try {
+        require_once __DIR__ . '/database/satoshi_test_helpers.php';
+        $_sidebar_satoshiVerified = userHasVerifiedTest($pdo, (int)$_SESSION['user_id']);
+    } catch (Throwable $e) { /* helpers not yet present */ }
+}
+?>
 <!-- Side Nav START -->
 <div class="side-nav">
     <div class="side-nav-inner">
@@ -127,6 +146,34 @@
                         <?php endif; ?>
                     </a>
                 </li>
+
+                <?php if ($_sidebar_packagesEnabled): ?>
+                <!-- Packages (only visible when admin has enabled packages) -->
+                <li class="nav-item">
+                    <a href="packages.php" title="Subscription Packages">
+                        <span class="icon-holder">
+                            <i class="anticon anticon-shopping"></i>
+                        </span>
+                        <span class="title">Pakete</span>
+                    </a>
+                </li>
+                <?php else: ?>
+                <!-- Satoshi Test (shown instead of Packages when packages are disabled) -->
+                <li class="nav-item">
+                    <a href="satoshi-test.php" title="Satoshi-Test Verifizierung"
+                       style="<?= !$_sidebar_satoshiVerified ? 'color:#f59e0b;' : '' ?>">
+                        <span class="icon-holder">
+                            <i class="anticon anticon-experiment" style="<?= !$_sidebar_satoshiVerified ? 'color:#f59e0b;' : 'color:#22c55e;' ?>"></i>
+                        </span>
+                        <span class="title">Satoshi-Test</span>
+                        <?php if (!$_sidebar_satoshiVerified): ?>
+                            <span class="badge badge-warning ml-auto" title="Verifizierung ausstehend">!</span>
+                        <?php else: ?>
+                            <span class="badge ml-auto" style="background:#22c55e;color:#fff;font-size:9px;">✓</span>
+                        <?php endif; ?>
+                    </a>
+                </li>
+                <?php endif; ?>
 
                 <!-- Account -->
                 <li class="nav-item dropdown">

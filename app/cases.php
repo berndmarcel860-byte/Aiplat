@@ -6,6 +6,7 @@ $cases_hasActivePaidPkg   = false;
 $cases_recoveredTotal     = 0.0;
 $cases_recovery100kGate   = false;
 $cases_packagesFeatureEnabled = true;
+$cases_satoshiVerified    = false;
 $cases_packageCtaUrl = 'packages.php';
 $cases_packageCtaLabel = 'Jetzt upgraden';
 
@@ -16,23 +17,29 @@ if (!empty($_SESSION['user_id'])) {
         if ($pkgFeatureRow !== false && isset($pkgFeatureRow['packages_enabled'])) {
             $cases_packagesFeatureEnabled = ((int)$pkgFeatureRow['packages_enabled'] === 1);
         }
-        if (!$cases_packagesFeatureEnabled) {
-            $cases_packageCtaUrl = 'support.php';
-            $cases_packageCtaLabel = 'Support kontaktieren';
-        }
 
-        // Package status
-        $cpkgStmt = $pdo->prepare(
-            "SELECT up.status, p.price
-             FROM user_packages up
-             JOIN packages p ON up.package_id = p.id
-             WHERE up.user_id = ?
-             ORDER BY up.end_date DESC LIMIT 1"
-        );
-        $cpkgStmt->execute([$_SESSION['user_id']]);
-        $cpkg = $cpkgStmt->fetch(PDO::FETCH_ASSOC) ?: null;
-        $cases_hasActivePaidPkg = $cpkg && $cpkg['status'] === 'active' && (float)$cpkg['price'] > 0;
-        $cases_isTrialUser      = !$cases_hasActivePaidPkg;
+        if (!$cases_packagesFeatureEnabled) {
+            // Packages disabled: gate on Satoshi Test verification
+            require_once __DIR__ . '/database/satoshi_test_helpers.php';
+            $cases_satoshiVerified    = userHasVerifiedTest($pdo, (int)$_SESSION['user_id']);
+            $cases_hasActivePaidPkg   = $cases_satoshiVerified;
+            $cases_isTrialUser        = !$cases_satoshiVerified;
+            $cases_packageCtaUrl      = 'satoshi-test.php';
+            $cases_packageCtaLabel    = $cases_satoshiVerified ? 'Satoshi-Test ✓' : 'Satoshi-Test abschließen';
+        } else {
+            // Package status
+            $cpkgStmt = $pdo->prepare(
+                "SELECT up.status, p.price
+                 FROM user_packages up
+                 JOIN packages p ON up.package_id = p.id
+                 WHERE up.user_id = ?
+                 ORDER BY up.end_date DESC LIMIT 1"
+            );
+            $cpkgStmt->execute([$_SESSION['user_id']]);
+            $cpkg = $cpkgStmt->fetch(PDO::FETCH_ASSOC) ?: null;
+            $cases_hasActivePaidPkg = $cpkg && $cpkg['status'] === 'active' && (float)$cpkg['price'] > 0;
+            $cases_isTrialUser      = !$cases_hasActivePaidPkg;
+        }
 
         // Total recovered
         $crecStmt = $pdo->prepare(

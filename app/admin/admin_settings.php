@@ -371,7 +371,8 @@ if (!$smtpSettings) {
                                                 <div>
                                                     <strong>Packages für Benutzer anzeigen</strong><br>
                                                     <small class="text-muted">
-                                                        Wenn deaktiviert, werden Paketfunktionen im Benutzerbereich ausgeblendet.
+                                                        Wenn <strong>aktiviert</strong>: Benutzer sehen Paket-Abonnements und müssen ein Paket abschließen um vollen Dashboard-Zugriff zu erhalten.<br>
+                                                        Wenn <strong>deaktiviert</strong>: Das Paketyystem wird komplett ausgeblendet. Stattdessen wird der <strong>Satoshi-Test</strong> als Verifizierungsmethode verwendet – Benutzer erhalten vollen Zugriff nach bestandenem Satoshi-Test.
                                                     </small>
                                                 </div>
                                                 <div class="custom-control custom-switch">
