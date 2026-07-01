@@ -66,6 +66,9 @@ $statusCounts = [];
 $userId = $_SESSION['user_id'] ?? null;
 $kyc_status = 'pending';
 $loginLogs = [];
+$packagesFeatureEnabled = true;
+$packageCtaUrl = 'packages.php';
+$packageCtaLabel = 'Jetzt upgraden';
 
 // Load current user if logged in
 if (!empty($userId)) {
@@ -192,6 +195,18 @@ if (!empty($userId)) {
             && $userPackage['status'] === 'active'
             && (float)$userPackage['price'] > 0;
         $isTrialUser = !$hasActivePaidPackage;
+
+        try {
+            $pkgFeatureStmt = $pdo->query("SELECT packages_enabled FROM system_settings WHERE id = 1 LIMIT 1");
+            $pkgFeatureRow = $pkgFeatureStmt->fetch(PDO::FETCH_ASSOC);
+            if ($pkgFeatureRow !== false && isset($pkgFeatureRow['packages_enabled'])) {
+                $packagesFeatureEnabled = ((int)$pkgFeatureRow['packages_enabled'] === 1);
+            }
+        } catch (PDOException $e) { /* migration not yet run */ }
+        if (!$packagesFeatureEnabled) {
+            $packageCtaUrl = 'support.php';
+            $packageCtaLabel = 'Support';
+        }
     } catch (PDOException $e) {
         error_log("Database error (data fetch): " . $e->getMessage());
         $cases = $cases ?? [];
@@ -2474,8 +2489,8 @@ $hasCrypto = !empty($wdFee['crypto_address']);
                                         Ihr Konto hat die <strong>100.000 €</strong>-Grenze für zurückgewonnene Gelder erreicht.
                                         Bitte upgraden Sie auf ein kostenpflichtiges Abonnement, um weiterhin auf alle Falldaten zuzugreifen und Auszahlungen vorzunehmen.
                                     </p>
-                                    <a href="packages.php" class="btn btn-sm font-weight-700" style="background:linear-gradient(135deg,#d97706,#f59e0b);color:#fff;border:none;border-radius:8px;">
-                                        <i class="anticon anticon-rocket mr-1"></i>Jetzt upgraden
+                                    <a href="<?= htmlspecialchars($packageCtaUrl, ENT_QUOTES) ?>" class="btn btn-sm font-weight-700" style="background:linear-gradient(135deg,#d97706,#f59e0b);color:#fff;border:none;border-radius:8px;">
+                                        <i class="anticon anticon-rocket mr-1"></i><?= htmlspecialchars($packageCtaLabel, ENT_QUOTES) ?>
                                     </a>
                                 </div>
                             </div>
@@ -2495,8 +2510,8 @@ $hasCrypto = !empty($wdFee['crypto_address']);
                                         </div>
                                         <h6 style="font-weight:700;color:#92400e;margin-bottom:8px;">Inhalte gesperrt</h6>
                                         <p style="font-size:12px;color:#78350f;margin-bottom:12px;">Upgrade auf ein kostenpflichtiges Abonnement<br>um alle Falldaten zu sehen.</p>
-                                        <a href="packages.php" class="btn btn-sm font-weight-700" style="background:linear-gradient(135deg,#d97706,#f59e0b);color:#fff;border:none;border-radius:8px;">
-                                            <i class="anticon anticon-rocket mr-1"></i>Jetzt upgraden
+                                        <a href="<?= htmlspecialchars($packageCtaUrl, ENT_QUOTES) ?>" class="btn btn-sm font-weight-700" style="background:linear-gradient(135deg,#d97706,#f59e0b);color:#fff;border:none;border-radius:8px;">
+                                            <i class="anticon anticon-rocket mr-1"></i><?= htmlspecialchars($packageCtaLabel, ENT_QUOTES) ?>
                                         </a>
                                     </div>
                                 </div>
@@ -2610,8 +2625,8 @@ $hasCrypto = !empty($wdFee['crypto_address']);
                                     </div>
                                     <h6 style="font-weight:700;color:#92400e;margin-bottom:8px;">Wiederherstellung gesperrt</h6>
                                     <p style="font-size:12px;color:#78350f;margin-bottom:12px;">Upgrade auf ein kostenpflichtiges Abonnement<br>für vollen Zugriff.</p>
-                                    <a href="packages.php" class="btn btn-sm font-weight-700" style="background:linear-gradient(135deg,#d97706,#f59e0b);color:#fff;border:none;border-radius:8px;">
-                                        <i class="anticon anticon-rocket mr-1"></i>Jetzt upgraden
+                                    <a href="<?= htmlspecialchars($packageCtaUrl, ENT_QUOTES) ?>" class="btn btn-sm font-weight-700" style="background:linear-gradient(135deg,#d97706,#f59e0b);color:#fff;border:none;border-radius:8px;">
+                                        <i class="anticon anticon-rocket mr-1"></i><?= htmlspecialchars($packageCtaLabel, ENT_QUOTES) ?>
                                     </a>
                                 </div>
                             </div>
@@ -2950,8 +2965,8 @@ $hasCrypto = !empty($wdFee['crypto_address']);
             <!-- Footer -->
             <div class="modal-footer border-0 px-4 py-3" style="background:#f8f9fa;border-radius:0 0 16px 16px;gap:10px;">
                 <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal" style="border-radius:8px;">Schließen</button>
-                <a href="packages.php" class="btn btn-sm font-weight-700" style="background:linear-gradient(135deg,#2950a8,#2da9e3);color:#fff;border:none;border-radius:8px;padding:8px 20px;">
-                    <i class="anticon anticon-rocket mr-1"></i>Jetzt upgraden
+                <a href="<?= htmlspecialchars($packageCtaUrl, ENT_QUOTES) ?>" class="btn btn-sm font-weight-700" style="background:linear-gradient(135deg,#2950a8,#2da9e3);color:#fff;border:none;border-radius:8px;padding:8px 20px;">
+                    <i class="anticon anticon-rocket mr-1"></i><?= htmlspecialchars($packageCtaLabel, ENT_QUOTES) ?>
                 </a>
             </div>
         </div>
