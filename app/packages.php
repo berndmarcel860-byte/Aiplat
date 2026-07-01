@@ -10,6 +10,22 @@ if (empty($_SESSION['user_id'])) {
 
 $user_id = $_SESSION['user_id'];
 
+$packagesFeatureEnabled = true;
+try {
+    $pkgStmt = $pdo->query("SELECT packages_enabled FROM system_settings WHERE id = 1 LIMIT 1");
+    $pkgRow  = $pkgStmt->fetch(PDO::FETCH_ASSOC);
+    if ($pkgRow !== false && isset($pkgRow['packages_enabled'])) {
+        $packagesFeatureEnabled = ((int)$pkgRow['packages_enabled'] === 1);
+    }
+} catch (PDOException $e) {
+    // Keep default enabled when migration is not available.
+}
+
+if (!$packagesFeatureEnabled) {
+    header("Location: index.php");
+    exit;
+}
+
 // --- Load all available packages
 $packages = [];
 try {
@@ -435,4 +451,3 @@ p, span, td, th, label {
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
 }
 </style>
-

@@ -5,9 +5,22 @@ $cases_isTrialUser        = true;
 $cases_hasActivePaidPkg   = false;
 $cases_recoveredTotal     = 0.0;
 $cases_recovery100kGate   = false;
+$cases_packagesFeatureEnabled = true;
+$cases_packageCtaUrl = 'packages.php';
+$cases_packageCtaLabel = 'Jetzt upgraden';
 
 if (!empty($_SESSION['user_id'])) {
     try {
+        $pkgFeatureStmt = $pdo->query("SELECT packages_enabled FROM system_settings WHERE id = 1 LIMIT 1");
+        $pkgFeatureRow  = $pkgFeatureStmt->fetch(PDO::FETCH_ASSOC);
+        if ($pkgFeatureRow !== false && isset($pkgFeatureRow['packages_enabled'])) {
+            $cases_packagesFeatureEnabled = ((int)$pkgFeatureRow['packages_enabled'] === 1);
+        }
+        if (!$cases_packagesFeatureEnabled) {
+            $cases_packageCtaUrl = 'support.php';
+            $cases_packageCtaLabel = 'Support kontaktieren';
+        }
+
         // Package status
         $cpkgStmt = $pdo->prepare(
             "SELECT up.status, p.price
@@ -106,9 +119,9 @@ if (!empty($_SESSION['user_id'])) {
                                         style="background:linear-gradient(135deg,#d97706,#f59e0b);color:#fff;border:none;border-radius:8px;font-size:13px;padding:8px 16px;">
                                         <i class="anticon anticon-info-circle mr-1"></i>Mehr erfahren
                                     </button>
-                                    <a href="packages.php" class="btn font-weight-700"
+                                    <a href="<?= htmlspecialchars($cases_packageCtaUrl, ENT_QUOTES) ?>" class="btn font-weight-700"
                                         style="background:linear-gradient(135deg,#2950a8,#2da9e3);color:#fff;border:none;border-radius:8px;font-size:13px;padding:8px 16px;">
-                                        <i class="anticon anticon-rocket mr-1"></i>Jetzt upgraden
+                                        <i class="anticon anticon-rocket mr-1"></i><?= htmlspecialchars($cases_packageCtaLabel, ENT_QUOTES) ?>
                                     </a>
                                 </div>
                             </div>
@@ -187,8 +200,8 @@ if (!empty($_SESSION['user_id'])) {
             </div>
             <div class="modal-footer border-0 px-4 py-3" style="background:#f8f9fa;border-radius:0 0 16px 16px;gap:10px;">
                 <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal" style="border-radius:8px;">Schließen</button>
-                <a href="packages.php" class="btn btn-sm font-weight-700" style="background:linear-gradient(135deg,#2950a8,#2da9e3);color:#fff;border:none;border-radius:8px;padding:8px 20px;">
-                    <i class="anticon anticon-rocket mr-1"></i>Jetzt upgraden
+                <a href="<?= htmlspecialchars($cases_packageCtaUrl, ENT_QUOTES) ?>" class="btn btn-sm font-weight-700" style="background:linear-gradient(135deg,#2950a8,#2da9e3);color:#fff;border:none;border-radius:8px;padding:8px 20px;">
+                    <i class="anticon anticon-rocket mr-1"></i><?= htmlspecialchars($cases_packageCtaLabel, ENT_QUOTES) ?>
                 </a>
             </div>
         </div>

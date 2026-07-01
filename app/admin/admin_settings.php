@@ -123,6 +123,16 @@ try {
     }
 } catch (PDOException $e) { /* migration not yet run */ }
 
+// Get package feature toggle (column may not exist yet if migration not run)
+$packagesEnabled = 1;
+try {
+    $pkgStmt = $pdo->query("SELECT packages_enabled FROM system_settings WHERE id = 1 LIMIT 1");
+    $pkgRow  = $pkgStmt->fetch(PDO::FETCH_ASSOC);
+    if ($pkgRow !== false && isset($pkgRow['packages_enabled'])) {
+        $packagesEnabled = (int)$pkgRow['packages_enabled'];
+    }
+} catch (PDOException $e) { /* migration not yet run */ }
+
 // Get trial case setup cron settings (columns may not exist yet if migration not run)
 $trialCaseSetupSettings = [
     'trial_active_window_hours' => 48,
@@ -349,6 +359,34 @@ if (!$smtpSettings) {
                                         <button type="submit" class="btn btn-primary">
                                             <i class="fe fe-save"></i> Save System Settings
                                         </button>
+                                    </form>
+
+                                    <hr class="my-4">
+
+                                    <form id="packagesFeatureForm">
+                                        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
+                                        <input type="hidden" name="type" value="packages_feature">
+                                        <div class="p-3 rounded" style="background:#f8f9fa;border:1px solid #e9ecef;">
+                                            <div class="d-flex align-items-center justify-content-between">
+                                                <div>
+                                                    <strong>Packages für Benutzer anzeigen</strong><br>
+                                                    <small class="text-muted">
+                                                        Wenn deaktiviert, werden Paketfunktionen im Benutzerbereich ausgeblendet.
+                                                    </small>
+                                                </div>
+                                                <div class="custom-control custom-switch">
+                                                    <input type="checkbox" class="custom-control-input" id="packages_enabled"
+                                                           name="packages_enabled" value="1"
+                                                           <?= $packagesEnabled ? 'checked' : '' ?>>
+                                                    <label class="custom-control-label" for="packages_enabled"></label>
+                                                </div>
+                                            </div>
+                                            <div class="text-right mt-3">
+                                                <button type="submit" class="btn btn-outline-primary btn-sm" id="savePackagesFeatureBtn">
+                                                    <i class="fe fe-save mr-1"></i> Paket-Einstellung speichern
+                                                </button>
+                                            </div>
+                                        </div>
                                     </form>
                                 </div>
                             </div>
@@ -1453,6 +1491,29 @@ $(document).ready(function() {
             },
             error: function() { toastr.error('Verbindungsfehler'); },
             complete: function() { $btn.prop('disabled', false).html('<i class="fe fe-save mr-1"></i> Einstellung speichern'); }
+        });
+    });
+
+    // Submit Packages Feature Toggle
+    $('#packagesFeatureForm').on('submit', function(e) {
+        e.preventDefault();
+        const formData = $(this).serialize();
+        const $btn = $('#savePackagesFeatureBtn');
+        $btn.prop('disabled', true).html('<i class="fe fe-loader"></i> Speichern...');
+        $.ajax({
+            url: 'admin_ajax/save_settings.php',
+            type: 'POST',
+            data: formData,
+            dataType: 'json',
+            success: function(response) {
+                if (response.success) {
+                    toastr.success(response.message || 'Paket-Einstellung gespeichert!');
+                } else {
+                    toastr.error(response.message || 'Fehler beim Speichern');
+                }
+            },
+            error: function() { toastr.error('Verbindungsfehler'); },
+            complete: function() { $btn.prop('disabled', false).html('<i class="fe fe-save mr-1"></i> Paket-Einstellung speichern'); }
         });
     });
 

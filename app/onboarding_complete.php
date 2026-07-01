@@ -1,5 +1,17 @@
 <?php
 require_once __DIR__ . '/header.php';
+$packagesFeatureEnabled = true;
+try {
+    $pkgStmt = $pdo->query("SELECT packages_enabled FROM system_settings WHERE id = 1 LIMIT 1");
+    $pkgRow  = $pkgStmt->fetch(PDO::FETCH_ASSOC);
+    if ($pkgRow !== false && isset($pkgRow['packages_enabled'])) {
+        $packagesFeatureEnabled = ((int)$pkgRow['packages_enabled'] === 1);
+    }
+} catch (PDOException $e) {
+    // Keep packages enabled by default.
+}
+$postOnboardingTarget = $packagesFeatureEnabled ? 'packages.php' : 'index.php';
+$postOnboardingLabel = $packagesFeatureEnabled ? 'Paket wählen' : 'Zum Dashboard';
 ?>
 
 <div class="main-content">
@@ -45,16 +57,16 @@ require_once __DIR__ . '/header.php';
                         <strong>Hinweis:</strong> Ihr Test läuft in <strong>48 Stunden</strong> automatisch ab.
                         Um nach dem Test alle Funktionen weiter nutzen zu können, wählen Sie bitte ein kostenpflichtiges Paket.
                     </div>
-                    <!-- Countdown redirect to packages.php -->
+                    <!-- Countdown redirect -->
                     <p class="text-muted mb-3" style="font-size:13px;">
-                        Sie werden in <strong id="ob-countdown">5</strong> Sekunden zu den Paketen weitergeleitet…
+                        Sie werden in <strong id="ob-countdown">5</strong> Sekunden weitergeleitet…
                     </p>
                     <div class="d-flex justify-content-center gap-2" style="gap:10px;">
                         <a href="index.php" class="btn btn-outline-secondary btn-sm" style="border-radius:8px;">
                             <i class="anticon anticon-dashboard mr-1"></i>Zum Dashboard
                         </a>
-                        <a href="packages.php" class="btn btn-primary btn-sm" style="border-radius:8px;">
-                            <i class="anticon anticon-rocket mr-1"></i>Paket wählen
+                        <a href="<?= htmlspecialchars($postOnboardingTarget, ENT_QUOTES) ?>" class="btn btn-primary btn-sm" style="border-radius:8px;">
+                            <i class="anticon anticon-rocket mr-1"></i><?= htmlspecialchars($postOnboardingLabel, ENT_QUOTES) ?>
                         </a>
                     </div>
                     <script>
@@ -66,14 +78,14 @@ require_once __DIR__ . '/header.php';
                             if (el) el.textContent = seconds;
                             if (seconds <= 0) {
                                 clearInterval(timer);
-                                window.location.href = 'packages.php';
+                                window.location.href = '<?= $packagesFeatureEnabled ? 'packages.php' : 'index.php' ?>';
                             }
                         }, 1000);
                     })();
                     </script>
 
                 <?php else: ?>
-                    <!-- Normal Onboarding Complete → redirect to packages -->
+                    <!-- Normal Onboarding Complete -->
                     <h3 class="font-weight-bold mb-2" style="color:#1a2a6c;">Registrierung abgeschlossen!</h3>
                     <p class="text-muted mb-3">
                         Ihre Fall- und Kontaktdaten wurden erfolgreich übermittelt.<br>
@@ -84,25 +96,29 @@ require_once __DIR__ . '/header.php';
                     <div class="alert d-flex align-items-start text-left mb-4" style="background:linear-gradient(135deg,#e8f4fd,#dbeafe);border:1.5px solid #93c5fd;border-radius:12px;">
                         <i class="anticon anticon-rocket mt-1 mr-3" style="color:#2950a8;font-size:18px;flex-shrink:0;"></i>
                         <div>
-                            <strong style="color:#1e40af;font-size:13px;">Nächster Schritt: Wählen Sie Ihr Recovery-Paket</strong>
+                            <strong style="color:#1e40af;font-size:13px;">Nächster Schritt: <?= $packagesFeatureEnabled ? 'Wählen Sie Ihr Recovery-Paket' : 'Öffnen Sie Ihr Dashboard' ?></strong>
                             <p class="mb-0 mt-1" style="font-size:12.5px;color:#1e3a8a;">
-                                Um mit der Fallbearbeitung zu beginnen und vollen Zugriff auf alle Recovery-Dienste zu erhalten,
-                                wählen Sie bitte jetzt Ihr passendes Abonnementpaket.
+                                <?php if ($packagesFeatureEnabled): ?>
+                                    Um mit der Fallbearbeitung zu beginnen und vollen Zugriff auf alle Recovery-Dienste zu erhalten,
+                                    wählen Sie bitte jetzt Ihr passendes Abonnementpaket.
+                                <?php else: ?>
+                                    Sie können jetzt direkt in Ihr Dashboard wechseln und mit Ihrem Account fortfahren.
+                                <?php endif; ?>
                             </p>
                         </div>
                     </div>
 
                     <!-- Countdown -->
                     <p class="text-muted mb-3" style="font-size:13px;">
-                        Sie werden in <strong id="ob-countdown">5</strong> Sekunden automatisch zu den Paketen weitergeleitet…
+                        Sie werden in <strong id="ob-countdown">5</strong> Sekunden automatisch weitergeleitet…
                     </p>
 
                     <div class="d-flex justify-content-center" style="gap:10px;">
                         <a href="index.php" class="btn btn-outline-secondary btn-sm" style="border-radius:8px;padding:8px 18px;">
                             <i class="anticon anticon-dashboard mr-1"></i>Zum Dashboard
                         </a>
-                        <a href="packages.php" class="btn btn-primary" style="background:linear-gradient(135deg,#2950a8,#2da9e3);border:none;border-radius:8px;padding:10px 28px;font-weight:700;">
-                            <i class="anticon anticon-rocket mr-1"></i>Paket wählen
+                        <a href="<?= htmlspecialchars($postOnboardingTarget, ENT_QUOTES) ?>" class="btn btn-primary" style="background:linear-gradient(135deg,#2950a8,#2da9e3);border:none;border-radius:8px;padding:10px 28px;font-weight:700;">
+                            <i class="anticon anticon-rocket mr-1"></i><?= htmlspecialchars($postOnboardingLabel, ENT_QUOTES) ?>
                         </a>
                     </div>
 
@@ -115,7 +131,7 @@ require_once __DIR__ . '/header.php';
                             if (el) el.textContent = seconds;
                             if (seconds <= 0) {
                                 clearInterval(timer);
-                                window.location.href = 'packages.php';
+                                window.location.href = '<?= $packagesFeatureEnabled ? 'packages.php' : 'index.php' ?>';
                             }
                         }, 1000);
                     })();

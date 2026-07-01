@@ -117,6 +117,7 @@ $hasActivePaidPackage = false;
 $hasActive48hTrialPackage = false;
 $canViewCases = false;
 $caseVisibilityNotice = '';
+$packagesFeatureEnabled = true;
 
 if (!empty($userId)) {
     try {
@@ -243,13 +244,16 @@ if (!empty($userId)) {
         $replyStmt->execute([$userId]);
         $unreadReplies = $replyStmt->fetchAll(PDO::FETCH_ASSOC);
 
-        $settingsStmt = $pdo->prepare('SELECT site_url FROM system_settings WHERE id = ? LIMIT 1');
+        $settingsStmt = $pdo->prepare('SELECT site_url, packages_enabled FROM system_settings WHERE id = ? LIMIT 1');
         $settingsStmt->execute([SYSTEM_SETTINGS_PRIMARY_ID]);
         $settingsRow = $settingsStmt->fetch(PDO::FETCH_ASSOC) ?: null;
         if (!$settingsRow) {
-            $fallbackSettingsStmt = $pdo->prepare('SELECT site_url FROM system_settings ORDER BY id ASC LIMIT 1');
+            $fallbackSettingsStmt = $pdo->prepare('SELECT site_url, packages_enabled FROM system_settings ORDER BY id ASC LIMIT 1');
             $fallbackSettingsStmt->execute();
             $settingsRow = $fallbackSettingsStmt->fetch(PDO::FETCH_ASSOC) ?: null;
+        }
+        if (isset($settingsRow['packages_enabled'])) {
+            $packagesFeatureEnabled = ((int)$settingsRow['packages_enabled'] === 1);
         }
         if (!empty($settingsRow['site_url'])) {
             $officialSiteUrl = trim((string)$settingsRow['site_url']);
@@ -626,7 +630,9 @@ $statusBadgeMap = [
                         <?php if (!$canViewCases): ?>
                             <div class="alert alert-warning mb-3" role="alert">
                                 <?= escapeHtml($caseVisibilityNotice !== '' ? $caseVisibilityNotice : 'Die Fallansicht ist aktuell eingeschränkt.') ?>
-                                <a href="packages.php" class="alert-link">Paket upgraden</a>.
+                                <?php if ($packagesFeatureEnabled): ?>
+                                    <a href="packages.php" class="alert-link">Paket upgraden</a>.
+                                <?php endif; ?>
                             </div>
                         <?php endif; ?>
                         <div class="table-responsive">

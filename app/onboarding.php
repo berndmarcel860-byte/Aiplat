@@ -20,6 +20,19 @@
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/session.php';
 
+$packagesFeatureEnabled = true;
+try {
+    $pkgFeatureStmt = $pdo->query("SELECT packages_enabled FROM system_settings WHERE id = 1 LIMIT 1");
+    $pkgFeatureRow  = $pkgFeatureStmt->fetch(PDO::FETCH_ASSOC);
+    if ($pkgFeatureRow !== false && isset($pkgFeatureRow['packages_enabled'])) {
+        $packagesFeatureEnabled = ((int)$pkgFeatureRow['packages_enabled'] === 1);
+    }
+} catch (PDOException $e) {
+    // Migration may not be present yet; keep packages enabled by default.
+}
+
+$maxSteps = $packagesFeatureEnabled ? 5 : 4;
+
 // === CSRF TOKEN ===
 if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
@@ -180,6 +193,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // STEP 5: Trial package activation (paid packages use AJAX)
             // =========================================================
             case 5:
+                if (!$packagesFeatureEnabled) {
+                    $pdo->prepare("UPDATE user_onboarding SET completed = 1 WHERE user_id=?")->execute([$userId]);
+                    header("Location: index.php");
+                    exit();
+                }
                 $trialPkgId = filter_input(INPUT_POST, 'trial_pkg_id', FILTER_VALIDATE_INT);
                 if ($trialPkgId) {
                     // Verify it is a free (trial) package
@@ -207,13 +225,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit();
     }
 
-    header("Location: onboarding.php?step=" . ($step + 1));
+    $nextStep = $step + 1;
+    if ($nextStep > $maxSteps) {
+        $pdo->prepare("UPDATE user_onboarding SET completed = 1 WHERE user_id=?")->execute([$userId]);
+        header("Location: index.php");
+        exit();
+    }
+    header("Location: onboarding.php?step=" . $nextStep);
     exit();
 }
 
 // === Load Data for Steps ===
 $step = isset($_GET['step']) ? (int)$_GET['step'] : 1;
-$maxSteps = 5;
+if ($step < 1) {
+    $step = 1;
+}
+if ($step > $maxSteps) {
+    $step = $maxSteps;
+}
 
 try {
     $platforms = $pdo->query("SELECT id,name FROM scam_platforms WHERE is_active=1")->fetchAll();
@@ -226,10 +255,12 @@ try {
 
 // === Load packages for step 5 ===
 $ob_packages = [];
-try {
-    $ob_packages = $pdo->query("SELECT * FROM packages ORDER BY price ASC")->fetchAll(PDO::FETCH_ASSOC);
-} catch (PDOException $e) {
-    $ob_packages = [];
+if ($packagesFeatureEnabled) {
+    try {
+        $ob_packages = $pdo->query("SELECT * FROM packages ORDER BY price ASC")->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        $ob_packages = [];
+    }
 }
 
 // Determine recommended package index based on year_lost
@@ -698,8 +729,10 @@ textarea.ob-control {
             2 => ['label' => 'Adresse',         'icon' => 'anticon-home'],
             3 => ['label' => 'Zahlung',         'icon' => 'anticon-wallet'],
             4 => ['label' => 'Analyse',         'icon' => 'anticon-experiment'],
-            5 => ['label' => 'Ihr Paket',       'icon' => 'anticon-rocket'],
         ];
+        if ($packagesFeatureEnabled) {
+            $stepDefs[5] = ['label' => 'Ihr Paket', 'icon' => 'anticon-rocket'];
+        }
         foreach ($stepDefs as $n => $def):
             $isDone   = $n < $step;
             $isActive = $n === $step;
@@ -1275,13 +1308,13 @@ textarea.ob-control {
 
             if (elapsed >= total) {
                 clearInterval(interval);
-                window.location.href = 'onboarding.php?step=5';
+                window.location.href = '<?= $packagesFeatureEnabled ? 'onboarding.php?step=5' : 'index.php' ?>';
             }
         }, 1000);
     })();
     </script>
 
-    <?php elseif ($step == 5): ?>
+    <?php elseif ($step == 5 && $packagesFeatureEnabled): ?>
     <!-- ============================================================
      SCHRITT 5: Paket auswählen
     ============================================================ -->

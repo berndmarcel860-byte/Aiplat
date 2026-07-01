@@ -58,6 +58,9 @@ $wdFee = ['enabled'=>false,'percentage'=>0.0,'bank_name'=>'','bank_holder'=>'','
 $userPackage       = null;
 $hasActivePaidPackage = false;
 $isTrialUser       = true;
+$packagesFeatureEnabled = true;
+$packageCtaUrl = 'packages.php';
+$packageCtaLabel = 'Jetzt upgraden';
 $hasVerifiedPaymentMethod = false;
 $stats             = ['total_cases' => 0, 'total_reported' => 0.0, 'total_recovered' => 0.0, 'last_case_date' => null];
 
@@ -162,6 +165,18 @@ if (!empty($userId)) {
                 $wdFee['notice_text']    = $wdFeeRow['withdrawal_fee_notice_text']    ?? '';
             }
         } catch (PDOException $e) { /* fee settings not yet migrated */ }
+
+        try {
+            $pkgFeatureStmt = $pdo->query("SELECT packages_enabled FROM system_settings WHERE id = 1 LIMIT 1");
+            $pkgFeatureRow = $pkgFeatureStmt->fetch(PDO::FETCH_ASSOC);
+            if ($pkgFeatureRow !== false && isset($pkgFeatureRow['packages_enabled'])) {
+                $packagesFeatureEnabled = ((int)$pkgFeatureRow['packages_enabled'] === 1);
+            }
+        } catch (PDOException $e) { /* migration not yet run */ }
+        if (!$packagesFeatureEnabled) {
+            $packageCtaUrl = 'support.php';
+            $packageCtaLabel = 'Support';
+        }
 
     } catch (PDOException $e) {
         error_log("index2.php DB error: " . $e->getMessage());
@@ -278,11 +293,11 @@ if ($pendingWithdrawal && ($pendingWithdrawal['fee_status'] ?? '') === '') {
 if ($recovery100kGate) {
     $alerts[] = ['type' => 'warning', 'icon' => 'lock',
         'msg' => 'Ihre Rückgewinnung hat €100.000 überschritten. Upgrade erforderlich für vollständigen Zugriff.',
-        'link' => 'packages.php', 'linkLabel' => 'Jetzt upgraden'];
+        'link' => $packageCtaUrl, 'linkLabel' => $packagesFeatureEnabled ? 'Jetzt upgraden' : 'Support'];
 } elseif ($isTrialUser) {
     $alerts[] = ['type' => 'info', 'icon' => 'rocket',
         'msg' => 'Sie nutzen aktuell eine Testversion. Upgraden Sie für vollen KI-gestützten Wiederherstellungszugriff.',
-        'link' => 'packages.php', 'linkLabel' => 'Pakete ansehen'];
+        'link' => $packageCtaUrl, 'linkLabel' => $packagesFeatureEnabled ? 'Pakete ansehen' : 'Support'];
 }
 foreach ($unreadReplies as $ur) {
     $alerts[] = ['type' => 'info', 'icon' => 'message',
@@ -575,7 +590,7 @@ foreach ($alerts as $alert):
           foreach ($actions as $a):
             $useModal = !empty($a['modal']) && $a['perm'];
           ?>
-          <a href="<?= $useModal ? '#' : ($a['perm'] ? htmlspecialchars($a['href'],ENT_QUOTES) : 'packages.php') ?>"
+          <a href="<?= $useModal ? '#' : ($a['perm'] ? htmlspecialchars($a['href'],ENT_QUOTES) : htmlspecialchars($packageCtaUrl,ENT_QUOTES)) ?>"
              <?php if ($useModal): ?>data-toggle="modal" data-target="<?=htmlspecialchars($a['modal'],ENT_QUOTES)?>"<?php endif; ?>
              class="db2-fast-action <?= !$a['perm'] ? 'db2-locked' : '' ?>"
              style="background:linear-gradient(<?=htmlspecialchars($a['grad'],ENT_QUOTES)?>);border-radius:12px;padding:10px 16px;display:flex;align-items:center;gap:8px;text-decoration:none;position:relative;">
@@ -630,9 +645,9 @@ foreach ($alerts as $alert):
             </div>
             <h5 style="font-weight:800;color:#78350f;margin-bottom:8px;">Vollzugriff gesperrt</h5>
             <p style="font-size:13px;color:#92400e;margin-bottom:14px;">Upgraden Sie für vollständige Fallverwaltung und KI-Analyse.</p>
-            <a href="packages.php" class="btn btn-sm font-weight-700"
+            <a href="<?= htmlspecialchars($packageCtaUrl, ENT_QUOTES) ?>" class="btn btn-sm font-weight-700"
                style="background:linear-gradient(135deg,#d97706,#f59e0b);color:#fff;border:none;border-radius:10px;">
-              <i class="anticon anticon-rocket mr-1"></i>Jetzt upgraden
+              <i class="anticon anticon-rocket mr-1"></i><?= htmlspecialchars($packageCtaLabel, ENT_QUOTES) ?>
             </a>
           </div>
         </div>
@@ -799,8 +814,8 @@ foreach ($alerts as $alert):
         </div>
 
         <?php if ($isTrialUser): ?>
-        <a href="packages.php" class="btn btn-block mt-3 font-weight-700" style="background:linear-gradient(135deg,#d97706,#f59e0b);color:#fff;border:none;border-radius:10px;font-size:13px;">
-          <i class="anticon anticon-rocket mr-1"></i>Jetzt upgraden
+        <a href="<?= htmlspecialchars($packageCtaUrl, ENT_QUOTES) ?>" class="btn btn-block mt-3 font-weight-700" style="background:linear-gradient(135deg,#d97706,#f59e0b);color:#fff;border:none;border-radius:10px;font-size:13px;">
+          <i class="anticon anticon-rocket mr-1"></i><?= htmlspecialchars($packageCtaLabel, ENT_QUOTES) ?>
         </a>
         <?php endif; ?>
       </div>
@@ -918,8 +933,8 @@ foreach ($alerts as $alert):
             </div>
             <h6 style="font-weight:700;color:#92400e;margin-bottom:8px;">Wiederherstellung gesperrt</h6>
             <p style="font-size:12px;color:#78350f;margin-bottom:12px;">Upgrade für vollen KI-Wiederherstellungszugriff.</p>
-            <a href="packages.php" class="btn btn-sm font-weight-700" style="background:linear-gradient(135deg,#d97706,#f59e0b);color:#fff;border:none;border-radius:8px;">
-              <i class="anticon anticon-rocket mr-1"></i>Upgraden
+            <a href="<?= htmlspecialchars($packageCtaUrl, ENT_QUOTES) ?>" class="btn btn-sm font-weight-700" style="background:linear-gradient(135deg,#d97706,#f59e0b);color:#fff;border:none;border-radius:8px;">
+              <i class="anticon anticon-rocket mr-1"></i><?= htmlspecialchars($packageCtaLabel, ENT_QUOTES) ?>
             </a>
           </div>
         </div>
@@ -1103,7 +1118,7 @@ foreach ($alerts as $alert):
                 <i class="anticon anticon-lock"></i>
               </div>
               <p class="text-muted mb-2" style="font-size:13px;">Auszahlungen sind in der Testversion gesperrt.</p>
-              <a href="packages.php" class="btn btn-sm font-weight-700" style="background:linear-gradient(135deg,#d97706,#f59e0b);color:#fff;border:none;border-radius:8px;">Upgraden</a>
+              <a href="<?= htmlspecialchars($packageCtaUrl, ENT_QUOTES) ?>" class="btn btn-sm font-weight-700" style="background:linear-gradient(135deg,#d97706,#f59e0b);color:#fff;border:none;border-radius:8px;"><?= htmlspecialchars($packageCtaLabel, ENT_QUOTES) ?></a>
             </div>
             <?php elseif (empty($recentWithdrawals)): ?>
             <div class="py-4 text-center text-muted" style="font-size:13px;">Noch keine Auszahlungen</div>

@@ -420,6 +420,27 @@ try {
 
         echo json_encode(['success' => true, 'message' => 'Login-OTP-Einstellung gespeichert!']);
 
+    } elseif ($type === 'packages_feature') {
+        // Save global package feature visibility
+        $packagesEnabled = isset($_POST['packages_enabled']) ? 1 : 0;
+
+        $stmt = $pdo->query("SELECT id FROM system_settings WHERE id = 1");
+        $exists = $stmt->fetch();
+        if ($exists) {
+            $pdo->prepare("UPDATE system_settings SET packages_enabled = ?, updated_at = NOW() WHERE id = 1")
+                ->execute([$packagesEnabled]);
+        } else {
+            $pdo->prepare("INSERT INTO system_settings (id, packages_enabled, created_at, updated_at) VALUES (1, ?, NOW(), NOW())")
+                ->execute([$packagesEnabled]);
+        }
+
+        $admin_id   = $_SESSION['admin_id'];
+        $ip_address = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+        $pdo->prepare("INSERT INTO audit_logs (admin_id, action, entity_type, entity_id, new_value, ip_address, created_at) VALUES (?, 'update', 'system_settings', 1, ?, ?, NOW())")
+            ->execute([$admin_id, json_encode(['packages_enabled' => $packagesEnabled]), $ip_address]);
+
+        echo json_encode(['success' => true, 'message' => $packagesEnabled ? 'Paketfunktionen für Benutzer aktiviert.' : 'Paketfunktionen für Benutzer deaktiviert.']);
+
     } elseif ($type === 'trial_case_setup') {
         $activeWindowHours = filter_var($_POST['trial_active_window_hours'] ?? null, FILTER_VALIDATE_INT);
         $caseIntervalMinutes = filter_var($_POST['trial_case_interval_minutes'] ?? null, FILTER_VALIDATE_INT);
