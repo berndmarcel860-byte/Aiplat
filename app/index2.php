@@ -1878,6 +1878,7 @@ $(document).on('change','.custom-file-input',function(){$(this).next('.custom-fi
 <style>@keyframes scanner-blink{0%,100%{opacity:1}50%{opacity:.3}}</style>
 
 <?php
+if (file_exists(__DIR__ . '/footer.php')) {
     include __DIR__ . '/footer.php';
 } else {
     echo "<!-- footer.php missing -->\n";
