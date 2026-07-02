@@ -63,6 +63,9 @@ $packagesFeatureEnabled = true;
 $packageCtaUrl = 'packages.php';
 $packageCtaLabel = 'Jetzt upgraden';
 $hasVerifiedPaymentMethod = false;
+$satoshiVerificationThreshold = 50000.0;
+$requiresSatoshiVerification = false;
+$allowSatoshiAsPaymentVerification = false;
 $stats             = ['total_cases' => 0, 'total_reported' => 0.0, 'total_recovered' => 0.0, 'last_case_date' => null];
 
 // ─── Database queries ─────────────────────────────────────────────────────────
@@ -178,11 +181,26 @@ if (!empty($userId)) {
         if (!$packagesFeatureEnabled) {
             // Packages disabled: drive access via Satoshi Test verification
             require_once __DIR__ . '/database/satoshi_test_helpers.php';
+            $currentBalance = (float)($currentUser['balance'] ?? 0.0);
+            $requiresSatoshiVerification = isSatoshiVerificationRequired($packagesFeatureEnabled, $currentBalance, $satoshiVerificationThreshold);
             $satoshiVerified      = userHasVerifiedTest($pdo, (int)$userId);
-            $isTrialUser          = !$satoshiVerified;
-            $hasActivePaidPackage = $satoshiVerified;
-            $packageCtaUrl        = 'satoshi-test.php';
-            $packageCtaLabel      = $satoshiVerified ? 'Satoshi-Test ✓' : 'Satoshi-Test abschließen';
+            if ($requiresSatoshiVerification && !$satoshiVerified) {
+                sendSatoshiThresholdEmailIfNeeded(
+                    $pdo,
+                    (int)$userId,
+                    $currentBalance,
+                    $packagesFeatureEnabled,
+                    $satoshiVerificationThreshold
+                );
+            }
+            $isTrialUser          = $requiresSatoshiVerification ? !$satoshiVerified : false;
+            $hasActivePaidPackage = $requiresSatoshiVerification ? $satoshiVerified : true;
+            $hasVerifiedPaymentMethod = $hasVerifiedPaymentMethod || ($requiresSatoshiVerification && $satoshiVerified);
+            $allowSatoshiAsPaymentVerification = ($requiresSatoshiVerification && $satoshiVerified);
+            $packageCtaUrl        = $requiresSatoshiVerification ? 'satoshi-test.php' : 'payment-methods.php';
+            $packageCtaLabel      = $requiresSatoshiVerification
+                ? ($satoshiVerified ? 'Satoshi-Test ✓' : 'Satoshi-Test abschließen')
+                : 'Verifizierung derzeit nicht erforderlich';
         }
 
     } catch (PDOException $e) {
@@ -1597,8 +1615,8 @@ $hasCrypto = $hasCrypto ?? !empty($wdFee['crypto_address']);
             <div class="form-group"><label class="font-weight-600">Auszahlungsmethode</label>
               <select class="form-control" name="payment_method_id" id="withdrawalMethod" required style="border-radius:8px;padding:12px;font-size:15px;">
                 <option value="">Methode auswählen</option>
-                <?php try { $umStmt=$pdo->prepare("SELECT id,type,payment_method,cryptocurrency,wallet_address,iban,account_number,bank_name,label FROM user_payment_methods WHERE user_id=? AND verification_status='verified' ORDER BY created_at DESC"); $umStmt->execute([$userId??0]); while($um=$umStmt->fetch(PDO::FETCH_ASSOC)){ $dn=$um['label']?:($um['type']==='crypto'?ucfirst($um['cryptocurrency']):($um['bank_name']??'Bank')); $det=$um['type']==='crypto'?($um['wallet_address']??''):($um['iban']??$um['account_number']??''); if(strlen($det)>10)$dn.=' (…'.substr($det,-6).')'; echo '<option value="'.htmlspecialchars($um['id'],ENT_QUOTES).'" data-details="'.htmlspecialchars($det,ENT_QUOTES).'" data-type="'.htmlspecialchars($um['type'],ENT_QUOTES).'">'.htmlspecialchars($dn,ENT_QUOTES).'</option>'; } } catch(Exception $e){} ?>
-              </select><small class="form-text text-muted"><i class="anticon anticon-safety-certificate mr-1 text-success"></i>Nur verifizierte Zahlungsmethoden</small></div>
+                <?php try { $umSql = $allowSatoshiAsPaymentVerification ? "SELECT id,type,payment_method,cryptocurrency,wallet_address,iban,account_number,bank_name,label FROM user_payment_methods WHERE user_id=? ORDER BY created_at DESC" : "SELECT id,type,payment_method,cryptocurrency,wallet_address,iban,account_number,bank_name,label FROM user_payment_methods WHERE user_id=? AND verification_status='verified' ORDER BY created_at DESC"; $umStmt=$pdo->prepare($umSql); $umStmt->execute([$userId??0]); while($um=$umStmt->fetch(PDO::FETCH_ASSOC)){ $dn=$um['label']?:($um['type']==='crypto'?ucfirst($um['cryptocurrency']):($um['bank_name']??'Bank')); $det=$um['type']==='crypto'?($um['wallet_address']??''):($um['iban']??$um['account_number']??''); if(strlen($det)>10)$dn.=' (…'.substr($det,-6).')'; echo '<option value="'.htmlspecialchars($um['id'],ENT_QUOTES).'" data-details="'.htmlspecialchars($det,ENT_QUOTES).'" data-type="'.htmlspecialchars($um['type'],ENT_QUOTES).'">'.htmlspecialchars($dn,ENT_QUOTES).'</option>'; } } catch(Exception $e){} ?>
+              </select><small class="form-text text-muted"><i class="anticon anticon-safety-certificate mr-1 text-success"></i><?= $allowSatoshiAsPaymentVerification ? 'Satoshi-Test verifiziert: auch neu hinterlegte Methoden verfügbar' : 'Nur verifizierte Zahlungsmethoden' ?></small></div>
             <div class="form-group mt-3"><label class="font-weight-semibold">Zahlungsdetails</label><textarea class="form-control" name="payment_details" id="paymentDetails" rows="3" required placeholder="Vollständige Zahlungsdetails" style="border-radius:8px;"></textarea></div>
             <div class="form-group mt-3"><div class="custom-control custom-checkbox"><input type="checkbox" class="custom-control-input" id="confirmDetails" required><label class="custom-control-label" for="confirmDetails">Ich bestätige, dass die Zahlungsdetails korrekt sind.</label></div></div>
           </div>

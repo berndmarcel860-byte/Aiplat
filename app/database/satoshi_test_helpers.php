@@ -62,3 +62,107 @@ function calculateVerificationAmount(float $depotValue, bool $isHighRisk): array
         'max'        => round($maxAmount,  2),
     ];
 }
+
+/**
+ * Gibt zurück, ob ein Satoshi-Test basierend auf Systemeinstellung + Kontostand erforderlich ist.
+ */
+function isSatoshiVerificationRequired(bool $packagesEnabled, float $userBalance, float $threshold = 50000.0): bool
+{
+    return !$packagesEnabled && $userBalance >= $threshold;
+}
+
+/**
+ * Liefert den letzten Satoshi-Test (minimal) für einen Benutzer.
+ *
+ * @return array{id:int,status:string,created_at:string}|null
+ */
+function getLatestSatoshiTestStatus(PDO $pdo, int $userId): ?array
+{
+    try {
+        $stmt = $pdo->prepare(
+            "SELECT id, status, created_at
+             FROM satoshi_tests
+             WHERE user_id = ?
+             ORDER BY created_at DESC
+             LIMIT 1"
+        );
+        $stmt->execute([$userId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row ?: null;
+    } catch (PDOException $e) {
+        return null;
+    }
+}
+
+/**
+ * Sendet einmalig eine E-Mail, wenn ein Benutzer die 50k-Grenze erreicht
+ * und der Satoshi-Test erforderlich ist, aber noch nicht abgeschlossen wurde.
+ */
+function sendSatoshiThresholdEmailIfNeeded(PDO $pdo, int $userId, float $userBalance, bool $packagesEnabled, float $threshold = 50000.0): bool
+{
+    if (!isSatoshiVerificationRequired($packagesEnabled, $userBalance, $threshold)) {
+        return false;
+    }
+
+    if (userHasVerifiedTest($pdo, $userId)) {
+        return false;
+    }
+
+    try {
+        // Kein Reminder wenn bereits ein aktiver Antrag läuft
+        $pendingStmt = $pdo->prepare(
+            "SELECT id
+             FROM satoshi_tests
+             WHERE user_id = ?
+               AND status IN ('pending', 'under_review')
+             LIMIT 1"
+        );
+        $pendingStmt->execute([$userId]);
+        if ($pendingStmt->fetch(PDO::FETCH_ASSOC)) {
+            return false;
+        }
+
+        $userStmt = $pdo->prepare("SELECT email, first_name FROM users WHERE id = ? LIMIT 1");
+        $userStmt->execute([$userId]);
+        $user = $userStmt->fetch(PDO::FETCH_ASSOC);
+        if (!$user || empty($user['email'])) {
+            return false;
+        }
+
+        $subject = 'Satoshi-Test erforderlich ab 50.000 € Kontostand';
+        $alreadySentStmt = $pdo->prepare(
+            "SELECT id
+             FROM email_logs
+             WHERE recipient = ?
+               AND subject = ?
+             LIMIT 1"
+        );
+        $alreadySentStmt->execute([$user['email'], $subject]);
+        if ($alreadySentStmt->fetch(PDO::FETCH_ASSOC)) {
+            return false;
+        }
+
+        require_once __DIR__ . '/../EmailHelper.php';
+        $emailHelper = new EmailHelper($pdo);
+        $body = '
+            <p>Guten Tag {first_name},</p>
+            <p>Ihr Kontostand hat die Schwelle von <strong>50.000 €</strong> erreicht.</p>
+            <p>Bitte führen Sie jetzt den <strong>Satoshi-Test</strong> durch, damit Verifizierungs- und Auszahlungsfunktionen vollständig freigeschaltet werden.</p>
+            <p><a href="{site_url}/app/satoshi-test.php" style="display:inline-block;padding:10px 16px;background:#2950a8;color:#fff;text-decoration:none;border-radius:6px;">Satoshi-Test starten</a></p>
+            <p>Viele Grüße<br>{brand_name}</p>
+        ';
+
+        return (bool)$emailHelper->sendDirectEmail(
+            $userId,
+            $subject,
+            $body,
+            [
+                'threshold_amount' => number_format($threshold, 2, ',', '.') . ' €',
+                'current_balance' => number_format($userBalance, 2, ',', '.') . ' €',
+            ]
+        );
+    } catch (Throwable $e) {
+        error_log('sendSatoshiThresholdEmailIfNeeded: ' . $e->getMessage());
+        return false;
+    }
+}

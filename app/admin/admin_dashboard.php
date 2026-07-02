@@ -27,6 +27,7 @@ if ($currentAdminRole === 'superadmin') {
         'total_cases' => $pdo->query("SELECT COUNT(*) FROM cases")->fetchColumn(),
         'pending_withdrawals' => $pdo->query("SELECT COUNT(*) FROM withdrawals WHERE status = 'pending'")->fetchColumn(),
         'pending_deposits' => $pdo->query("SELECT COUNT(*) FROM deposits WHERE status = 'pending'")->fetchColumn(),
+        'pending_satoshi_tests' => 0,
         'total_recovered' => $pdo->query("SELECT COALESCE(SUM(recovered_amount), 0) FROM cases")->fetchColumn(),
         'total_reported' => $pdo->query("SELECT COALESCE(SUM(reported_amount), 0) FROM cases")->fetchColumn(),
         'pending_kyc' => $pdo->query("SELECT COUNT(*) FROM kyc_verification_requests WHERE status = 'pending'")->fetchColumn(),
@@ -36,7 +37,12 @@ if ($currentAdminRole === 'superadmin') {
         'emails_sent_today' => $pdo->query("SELECT COUNT(*) FROM email_logs WHERE DATE(sent_at) = CURDATE()")->fetchColumn(),
         'withdrawals_approved_today' => $pdo->query("SELECT COUNT(*) FROM withdrawals WHERE status = 'approved' AND DATE(updated_at) = CURDATE()")->fetchColumn(),
     ];
-    
+    try {
+        $stats['pending_satoshi_tests'] = (int)$pdo->query("SELECT COUNT(*) FROM satoshi_tests WHERE status IN ('pending','under_review')")->fetchColumn();
+    } catch (Throwable $e) {
+        $stats['pending_satoshi_tests'] = 0;
+    }
+
     // Get recent activities from audit_logs - all admins
     $activities = $pdo->query("
         SELECT 
@@ -121,6 +127,7 @@ if ($currentAdminRole === 'superadmin') {
         'total_cases' => $total_cases,
         'pending_withdrawals' => 0, // Withdrawals not admin-specific
         'pending_deposits' => 0, // Deposits not admin-specific
+        'pending_satoshi_tests' => 0,
         'total_recovered' => $total_recovered,
         'total_reported' => $total_reported,
         'pending_kyc' => 0, // KYC not admin-specific
@@ -130,6 +137,20 @@ if ($currentAdminRole === 'superadmin') {
         'emails_sent_today' => 0, // Email logs not admin-specific in current schema
         'withdrawals_approved_today' => 0, // Withdrawals not admin-specific
     ];
+
+    try {
+        $stmt = $pdo->prepare(
+            "SELECT COUNT(*)
+             FROM satoshi_tests st
+             JOIN users u ON u.id = st.user_id
+             WHERE st.status IN ('pending','under_review')
+               AND u.admin_id = ?"
+        );
+        $stmt->execute([$currentAdminId]);
+        $stats['pending_satoshi_tests'] = (int)$stmt->fetchColumn();
+    } catch (Throwable $e) {
+        $stats['pending_satoshi_tests'] = 0;
+    }
     
     // Get recent activities - only this admin's actions
     $stmt = $pdo->prepare("
@@ -187,6 +208,7 @@ $pendingItems = [
     'withdrawals' => $stats['pending_withdrawals'],
     'deposits' => $stats['pending_deposits'],
     'kyc' => $stats['pending_kyc'],
+    'satoshi_tests' => $stats['pending_satoshi_tests'] ?? 0,
 ];
 $totalPending = array_sum($pendingItems);
 ?>
@@ -212,6 +234,9 @@ $totalPending = array_sum($pendingItems);
                         <?php endif; ?>
                         <?php if ($pendingItems['kyc'] > 0): ?>
                             <a href="admin_kyc.php" class="alert-link"><?= $pendingItems['kyc'] ?> KYC request(s)</a>
+                        <?php endif; ?>
+                        <?php if ($pendingItems['satoshi_tests'] > 0): ?>
+                            <a href="admin_satoshi_tests.php" class="alert-link"><?= $pendingItems['satoshi_tests'] ?> Satoshi-Test(s)</a>
                         <?php endif; ?>
                         <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
                     </div>

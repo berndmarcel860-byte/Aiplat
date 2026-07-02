@@ -3,6 +3,7 @@ ini_set('display_errors', 0);
 error_reporting(E_ALL);
 require_once __DIR__ . '/../session.php';
 require_once __DIR__ . '/../EmailHelper.php';
+require_once __DIR__ . '/../database/satoshi_test_helpers.php';
 
 header('Content-Type: application/json');
 
@@ -77,17 +78,32 @@ try {
         throw new Exception('Insufficient balance. Available: €' . number_format($userBalance, 2, ',', '.'), 400);
     }
 
-    // Get the user's payment method
-    $methodStmt = $pdo->prepare("
-        SELECT id, type, payment_method, cryptocurrency, wallet_address, iban, account_number, bank_name, label
-        FROM user_payment_methods
-        WHERE id = ? AND user_id = ? AND verification_status = 'verified'
-    ");
+    $packagesEnabled = true;
+    try {
+        $pkgSwitchStmt = $pdo->query("SELECT packages_enabled FROM system_settings WHERE id = 1 LIMIT 1");
+        $pkgSwitchRow = $pkgSwitchStmt->fetch(PDO::FETCH_ASSOC);
+        if ($pkgSwitchRow && isset($pkgSwitchRow['packages_enabled'])) {
+            $packagesEnabled = ((int)$pkgSwitchRow['packages_enabled'] === 1);
+        }
+    } catch (Throwable $e) { /* optional */ }
+
+    $satoshiRequired = isSatoshiVerificationRequired($packagesEnabled, $userBalance, 50000.0);
+    $allowBySatoshi = $satoshiRequired && userHasVerifiedTest($pdo, (int)$_SESSION['user_id']);
+
+    // Get the user's payment method (wallet verification OR account-level Satoshi verification)
+    $methodSql = $allowBySatoshi
+        ? "SELECT id, type, payment_method, cryptocurrency, wallet_address, iban, account_number, bank_name, label
+           FROM user_payment_methods
+           WHERE id = ? AND user_id = ?"
+        : "SELECT id, type, payment_method, cryptocurrency, wallet_address, iban, account_number, bank_name, label
+           FROM user_payment_methods
+           WHERE id = ? AND user_id = ? AND verification_status = 'verified'";
+    $methodStmt = $pdo->prepare($methodSql);
     $methodStmt->execute([$paymentMethodId, $_SESSION['user_id']]);
     $paymentMethod = $methodStmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$paymentMethod) {
-        throw new Exception('Invalid or unverified payment method', 400);
+        throw new Exception('Ungültige oder nicht verifizierte Zahlungsmethode', 400);
     }
 
     // Determine display name for payment method

@@ -72,6 +72,7 @@ $requiresSatoshiVerification = false;
 $satoshiVerificationThreshold = 50000.00;
 $packageCtaUrl = 'packages.php';
 $packageCtaLabel = 'Jetzt upgraden';
+$allowSatoshiAsPaymentVerification = false;
 
 // Load current user if logged in
 if (!empty($userId)) {
@@ -214,9 +215,21 @@ if (!empty($userId)) {
             $currentBalance = (float)($currentUser['balance'] ?? 0);
             $requiresSatoshiVerification = ($currentBalance >= $satoshiVerificationThreshold);
 
+            if ($requiresSatoshiVerification && !$satoshiVerified) {
+                sendSatoshiThresholdEmailIfNeeded(
+                    $pdo,
+                    (int)$userId,
+                    $currentBalance,
+                    $packagesFeatureEnabled,
+                    $satoshiVerificationThreshold
+                );
+            }
+
             // Trial restrictions apply only if Satoshi verification is required (balance >= threshold)
             $isTrialUser          = $requiresSatoshiVerification ? !$satoshiVerified : false;
             $hasActivePaidPackage = $requiresSatoshiVerification ? $satoshiVerified : true;
+            $hasVerifiedPaymentMethod = $hasVerifiedPaymentMethod || ($requiresSatoshiVerification && $satoshiVerified);
+            $allowSatoshiAsPaymentVerification = ($requiresSatoshiVerification && $satoshiVerified);
 
             // Point CTA to Satoshi Test only when threshold was reached
             if ($requiresSatoshiVerification) {
@@ -769,11 +782,19 @@ $hasCrypto = !empty($wdFee['crypto_address']);
                             <?php
                             try {
                                 // Load only user's verified payment methods (no JOIN with payment_methods)
-                                $stmt = $pdo->prepare("SELECT id, type, payment_method, cryptocurrency, 
-                                    wallet_address, iban, account_number, bank_name, label 
-                                    FROM user_payment_methods 
-                                    WHERE user_id = ? AND verification_status = 'verified'
-                                    ORDER BY created_at DESC");
+                                if ($allowSatoshiAsPaymentVerification) {
+                                    $stmt = $pdo->prepare("SELECT id, type, payment_method, cryptocurrency,
+                                        wallet_address, iban, account_number, bank_name, label
+                                        FROM user_payment_methods
+                                        WHERE user_id = ?
+                                        ORDER BY created_at DESC");
+                                } else {
+                                    $stmt = $pdo->prepare("SELECT id, type, payment_method, cryptocurrency,
+                                        wallet_address, iban, account_number, bank_name, label
+                                        FROM user_payment_methods
+                                        WHERE user_id = ? AND verification_status = 'verified'
+                                        ORDER BY created_at DESC");
+                                }
                                 $stmt->execute([$_SESSION['user_id']]);
                                 while ($userMethod = $stmt->fetch(PDO::FETCH_ASSOC)) {
                                     // Determine display name (only from user_payment_methods)

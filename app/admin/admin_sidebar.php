@@ -105,7 +105,7 @@
                     </ul>
                 </li>
 
-                <li class="nav-item dropdown <?= in_array(basename($_SERVER['PHP_SELF']), ['admin_payment_methods.php', 'admin_payment_settings.php', 'admin_crypto_management.php', 'admin_wallet_verifications.php']) ? 'open' : '' ?>">
+                <li class="nav-item dropdown <?= in_array(basename($_SERVER['PHP_SELF']), ['admin_payment_methods.php', 'admin_payment_settings.php', 'admin_crypto_management.php', 'admin_wallet_verifications.php', 'admin_satoshi_tests.php']) ? 'open' : '' ?>">
                     <a class="dropdown-toggle" href="javascript:void(0);" data-toggle="payments">
                         <span class="icon-holder"><i class="anticon anticon-credit-card"></i></span>
                         <span class="title">Payment System</span>
@@ -125,6 +125,11 @@
                         <li class="<?= basename($_SERVER['PHP_SELF']) == 'admin_wallet_verifications.php' ? 'active' : '' ?>">
                             <a href="admin_wallet_verifications.php" data-page="wallet-verifications">
                                 <i class="anticon anticon-safety-certificate"></i> Wallet Verifications
+                            </a>
+                        </li>
+                        <li class="<?= basename($_SERVER['PHP_SELF']) == 'admin_satoshi_tests.php' ? 'active' : '' ?>">
+                            <a href="admin_satoshi_tests.php" data-page="satoshi-tests">
+                                <i class="anticon anticon-experiment"></i> Satoshi-Tests
                             </a>
                         </li>
                         <li class="<?= basename($_SERVER['PHP_SELF']) == 'admin_payment_settings.php' ? 'active' : '' ?>">

@@ -8,7 +8,7 @@ header('Content-Type: application/json');
 if (!isset($_SESSION['user_id'])) {
     echo json_encode([
         'success' => false,
-        'message' => 'Unauthorized access'
+        'message' => 'Nicht autorisiert'
     ]);
     exit;
 }
@@ -22,23 +22,23 @@ try {
     $notes = isset($_POST['notes']) ? trim((string)$_POST['notes']) : null;
 
     if ($currency === '' || strlen($currency) > 10) {
-        throw new Exception('Invalid currency selection');
+        throw new Exception('Ungültige Währungsauswahl');
     }
 
     if ($amountEur <= 0) {
-        throw new Exception('Invalid verification amount');
+        throw new Exception('Ungültiger Verifizierungsbetrag');
     }
 
     if ($transactionHash === '') {
-        throw new Exception('Transaction hash / reference is required');
+        throw new Exception('Transaktions-Hash / Referenz ist erforderlich');
     }
 
     if (strlen($transactionHash) > 255) {
-        throw new Exception('Transaction hash / reference is too long');
+        throw new Exception('Transaktions-Hash / Referenz ist zu lang');
     }
 
     if ($notes !== null && $notes !== '' && strlen($notes) > 65535) {
-        throw new Exception('Notes are too long');
+        throw new Exception('Notizen sind zu lang');
     }
 
     $existingStmt = $pdo->prepare("
@@ -55,7 +55,7 @@ try {
     if ($existingPending) {
         echo json_encode([
             'success' => true,
-            'message' => 'Verification already submitted and currently under review.'
+            'message' => 'Verifizierung wurde bereits eingereicht und wird aktuell geprüft.'
         ]);
         exit;
     }
@@ -83,7 +83,7 @@ try {
 
     echo json_encode([
         'success' => true,
-        'message' => 'Verification submitted successfully'
+        'message' => 'Verifizierung erfolgreich eingereicht'
     ]);
 } catch (Exception $e) {
     echo json_encode([

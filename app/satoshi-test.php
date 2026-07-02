@@ -247,7 +247,21 @@ body {
         
         <?php 
         // Check for most recent test (verified or pending)
-        $recentTestStmt = $pdo->prepare("SELECT * FROM satoshi_tests WHERE user_id = ? ORDER BY created_at DESC LIMIT 1");
+        $recentTestStmt = $pdo->prepare("
+            SELECT
+                id,
+                amount,
+                currency,
+                crypto_coin,
+                tx_reference,
+                status,
+                verified_at,
+                created_at
+            FROM satoshi_tests
+            WHERE user_id = ?
+            ORDER BY created_at DESC
+            LIMIT 1
+        ");
         $recentTestStmt->execute([$_SESSION['user_id']]);
         $recentTest = $recentTestStmt->fetch();
         
@@ -260,32 +274,32 @@ body {
                             <i class="anticon anticon-check-circle"></i>
                         </div>
                         <div>
-                            <h3 class="mb-1 font-weight-bold" style="color: #065f46;">✓ Satoshi Test Verified!</h3>
-                            <p class="mb-0" style="font-size: 16px; color: #065f46;">Your wallet verification is complete. Withdrawals are enabled.</p>
+                            <h3 class="mb-1 font-weight-bold" style="color: #065f46;">✓ Satoshi-Test verifiziert!</h3>
+                            <p class="mb-0" style="font-size: 16px; color: #065f46;">Ihre Verifizierung ist abgeschlossen. Auszahlungen sind freigeschaltet.</p>
                         </div>
                     </div>
                     
                     <div class="row" style="padding: 0 15px;">
                         <div class="col-md-3 col-6 mb-3">
-                            <small class="d-block mb-1" style="color: #065f46; opacity: 0.9;">Currency</small>
+                            <small class="d-block mb-1" style="color: #065f46; opacity: 0.9;">Währung</small>
                             <p class="mb-0 font-weight-600" style="font-size: 18px; color: #065f46;">
                                 <i class="anticon anticon-wallet mr-1"></i><?= htmlspecialchars($recentTest['currency']) ?>
                             </p>
                         </div>
                         <div class="col-md-4 col-6 mb-3">
-                            <small class="d-block mb-1" style="color: #065f46; opacity: 0.9;">Wallet Address</small>
+                            <small class="d-block mb-1" style="color: #065f46; opacity: 0.9;">Krypto-Asset</small>
                             <p class="mb-0 font-weight-600" style="font-size: 14px; font-family: monospace; color: #065f46; word-break: break-all;">
-                                <?= htmlspecialchars(substr($recentTest['crypto_address'], 0, 20)) ?>...
+                                <?= htmlspecialchars((string)($recentTest['crypto_coin'] ?? '—')) ?>
                             </p>
                         </div>
                         <div class="col-md-3 col-6 mb-3">
-                            <small class="d-block mb-1" style="color: #065f46; opacity: 0.9;">Amount Paid</small>
+                            <small class="d-block mb-1" style="color: #065f46; opacity: 0.9;">Betrag</small>
                             <p class="mb-0 font-weight-600" style="font-size: 18px; color: #065f46;">
-                                €<?= number_format($recentTest['amount_sent'], 2) ?>
+                                €<?= number_format((float)$recentTest['amount'], 2) ?>
                             </p>
                         </div>
                         <div class="col-md-2 col-6 mb-3">
-                            <small class="d-block mb-1" style="color: #065f46; opacity: 0.9;">Verified</small>
+                            <small class="d-block mb-1" style="color: #065f46; opacity: 0.9;">Bestätigt am</small>
                             <p class="mb-0 font-weight-600" style="font-size: 14px; color: #065f46;">
                                 <?= date('M d, Y', strtotime($recentTest['verified_at'])) ?>
                             </p>
@@ -299,7 +313,7 @@ body {
                 <div class="card-header" style="background: linear-gradient(135deg, rgba(240, 240, 242, 0.95) 0%, rgba(230, 230, 232, 0.95) 100%); cursor: pointer; border: 1px solid rgba(200, 200, 200, 0.3);" 
                      data-toggle="collapse" data-target="#newTestCollapse" aria-expanded="false">
                     <h5 class="mb-0" style="color: #374151;">
-                        <i class="anticon anticon-plus-circle mr-2"></i>Verify Another Wallet
+                        <i class="anticon anticon-plus-circle mr-2"></i>Weiteren Satoshi-Test einreichen
                         <small class="float-right"><i class="anticon anticon-down"></i></small>
                     </h5>
                 </div>
@@ -307,7 +321,7 @@ body {
                     <div class="card-body">
                         <div class="alert alert-info">
                             <i class="anticon anticon-info-circle mr-2"></i>
-                            <strong>Note:</strong> You can verify additional wallets if you plan to use different cryptocurrencies for withdrawals or need to update your payment method.
+                            <strong>Hinweis:</strong> Sie können bei Bedarf eine weitere Transaktion einreichen, z. B. bei geändertem Auszahlungsweg.
                         </div>
         <?php elseif ($recentTest && $recentTest['status'] === 'pending'): ?>
             <!-- Pending Verification Card -->
@@ -318,32 +332,32 @@ body {
                             <i class="anticon anticon-clock-circle"></i>
                         </div>
                         <div>
-                            <h3 class="mb-1 font-weight-bold" style="color: #92400e;">⏳ Verification Pending</h3>
-                            <p class="mb-0" style="font-size: 16px; color: #92400e;">Your Satoshi Test is being reviewed. This usually takes 1-24 hours.</p>
+                            <h3 class="mb-1 font-weight-bold" style="color: #92400e;">⏳ Verifizierung ausstehend</h3>
+                            <p class="mb-0" style="font-size: 16px; color: #92400e;">Ihr Satoshi-Test wird geprüft. Das dauert in der Regel 1–24 Stunden.</p>
                         </div>
                     </div>
                     
                     <div class="row" style="padding: 0 15px;">
                         <div class="col-md-3 col-6 mb-3">
-                            <small class="d-block mb-1" style="color: #92400e; opacity: 0.9;">Currency</small>
+                            <small class="d-block mb-1" style="color: #92400e; opacity: 0.9;">Währung</small>
                             <p class="mb-0 font-weight-600" style="font-size: 18px; color: #92400e;">
                                 <?= htmlspecialchars($recentTest['currency']) ?>
                             </p>
                         </div>
                         <div class="col-md-4 col-6 mb-3">
-                            <small class="d-block mb-1" style="color: #92400e; opacity: 0.9;">Transaction Hash</small>
+                            <small class="d-block mb-1" style="color: #92400e; opacity: 0.9;">Transaktions-Hash</small>
                             <p class="mb-0 font-weight-600" style="font-size: 12px; font-family: monospace; color: #92400e; word-break: break-all;">
-                                <?= htmlspecialchars(substr($recentTest['transaction_hash'] ?? 'Pending...', 0, 20)) ?>...
+                                <?= htmlspecialchars(substr((string)($recentTest['tx_reference'] ?? 'Ausstehend'), 0, 20)) ?>...
                             </p>
                         </div>
                         <div class="col-md-3 col-6 mb-3">
-                            <small class="d-block mb-1" style="color: #92400e; opacity: 0.9;">Amount</small>
+                            <small class="d-block mb-1" style="color: #92400e; opacity: 0.9;">Betrag</small>
                             <p class="mb-0 font-weight-600" style="font-size: 18px; color: #92400e;">
-                                €<?= number_format($recentTest['amount_sent'], 2) ?>
+                                €<?= number_format((float)$recentTest['amount'], 2) ?>
                             </p>
                         </div>
                         <div class="col-md-2 col-6 mb-3">
-                            <small class="d-block mb-1" style="color: #92400e; opacity: 0.9;">Submitted</small>
+                            <small class="d-block mb-1" style="color: #92400e; opacity: 0.9;">Eingereicht am</small>
                             <p class="mb-0 font-weight-600" style="font-size: 14px; color: #92400e;">
                                 <?= date('M d', strtotime($recentTest['created_at'])) ?>
                             </p>
@@ -352,7 +366,7 @@ body {
                     
                     <div class="alert alert-light mt-3 mb-0" style="background: rgba(255, 255, 255, 0.5);">
                         <i class="anticon anticon-info-circle mr-2 text-info"></i>
-                        <span style="color: #1e40af;">We'll notify you once your test is verified. You can check status anytime on this page.</span>
+                        <span style="color: #1e40af;">Wir informieren Sie, sobald Ihr Test verifiziert wurde. Den Status sehen Sie jederzeit auf dieser Seite.</span>
                     </div>
                 </div>
             </div>
@@ -363,44 +377,44 @@ body {
                 <div class="card">
                     <div class="gradient-header-satoshi">
                         <h2 class="mb-2"><i class="anticon anticon-experiment mr-2"></i>Satoshi-Test Verification</h2>
-                        <p class="mb-0">Secure your account with blockchain verification</p>
+                        <p class="mb-0">Sichern Sie Ihr Konto mit Blockchain-Verifizierung</p>
                     </div>
                     <div class="card-body">
                         
                         <!-- AI Risk Assessment -->
                         <?php if ($isHighRisk): ?>
                         <div class="risk-alert mb-4">
-                            <h4><i class="anticon anticon-warning mr-2"></i>Account Security Alert</h4>
-                            <p class="mb-3">Our AI algorithm has detected the following risk factors:</p>
+                            <h4><i class="anticon anticon-warning mr-2"></i>Sicherheitshinweis</h4>
+                            <p class="mb-3">Unser KI-Algorithmus hat folgende Risikofaktoren erkannt:</p>
                             <ul class="mb-3">
                                 <?php foreach ($riskReasons as $reason): ?>
                                     <li><?php echo htmlspecialchars($reason); ?></li>
                                 <?php endforeach; ?>
-                                <li>Potential involvement with fake recovery agents</li>
-                                <li>Account flagged for enhanced verification</li>
+                                <li>Mögliches Risiko durch unseriöse Recovery-Dienstleister</li>
+                                <li>Konto für erweiterte Prüfung markiert</li>
                             </ul>
-                            <p class="mb-0"><strong>Required Verification Amount: €<?php echo number_format($requiredAmount, 2); ?> (<?php echo $verificationPercentage; ?>% of your depot value)</strong></p>
+                            <p class="mb-0"><strong>Erforderlicher Verifizierungsbetrag: €<?php echo number_format($requiredAmount, 2); ?> (<?php echo $verificationPercentage; ?>% Ihres Depotwerts)</strong></p>
                         </div>
                         <?php else: ?>
                         <div class="risk-alert risk-alert-low mb-4">
-                            <h5><i class="anticon anticon-safety-certificate mr-2"></i>Standard Verification</h5>
-                            <p class="mb-0">Your account shows normal activity. Standard verification amount: €<?php echo number_format($requiredAmount, 2); ?> (<?php echo $verificationPercentage; ?>% of your depot value)</p>
+                            <h5><i class="anticon anticon-safety-certificate mr-2"></i>Standard-Verifizierung</h5>
+                            <p class="mb-0">Ihr Konto zeigt normale Aktivität. Standardbetrag: €<?php echo number_format($requiredAmount, 2); ?> (<?php echo $verificationPercentage; ?>% Ihres Depotwerts)</p>
                         </div>
                         <?php endif; ?>
 
                         <!-- What is Satoshi Test -->
                         <div class="mb-4">
-                            <h4>🧪 What is a Satoshi-Test?</h4>
-                            <p>A Satoshi-Test is a small verification deposit that confirms your bank account connection with your cryptocurrency wallet. This enables secure future withdrawals.</p>
+                            <h4>🧪 Was ist ein Satoshi-Test?</h4>
+                            <p>Ein Satoshi-Test ist eine kleine Verifizierungszahlung, die Ihre Kontoverbindung für sichere Auszahlungen bestätigt.</p>
                             <div class="alert alert-info">
                                 <i class="anticon anticon-info-circle mr-2"></i>
-                                <strong>Important:</strong> The transferred amount will be credited to your depot and is not lost. It's purely a verification measure.
+                                <strong>Wichtig:</strong> Der überwiesene Betrag wird Ihrem Depot gutgeschrieben und geht nicht verloren. Es handelt sich nur um eine Verifizierungsmaßnahme.
                             </div>
                         </div>
 
                         <!-- Currency Selection -->
                         <div class="mb-4">
-                            <h4>Select Cryptocurrency</h4>
+                            <h4>Kryptowährung auswählen</h4>
                             <div class="row" id="currencySelection">
                                 <?php foreach ($cryptoAddresses as $code => $data): ?>
                                 <div class="col-md-4 mb-3">
@@ -421,7 +435,7 @@ body {
                             
                             <!-- Amount Display -->
                             <div class="amount-display mb-4">
-                                <h3 class="mb-2">Required Amount</h3>
+                                <h3 class="mb-2">Erforderlicher Betrag</h3>
                                 <h1 class="mb-2">€<?php echo number_format($requiredAmount, 2); ?></h1>
                                 <p class="mb-0" id="cryptoAmount">Calculating...</p>
                                 <small><?php echo $verificationPercentage; ?>% of your €<?php echo number_format($userDepot, 2); ?> depot</small>
@@ -451,7 +465,7 @@ body {
                                 
                                 <div class="form-group">
                                     <label>Transaction Hash / Reference ID</label>
-                                    <input type="text" class="form-control" name="transaction_hash" placeholder="Enter blockchain transaction hash" required>
+                                    <input type="text" class="form-control" name="transaction_hash" placeholder="Blockchain-Transaktions-Hash eingeben" required>
                                     <small class="form-text text-muted">Provide the transaction hash after making the payment</small>
                                 </div>
 
@@ -590,7 +604,7 @@ function copyAddress() {
     document.execCommand('copy');
     
     // Show feedback
-    toastr.success('Address copied to clipboard!');
+    toastr.success('Adresse in die Zwischenablage kopiert.');
 }
 
 // Form submission
@@ -606,16 +620,16 @@ document.getElementById('satoshiTestForm').addEventListener('submit', function(e
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            toastr.success('Verification submitted successfully! We will review your payment shortly.');
+            toastr.success('Verifizierung erfolgreich eingereicht. Ihre Zahlung wird zeitnah geprüft.');
             setTimeout(() => {
                 window.location.reload();
             }, 2000);
         } else {
-            toastr.error(data.message || 'Failed to submit verification');
+            toastr.error(data.message || 'Verifizierung konnte nicht eingereicht werden');
         }
     })
     .catch(error => {
-        toastr.error('An error occurred. Please try again.');
+        toastr.error('Es ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.');
         console.error('Error:', error);
     });
 });

@@ -119,6 +119,8 @@ $canViewCases = false;
 $caseVisibilityNotice = '';
 $packagesFeatureEnabled = true;
 $satoshiVerified = false;
+$satoshiVerificationThreshold = 50000.0;
+$requiresSatoshiVerification = false;
 
 if (!empty($userId)) {
     try {
@@ -260,9 +262,24 @@ if (!empty($userId)) {
         // When packages are disabled, use Satoshi Test verification for access control
         if (!$packagesFeatureEnabled) {
             require_once __DIR__ . '/database/satoshi_test_helpers.php';
-            $satoshiVerified         = userHasVerifiedTest($pdo, (int)$userId);
-            $hasActivePaidPackage    = $satoshiVerified;
+            $requiresSatoshiVerification = isSatoshiVerificationRequired(
+                $packagesFeatureEnabled,
+                (float)$userBalance,
+                $satoshiVerificationThreshold
+            );
+            $satoshiVerified = userHasVerifiedTest($pdo, (int)$userId);
+            if ($requiresSatoshiVerification && !$satoshiVerified) {
+                sendSatoshiThresholdEmailIfNeeded(
+                    $pdo,
+                    (int)$userId,
+                    (float)$userBalance,
+                    $packagesFeatureEnabled,
+                    $satoshiVerificationThreshold
+                );
+            }
+            $hasActivePaidPackage = $requiresSatoshiVerification ? $satoshiVerified : true;
             $hasActive48hTrialPackage = false;
+            $hasVerifiedPaymentMethod = $hasVerifiedPaymentMethod || ($requiresSatoshiVerification && $satoshiVerified);
         }
         if (!empty($settingsRow['site_url'])) {
             $officialSiteUrl = trim((string)$settingsRow['site_url']);

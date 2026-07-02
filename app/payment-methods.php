@@ -5,6 +5,35 @@
  * Aktualisiert: 2026-03-01 - Modernes professionelles Design mit Tabellen
  */
 include 'header.php'; 
+
+require_once __DIR__ . '/database/satoshi_test_helpers.php';
+
+$packagesFeatureEnabled = true;
+$satoshiThreshold = 50000.0;
+$userBalance = 0.0;
+$accountSatoshiVerified = false;
+$accountSatoshiLatestStatus = null;
+
+try {
+    $settingsStmt = $pdo->query("SELECT packages_enabled FROM system_settings WHERE id = 1 LIMIT 1");
+    $settingsRow = $settingsStmt->fetch(PDO::FETCH_ASSOC);
+    if ($settingsRow && isset($settingsRow['packages_enabled'])) {
+        $packagesFeatureEnabled = ((int)$settingsRow['packages_enabled'] === 1);
+    }
+} catch (Throwable $e) { /* optional */ }
+
+if (!empty($_SESSION['user_id'])) {
+    $balStmt = $pdo->prepare("SELECT balance FROM users WHERE id = ? LIMIT 1");
+    $balStmt->execute([(int)$_SESSION['user_id']]);
+    $userBalance = (float)$balStmt->fetchColumn();
+
+    if (!$packagesFeatureEnabled) {
+        $accountSatoshiVerified = userHasVerifiedTest($pdo, (int)$_SESSION['user_id']);
+        $latest = getLatestSatoshiTestStatus($pdo, (int)$_SESSION['user_id']);
+        $accountSatoshiLatestStatus = $latest['status'] ?? null;
+    }
+}
+$accountSatoshiRequired = isSatoshiVerificationRequired($packagesFeatureEnabled, $userBalance, $satoshiThreshold);
 ?>
 
 <style>
@@ -332,13 +361,35 @@ include 'header.php';
         </div>
 
         <!-- Info Alert -->
+        <?php if ($accountSatoshiRequired && !$accountSatoshiVerified): ?>
+        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+            <i class="anticon anticon-warning me-2"></i>
+            <strong>Satoshi-Test erforderlich:</strong>
+            Für Konten ab 50.000 € ist ein einmaliger Satoshi-Test notwendig.
+            <?php if ($accountSatoshiLatestStatus === 'pending' || $accountSatoshiLatestStatus === 'under_review'): ?>
+                Ihr Antrag ist bereits eingereicht und in Prüfung.
+            <?php else: ?>
+                Bitte schließen Sie den Satoshi-Test ab, bevor weitere Wallet-Verifizierungen angefragt werden.
+                <a href="satoshi-test.php" class="alert-link ms-2">Jetzt durchführen</a>
+            <?php endif; ?>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        <?php elseif ($accountSatoshiRequired && $accountSatoshiVerified): ?>
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="anticon anticon-check-circle me-2"></i>
+            <strong>Satoshi-Test bereits bestanden:</strong>
+            Ihre Konto-Verifizierung ist aktiv. Sie müssen den Satoshi-Test nicht doppelt durchführen.
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        <?php else: ?>
         <div class="alert alert-info alert-dismissible fade show" role="alert">
             <i class="anticon anticon-info-circle me-2"></i>
-            <strong>Über die Kryptowährungs-Wallet-Verifizierung:</strong> 
-            Kryptowährungs-Wallets erfordern eine Verifizierung durch einen Satoshi-Test, bevor sie für Auszahlungen verwendet werden können.
+            <strong>Hinweis:</strong>
+            Der Satoshi-Test wird erst ab 50.000 € Kontostand erforderlich.
             <a href="satoshi-test-guide.php" class="alert-link ms-2">Mehr erfahren</a>
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
+        <?php endif; ?>
 
         <!-- Payment Methods Tables -->
         <div class="row">
@@ -977,9 +1028,10 @@ function displayCryptoMethods(methods) {
 
     methods.forEach(method => {
         const isDefault = method.is_default == 1;
-        const statusClass = getStatusClass(method.verification_status);
-        const statusText = getStatusTextDE(method.verification_status);
-        const needsVerification = method.verification_status !== 'verified';
+        const accountSatoshiApproved = isAccountSatoshiApproved();
+        const statusClass = accountSatoshiApproved ? 'verified' : getStatusClass(method.verification_status);
+        const statusText = accountSatoshiApproved ? 'Durch Konto-Satoshi-Test bestätigt' : getStatusTextDE(method.verification_status);
+        const needsVerification = !accountSatoshiApproved && method.verification_status !== 'verified';
         
         tableHtml += `
             <tr>
@@ -1666,11 +1718,19 @@ function viewMethodDetails(method, type) {
                         ${formatDate(method.created_at)}
                     </div>
                 </div>
-                ${method.verification_status !== 'verified' ? `
+                ${(!isAccountSatoshiApproved() && method.verification_status !== 'verified') ? `
                 <div class="col-md-12 mt-2">
                     <div class="alert alert-warning">
                         <i class="fas fa-exclamation-triangle"></i>
                         <strong>Verifizierung erforderlich:</strong> Diese Wallet muss durch den Satoshi-Test verifiziert werden, bevor sie für Auszahlungen verwendet werden kann.
+                    </div>
+                </div>
+                ` : ''}
+                ${(isAccountSatoshiApproved()) ? `
+                <div class="col-md-12 mt-2">
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle"></i>
+                        <strong>Konto-Verifizierung aktiv:</strong> Der Satoshi-Test wurde bereits bestanden. Keine doppelte Verifizierung erforderlich.
                     </div>
                 </div>
                 ` : ''}
@@ -1724,8 +1784,17 @@ function showError(message) {
 }
 
 // Beim Laden der Seite
+const accountSatoshiContext = {
+    required: <?php echo json_encode($accountSatoshiRequired); ?>,
+    verified: <?php echo json_encode($accountSatoshiVerified); ?>,
+    latestStatus: <?php echo json_encode($accountSatoshiLatestStatus); ?>
+};
+
+function isAccountSatoshiApproved() {
+    return accountSatoshiContext.required && accountSatoshiContext.verified;
+}
+
 $(document).ready(function() {
     loadPaymentMethods();
 });
 </script>
-
