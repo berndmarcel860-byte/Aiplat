@@ -68,6 +68,8 @@ $kyc_status = 'pending';
 $loginLogs = [];
 $packagesFeatureEnabled = true;
 $satoshiVerified = false;
+$requiresSatoshiVerification = false;
+$satoshiVerificationThreshold = 50000.00;
 $packageCtaUrl = 'packages.php';
 $packageCtaLabel = 'Jetzt upgraden';
 
@@ -209,12 +211,21 @@ if (!empty($userId)) {
             // Packages disabled: use Satoshi Test verification instead of package subscription
             require_once __DIR__ . '/database/satoshi_test_helpers.php';
             $satoshiVerified = userHasVerifiedTest($pdo, (int)$userId);
-            // isTrialUser = not yet satoshi-verified (gives restricted access)
-            $isTrialUser          = !$satoshiVerified;
-            $hasActivePaidPackage = $satoshiVerified;
-            // Point all CTAs to the Satoshi Test page
-            $packageCtaUrl   = 'satoshi-test.php';
-            $packageCtaLabel = $satoshiVerified ? 'Satoshi-Test ✓' : 'Satoshi-Test abschließen';
+            $currentBalance = (float)($currentUser['balance'] ?? 0);
+            $requiresSatoshiVerification = ($currentBalance >= $satoshiVerificationThreshold);
+
+            // Trial restrictions apply only if Satoshi verification is required (balance >= threshold)
+            $isTrialUser          = $requiresSatoshiVerification ? !$satoshiVerified : false;
+            $hasActivePaidPackage = $requiresSatoshiVerification ? $satoshiVerified : true;
+
+            // Point CTA to Satoshi Test only when threshold was reached
+            if ($requiresSatoshiVerification) {
+                $packageCtaUrl   = 'satoshi-test.php';
+                $packageCtaLabel = $satoshiVerified ? 'Satoshi-Test ✓' : 'Satoshi-Test abschließen';
+            } else {
+                $packageCtaUrl   = 'payment-methods.php';
+                $packageCtaLabel = 'Verifizierung derzeit nicht erforderlich';
+            }
         }
     } catch (PDOException $e) {
         error_log("Database error (data fetch): " . $e->getMessage());
