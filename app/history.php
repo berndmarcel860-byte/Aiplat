@@ -135,15 +135,20 @@ try {
 
     // KI scan entries in timeline
     try {
-        $kiTimelineStmt = $pdo->prepare("SELECT id, entry_type, title, description, status, fee_find_amount, fee_recover_amount, platform_name, blockchain_network, transaction_hash, risk_level, created_at FROM ki_scan_entries WHERE user_id = ? AND is_visible = 1 ORDER BY created_at DESC LIMIT 30");
+        $kiTimelineStmt = $pdo->prepare("SELECT entry_type, title, description, status, fee_find_amount, fee_recover_amount, created_at FROM ki_scan_entries WHERE user_id = ? AND is_visible = 1 ORDER BY created_at DESC LIMIT 30");
         $kiTimelineStmt->execute([$userId]);
         $kiTimelineRows = $kiTimelineStmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        $kiContextMap = [
+            'ai_search' => 'KI-Transaktionssuche',
+            'platform_check' => 'Plattformprüfung',
+            'reported_platform' => 'Gemeldete Plattform',
+        ];
         foreach ($kiTimelineRows as $k) {
             $totalFee = (float)$k['fee_find_amount'] + (float)$k['fee_recover_amount'];
             $allRows[] = [
                 'entry_type'      => 'KI-Scan',
                 'reference_label' => $k['title'],
-                'context_label'   => $k['platform_name'] ?: ($k['blockchain_network'] ?: 'AI Scan'),
+                'context_label'   => $kiContextMap[$k['entry_type']] ?? 'AI Scan',
                 'status_label'    => $k['status'],
                 'details'         => $k['description'] ?: ('KI-Scan: ' . ucfirst($k['entry_type'])),
                 'amount'          => $totalFee > 0 ? $totalFee : null,
