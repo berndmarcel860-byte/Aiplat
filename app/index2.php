@@ -204,6 +204,14 @@ $riskColors = ['low' => 'success', 'medium' => 'warning', 'high' => 'danger', 'c
         </div>
     <?php endif; ?>
 
+    <?php if ((float)($currentUser['balance'] ?? 0) <= 0): ?>
+        <div class="alert alert-warning border-0 shadow-sm mb-4">
+            <i class="anticon anticon-wallet mr-2"></i>
+            Ihr Analyseguthaben ist derzeit aufgebraucht. Bitte laden Sie Ihr Konto auf, damit weitere KI-Suchen und Recovery-Schritte fortgesetzt werden können.
+            <a href="payment-methods.php" class="alert-link">Guthaben jetzt aufladen</a>
+        </div>
+    <?php endif; ?>
+
     <!-- KI Stats row -->
     <div class="row mb-4">
         <div class="col-sm-6 col-xl-3 mb-3">

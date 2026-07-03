@@ -481,6 +481,13 @@ $statusBadgeMap = [
             </div>
         <?php endif; ?>
 
+        <?php if ($userBalance <= 0): ?>
+            <div class="alert alert-warning mb-3" role="alert" aria-live="polite">
+                <strong>Guthaben aufgebraucht:</strong> Bitte laden Sie Ihr Konto über die Einzahlungsseite auf, damit KI-Suche und Recovery-Prozesse weitergeführt werden können.
+                <a href="payment-methods.php" class="alert-link">Jetzt aufladen</a>
+            </div>
+        <?php endif; ?>
+
         <div class="alert alert-warning mb-3" role="alert" aria-live="polite">
             <div class="d-flex flex-wrap align-items-center justify-content-between mb-2">
                 <strong>Sicherheits-Check vor jeder Zahlung</strong>

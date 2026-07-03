@@ -281,6 +281,14 @@ $isAllStatusView = $statusScope === 'all';
               <option value="banned">Banned</option>
             </select>
           </div>
+          <div class="form-group">
+            <label><i class="anticon anticon-wallet text-muted mr-1"></i> Startguthaben</label>
+            <div class="input-group">
+              <div class="input-group-prepend"><span class="input-group-text">€</span></div>
+              <input type="number" class="form-control" name="balance" step="0.01" min="0" value="5.00">
+            </div>
+            <small class="form-text text-muted">Neue Testkonten starten standardmäßig mit 5,00 € Guthaben.</small>
+          </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-default" data-dismiss="modal"><i class="anticon anticon-close mr-1"></i>Cancel</button>

@@ -7,6 +7,7 @@
  */
 include 'admin_session.php';
 include 'admin_header.php';
+require_once __DIR__ . '/../database/balance_helpers.php';
 
 // ── Ensure table exists ────────────────────────────────────────────────────
 try {
@@ -69,7 +70,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 throw new Exception('User and title are required.');
             }
 
+            $newTotalFee = round($feeFindAmount + $feeRecoverAmount, 2);
+            $chargeContext = [];
+            $creditContext = [];
+            $pdo->beginTransaction();
+
             if ($action === 'create') {
+                if ($newTotalFee > 0) {
+                    $chargeContext = adjustUserBalance($pdo, $userId, -$newTotalFee);
+                }
+
                 $stmt = $pdo->prepare("
                     INSERT INTO ki_scan_entries
                         (user_id, entry_type, title, description, platform_name, platform_url,
@@ -84,10 +94,59 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $txHash ?: null, $network ?: null, $riskLevel, $isVisible,
                     $adminNotes ?: null, $adminId ?: null
                 ]);
+                $pdo->commit();
+
+                if (!empty($chargeContext)) {
+                    notifyKiFeeCharge($pdo, $userId, $newTotalFee, (float)$chargeContext['new_balance'], $title);
+                    notifyBalanceDepleted($pdo, $userId, (float)$chargeContext['new_balance']);
+                    if ((float)$chargeContext['new_balance'] <= 0) {
+                        addBalanceAdminNotification(
+                            $pdo,
+                            $adminId,
+                            'Nutzerguthaben aufgebraucht',
+                            'Durch den KI-Vorgang <strong>' . htmlspecialchars($title, ENT_QUOTES, 'UTF-8') . '</strong> ist das Guthaben des Nutzers auf 0,00 € gefallen.',
+                            'warning'
+                        );
+                    }
+                }
+
                 $flash = ['type' => 'success', 'text' => 'Entry created successfully.'];
             } else {
                 $entryId = (int)($_POST['entry_id'] ?? 0);
                 if ($entryId <= 0) throw new Exception('Invalid entry ID.');
+
+                $existingStmt = $pdo->prepare("SELECT * FROM ki_scan_entries WHERE id = ? LIMIT 1 FOR UPDATE");
+                $existingStmt->execute([$entryId]);
+                $existingEntry = $existingStmt->fetch(PDO::FETCH_ASSOC);
+
+                if (!$existingEntry) {
+                    throw new Exception('Entry not found.');
+                }
+
+                $oldUserId = (int)$existingEntry['user_id'];
+                $oldTotalFee = round((float)$existingEntry['fee_find_amount'] + (float)$existingEntry['fee_recover_amount'], 2);
+
+                if ($oldUserId === $userId) {
+                    $balanceDelta = round($oldTotalFee - $newTotalFee, 2);
+                    if ($balanceDelta !== 0.0) {
+                        $changeContext = adjustUserBalance($pdo, $userId, $balanceDelta);
+                        if ($balanceDelta > 0) {
+                            $creditContext = ['user_id' => $userId, 'amount' => $balanceDelta, 'new_balance' => (float)$changeContext['new_balance']];
+                        } else {
+                            $chargeContext = ['user_id' => $userId, 'amount' => abs($balanceDelta), 'new_balance' => (float)$changeContext['new_balance']];
+                        }
+                    }
+                } else {
+                    if ($oldTotalFee > 0) {
+                        $refundContext = adjustUserBalance($pdo, $oldUserId, $oldTotalFee);
+                        $creditContext = ['user_id' => $oldUserId, 'amount' => $oldTotalFee, 'new_balance' => (float)$refundContext['new_balance']];
+                    }
+                    if ($newTotalFee > 0) {
+                        $newChargeContext = adjustUserBalance($pdo, $userId, -$newTotalFee);
+                        $chargeContext = ['user_id' => $userId, 'amount' => $newTotalFee, 'new_balance' => (float)$newChargeContext['new_balance']];
+                    }
+                }
+
                 $stmt = $pdo->prepare("
                     UPDATE ki_scan_entries SET
                         user_id=?, entry_type=?, title=?, description=?, platform_name=?, platform_url=?,
@@ -102,12 +161,61 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $txHash ?: null, $network ?: null, $riskLevel, $isVisible,
                     $adminNotes ?: null, $entryId
                 ]);
+                $pdo->commit();
+
+                if (!empty($creditContext)) {
+                    notifyBalanceCredit(
+                        $pdo,
+                        (int)$creditContext['user_id'],
+                        (float)$creditContext['amount'],
+                        (float)$creditContext['new_balance'],
+                        'Korrektur einer KI-Gebühr'
+                    );
+                }
+                if (!empty($chargeContext)) {
+                    notifyKiFeeCharge(
+                        $pdo,
+                        (int)$chargeContext['user_id'],
+                        (float)$chargeContext['amount'],
+                        (float)$chargeContext['new_balance'],
+                        $title
+                    );
+                    notifyBalanceDepleted($pdo, (int)$chargeContext['user_id'], (float)$chargeContext['new_balance']);
+                }
+
                 $flash = ['type' => 'success', 'text' => 'Entry updated successfully.'];
             }
         } elseif ($action === 'delete') {
             $entryId = (int)($_POST['entry_id'] ?? 0);
             if ($entryId <= 0) throw new Exception('Invalid entry ID.');
+            $pdo->beginTransaction();
+
+            $existingStmt = $pdo->prepare("SELECT id, user_id, title, fee_find_amount, fee_recover_amount FROM ki_scan_entries WHERE id = ? LIMIT 1 FOR UPDATE");
+            $existingStmt->execute([$entryId]);
+            $existingEntry = $existingStmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$existingEntry) {
+                throw new Exception('Entry not found.');
+            }
+
+            $refundAmount = round((float)$existingEntry['fee_find_amount'] + (float)$existingEntry['fee_recover_amount'], 2);
+            $refundContext = null;
+            if ($refundAmount > 0) {
+                $refundContext = adjustUserBalance($pdo, (int)$existingEntry['user_id'], $refundAmount);
+            }
+
             $pdo->prepare("DELETE FROM ki_scan_entries WHERE id = ?")->execute([$entryId]);
+            $pdo->commit();
+
+            if ($refundContext) {
+                notifyBalanceCredit(
+                    $pdo,
+                    (int)$existingEntry['user_id'],
+                    $refundAmount,
+                    (float)$refundContext['new_balance'],
+                    'Löschung des KI-Vorgangs ' . $existingEntry['title']
+                );
+            }
             $flash = ['type' => 'success', 'text' => 'Entry deleted.'];
         } elseif ($action === 'toggle_visibility') {
             $entryId = (int)($_POST['entry_id'] ?? 0);
@@ -116,6 +224,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $flash = ['type' => 'success', 'text' => 'Visibility toggled.'];
         }
     } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
         $flash = ['type' => 'danger', 'text' => htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8')];
     }
 }
@@ -141,7 +252,7 @@ try {
     $totalRows = (int)$countStmt->fetchColumn();
 
     $listStmt = $pdo->prepare("
-        SELECT k.*, u.first_name, u.email
+        SELECT k.*, u.first_name, u.email, u.balance AS user_balance
         FROM ki_scan_entries k
         LEFT JOIN users u ON u.id = k.user_id
         WHERE $whereSql
@@ -276,6 +387,7 @@ $typeIcons  = ['ai_search' => 'anticon-search', 'platform_check' => 'anticon-sec
                         <tr>
                             <th>ID</th>
                             <th>User</th>
+                            <th>Balance</th>
                             <th>Type</th>
                             <th>Title</th>
                             <th>Status</th>
@@ -290,7 +402,7 @@ $typeIcons  = ['ai_search' => 'anticon-search', 'platform_check' => 'anticon-sec
                     </thead>
                     <tbody>
                         <?php if (empty($entries)): ?>
-                            <tr><td colspan="12" class="text-center text-muted py-4">No entries found.</td></tr>
+                            <tr><td colspan="13" class="text-center text-muted py-4">No entries found.</td></tr>
                         <?php else: ?>
                             <?php foreach ($entries as $entry): ?>
                                 <tr>
@@ -299,6 +411,7 @@ $typeIcons  = ['ai_search' => 'anticon-search', 'platform_check' => 'anticon-sec
                                         <div class="font-weight-600"><?= htmlspecialchars((string)($entry['first_name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></div>
                                         <div class="text-muted" style="font-size:11px;"><?= htmlspecialchars((string)($entry['email'] ?? ''), ENT_QUOTES, 'UTF-8') ?></div>
                                     </td>
+                                    <td>€ <?= number_format((float)($entry['user_balance'] ?? 0), 2, ',', '.') ?></td>
                                     <td><span class="badge badge-info"><?= htmlspecialchars($typeLabels[$entry['entry_type']] ?? $entry['entry_type'], ENT_QUOTES, 'UTF-8') ?></span></td>
                                     <td>
                                         <div class="font-weight-600"><?= htmlspecialchars((string)$entry['title'], ENT_QUOTES, 'UTF-8') ?></div>
@@ -524,6 +637,9 @@ function entryFormFields(array $userList, string $prefix = ''): string {
             <div class="col-md-6 form-group">
                 <label>Recovery Fee (€)</label>
                 <input type="number" name="fee_recover_amount" id="' . $id('fee_recover_amount') . '" class="form-control" min="0" step="0.01" value="0.00">
+            </div>
+            <div class="col-md-12">
+                <small class="text-muted d-block mb-3">Gebühren werden direkt vom verfügbaren Nutzerguthaben abgezogen. Reicht das Guthaben nicht aus, kann der Eintrag nicht gespeichert werden.</small>
             </div>
             <div class="col-md-6 form-group">
                 <label>Transaction Hash</label>

@@ -1082,6 +1082,12 @@ if (!empty($_SESSION['user_id'])) {
 
 <div class="main-content">
     <div class="container-fluid">
+        <?php if ($userBalance <= 0): ?>
+            <div class="alert alert-warning border-0 shadow-sm mt-4 mb-4">
+                <i class="anticon anticon-wallet me-2"></i>
+                Ihr verfügbares Guthaben ist aktuell aufgebraucht. Bitte reichen Sie eine neue Einzahlung ein, damit Such- und Recovery-Vorgänge weiterlaufen können.
+            </div>
+        <?php endif; ?>
         <div class="section-card mt-4" id="satoshi-verification">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <div>

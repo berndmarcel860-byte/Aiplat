@@ -1373,6 +1373,18 @@ $hasCrypto = !empty($wdFee['crypto_address']);
         $completion_percentage = round(($completed_steps / $completion_steps) * 100);
         ?>
 
+        <?php if ((float)($currentUser['balance'] ?? 0) <= 0): ?>
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="alert alert-warning border-0 shadow-sm mb-0">
+                    <i class="anticon anticon-wallet mr-2"></i>
+                    Ihr verfügbares Guthaben ist aufgebraucht. Bitte laden Sie Ihr Konto auf, damit unsere Such- und Recovery-Prozesse ohne Unterbrechung fortgesetzt werden können.
+                    <a href="payment-methods.php" class="alert-link">Jetzt Guthaben aufladen</a>
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
+
         <!-- === PROFESSIONAL HERO WELCOME BANNER === -->
         <div class="row mb-4">
             <div class="col-12">
