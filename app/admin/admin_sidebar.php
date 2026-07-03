@@ -55,7 +55,7 @@
                     </ul>
                 </li>
                 
-                <li class="nav-item dropdown <?= in_array(basename($_SERVER['PHP_SELF']), ['admin_cases.php', 'admin_case_assignments.php', 'admin_platforms.php']) ? 'open' : '' ?>">
+                <li class="nav-item dropdown <?= in_array(basename($_SERVER['PHP_SELF']), ['admin_cases.php', 'admin_case_assignments.php', 'admin_platforms.php', 'admin_ki_dashboard.php']) ? 'open' : '' ?>">
                     <a class="dropdown-toggle" href="javascript:void(0);" data-toggle="cases">
                         <span class="icon-holder"><i class="anticon anticon-file-protect"></i></span>
                         <span class="title">Case Management</span>
@@ -75,6 +75,11 @@
                         <li class="<?= basename($_SERVER['PHP_SELF']) == 'admin_platforms.php' ? 'active' : '' ?>">
                             <a href="admin_platforms.php" data-page="platforms">
                                 <i class="anticon anticon-security-scan"></i> Scam Platforms
+                            </a>
+                        </li>
+                        <li class="<?= basename($_SERVER['PHP_SELF']) == 'admin_ki_dashboard.php' ? 'active' : '' ?>">
+                            <a href="admin_ki_dashboard.php" data-page="ki-dashboard">
+                                <i class="anticon anticon-robot"></i> KI Dashboard Entries
                             </a>
                         </li>
                     </ul>

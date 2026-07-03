@@ -38,13 +38,13 @@ if (!$_sidebar_packagesEnabled && !empty($_SESSION['user_id'])) {
                     </a>
                 </li>
 
-                <!-- Dashboard v2 (AI Recovery) -->
+                <!-- KI Dashboard (AI scan entries, platform checks, reported platforms, fees) -->
                 <li class="nav-item">
-                    <a href="index2.php" title="KI-Wiederherstellungs-Dashboard">
+                    <a href="index2.php" title="KI Dashboard – AI Scans &amp; Plattformprüfungen">
                         <span class="icon-holder">
                             <i class="anticon anticon-robot"></i>
                         </span>
-                        <span class="title">Analyse-Cockpit</span>
+                        <span class="title">KI Dashboard</span>
                     </a>
                 </li>
 
