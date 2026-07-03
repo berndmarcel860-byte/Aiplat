@@ -121,7 +121,8 @@ try {
           <tr><th>KYC Status</th><td><span class='badge badge-{$kycBadge}'>{$kycLabel}</span></td></tr>
           <tr><th>Last Login</th><td>{$lastLogin}</td></tr>
           <tr><th>Registered</th><td>{$registered}</td></tr>
-          <tr><th>Balance</th><td><strong class='text-primary'>€" . number_format($user['balance'] ?? 0, 2, ',', '.') . "</strong></td></tr>
+          <tr><th>Recovered Funds</th><td><strong class='text-success'>€" . number_format((float)($user['balance'] ?? 0), 2, ',', '.') . "</strong></td></tr>
+          <tr><th>Top-up Balance</th><td><strong class='text-primary'>€" . number_format((float)($user['topup_balance'] ?? $user['balance'] ?? 0), 2, ',', '.') . "</strong></td></tr>
         </table>
       </div>
       <!-- Right column: case summary + quick links -->

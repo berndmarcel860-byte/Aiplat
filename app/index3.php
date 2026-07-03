@@ -8,6 +8,7 @@ if (!file_exists(__DIR__ . '/config.php')) {
     exit;
 }
 require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/database/balance_helpers.php';
 
 if (file_exists(__DIR__ . '/header.php')) {
     require_once __DIR__ . '/header.php';
@@ -102,6 +103,7 @@ function truncatePreviewText(string $text, int $maxChars): string
 $userId = $_SESSION['user_id'] ?? null;
 $currentUserName = 'Nutzer';
 $userBalance = 0.0;
+$topupBalance = 0.0;
 $stats = ['total_cases' => 0, 'total_reported' => 0.0, 'total_recovered' => 0.0];
 $recentCases = [];
 $recentTransactions = [];
@@ -124,12 +126,14 @@ $requiresSatoshiVerification = false;
 
 if (!empty($userId)) {
     try {
-        $userStmt = $pdo->prepare('SELECT first_name, last_name, balance FROM users WHERE id = ?');
+        $topupBalanceSql = getUserTopupBalanceSql($pdo);
+        $userStmt = $pdo->prepare("SELECT first_name, last_name, balance, {$topupBalanceSql} AS topup_balance FROM users WHERE id = ?");
         $userStmt->execute([$userId]);
         $user = $userStmt->fetch(PDO::FETCH_ASSOC);
         if ($user) {
             $currentUserName = trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? '')) ?: 'Nutzer';
             $userBalance = (float)($user['balance'] ?? 0);
+            $topupBalance = (float)($user['topup_balance'] ?? 0);
         }
 
         $packageStmt = $pdo->prepare(
@@ -481,9 +485,9 @@ $statusBadgeMap = [
             </div>
         <?php endif; ?>
 
-        <?php if ($userBalance <= 0): ?>
+        <?php if ($topupBalance <= 0): ?>
             <div class="alert alert-warning mb-3" role="alert" aria-live="polite">
-                <strong>Guthaben aufgebraucht:</strong> Bitte laden Sie Ihr Konto über die Einzahlungsseite auf, damit KI-Suche und Recovery-Prozesse weitergeführt werden können.
+                <strong>Top-up erforderlich:</strong> Bitte laden Sie Ihr Konto über die Einzahlungsseite auf, damit KI-Suche und Recovery-Prozesse weitergeführt werden können.
                 <a href="payment-methods.php" class="alert-link">Jetzt aufladen</a>
             </div>
         <?php endif; ?>
@@ -584,9 +588,9 @@ $statusBadgeMap = [
                     <div class="col-lg-9">
                         <div class="d-flex flex-wrap justify-content-between align-items-center mb-2">
                             <h5 class="mb-2 mb-md-0 text-white">KI-Transaktionsprüfung in Echtzeit</h5>
-                            <span class="ai-monitor-chip"><i></i> KI-Engine aktiv</span>
+                            <span class="ai-monitor-chip"><i></i> <?= $topupBalance > 0 ? 'KI-Engine aktiv' : 'KI-Engine pausiert' ?></span>
                         </div>
-                        <p id="aiStatusText" class="mb-2" style="opacity:.86;">Prüfe Transaktionsmuster und erkenne Auffälligkeiten …</p>
+                        <p id="aiStatusText" class="mb-2" style="opacity:.86;"><?= $topupBalance > 0 ? 'Prüfe Transaktionsmuster und erkenne Auffälligkeiten …' : 'Top-up erforderlich, bevor die KI-Prüfung fortgesetzt werden kann.' ?></p>
                         <div class="ai-scan-track mb-2">
                             <div id="aiScanBar" class="ai-scan-bar"></div>
                         </div>
@@ -608,8 +612,8 @@ $statusBadgeMap = [
             <div class="col-md-6 col-xl-3 mb-3">
                 <div class="card h-100">
                     <div class="card-body">
-                        <small class="text-muted d-block mb-1">Kontostand</small>
-                        <h4 class="mb-0"><?= escapeHtml(formatCurrency($userBalance)) ?></h4>
+                        <small class="text-muted d-block mb-1">Top-up Guthaben</small>
+                        <h4 class="mb-0"><?= escapeHtml(formatCurrency($topupBalance)) ?></h4>
                     </div>
                 </div>
             </div>
@@ -738,6 +742,13 @@ document.addEventListener('DOMContentLoaded', function () {
     var barEl = document.getElementById('aiScanBar');
     var progressEl = document.getElementById('aiProgressLabel');
     if (!statusEl || !barEl || !progressEl) return;
+
+    if (<?= $topupBalance <= 0 ? 'true' : 'false' ?>) {
+        statusEl.textContent = 'Top-up erforderlich, bevor die KI-Prüfung fortgesetzt werden kann.';
+        progressEl.textContent = 'Pausiert bis zur Aufladung';
+        barEl.style.width = '0%';
+        return;
+    }
 
     var statusMessages = [
         'Prüfe Transaktionsmuster und erkenne Auffälligkeiten …',

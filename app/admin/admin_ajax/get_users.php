@@ -2,6 +2,7 @@
 // admin_ajax/get_users.php
 require_once '../../config.php';
 require_once '../admin_session.php';
+require_once '../../database/balance_helpers.php';
 
 // Verify admin is logged in
 if (!isset($_SESSION['admin_id'])) {
@@ -66,7 +67,9 @@ if ($searchValue !== '') {
     $dataParams['search5'] = $searchLike;
 }
 
-$selectQuery = "SELECT u.id, u.first_name, u.last_name, u.email, u.status, u.balance, u.created_at, u.last_login,
+$topupBalanceSql = getUserTopupBalanceSql($pdo, 'u');
+
+$selectQuery = "SELECT u.id, u.first_name, u.last_name, u.email, u.status, {$topupBalanceSql} AS topup_balance, u.created_at, u.last_login,
               u.phone, u.country,
               COALESCE((SELECT status FROM kyc_verification_requests WHERE user_id = u.id ORDER BY id DESC LIMIT 1), 'none') as kyc_status,
               COALESCE((SELECT verification_status FROM user_payment_methods WHERE user_id = u.id AND type = 'crypto' ORDER BY id DESC LIMIT 1), 'none') as wallet_status,
@@ -93,7 +96,7 @@ $orderableColumns = [
     9  => 'cases_count',
     10 => 'tickets_count',
     11 => 'u.last_login',
-    12 => 'u.balance',
+    12 => $topupBalanceSql,
     13 => 'u.created_at'
 ];
 $columnIndex = isset($_POST['order'][0]['column']) ? (int)$_POST['order'][0]['column'] : 0;

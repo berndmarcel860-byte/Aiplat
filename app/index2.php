@@ -6,6 +6,7 @@
  */
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/database/satoshi_test_helpers.php';
+require_once __DIR__ . '/database/balance_helpers.php';
 require_once __DIR__ . '/header.php';
 
 $userId = (int)($_SESSION['user_id'] ?? 0);
@@ -45,7 +46,7 @@ try {
 } catch (Throwable $e) { /* table already exists or DB limitation */ }
 
 // ── User & account data ────────────────────────────────────────────────────
-$currentUser = ['first_name' => 'Benutzer', 'balance' => 0.0];
+$currentUser = ['first_name' => 'Benutzer', 'balance' => 0.0, 'topup_balance' => 0.0];
 $kycStatus = 'pending';
 $packagesFeatureEnabled = true;
 $satoshiThreshold = 50000.0;
@@ -63,7 +64,8 @@ $caseSummary = ['active_cases' => 0, 'platforms_checked' => 0, 'total_recovered'
 $feeSummary  = ['total_fee_amount' => 0.0, 'pending_fee_amount' => 0.0, 'pending_fee_cases' => 0];
 
 try {
-    $userStmt = $pdo->prepare("SELECT first_name, balance FROM users WHERE id = ? LIMIT 1");
+    $topupBalanceSql = getUserTopupBalanceSql($pdo);
+    $userStmt = $pdo->prepare("SELECT first_name, balance, {$topupBalanceSql} AS topup_balance FROM users WHERE id = ? LIMIT 1");
     $userStmt->execute([$userId]);
     $userRow = $userStmt->fetch(PDO::FETCH_ASSOC);
     if ($userRow) $currentUser = $userRow;
@@ -190,8 +192,8 @@ $riskColors = ['low' => 'success', 'medium' => 'warning', 'high' => 'danger', 'c
             </div>
             <div class="text-right" style="min-width:160px;">
                 <span class="badge <?= $kycBadge['class'] ?> mb-2 d-inline-block"><?= htmlspecialchars($kycBadge['label'], ENT_QUOTES, 'UTF-8') ?></span>
-                <div style="font-size:28px;font-weight:700;color:#fff;">€ <?= number_format((float)($currentUser['balance'] ?? 0), 2, ',', '.') ?></div>
-                <div style="font-size:12px;color:rgba(255,255,255,.7);">Kontostand</div>
+                <div style="font-size:28px;font-weight:700;color:#fff;">€ <?= number_format((float)($currentUser['topup_balance'] ?? 0), 2, ',', '.') ?></div>
+                <div style="font-size:12px;color:rgba(255,255,255,.7);">Top-up Guthaben</div>
             </div>
         </div>
     </div>
@@ -204,10 +206,10 @@ $riskColors = ['low' => 'success', 'medium' => 'warning', 'high' => 'danger', 'c
         </div>
     <?php endif; ?>
 
-    <?php if ((float)($currentUser['balance'] ?? 0) <= 0): ?>
+    <?php if ((float)($currentUser['topup_balance'] ?? 0) <= 0): ?>
         <div class="alert alert-warning border-0 shadow-sm mb-4">
             <i class="anticon anticon-wallet mr-2"></i>
-            Ihr Analyseguthaben ist derzeit aufgebraucht. Bitte laden Sie Ihr Konto auf, damit weitere KI-Suchen und Recovery-Schritte fortgesetzt werden können.
+            Ihr Top-up Guthaben ist derzeit aufgebraucht. Bitte laden Sie Ihr Konto auf, damit weitere KI-Suchen und Recovery-Schritte fortgesetzt werden können.
             <a href="payment-methods.php" class="alert-link">Guthaben jetzt aufladen</a>
         </div>
     <?php endif; ?>

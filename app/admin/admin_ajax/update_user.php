@@ -20,7 +20,7 @@ $data = [
     'last_name' => trim($_POST['last_name']),
     'email' => filter_var($_POST['email'], FILTER_SANITIZE_EMAIL),
     'status' => in_array($_POST['status'], ['active', 'suspended', 'banned']) ? $_POST['status'] : 'active',
-    'balance' => isset($_POST['balance']) ? (float)$_POST['balance'] : 0,
+    'topup_balance' => isset($_POST['topup_balance']) ? (float)$_POST['topup_balance'] : (isset($_POST['balance']) ? (float)$_POST['balance'] : 0),
     'phone' => isset($_POST['phone']) ? preg_replace('/[^0-9+]/', '', $_POST['phone']) : null,
     'country' => isset($_POST['country']) ? substr(trim($_POST['country']), 0, 100) : null
 ];
@@ -37,7 +37,7 @@ try {
 
     $pdo->beginTransaction();
 
-    $balanceChange = setUserBalance($pdo, $userId, (float)$data['balance']);
+    $balanceChange = setUserBalance($pdo, $userId, (float)$data['topup_balance']);
 
     // Update user
     $stmt = $pdo->prepare("
@@ -82,7 +82,7 @@ try {
             $pdo,
             $userId,
             'Guthaben angepasst',
-            'Ihr Guthaben wurde manuell um <strong>' . $formattedDelta . '</strong> reduziert. Neuer Kontostand: <strong>' . $formattedBalance . '</strong>.',
+            'Ihr Aufladeguthaben wurde manuell um <strong>' . $formattedDelta . '</strong> reduziert. Neuer Kontostand: <strong>' . $formattedBalance . '</strong>.',
             'warning',
             'balance_adjustment',
             'admin_manual'
@@ -91,8 +91,8 @@ try {
         sendBalanceEmail(
             $pdo,
             $userId,
-            'Ihr Guthaben wurde angepasst',
-            '<p>Ihr Guthaben wurde manuell um <strong>' . $formattedDelta . '</strong> reduziert.</p>'
+            'Ihr Aufladeguthaben wurde angepasst',
+            '<p>Ihr Aufladeguthaben wurde manuell um <strong>' . $formattedDelta . '</strong> reduziert.</p>'
             . '<p><strong>Neuer Kontostand:</strong> ' . $formattedBalance . '</p>'
         );
         notifyBalanceDepleted($pdo, $userId, (float)$balanceChange['new_balance']);
@@ -106,7 +106,7 @@ try {
             'name' => $data['first_name'] . ' ' . $data['last_name'],
             'email' => $data['email'],
             'status' => $data['status'],
-            'balance' => $data['balance']
+            'topup_balance' => $data['topup_balance']
         ]
     ]);
 } catch (PDOException $e) {

@@ -171,7 +171,7 @@ $isAllStatusView = $statusScope === 'all';
                             <th>Cases</th>
                             <th>Tickets</th>
                             <th>Last Login</th>
-                            <th>Balance</th>
+                            <th>Top-up Balance</th>
                             <th>Registered</th>
                             <th>Actions</th>
                         </tr>
@@ -282,12 +282,12 @@ $isAllStatusView = $statusScope === 'all';
             </select>
           </div>
           <div class="form-group">
-            <label><i class="anticon anticon-wallet text-muted mr-1"></i> Startguthaben</label>
+            <label><i class="anticon anticon-wallet text-muted mr-1"></i> Start Top-up Balance</label>
             <div class="input-group">
               <div class="input-group-prepend"><span class="input-group-text">€</span></div>
-              <input type="number" class="form-control" name="balance" step="0.01" min="0" value="5.00">
+              <input type="number" class="form-control" name="topup_balance" step="0.01" min="0" value="5.00">
             </div>
-            <small class="form-text text-muted">Neue Testkonten starten standardmäßig mit 5,00 € Guthaben.</small>
+            <small class="form-text text-muted">Neue Testkonten starten standardmäßig mit 5,00 € Aufladeguthaben.</small>
           </div>
         </div>
         <div class="modal-footer">
@@ -432,10 +432,10 @@ $isAllStatusView = $statusScope === 'all';
           </div>
           <div class="form-row">
             <div class="form-group col-md-6">
-              <label><i class="anticon anticon-dollar text-muted mr-1"></i> Balance</label>
+              <label><i class="anticon anticon-dollar text-muted mr-1"></i> Top-up Balance</label>
               <div class="input-group">
-                <div class="input-group-prepend"><span class="input-group-text">$</span></div>
-                <input type="number" class="form-control" name="balance" id="edit_balance" step="0.01" min="0">
+                <div class="input-group-prepend"><span class="input-group-text">€</span></div>
+                <input type="number" class="form-control" name="topup_balance" id="edit_topup_balance" step="0.01" min="0">
               </div>
             </div>
             <div class="form-group col-md-6">
@@ -655,7 +655,7 @@ $(document).ready(function() {
                     return `<span class="badge badge-${badgeClass}" title="${date.toLocaleString()}">${days}d ago</span>`;
                 }
             },
-            { data: 'balance', responsivePriority: 5, render: d => '$' + parseFloat(d).toFixed(2) },
+            { data: 'topup_balance', responsivePriority: 5, render: d => '€' + parseFloat(d).toFixed(2) },
             { data: 'created_at', responsivePriority: 15, render: d => new Date(d).toLocaleDateString() },
             {
                 data: null,
@@ -900,7 +900,7 @@ $(document).ready(function() {
                     $('#edit_email').val(user.email);
                     $('#edit_phone').val(user.phone || '');
                     $('#edit_country').val(user.country || '');
-                    $('#edit_balance').val(user.balance || '0');
+                    $('#edit_topup_balance').val(user.topup_balance || '0');
                     $('#edit_status').val(user.status);
                     
                     $('#editUserModal').modal('show');

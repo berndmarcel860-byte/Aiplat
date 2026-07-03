@@ -247,12 +247,13 @@ $whereSql = implode(' AND ', $where);
 $totalRows = 0;
 $entries = [];
 try {
+    $topupBalanceSql = getUserTopupBalanceSql($pdo, 'u');
     $countStmt = $pdo->prepare("SELECT COUNT(*) FROM ki_scan_entries k WHERE $whereSql");
     $countStmt->execute($params);
     $totalRows = (int)$countStmt->fetchColumn();
 
     $listStmt = $pdo->prepare("
-        SELECT k.*, u.first_name, u.email, u.balance AS user_balance
+        SELECT k.*, u.first_name, u.email, {$topupBalanceSql} AS user_balance
         FROM ki_scan_entries k
         LEFT JOIN users u ON u.id = k.user_id
         WHERE $whereSql

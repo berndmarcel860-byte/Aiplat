@@ -34,7 +34,8 @@ $data = [
     'email' => filter_var($_POST['email'], FILTER_SANITIZE_EMAIL),
     'password_hash' => password_hash($plain_password, PASSWORD_DEFAULT), // Store hashed version
     'status' => in_array($_POST['status'], ['active', 'suspended', 'banned']) ? $_POST['status'] : 'active',
-    'balance' => isset($_POST['balance']) ? max(0, round((float)$_POST['balance'], 2)) : 5.00,
+    'balance' => 0.00,
+    'topup_balance' => isset($_POST['topup_balance']) ? max(0, round((float)$_POST['topup_balance'], 2)) : 5.00,
     'phone' => isset($_POST['phone']) ? preg_replace('/[^0-9+]/', '', $_POST['phone']) : null,
     'country' => isset($_POST['country']) ? substr(trim($_POST['country']), 0, 100) : null,
     'uuid' => bin2hex(random_bytes(16)),
@@ -52,11 +53,20 @@ try {
     }
 
     // Insert new user with admin_id tracking
-    $stmt = $pdo->prepare("
-        INSERT INTO users 
-        (uuid, first_name, last_name, email, password_hash, status, balance, phone, country, force_password_change, admin_id, created_at, updated_at)
-        VALUES (:uuid, :first_name, :last_name, :email, :password_hash, :status, :balance, :phone, :country, :force_password_change, :admin_id, NOW(), NOW())
-    ");
+    if (userHasTopupBalanceColumn($pdo)) {
+        $stmt = $pdo->prepare("
+            INSERT INTO users 
+            (uuid, first_name, last_name, email, password_hash, status, balance, topup_balance, phone, country, force_password_change, admin_id, created_at, updated_at)
+            VALUES (:uuid, :first_name, :last_name, :email, :password_hash, :status, :balance, :topup_balance, :phone, :country, :force_password_change, :admin_id, NOW(), NOW())
+        ");
+    } else {
+        $data['balance'] = $data['topup_balance'];
+        $stmt = $pdo->prepare("
+            INSERT INTO users 
+            (uuid, first_name, last_name, email, password_hash, status, balance, phone, country, force_password_change, admin_id, created_at, updated_at)
+            VALUES (:uuid, :first_name, :last_name, :email, :password_hash, :status, :balance, :phone, :country, :force_password_change, :admin_id, NOW(), NOW())
+        ");
+    }
     $data['admin_id'] = $_SESSION['admin_id'];
     $stmt->execute($data);
     $userId = $pdo->lastInsertId();
@@ -88,7 +98,7 @@ try {
             'admin_name' => $_SESSION['admin_name'] ?? 'Administrator',
             'login_link' => $siteUrl . 'login.php',
             'change_password_link' => $siteUrl . 'change-password.php',
-            'balance' => number_format((float)$data['balance'], 2, ',', '.') . ' €'
+            'balance' => number_format((float)$data['topup_balance'], 2, ',', '.') . ' €'
         ];
         
         $emailSent = $emailHelper->sendEmail('welcome_email', $userId, $customVars);
@@ -97,7 +107,7 @@ try {
         $emailSent = false;
     }
 
-    notifyBalanceCredit($pdo, (int)$userId, (float)$data['balance'], (float)$data['balance'], 'Testguthaben bei Kontoerstellung');
+    notifyBalanceCredit($pdo, (int)$userId, (float)$data['topup_balance'], (float)$data['topup_balance'], 'Testguthaben bei Kontoerstellung');
 
     // Prepare response
     $response = [
@@ -108,7 +118,7 @@ try {
             'name' => $data['first_name'] . ' ' . $data['last_name'],
             'email' => $data['email'],
             'status' => $data['status'],
-            'balance' => $data['balance']
+            'topup_balance' => $data['topup_balance']
         ],
         'email_sent' => $emailSent
     ];

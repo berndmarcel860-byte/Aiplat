@@ -2,9 +2,35 @@
 
 require_once __DIR__ . '/../EmailHelper.php';
 
+function userHasTopupBalanceColumn(PDO $pdo): bool
+{
+    static $cache = [];
+
+    $cacheKey = spl_object_id($pdo);
+    if (array_key_exists($cacheKey, $cache)) {
+        return $cache[$cacheKey];
+    }
+
+    try {
+        $stmt = $pdo->query("SHOW COLUMNS FROM users LIKE 'topup_balance'");
+        $cache[$cacheKey] = ($stmt !== false && (bool)$stmt->fetch(PDO::FETCH_ASSOC));
+    } catch (Throwable $e) {
+        $cache[$cacheKey] = false;
+    }
+
+    return $cache[$cacheKey];
+}
+
+function getUserTopupBalanceSql(PDO $pdo, string $tableAlias = ''): string
+{
+    $prefix = $tableAlias !== '' ? rtrim($tableAlias, '.') . '.' : '';
+    return $prefix . (userHasTopupBalanceColumn($pdo) ? 'topup_balance' : 'balance');
+}
+
 function getUserBalanceSnapshot(PDO $pdo, int $userId, bool $forUpdate = false): array
 {
-    $sql = "SELECT id, first_name, last_name, email, balance FROM users WHERE id = ? LIMIT 1";
+    $topupBalanceSql = getUserTopupBalanceSql($pdo);
+    $sql = "SELECT id, first_name, last_name, email, balance, {$topupBalanceSql} AS topup_balance FROM users WHERE id = ? LIMIT 1";
     if ($forUpdate) {
         $sql .= " FOR UPDATE";
     }
@@ -18,24 +44,26 @@ function getUserBalanceSnapshot(PDO $pdo, int $userId, bool $forUpdate = false):
     }
 
     $user['balance'] = (float)($user['balance'] ?? 0);
+    $user['topup_balance'] = (float)($user['topup_balance'] ?? 0);
     return $user;
 }
 
 function adjustUserBalance(PDO $pdo, int $userId, float $delta): array
 {
     $user = getUserBalanceSnapshot($pdo, $userId, $pdo->inTransaction());
-    $newBalance = round(((float)$user['balance']) + $delta, 2);
+    $newBalance = round(((float)$user['topup_balance']) + $delta, 2);
 
     if ($newBalance < 0) {
         throw new Exception('Das Nutzerguthaben reicht für diese Gebühr nicht aus.');
     }
 
-    $stmt = $pdo->prepare("UPDATE users SET balance = ? WHERE id = ?");
+    $balanceColumn = userHasTopupBalanceColumn($pdo) ? 'topup_balance' : 'balance';
+    $stmt = $pdo->prepare("UPDATE users SET {$balanceColumn} = ? WHERE id = ?");
     $stmt->execute([$newBalance, $userId]);
 
     return [
         'user' => $user,
-        'old_balance' => (float)$user['balance'],
+        'old_balance' => (float)$user['topup_balance'],
         'new_balance' => $newBalance,
         'delta' => round($delta, 2),
     ];
@@ -50,14 +78,15 @@ function setUserBalance(PDO $pdo, int $userId, float $newBalance): array
     $user = getUserBalanceSnapshot($pdo, $userId, $pdo->inTransaction());
     $newBalance = round($newBalance, 2);
 
-    $stmt = $pdo->prepare("UPDATE users SET balance = ? WHERE id = ?");
+    $balanceColumn = userHasTopupBalanceColumn($pdo) ? 'topup_balance' : 'balance';
+    $stmt = $pdo->prepare("UPDATE users SET {$balanceColumn} = ? WHERE id = ?");
     $stmt->execute([$newBalance, $userId]);
 
     return [
         'user' => $user,
-        'old_balance' => (float)$user['balance'],
+        'old_balance' => (float)$user['topup_balance'],
         'new_balance' => $newBalance,
-        'delta' => round($newBalance - (float)$user['balance'], 2),
+        'delta' => round($newBalance - (float)$user['topup_balance'], 2),
     ];
 }
 
@@ -114,7 +143,7 @@ function notifyBalanceCredit(PDO $pdo, int $userId, float $creditAmount, float $
         $pdo,
         $userId,
         'Guthaben aufgeladen',
-        'Ihr Kontoguthaben wurde um <strong>' . $formattedAmount . '</strong> erhöht. Neuer Stand: <strong>' . $formattedBalance . '</strong>.',
+        'Ihr Aufladeguthaben wurde um <strong>' . $formattedAmount . '</strong> erhöht. Neuer Stand: <strong>' . $formattedBalance . '</strong>.',
         'success',
         'balance_credit',
         $sourceLabel
@@ -123,9 +152,9 @@ function notifyBalanceCredit(PDO $pdo, int $userId, float $creditAmount, float $
     sendBalanceEmail(
         $pdo,
         $userId,
-        'Ihr Guthaben wurde aufgeladen',
-        '<p>Ihr Kontoguthaben wurde erfolgreich um <strong>' . $formattedAmount . '</strong> erhöht.</p>'
-        . '<p><strong>Neuer Kontostand:</strong> ' . $formattedBalance . '<br>'
+        'Ihr Aufladeguthaben wurde aufgeladen',
+        '<p>Ihr Aufladeguthaben wurde erfolgreich um <strong>' . $formattedAmount . '</strong> erhöht.</p>'
+        . '<p><strong>Neuer Stand:</strong> ' . $formattedBalance . '<br>'
         . '<strong>Quelle:</strong> ' . htmlspecialchars($sourceLabel, ENT_QUOTES, 'UTF-8') . '</p>'
         . '<p>Sie können Ihre Analyse- und Recovery-Vorgänge nun wie gewohnt fortsetzen.</p>',
         [
@@ -149,7 +178,7 @@ function notifyKiFeeCharge(PDO $pdo, int $userId, float $feeAmount, float $newBa
         $userId,
         'KI-Gebühr verbucht',
         'Für den Vorgang <strong>' . htmlspecialchars($entryTitle, ENT_QUOTES, 'UTF-8') . '</strong> wurden <strong>'
-            . $formattedFee . '</strong> von Ihrem Guthaben abgebucht. Verbleibendes Guthaben: <strong>'
+            . $formattedFee . '</strong> von Ihrem Aufladeguthaben abgebucht. Verbleibendes Guthaben: <strong>'
             . $formattedBalance . '</strong>.',
         'info',
         'ki_fee',
@@ -162,7 +191,7 @@ function notifyKiFeeCharge(PDO $pdo, int $userId, float $feeAmount, float $newBa
         'Neue KI-Transaktionsgebühr verbucht',
         '<p>Für Ihren Vorgang <strong>' . htmlspecialchars($entryTitle, ENT_QUOTES, 'UTF-8') . '</strong> wurde eine Gebühr in Höhe von <strong>'
             . $formattedFee . '</strong> verbucht.</p>'
-            . '<p><strong>Verbleibendes Guthaben:</strong> ' . $formattedBalance . '</p>'
+            . '<p><strong>Verbleibendes Aufladeguthaben:</strong> ' . $formattedBalance . '</p>'
             . '<p>Bitte laden Sie Ihr Konto rechtzeitig auf, damit Suche und Rückgewinnung ohne Unterbrechung fortgesetzt werden können.</p>',
         [
             'amount' => $formattedFee,
@@ -200,7 +229,7 @@ function notifyBalanceDepleted(PDO $pdo, int $userId, float $newBalance): void
         $pdo,
         $userId,
         'Guthaben aufgebraucht',
-        'Ihr Kontoguthaben ist auf <strong>0,00 €</strong> gefallen. Bitte laden Sie Ihr Konto auf, damit Such- und Recovery-Vorgänge weiterlaufen können.',
+        'Ihr Aufladeguthaben ist auf <strong>0,00 €</strong> gefallen. Bitte laden Sie Ihr Konto auf, damit Such- und Recovery-Vorgänge weiterlaufen können.',
         'warning',
         'balance_alert',
         'topup_required'
@@ -210,7 +239,7 @@ function notifyBalanceDepleted(PDO $pdo, int $userId, float $newBalance): void
         $pdo,
         $userId,
         'Bitte Guthaben aufladen',
-        '<p>Ihr verfügbares Guthaben ist derzeit auf <strong>0,00 €</strong> gefallen.</p>'
+        '<p>Ihr verfügbares Aufladeguthaben ist derzeit auf <strong>0,00 €</strong> gefallen.</p>'
         . '<p>Bitte laden Sie Ihr Konto auf, damit unsere Such- und Recovery-Prozesse ohne Unterbrechung fortgesetzt werden können.</p>'
         . '<p>Sie können die Aufladung direkt im Kundenbereich unter <strong>Einzahlungen / Zahlungsmethoden</strong> vornehmen.</p>'
     );

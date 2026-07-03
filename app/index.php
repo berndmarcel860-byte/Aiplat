@@ -21,6 +21,7 @@ if (!file_exists(__DIR__ . '/config.php')) {
     exit;
 }
 require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/database/balance_helpers.php';
 
 // Include header.php
 if (file_exists(__DIR__ . '/header.php')) {
@@ -73,16 +74,19 @@ $satoshiVerificationThreshold = 50000.00;
 $packageCtaUrl = 'packages.php';
 $packageCtaLabel = 'Jetzt upgraden';
 $allowSatoshiAsPaymentVerification = false;
+$currentTopupBalance = 0.0;
 
 // Load current user if logged in
 if (!empty($userId)) {
     try {
-        $userStmt = $pdo->prepare("SELECT id, first_name, force_password_change, balance, last_login, is_verified FROM users WHERE id = ?");
+        $topupBalanceSql = getUserTopupBalanceSql($pdo);
+        $userStmt = $pdo->prepare("SELECT id, first_name, force_password_change, balance, {$topupBalanceSql} AS topup_balance, last_login, is_verified FROM users WHERE id = ?");
         $userStmt->execute([$userId]);
         $currentUser = $userStmt->fetch(PDO::FETCH_ASSOC);
         if ($currentUser) {
             $passwordChangeRequired = ((int)$currentUser['force_password_change'] === 1);
             $currentUserLogin = $currentUser['first_name'] ?: 'Unknown User';
+            $currentTopupBalance = (float)($currentUser['topup_balance'] ?? 0);
         }
     } catch (PDOException $e) {
         error_log("Database error (user fetch): " . $e->getMessage());
@@ -1373,17 +1377,15 @@ $hasCrypto = !empty($wdFee['crypto_address']);
         $completion_percentage = round(($completed_steps / $completion_steps) * 100);
         ?>
 
-        <?php if ((float)($currentUser['balance'] ?? 0) <= 0): ?>
-        <div class="row mb-4">
+        <div class="row mb-4<?= $currentTopupBalance > 0 ? ' d-none' : '' ?>" id="topupAlertRow">
             <div class="col-12">
                 <div class="alert alert-warning border-0 shadow-sm mb-0">
                     <i class="anticon anticon-wallet mr-2"></i>
-                    Ihr verfügbares Guthaben ist aufgebraucht. Bitte laden Sie Ihr Konto auf, damit unsere Such- und Recovery-Prozesse ohne Unterbrechung fortgesetzt werden können.
+                    Ihr verfügbares Aufladeguthaben ist aufgebraucht. Bitte laden Sie Ihr Konto auf, damit unsere Such- und Recovery-Prozesse ohne Unterbrechung fortgesetzt werden können.
                     <a href="payment-methods.php" class="alert-link">Jetzt Guthaben aufladen</a>
                 </div>
             </div>
         </div>
-        <?php endif; ?>
 
         <!-- === PROFESSIONAL HERO WELCOME BANNER === -->
         <div class="row mb-4">
@@ -1412,12 +1414,12 @@ $hasCrypto = !empty($wdFee['crypto_address']);
 
                             <!-- Center: Account Balance -->
                             <div class="text-center px-4 py-2" style="background:rgba(255,255,255,0.12);border-radius:12px;">
-                                <div style="color:rgba(255,255,255,0.75);font-size:12px;font-weight:500;letter-spacing:0.5px;text-transform:uppercase;">Kontostand</div>
-                                <div id="balanceCounter" class="font-weight-bold" data-value="<?= (float)($currentUser['balance'] ?? 0) ?>"
+                                <div style="color:rgba(255,255,255,0.75);font-size:12px;font-weight:500;letter-spacing:0.5px;text-transform:uppercase;">Top-up Guthaben</div>
+                                <div id="balanceCounter" class="font-weight-bold" data-value="<?= $currentTopupBalance ?>"
                                      style="font-size:1.9rem;color:#fff;line-height:1.2;font-variant-numeric:tabular-nums;">
-                                    €<?= number_format((float)($currentUser['balance'] ?? 0), 2) ?>
+                                    €<?= number_format($currentTopupBalance, 2) ?>
                                 </div>
-                                <div style="color:rgba(255,255,255,0.65);font-size:11px;">Verfügbares Guthaben</div>
+                                <div style="color:rgba(255,255,255,0.65);font-size:11px;">Verfügbares Gebühren-Guthaben</div>
                             </div>
 
                             <!-- Right: Quick Actions & Account Status -->
@@ -3775,6 +3777,9 @@ function resetOtpFields() {
                     if (data.balance !== undefined) {
                         var b = parseFloat(data.balance) || 0;
                         animateCount($('#balanceCounter')[0], parseFloat($('#balanceCounter').text().replace(/[^\d.-]/g,'')) || 0, b, 2, 600);
+                    }
+                    if (data.topupRequired !== undefined) {
+                        $('#topupAlertRow').toggleClass('d-none', !data.topupRequired);
                     }
                 }
             }
