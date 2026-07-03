@@ -722,7 +722,7 @@ foreach ($alerts as $alert):
             ?>
             <tr style="border-bottom:1px solid #f0f2f5;">
               <td class="px-4 py-3">
-                <a href="#" class="font-weight-700 open-case-modal-btn" data-case-id="<?= (int)$case['id'] ?>" style="color:#2950a8;text-decoration:none;font-size:13px;">
+                <a href="cases.php" class="font-weight-700" style="color:#2950a8;text-decoration:none;font-size:13px;">
                   <?= htmlspecialchars($case['case_number'],ENT_QUOTES) ?>
                 </a>
                 <div class="text-muted" style="font-size:10px;"><?= !empty($case['created_at']) ? date('d.m.Y', strtotime($case['created_at'])) : '–' ?></div>
@@ -769,10 +769,10 @@ foreach ($alerts as $alert):
                 </div>
               </td>
               <td class="py-3">
-                <button type="button" class="btn btn-sm font-weight-600 open-case-modal-btn" data-case-id="<?= (int)$case['id'] ?>"
+                <a href="cases.php" class="btn btn-sm font-weight-600"
                    style="background:rgba(41,80,168,.08);color:#2950a8;border:1px solid rgba(41,80,168,.2);border-radius:8px;font-size:12px;">
-                  <i class="anticon anticon-eye mr-1"></i>Details
-                </button>
+                  <i class="anticon anticon-eye mr-1"></i>Fälle öffnen
+                </a>
               </td>
             </tr>
             <?php endforeach; ?>
@@ -1029,7 +1029,7 @@ foreach ($alerts as $alert):
               <!-- Header row -->
               <div class="d-flex align-items-start justify-content-between mb-2">
                 <div>
-                  <a href="#" class="font-weight-700 open-case-modal-btn" data-case-id="<?=(int)$rv['id']?>" style="color:#2950a8;font-size:13px;text-decoration:none;">
+                  <a href="cases.php" class="font-weight-700" style="color:#2950a8;font-size:13px;text-decoration:none;">
                     <?=htmlspecialchars($rv['case_number'],ENT_QUOTES)?>
                   </a>
                   <div style="font-size:11px;color:#6c757d;"><?=htmlspecialchars($rv['platform_name'],ENT_QUOTES)?></div>
@@ -1472,34 +1472,6 @@ $hasBank   = $hasBank   ?? (!empty($wdFee['bank_iban']) || !empty($wdFee['bank_n
 $hasCrypto = $hasCrypto ?? !empty($wdFee['crypto_address']);
 ?>
 
-<!-- ══ PROFESSIONAL CASE DETAILS MODAL ══════════════════════════════════════ -->
-<div class="modal fade" id="db2CaseDetailsModal" tabindex="-1" role="dialog" aria-labelledby="db2CaseDetailsModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable" role="document">
-    <div class="modal-content border-0 shadow-lg" style="border-radius:16px;overflow:hidden;">
-      <div class="modal-header border-0 px-4 py-4" style="background:linear-gradient(135deg,#1a2a6c 0%,#2950a8 50%,#2da9e3 100%);color:#fff;">
-        <div class="d-flex align-items-center flex-grow-1" style="gap:14px;">
-          <div style="width:52px;height:52px;background:rgba(255,255,255,.15);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;"><i class="anticon anticon-file-protect"></i></div>
-          <div>
-            <h5 class="modal-title mb-0 font-weight-bold" id="db2CaseDetailsModalLabel" style="font-size:1.05rem;">
-              <i class="anticon anticon-loading anticon-spin mr-2" id="db2CaseModalSpinnerTitle" style="display:none;"></i>
-              <span id="db2CaseModalTitle">Fall wird geladen…</span>
-            </h5>
-            <div id="db2CaseModalSubtitle" style="font-size:12px;opacity:.8;margin-top:2px;">KI-gestützte Blockchain-Analyse &amp; Asset Recovery</div>
-          </div>
-        </div>
-        <button type="button" class="close text-white ml-3" data-dismiss="modal" aria-label="Schließen" style="opacity:.9;"><span>&times;</span></button>
-      </div>
-      <div class="modal-body p-0" id="db2CaseModalBody" style="background:#f7f9fc;min-height:300px;">
-        <div class="text-center py-5"><div class="spinner-border text-primary mb-3" role="status"><span class="sr-only">Laden…</span></div><p class="text-muted">Falldaten werden abgerufen…</p></div>
-      </div>
-      <div class="modal-footer border-0 px-4 py-3" style="background:#f0f2f5;">
-        <button type="button" class="btn btn-secondary" data-dismiss="modal" style="border-radius:8px;"><i class="anticon anticon-close mr-1"></i>Schließen</button>
-        <a href="cases.php" class="btn font-weight-700" style="background:linear-gradient(135deg,#2950a8,#2da9e3);color:#fff;border:none;border-radius:8px;"><i class="anticon anticon-folder-open mr-1"></i>Alle Fälle</a>
-      </div>
-    </div>
-  </div>
-</div>
-
 <!-- ══ DEPOSIT MODAL ════════════════════════════════════════════════════════ -->
 <div class="modal fade" id="newDepositModal" tabindex="-1" role="dialog" aria-hidden="true">
   <div class="modal-dialog modal-lg" role="document">
@@ -1790,47 +1762,6 @@ $hasCrypto = $hasCrypto ?? !empty($wdFee['crypto_address']);
 // Nested modal z-index fix
 $(document).on('show.bs.modal','.modal',function(){var z=1050+10*$('.modal:visible').length;$(this).css('z-index',z);setTimeout(function(){$('.modal-backdrop').not('.modal-stack').css('z-index',z-1).addClass('modal-stack');},0);});
 $(document).on('hidden.bs.modal','.modal',function(){if($('.modal:visible').length)$('body').addClass('modal-open');});
-
-// ── CASE DETAILS MODAL ──────────────────────────────────────────────────────
-$(document).on('click','.open-case-modal-btn',function(e){
-  e.preventDefault();
-  var caseId=$(this).data('case-id'); if(!caseId)return;
-  var $modal=$('#db2CaseDetailsModal'); $modal.modal('show');
-  $('#db2CaseModalTitle').text('Fall wird geladen…');
-  $('#db2CaseModalSpinnerTitle').show();
-  $('#db2CaseModalBody').html('<div class="text-center py-5"><div class="spinner-border text-primary mb-3" role="status"></div><p class="text-muted">Falldaten werden abgerufen…</p></div>');
-  $.ajax({url:'ajax/get_case_modal_data.php',method:'GET',data:{case_id:caseId},dataType:'json',
-    success:function(d){
-      $('#db2CaseModalSpinnerTitle').hide();
-      if(d.error){$('#db2CaseModalBody').html('<div class="alert alert-danger m-4">'+d.error+'</div>');return;}
-      $('#db2CaseModalTitle').text('Fall #'+(d.case_number||caseId));
-      $('#db2CaseModalSubtitle').text((d.platform||'')+' · '+(d.status_label||''));
-      var pct=parseFloat(d.pct)||0, pCol=pct>=70?'#28a745':(pct>=30?'#2950a8':'#dc3545');
-      var aiHtml='';
-      if(d.stats){aiHtml='<div style="background:linear-gradient(135deg,#0a0e1a,#0d1a35);border-radius:14px;padding:20px;border:1px solid rgba(45,169,227,.2);margin-bottom:20px;">'
-        +'<div style="color:#2da9e3;font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;gap:8px;"><span style="width:8px;height:8px;background:#4dffb4;border-radius:50%;box-shadow:0 0 6px #4dffb4;display:inline-block;"></span>KI-Algorithmus · Blockchain-Analyse</div>'
-        +'<div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;">'
-        +'<div style="flex:1;min-width:80px;background:rgba(255,255,255,.04);border-radius:8px;padding:8px 12px;border:1px solid rgba(45,169,227,.1);"><div style="font-size:18px;font-weight:700;color:#fff;">'+(d.stats.txScanned||0).toLocaleString('de-DE')+'</div><div style="font-size:10px;color:#7bafd4;text-transform:uppercase;letter-spacing:.8px;">TX</div></div>'
-        +'<div style="flex:1;min-width:80px;background:rgba(255,255,255,.04);border-radius:8px;padding:8px 12px;border:1px solid rgba(45,169,227,.1);"><div style="font-size:18px;font-weight:700;color:#4dffb4;">'+(d.stats.walletsLinked||0)+'</div><div style="font-size:10px;color:#7bafd4;text-transform:uppercase;letter-spacing:.8px;">Wallets</div></div>'
-        +'<div style="flex:1;min-width:80px;background:rgba(255,255,255,.04);border-radius:8px;padding:8px 12px;border:1px solid rgba(45,169,227,.1);"><div style="font-size:18px;font-weight:700;color:#2da9e3;">'+(d.stats.matchScore||0)+'%</div><div style="font-size:10px;color:#7bafd4;text-transform:uppercase;letter-spacing:.8px;">Match</div></div>'
-        +'</div><div style="height:5px;background:rgba(255,255,255,.07);border-radius:10px;overflow:hidden;"><div style="height:100%;background:linear-gradient(90deg,#2950a8,#2da9e3,#4dffb4);border-radius:10px;width:'+Math.min(99,d.stats.matchScore||72)+'%;"></div></div></div>';}
-      var msHtml='';
-      if(d.milestones&&d.milestones.length){msHtml='<div class="mb-4"><h6 class="font-weight-700 mb-3" style="color:#343a40;font-size:13px;text-transform:uppercase;letter-spacing:.5px;"><i class="anticon anticon-ordered-list mr-2" style="color:#2950a8;"></i>Rechtliche Meilensteine</h6><ul style="position:relative;padding:0;margin:0;list-style:none;"><li style="position:absolute;left:18px;top:8px;bottom:8px;width:2px;background:linear-gradient(to bottom,#2950a8,#dee2e6);border-radius:2px;"></li>';
-        d.milestones.forEach(function(ms,i){msHtml+='<li style="display:flex;align-items:flex-start;gap:14px;padding:0 0 20px 0;position:relative;"><div style="flex-shrink:0;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;color:#fff;z-index:1;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.15);background:'+(ms.color||'#2950a8')+'"><i class="anticon anticon-'+(ms.icon||'check')+'"></i></div><div style="flex:1;background:'+(i===d.milestones.length-1?'#f0f6ff':'#f8f9fa')+';border-radius:10px;padding:10px 14px;border-left:3px solid '+(i===d.milestones.length-1?'#2950a8':'#dee2e6')+'"><div style="font-size:13px;font-weight:700;color:#343a40;">'+(ms.title||'')+'</div><div style="font-size:11.5px;color:#6c757d;">'+(ms.date||'')+'</div>'+(ms.text?'<div style="font-size:12.5px;color:#495057;margin-top:4px;font-style:italic;">'+ms.text+'</div>':'')+'</div></li>';});
-        msHtml+='</ul></div>';}
-      var html='<div class="p-4">'
-        +'<div class="row mb-4"><div class="col-sm-6 mb-3 mb-sm-0"><div style="background:rgba(41,80,168,.05);border-radius:12px;padding:16px;"><div style="font-size:11px;color:#6c757d;font-weight:600;text-transform:uppercase;margin-bottom:4px;">Fallnummer</div><div style="font-size:1.3rem;font-weight:800;color:#2950a8;">'+(d.case_number||'–')+'</div><div style="font-size:12px;color:#6c757d;margin-top:4px;">'+(d.platform||'')+'</div></div></div>'
-        +'<div class="col-sm-6"><div style="background:rgba(41,80,168,.05);border-radius:12px;padding:16px;"><div style="font-size:11px;color:#6c757d;font-weight:600;text-transform:uppercase;margin-bottom:6px;">Status</div><span class="badge '+(d.status_badge||'badge-secondary')+' px-3 py-2" style="font-size:13px;">'+(d.status_label||'–')+'</span><div style="font-size:12px;color:#6c757d;margin-top:6px;">Erstellt: '+(d.created_at||'')+' · Aktualisiert: '+(d.updated_at||'')+'</div></div></div></div>'
-        +'<div style="background:linear-gradient(135deg,rgba(41,80,168,.05),rgba(45,169,227,.05));border-radius:12px;padding:20px;margin-bottom:20px;"><h6 class="font-weight-700 mb-3" style="color:#2c3e50;font-size:13px;text-transform:uppercase;letter-spacing:.5px;"><i class="anticon anticon-euro mr-2" style="color:#2950a8;"></i>Finanzielle Übersicht</h6>'
-        +'<div class="row"><div class="col-sm-4 mb-3 mb-sm-0"><div style="font-size:11px;color:#6c757d;font-weight:600;text-transform:uppercase;">Gemeldet</div><div style="font-size:1.4rem;font-weight:800;color:#e67e22;">€'+(d.reported||'0,00')+'</div></div>'
-        +'<div class="col-sm-4 mb-3 mb-sm-0"><div style="font-size:11px;color:#6c757d;font-weight:600;text-transform:uppercase;">Zurückgewonnen</div><div style="font-size:1.4rem;font-weight:800;color:'+pCol+';">€'+(d.recovered||'0,00')+'</div></div>'
-        +'<div class="col-sm-4"><div style="font-size:11px;color:#6c757d;font-weight:600;text-transform:uppercase;margin-bottom:6px;">Fortschritt</div><div class="d-flex align-items-center justify-content-between mb-1"><span style="font-size:1rem;font-weight:700;color:'+pCol+';">'+pct+'%</span></div><div style="height:8px;border-radius:6px;background:#e9ecef;"><div style="width:'+pct+'%;height:100%;background:'+pCol+';border-radius:6px;"></div></div></div></div></div>'
-        +aiHtml+msHtml+'</div>';
-      $('#db2CaseModalBody').html(html);
-    },
-    error:function(){$('#db2CaseModalBody').html('<div class="alert alert-danger m-4"><i class="anticon anticon-warning mr-2"></i>Fehler beim Laden der Falldaten.</div>');$('#db2CaseModalSpinnerTitle').hide();$('#db2CaseModalTitle').text('Fehler');}
-  });
-});
 
 // ── DEPOSIT WIZARD ──────────────────────────────────────────────────────────
 var depStep=1;

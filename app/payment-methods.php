@@ -338,25 +338,369 @@ $accountSatoshiRequired = isSatoshiVerificationRequired($packagesFeatureEnabled,
     color: white !important;
     border-color: #4e73df;
 }
+
+.page-hero {
+    position: relative;
+    overflow: hidden;
+    border-radius: 18px;
+    padding: 28px;
+    margin-bottom: 24px;
+    background: linear-gradient(135deg, #0f172a 0%, #1d4ed8 55%, #38bdf8 100%);
+    color: #fff;
+    box-shadow: 0 18px 42px rgba(15, 23, 42, 0.18);
+}
+
+.page-hero::after {
+    content: '';
+    position: absolute;
+    top: -80px;
+    right: -60px;
+    width: 220px;
+    height: 220px;
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 50%;
+}
+
+.page-hero > * {
+    position: relative;
+    z-index: 1;
+}
+
+.hero-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    margin-bottom: 14px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.14);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.page-hero h2 {
+    font-size: 30px;
+    font-weight: 700;
+    margin-bottom: 10px;
+    color: #fff;
+}
+
+.page-hero p {
+    max-width: 760px;
+    margin-bottom: 0;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 15px;
+    line-height: 1.7;
+}
+
+.hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: flex-end;
+}
+
+.hero-btn {
+    min-width: 220px;
+    border-radius: 12px;
+    padding: 12px 18px;
+    font-weight: 700;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+}
+
+.hero-btn.btn-light {
+    background: #fff;
+    color: #0f172a;
+    border-color: #fff;
+}
+
+.hero-btn.btn-success {
+    background: linear-gradient(135deg, #16a34a, #22c55e);
+    border: none;
+}
+
+.overview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.overview-card {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 18px 20px;
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+}
+
+.overview-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #64748b;
+    margin-bottom: 10px;
+}
+
+.overview-value {
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1;
+    color: #0f172a;
+    margin-bottom: 6px;
+}
+
+.overview-note {
+    color: #64748b;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.section-card {
+    border: 1px solid #e2e8f0;
+    border-radius: 18px;
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+    margin-bottom: 24px;
+    overflow: hidden;
+}
+
+.section-card .card-header {
+    padding: 18px 22px;
+    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+}
+
+.section-kicker {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #64748b;
+    margin-bottom: 4px;
+}
+
+.section-subtitle {
+    margin: 4px 0 0;
+    font-size: 13px;
+    color: #64748b;
+}
+
+.section-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 34px;
+    height: 34px;
+    padding: 0 12px;
+    border-radius: 999px;
+    background: rgba(78, 115, 223, 0.12);
+    color: #1d4ed8;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.section-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
+.section-toolbar .btn {
+    border-radius: 10px;
+    font-weight: 600;
+}
+
+.table-shell {
+    padding: 4px;
+}
+
+.status-panel {
+    border-radius: 16px;
+    padding: 18px 20px;
+    margin-bottom: 16px;
+    border: 1px solid transparent;
+}
+
+.status-panel h5 {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.status-panel p {
+    font-size: 13px;
+    line-height: 1.6;
+    margin-bottom: 0;
+}
+
+.status-panel.info {
+    background: linear-gradient(135deg, #eff6ff, #f8fbff);
+    border-color: #bfdbfe;
+    color: #1e3a8a;
+}
+
+.status-panel.success {
+    background: linear-gradient(135deg, #ecfdf5, #f0fdf4);
+    border-color: #bbf7d0;
+    color: #166534;
+}
+
+.status-panel.warning {
+    background: linear-gradient(135deg, #fff7ed, #fffbeb);
+    border-color: #fed7aa;
+    color: #9a3412;
+}
+
+.status-panel.danger {
+    background: linear-gradient(135deg, #fef2f2, #fff5f5);
+    border-color: #fecaca;
+    color: #991b1b;
+}
+
+.info-card {
+    border: 1px solid #e2e8f0;
+    border-radius: 18px;
+    background: #fff;
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+    margin-bottom: 24px;
+}
+
+.info-card .card-body {
+    padding: 22px;
+}
+
+.info-card-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 14px;
+}
+
+.info-list {
+    display: grid;
+    gap: 12px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.info-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 13px;
+    color: #475569;
+    line-height: 1.6;
+}
+
+.info-list i {
+    color: #1d4ed8;
+    margin-top: 3px;
+}
+
+.compact-note {
+    font-size: 12px;
+    color: #64748b;
+    line-height: 1.6;
+}
+
+.empty-state,
+.loading-state,
+.error-state {
+    text-align: center;
+    padding: 56px 24px;
+    color: #718096;
+}
+
+.error-state i,
+.empty-state i,
+.loading-state i {
+    font-size: 40px;
+    margin-bottom: 16px;
+}
+
+.empty-state .btn,
+.error-state .btn {
+    margin-top: 14px;
+    border-radius: 10px;
+    font-weight: 600;
+}
+
+.modal-section-title {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #64748b;
+    margin-bottom: 14px;
+}
+
+@media (max-width: 991.98px) {
+    .page-hero {
+        padding: 24px 20px;
+    }
+
+    .hero-actions {
+        justify-content: flex-start;
+        margin-top: 18px;
+    }
+
+    .hero-btn {
+        min-width: auto;
+        width: 100%;
+    }
+}
 </style>
 
 <div class="main-content">
     <div class="container-fluid">
-        <!-- Page Header -->
-        <div class="page-header">
+        <div class="page-hero">
             <div class="row align-items-center">
-                <div class="col-md-6">
-                    <h2 class="page-title">Zahlungsmethoden</h2>
-                    <p class="m-b-10">Verwalten Sie Ihre Fiat- und Kryptowährungs-Zahlungsmethoden sicher</p>
+                <div class="col-lg-7">
+                    <span class="hero-kicker"><i class="anticon anticon-safety"></i> Auszahlung &amp; Verifizierung</span>
+                    <h2>Zahlungsmethoden professionell verwalten</h2>
+                    <p>
+                        Hinterlegen Sie Bankkonten und Krypto-Wallets, definieren Sie Ihre Standard-Auszahlungsroute
+                        und behalten Sie den aktuellen Verifizierungsstatus Ihres Kontos in einer zentralen Übersicht im Blick.
+                    </p>
                 </div>
-                <div class="col-md-6 text-end">
-                    <button class="btn btn-primary btn-lg me-2" onclick="showAddFiatModal()">
-                        <i class="anticon anticon-plus"></i> Bankkonto hinzufügen
-                    </button>
-                    <button class="btn btn-success btn-lg" onclick="showAddCryptoModal()">
-                        <i class="anticon anticon-plus"></i> Krypto-Wallet hinzufügen
-                    </button>
+                <div class="col-lg-5">
+                    <div class="hero-actions">
+                        <button class="btn btn-light hero-btn" onclick="showAddFiatModal()">
+                            <i class="anticon anticon-bank me-2"></i> Bankkonto hinzufügen
+                        </button>
+                        <button class="btn btn-success hero-btn" onclick="showAddCryptoModal()">
+                            <i class="anticon anticon-plus me-2"></i> Krypto-Wallet hinzufügen
+                        </button>
+                    </div>
                 </div>
+            </div>
+        </div>
+
+        <div class="overview-grid">
+            <div class="overview-card">
+                <div class="overview-label">Gespeicherte Methoden</div>
+                <div class="overview-value" data-summary="total">0</div>
+                <div class="overview-note">Alle hinterlegten Bankkonten und Wallets in Ihrem Auszahlungsprofil.</div>
+            </div>
+            <div class="overview-card">
+                <div class="overview-label">Bankkonten</div>
+                <div class="overview-value" data-count="fiat">0</div>
+                <div class="overview-note">SEPA- und internationale Konten für Auszahlungen und Referenzzahlungen.</div>
+            </div>
+            <div class="overview-card">
+                <div class="overview-label">Krypto-Wallets</div>
+                <div class="overview-value" data-count="crypto">0</div>
+                <div class="overview-note">Digitale Wallets inklusive Netzwerkangabe und aktuellem Freigabestatus.</div>
+            </div>
+            <div class="overview-card">
+                <div class="overview-label">Standardmethoden</div>
+                <div class="overview-value" data-summary="default">0</div>
+                <div class="overview-note">Aktuell bevorzugte Auszahlungswege, die Sie als Standard markiert haben.</div>
             </div>
         </div>
 
@@ -391,26 +735,68 @@ $accountSatoshiRequired = isSatoshiVerificationRequired($packagesFeatureEnabled,
         </div>
         <?php endif; ?>
 
-        <!-- Payment Methods Tables -->
         <div class="row">
-            <!-- Fiat Payment Methods Card -->
-            <div class="col-lg-12 mb-4">
-                <div class="card">
+            <div class="col-xl-8">
+                <div class="section-card">
                     <div class="card-header d-flex justify-content-between align-items-center">
-                        <h4 class="card-title d-flex align-items-center m-0">
-                            <i class="anticon anticon-bank me-2"></i>
-                            Bankkonten
-                        </h4>
-                        <button class="btn btn-light refresh-btn" onclick="loadPaymentMethods()" title="Tabelle aktualisieren">
-                            <i class="anticon anticon-reload"></i>
-                        </button>
+                        <div>
+                            <span class="section-kicker">Fiat-Auszahlungsprofile</span>
+                            <h4 class="card-title d-flex align-items-center m-0">
+                                <i class="anticon anticon-bank me-2"></i>
+                                Bankkonten
+                            </h4>
+                            <p class="section-subtitle">Verwenden Sie verifizierte Kontodaten für sichere Rückzahlungen und Auszahlungen.</p>
+                        </div>
+                        <div class="section-toolbar">
+                            <span class="section-badge" data-count="fiat">0</span>
+                            <button class="btn btn-light refresh-btn" onclick="loadPaymentMethods()" title="Tabelle aktualisieren">
+                                <i class="anticon anticon-reload"></i>
+                            </button>
+                            <button class="btn btn-primary" onclick="showAddFiatModal()">
+                                <i class="anticon anticon-plus me-1"></i> Hinzufügen
+                            </button>
+                        </div>
                     </div>
-                    <div class="card-body">
+                    <div class="card-body table-shell">
                         <div class="table-responsive">
                             <div id="fiatMethodsContainer">
                                 <div class="loading-state">
                                     <i class="fas fa-spinner"></i>
-                                    <p>Lade Bankkonten...</p>
+                                    <h5>Bankkonten werden geladen</h5>
+                                    <p>Ihre gespeicherten Kontodaten werden sicher abgerufen.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="section-kicker">Digitale Empfangswege</span>
+                            <h4 class="card-title d-flex align-items-center m-0">
+                                <i class="anticon anticon-bitcoin me-2"></i>
+                                Krypto-Wallets
+                            </h4>
+                            <p class="section-subtitle">Verwalten Sie Wallets nach Netzwerk, Standardstatus und Verifizierungsstand.</p>
+                        </div>
+                        <div class="section-toolbar">
+                            <span class="section-badge" data-count="crypto">0</span>
+                            <button class="btn btn-light refresh-btn" onclick="loadPaymentMethods()" title="Tabelle aktualisieren">
+                                <i class="anticon anticon-reload"></i>
+                            </button>
+                            <button class="btn btn-success" onclick="showAddCryptoModal()">
+                                <i class="anticon anticon-plus me-1"></i> Hinzufügen
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body table-shell">
+                        <div class="table-responsive">
+                            <div id="cryptoMethodsContainer">
+                                <div class="loading-state">
+                                    <i class="fas fa-spinner"></i>
+                                    <h5>Krypto-Wallets werden geladen</h5>
+                                    <p>Verifizierungsstatus, Netzwerke und Wallet-Adressen werden vorbereitet.</p>
                                 </div>
                             </div>
                         </div>
@@ -418,27 +804,51 @@ $accountSatoshiRequired = isSatoshiVerificationRequired($packagesFeatureEnabled,
                 </div>
             </div>
 
-            <!-- Crypto Wallets Card -->
-            <div class="col-lg-12 mb-4">
-                <div class="card">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h4 class="card-title d-flex align-items-center m-0">
-                            <i class="anticon anticon-bitcoin me-2"></i>
-                            Krypto-Wallets
-                        </h4>
-                        <button class="btn btn-light refresh-btn" onclick="loadPaymentMethods()" title="Tabelle aktualisieren">
-                            <i class="anticon anticon-reload"></i>
-                        </button>
-                    </div>
+            <div class="col-xl-4">
+                <div class="info-card">
                     <div class="card-body">
-                        <div class="table-responsive">
-                            <div id="cryptoMethodsContainer">
-                                <div class="loading-state">
-                                    <i class="fas fa-spinner"></i>
-                                    <p>Lade Krypto-Wallets...</p>
-                                </div>
-                            </div>
+                        <div class="info-card-title"><i class="anticon anticon-safety me-2"></i>Verifizierungs-Cockpit</div>
+
+                        <?php if ($accountSatoshiRequired && $accountSatoshiVerified): ?>
+                        <div class="status-panel success">
+                            <h5>Satoshi-Test bestätigt</h5>
+                            <p>Ihr Konto ist auf Kontoebene bestätigt. Zusätzliche doppelte Prüfpfade werden für bestätigte Wallets nicht mehr benötigt.</p>
                         </div>
+                        <?php elseif ($accountSatoshiRequired && in_array($accountSatoshiLatestStatus, ['pending', 'under_review'], true)): ?>
+                        <div class="status-panel warning">
+                            <h5>Prüfung läuft</h5>
+                            <p>Ihr Satoshi-Test wurde bereits eingereicht und wird aktuell bearbeitet. Sie werden nach Abschluss automatisch informiert.</p>
+                        </div>
+                        <?php elseif ($accountSatoshiRequired): ?>
+                        <div class="status-panel danger">
+                            <h5>Satoshi-Test erforderlich</h5>
+                            <p>Ab einem Kontostand von 50.000 € ist ein einmaliger Satoshi-Test notwendig, bevor weitere Wallet-Verifizierungen angefragt werden können.</p>
+                        </div>
+                        <a href="satoshi-test.php" class="btn btn-primary btn-block" style="border-radius:10px;">
+                            <i class="anticon anticon-safety-certificate me-1"></i> Satoshi-Test starten
+                        </a>
+                        <?php else: ?>
+                        <div class="status-panel info">
+                            <h5>Aktuell nicht erforderlich</h5>
+                            <p>Solange Ihr Kontostand unter 50.000 € liegt, ist keine zusätzliche Konto-Satoshi-Verifizierung nötig.</p>
+                        </div>
+                        <?php endif; ?>
+
+                        <div class="overview-label" style="margin-top:18px;">Aktuelle Übersicht</div>
+                        <div class="overview-note" data-summary="verification-label">Zahlungsmethoden werden geladen…</div>
+                        <div class="compact-note mt-2" data-summary="verification-note">Sobald die Daten geladen sind, sehen Sie hier den aktuellen Verifizierungsstand Ihrer Methoden.</div>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="card-body">
+                        <div class="info-card-title"><i class="anticon anticon-read me-2"></i>Empfohlener Ablauf</div>
+                        <ul class="info-list">
+                            <li><i class="anticon anticon-check-circle"></i><span>Hinterlegen Sie zuerst Ihre bevorzugte Bankverbindung oder das gewünschte Wallet vollständig.</span></li>
+                            <li><i class="anticon anticon-star"></i><span>Markieren Sie die primäre Auszahlungsroute als Standard, damit Folgeprozesse automatisch darauf aufbauen können.</span></li>
+                            <li><i class="anticon anticon-safety-certificate"></i><span>Prüfen Sie bei Krypto-Wallets den Verifizierungsstatus, bevor Sie Auszahlungen oder Rückführungen anfordern.</span></li>
+                            <li><i class="anticon anticon-notification"></i><span>Bei fehlenden Freigaben erhalten Sie administrative Hinweise direkt auf dieser Seite und per E-Mail.</span></li>
+                        </ul>
                     </div>
                 </div>
             </div>
@@ -452,10 +862,13 @@ $accountSatoshiRequired = isSatoshiVerificationRequired($packagesFeatureEnabled,
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header bg-light">
-                <h5 class="modal-title">
-                    <i class="anticon anticon-bank me-2"></i>
-                    Bankkonto hinzufügen
-                </h5>
+                <div>
+                    <h5 class="modal-title">
+                        <i class="anticon anticon-bank me-2"></i>
+                        Bankkonto hinzufügen
+                    </h5>
+                    <div class="compact-note">Hinterlegen Sie ein verlässliches Konto für Rückzahlungen und Auszahlungen.</div>
+                </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form id="addFiatForm">
@@ -463,6 +876,9 @@ $accountSatoshiRequired = isSatoshiVerificationRequired($packagesFeatureEnabled,
                     <input type="hidden" name="type" value="fiat">
                     
                     <div class="row">
+                        <div class="col-12">
+                            <div class="modal-section-title">Kontostammdaten</div>
+                        </div>
                         <div class="col-md-6 mb-3">
                             <label>Zahlungsmethode <span class="text-danger">*</span></label>
                             <select class="form-control" name="payment_method" required>
@@ -533,10 +949,13 @@ $accountSatoshiRequired = isSatoshiVerificationRequired($packagesFeatureEnabled,
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header bg-light">
-                <h5 class="modal-title">
-                    <i class="anticon anticon-bitcoin me-2"></i>
-                    Krypto-Wallet hinzufügen
-                </h5>
+                <div>
+                    <h5 class="modal-title">
+                        <i class="anticon anticon-bitcoin me-2"></i>
+                        Krypto-Wallet hinzufügen
+                    </h5>
+                    <div class="compact-note">Definieren Sie Netzwerk und Zieladresse präzise, damit Verifizierungen ohne Rückfragen starten können.</div>
+                </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form id="addCryptoForm">
@@ -548,6 +967,8 @@ $accountSatoshiRequired = isSatoshiVerificationRequired($packagesFeatureEnabled,
                         <i class="fas fa-exclamation-triangle"></i>
                         <strong>Wichtig:</strong> Nach dem Hinzufügen müssen Sie Ihre Wallet durch einen Satoshi-Test verifizieren, bevor Sie Auszahlungen vornehmen können.
                     </div>
+
+                    <div class="modal-section-title">Wallet-Daten</div>
 
                     <div class="form-group">
                         <label>Kryptowährung <span class="text-danger">*</span></label>
@@ -632,16 +1053,22 @@ $accountSatoshiRequired = isSatoshiVerificationRequired($packagesFeatureEnabled,
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header bg-light">
-                <h5 class="modal-title">
-                    <i class="anticon anticon-edit me-2"></i>
-                    Bankkonto bearbeiten
-                </h5>
+                <div>
+                    <h5 class="modal-title">
+                        <i class="anticon anticon-edit me-2"></i>
+                        Bankkonto bearbeiten
+                    </h5>
+                    <div class="compact-note">Aktualisieren Sie nur die Felder, die sich für diese Auszahlungsmethode geändert haben.</div>
+                </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form id="editFiatForm">
                 <div class="modal-body">
                     <input type="hidden" id="edit_fiat_id" name="id">
                     <div class="row">
+                        <div class="col-12">
+                            <div class="modal-section-title">Kontodetails aktualisieren</div>
+                        </div>
                         <div class="col-md-6 mb-3">
                             <label for="edit_payment_method">Zahlungsmethode *</label>
                             <select class="form-control" id="edit_payment_method" name="payment_method" required>
@@ -704,16 +1131,22 @@ $accountSatoshiRequired = isSatoshiVerificationRequired($packagesFeatureEnabled,
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header bg-light">
-                <h5 class="modal-title">
-                    <i class="anticon anticon-edit me-2"></i>
-                    Krypto-Wallet bearbeiten
-                </h5>
+                <div>
+                    <h5 class="modal-title">
+                        <i class="anticon anticon-edit me-2"></i>
+                        Krypto-Wallet bearbeiten
+                    </h5>
+                    <div class="compact-note">Passen Sie Netzwerk, Zieladresse oder interne Bezeichnung Ihres Wallets zentral an.</div>
+                </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form id="editCryptoForm">
                 <div class="modal-body">
                     <input type="hidden" id="edit_crypto_id" name="id">
                     <div class="row">
+                        <div class="col-12">
+                            <div class="modal-section-title">Wallet-Daten aktualisieren</div>
+                        </div>
                         <div class="col-md-6 mb-3">
                             <label for="edit_cryptocurrency">Kryptowährung *</label>
                             <select class="form-control" id="edit_cryptocurrency" name="cryptocurrency" required>
@@ -864,6 +1297,55 @@ $accountSatoshiRequired = isSatoshiVerificationRequired($packagesFeatureEnabled,
 </div>
 <?php include 'footer.php'; ?>
 <script>
+function setMetricValue(metric, value) {
+    $('[data-count="' + metric + '"], [data-summary="' + metric + '"]').text(value);
+}
+
+function renderErrorState(title, message, actionLabel, actionCallback) {
+    const buttonHtml = actionLabel ? `<button class="btn btn-outline-primary" onclick="${actionCallback}">${actionLabel}</button>` : '';
+    return `
+        <div class="error-state">
+            <i class="anticon anticon-warning text-danger"></i>
+            <h5>${title}</h5>
+            <p>${message}</p>
+            ${buttonHtml}
+        </div>
+    `;
+}
+
+function updatePortfolioSummary(fiatMethods, cryptoMethods) {
+    const allMethods = [...fiatMethods, ...cryptoMethods];
+    const defaultMethods = allMethods.filter(method => method.is_default == 1).length;
+    const pendingWallets = cryptoMethods.filter(method => method.verification_status !== 'verified').length;
+
+    setMetricValue('total', allMethods.length);
+    setMetricValue('default', defaultMethods);
+    setMetricValue('fiat', fiatMethods.length);
+    setMetricValue('crypto', cryptoMethods.length);
+
+    let verificationLabel = 'Keine Zahlungsmethoden hinterlegt';
+    let verificationNote = 'Fügen Sie mindestens eine Auszahlungsmethode hinzu, um Ihr Profil zu vervollständigen.';
+
+    if (allMethods.length > 0) {
+        if (isAccountSatoshiApproved()) {
+            verificationLabel = 'Konto-Satoshi-Test bestätigt';
+            verificationNote = 'Ihre Konto-Verifizierung ist aktiv. Wallets profitieren von der bestätigten Kontoprüfung.';
+        } else if (accountSatoshiContext.required && ['pending', 'under_review'].includes(accountSatoshiContext.latestStatus)) {
+            verificationLabel = 'Satoshi-Test wird geprüft';
+            verificationNote = 'Die Konto-Verifizierung ist eingereicht. Einzelne Wallet-Prüfungen werden angezeigt, bis der Test abgeschlossen ist.';
+        } else if (pendingWallets > 0) {
+            verificationLabel = pendingWallets + ' Wallet' + (pendingWallets > 1 ? 's benötigen' : ' benötigt') + ' Verifizierung';
+            verificationNote = 'Prüfen Sie offene Wallet-Verifizierungen, bevor Auszahlungsanforderungen gestartet werden.';
+        } else {
+            verificationLabel = 'Methoden einsatzbereit';
+            verificationNote = 'Alle aktuell gespeicherten Methoden sind für die nächsten Prozessschritte vorbereitet.';
+        }
+    }
+
+    $('[data-summary="verification-label"]').text(verificationLabel);
+    $('[data-summary="verification-note"]').text(verificationNote);
+}
+
 // Zahlungsmethoden laden
 function loadPaymentMethods() {
     $.ajax({
@@ -875,15 +1357,24 @@ function loadPaymentMethods() {
                 // API returns response.methods.fiat and response.methods.crypto
                 const fiatMethods = (response.methods && response.methods.fiat) || response.fiat || [];
                 const cryptoMethods = (response.methods && response.methods.crypto) || response.crypto || [];
+                updatePortfolioSummary(fiatMethods, cryptoMethods);
                 displayFiatMethods(fiatMethods);
                 displayCryptoMethods(cryptoMethods);
             } else {
                 showError(response.message || 'Fehler beim Laden der Zahlungsmethoden');
+                $('[data-summary="verification-label"]').text('Daten konnten nicht geladen werden');
+                $('[data-summary="verification-note"]').text('Bitte laden Sie die Seite erneut oder versuchen Sie es später noch einmal.');
+                $('#fiatMethodsContainer').html(renderErrorState('Bankkonten konnten nicht geladen werden', 'Bitte aktualisieren Sie die Ansicht oder versuchen Sie es später erneut.', 'Erneut laden', 'loadPaymentMethods()'));
+                $('#cryptoMethodsContainer').html(renderErrorState('Krypto-Wallets konnten nicht geladen werden', 'Bitte aktualisieren Sie die Ansicht oder versuchen Sie es später erneut.', 'Erneut laden', 'loadPaymentMethods()'));
             }
         },
         error: function(xhr, status, error) {
             console.error('Error loading payment methods:', error);
             showError('Serverfehler beim Laden der Zahlungsmethoden');
+            $('[data-summary="verification-label"]').text('Serverfehler beim Laden');
+            $('[data-summary="verification-note"]').text('Die Übersicht konnte nicht vollständig aufgebaut werden. Bitte versuchen Sie es erneut.');
+            $('#fiatMethodsContainer').html(renderErrorState('Bankkonten konnten nicht geladen werden', 'Beim Abrufen Ihrer Daten ist ein Serverfehler aufgetreten.', 'Erneut laden', 'loadPaymentMethods()'));
+            $('#cryptoMethodsContainer').html(renderErrorState('Krypto-Wallets konnten nicht geladen werden', 'Beim Abrufen Ihrer Daten ist ein Serverfehler aufgetreten.', 'Erneut laden', 'loadPaymentMethods()'));
         }
     });
 }
@@ -891,14 +1382,16 @@ function loadPaymentMethods() {
 // Fiat-Methoden anzeigen
 function displayFiatMethods(methods) {
     const container = $('#fiatMethodsContainer');
-    $('#fiatCount').text(methods.length);
     
     if (methods.length === 0) {
         container.html(`
             <div class="empty-state">
                 <i class="fas fa-university"></i>
                 <h5>Keine Bankkonten</h5>
-                <p>Fügen Sie Ihr erstes Bankkonto hinzu</p>
+                <p>Hinterlegen Sie ein Bankkonto, damit Rückzahlungen und Auszahlungen gezielt vorbereitet werden können.</p>
+                <button class="btn btn-primary" onclick="showAddFiatModal()">
+                    <i class="anticon anticon-plus me-1"></i> Erstes Bankkonto anlegen
+                </button>
             </div>
         `);
         return;
@@ -994,14 +1487,16 @@ function displayFiatMethods(methods) {
 // Krypto-Methoden anzeigen
 function displayCryptoMethods(methods) {
     const container = $('#cryptoMethodsContainer');
-    $('#cryptoCount').text(methods.length);
     
     if (methods.length === 0) {
         container.html(`
             <div class="empty-state">
                 <i class="fab fa-bitcoin"></i>
                 <h5>Keine Krypto-Wallets</h5>
-                <p>Fügen Sie Ihr erstes Krypto-Wallet hinzu</p>
+                <p>Fügen Sie ein Wallet hinzu, wenn Auszahlungen oder Rückführungen auf eine Blockchain-Adresse erfolgen sollen.</p>
+                <button class="btn btn-success" onclick="showAddCryptoModal()">
+                    <i class="anticon anticon-plus me-1"></i> Erstes Wallet anlegen
+                </button>
             </div>
         `);
         return;
@@ -1160,6 +1655,7 @@ function formatDate(dateStr) {
 }
 
 function escapeHtml(text) {
+    text = text == null ? '' : String(text);
     const map = {
         '&': '&amp;',
         '<': '&lt;',
@@ -1774,12 +2270,18 @@ function fallbackCopyToClipboard(text) {
 
 // Benachrichtigungen
 function showSuccess(message) {
-    // Implementieren Sie hier Ihre Toast/Notification-Logik
+    if (typeof toastr !== 'undefined' && toastr.success) {
+        toastr.success(message);
+        return;
+    }
     alert(message);
 }
 
 function showError(message) {
-    // Implementieren Sie hier Ihre Toast/Notification-Logik
+    if (typeof toastr !== 'undefined' && toastr.error) {
+        toastr.error(message);
+        return;
+    }
     alert(message);
 }
 
