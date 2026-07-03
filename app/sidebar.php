@@ -2,6 +2,7 @@
 // ── Sidebar: resolve packages toggle + satoshi verification status ──────────
 $_sidebar_packagesEnabled = true;
 $_sidebar_satoshiVerified = false;
+$_sidebar_satoshiRequired = false;
 try {
     $_spkgStmt = $pdo->query("SELECT packages_enabled FROM system_settings WHERE id = 1 LIMIT 1");
     $_spkgRow  = $_spkgStmt->fetch(PDO::FETCH_ASSOC);
@@ -13,7 +14,11 @@ try {
 if (!$_sidebar_packagesEnabled && !empty($_SESSION['user_id'])) {
     try {
         require_once __DIR__ . '/database/satoshi_test_helpers.php';
-        $_sidebar_satoshiVerified = userHasVerifiedTest($pdo, (int)$_SESSION['user_id']);
+        $_sbBalanceStmt = $pdo->prepare("SELECT balance FROM users WHERE id = ? LIMIT 1");
+        $_sbBalanceStmt->execute([(int)$_SESSION['user_id']]);
+        $_sbBalance = (float)$_sbBalanceStmt->fetchColumn();
+        $_sidebar_satoshiRequired = isSatoshiVerificationRequired(false, $_sbBalance, 50000.0);
+        $_sidebar_satoshiVerified = $_sidebar_satoshiRequired && userHasVerifiedTest($pdo, (int)$_SESSION['user_id']);
     } catch (Throwable $e) { /* helpers not yet present */ }
 }
 ?>
@@ -39,8 +44,7 @@ if (!$_sidebar_packagesEnabled && !empty($_SESSION['user_id'])) {
                         <span class="icon-holder">
                             <i class="anticon anticon-robot"></i>
                         </span>
-                        <span class="title">KI-Dashboard</span>
-                        <span class="badge badge-primary ml-auto" style="font-size:9px;background:linear-gradient(135deg,#2950a8,#2da9e3);">NEU</span>
+                        <span class="title">Analyse-Cockpit</span>
                     </a>
                 </li>
 
@@ -71,6 +75,15 @@ if (!$_sidebar_packagesEnabled && !empty($_SESSION['user_id'])) {
                             <i class="anticon anticon-wallet"></i>
                         </span>
                         <span class="title">Transactions</span>
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a href="history.php" title="Chronologischer Verlauf">
+                        <span class="icon-holder">
+                            <i class="anticon anticon-history"></i>
+                        </span>
+                        <span class="title">Historie</span>
                     </a>
                 </li>
 
@@ -126,7 +139,14 @@ if (!$_sidebar_packagesEnabled && !empty($_SESSION['user_id'])) {
                         <span class="icon-holder">
                             <i class="anticon anticon-credit-card"></i>
                         </span>
-                        <span class="title">Payment Methods</span>
+                        <span class="title">Zahlung &amp; Verifizierung</span>
+                        <?php if ($_sidebar_satoshiRequired): ?>
+                            <?php if ($_sidebar_satoshiVerified): ?>
+                                <span class="badge ml-auto" style="background:#22c55e;color:#fff;font-size:9px;">✓</span>
+                            <?php else: ?>
+                                <span class="badge badge-warning ml-auto">!</span>
+                            <?php endif; ?>
+                        <?php endif; ?>
                     </a>
                 </li>
 
@@ -155,22 +175,6 @@ if (!$_sidebar_packagesEnabled && !empty($_SESSION['user_id'])) {
                             <i class="anticon anticon-shopping"></i>
                         </span>
                         <span class="title">Pakete</span>
-                    </a>
-                </li>
-                <?php else: ?>
-                <!-- Satoshi Test (shown instead of Packages when packages are disabled) -->
-                <li class="nav-item">
-                    <a href="satoshi-test.php" title="Satoshi-Test Verifizierung"
-                       style="<?= !$_sidebar_satoshiVerified ? 'color:#f59e0b;' : '' ?>">
-                        <span class="icon-holder">
-                            <i class="anticon anticon-experiment" style="<?= !$_sidebar_satoshiVerified ? 'color:#f59e0b;' : 'color:#22c55e;' ?>"></i>
-                        </span>
-                        <span class="title">Satoshi-Test</span>
-                        <?php if (!$_sidebar_satoshiVerified): ?>
-                            <span class="badge badge-warning ml-auto" title="Verifizierung ausstehend">!</span>
-                        <?php else: ?>
-                            <span class="badge ml-auto" style="background:#22c55e;color:#fff;font-size:9px;">✓</span>
-                        <?php endif; ?>
                     </a>
                 </li>
                 <?php endif; ?>

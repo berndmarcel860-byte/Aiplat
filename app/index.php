@@ -233,7 +233,7 @@ if (!empty($userId)) {
 
             // Point CTA to Satoshi Test only when threshold was reached
             if ($requiresSatoshiVerification) {
-                $packageCtaUrl   = 'satoshi-test.php';
+                $packageCtaUrl   = 'payment-methods.php#satoshi-verification';
                 $packageCtaLabel = $satoshiVerified ? 'Satoshi-Test ✓' : 'Satoshi-Test abschließen';
             } else {
                 $packageCtaUrl   = 'payment-methods.php';

@@ -20,19 +20,13 @@ const DEFAULT_TRIAL_ACTIVE_WINDOW_HOURS = 48;
 const DEFAULT_TRIAL_CASE_INTERVAL_MINUTES = 5;
 const DEFAULT_TRIAL_INITIAL_DELAY_MINUTES = 0;
 const DEFAULT_TRIAL_MAX_CASES_PER_RUN = 1;
-const DEFAULT_TRIAL_CASES_PER_USER = 4;
-const DEFAULT_TRIAL_CASES_PER_USER_MAX = 4;
-const DEFAULT_TRIAL_TOTAL_AMOUNT = 16555.00; // sum of TRIAL_FIXED_CASE_AMOUNTS
+const DEFAULT_TRIAL_CASES_PER_USER = 3;
+const DEFAULT_TRIAL_CASES_PER_USER_MAX = 5;
+const DEFAULT_TRIAL_TOTAL_AMOUNT = 150000.00;
 const DEFAULT_TRIAL_MIN_CASE_AMOUNT = 500.00;
-const DEFAULT_TRIAL_MAX_CASE_AMOUNT = 7829.00;
+const DEFAULT_TRIAL_MAX_CASE_AMOUNT = 5000.00;
 const DEFAULT_TRIAL_AMOUNT_VARIATION_PERCENT = 35.00;
 const DEFAULT_TRIAL_INTERVAL_VARIATION_PERCENT = 40.00;
-
-/**
- * Fixed case amounts for the trial period (EUR).
- * One case is created per entry; each amount is distinct.
- */
-const TRIAL_FIXED_CASE_AMOUNTS = [1827.00, 3981.00, 2918.00, 7829.00];
 const TRIAL_CASE_DESCRIPTION = 'Fallregistrierung durch Analysesystem abgeschlossen. Erste Rückverfolgung der Transaktionen läuft.';
 const TRIAL_SETUP_ACTION = 'case_registration';
 const TRIAL_HISTORY_NOTE = 'Fallregistrierung durch Analysesystem abgeschlossen';
@@ -88,13 +82,6 @@ try {
 
             $progress = fetchTrialProgress($pdo, $userId, $trialSettings['active_window_hours']);
             $caseIndex = $progress['case_count'];
-            $fixedAmounts = TRIAL_FIXED_CASE_AMOUNTS;
-
-            // All fixed cases have been created for this user.
-            if ($caseIndex >= count($fixedAmounts)) {
-                $summary['skipped_completed']++;
-                continue;
-            }
 
             $remainingAmount = round($trialSettings['total_amount'] - (float)$progress['total_amount'], 2);
             if ($remainingAmount <= 0) {
@@ -116,9 +103,29 @@ try {
             }
 
             $trialEndAt = resolveTrialEndAt($candidate, $trialSettings['active_window_hours']);
+            $caseAmount = calculateNextCaseAmount(
+                $remainingAmount,
+                $trialEndAt,
+                $trialSettings['case_interval_minutes'],
+                (float)$trialSettings['amount_variation_percent'],
+                (float)$trialSettings['total_amount']
+            );
+            $caseAmount = ensureNonRepeatingTrialAmount(
+                $pdo,
+                $userId,
+                $caseAmount,
+                $remainingAmount,
+                $trialSettings['active_window_hours']
+            );
 
-            // Use the pre-defined fixed amount for this case index (0-based).
-            $caseAmount = $fixedAmounts[$caseIndex];
+            if ($remainingAmount >= DEFAULT_TRIAL_MIN_CASE_AMOUNT) {
+                $caseAmount = max(DEFAULT_TRIAL_MIN_CASE_AMOUNT, $caseAmount);
+            }
+            $caseAmount = min(DEFAULT_TRIAL_MAX_CASE_AMOUNT, $caseAmount, $remainingAmount);
+            if ($caseAmount <= 0) {
+                $summary['skipped_completed']++;
+                continue;
+            }
 
             $platformId = resolveNextPlatformId($pdo, $userId, $platformIds, $trialSettings['active_window_hours']);
 

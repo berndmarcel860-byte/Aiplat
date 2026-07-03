@@ -13,6 +13,9 @@ $satoshiThreshold = 50000.0;
 $userBalance = 0.0;
 $accountSatoshiVerified = false;
 $accountSatoshiLatestStatus = null;
+$accountSatoshiTestAmount = 10.0;
+$satoshiFundingMethods = [];
+$recentSatoshiTests = [];
 
 try {
     $settingsStmt = $pdo->query("SELECT packages_enabled FROM system_settings WHERE id = 1 LIMIT 1");
@@ -26,6 +29,7 @@ if (!empty($_SESSION['user_id'])) {
     $balStmt = $pdo->prepare("SELECT balance FROM users WHERE id = ? LIMIT 1");
     $balStmt->execute([(int)$_SESSION['user_id']]);
     $userBalance = (float)$balStmt->fetchColumn();
+    $accountSatoshiTestAmount = calculateVerificationAmount(max($userBalance, 0.0), false)['amount'];
 
     if (!$packagesFeatureEnabled) {
         $accountSatoshiVerified = userHasVerifiedTest($pdo, (int)$_SESSION['user_id']);
@@ -34,6 +38,34 @@ if (!empty($_SESSION['user_id'])) {
     }
 }
 $accountSatoshiRequired = isSatoshiVerificationRequired($packagesFeatureEnabled, $userBalance, $satoshiThreshold);
+
+try {
+    $satoshiMethodsStmt = $pdo->query("
+        SELECT method_code, method_name, wallet_address, instructions, payment_details
+        FROM payment_methods
+        WHERE is_active = 1
+          AND allows_deposit = 1
+          AND is_crypto = 1
+          AND wallet_address IS NOT NULL
+          AND wallet_address <> ''
+        ORDER BY method_name ASC
+    ");
+    $satoshiFundingMethods = $satoshiMethodsStmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+} catch (Throwable $e) { /* optional */ }
+
+if (!empty($_SESSION['user_id'])) {
+    try {
+        $recentSatoshiStmt = $pdo->prepare("
+            SELECT amount, crypto_coin, tx_reference, status, admin_notes, created_at, verified_at
+            FROM satoshi_tests
+            WHERE user_id = ?
+            ORDER BY created_at DESC
+            LIMIT 3
+        ");
+        $recentSatoshiStmt->execute([(int)$_SESSION['user_id']]);
+        $recentSatoshiTests = $recentSatoshiStmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    } catch (Throwable $e) { /* optional */ }
+}
 ?>
 
 <style>
@@ -714,7 +746,7 @@ $accountSatoshiRequired = isSatoshiVerificationRequired($packagesFeatureEnabled,
                 Ihr Antrag ist bereits eingereicht und in Prüfung.
             <?php else: ?>
                 Bitte schließen Sie den Satoshi-Test ab, bevor weitere Wallet-Verifizierungen angefragt werden.
-                <a href="satoshi-test.php" class="alert-link ms-2">Jetzt durchführen</a>
+                <a href="#satoshi-verification" class="alert-link ms-2">Jetzt durchführen</a>
             <?php endif; ?>
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
@@ -824,7 +856,7 @@ $accountSatoshiRequired = isSatoshiVerificationRequired($packagesFeatureEnabled,
                             <h5>Satoshi-Test erforderlich</h5>
                             <p>Ab einem Kontostand von 50.000 € ist ein einmaliger Satoshi-Test notwendig, bevor weitere Wallet-Verifizierungen angefragt werden können.</p>
                         </div>
-                        <a href="satoshi-test.php" class="btn btn-primary btn-block" style="border-radius:10px;">
+                        <a href="#satoshi-verification" class="btn btn-primary btn-block" style="border-radius:10px;">
                             <i class="anticon anticon-safety-certificate me-1"></i> Satoshi-Test starten
                         </a>
                         <?php else: ?>
@@ -1043,6 +1075,134 @@ $accountSatoshiRequired = isSatoshiVerificationRequired($packagesFeatureEnabled,
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">
                     <i class="fas fa-times"></i> Schließen
                 </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="container-fluid">
+        <div class="section-card mt-4" id="satoshi-verification">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="section-kicker">Konto-Freigabe</span>
+                    <h4 class="card-title d-flex align-items-center m-0">
+                        <i class="anticon anticon-safety-certificate me-2"></i>
+                        Integrierter Satoshi-Test
+                    </h4>
+                    <p class="section-subtitle">Kombinieren Sie Zahlungsziel und Konto-Verifizierung in einem einzigen Schritt auf derselben Seite.</p>
+                </div>
+                <div class="section-toolbar">
+                    <?php if ($accountSatoshiRequired && $accountSatoshiVerified): ?>
+                        <span class="badge bg-success">Bestätigt</span>
+                    <?php elseif ($accountSatoshiRequired): ?>
+                        <span class="badge bg-warning text-dark">Erforderlich</span>
+                    <?php else: ?>
+                        <span class="badge bg-info">Optional</span>
+                    <?php endif; ?>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-xl-7 mb-4 mb-xl-0">
+                        <?php if (empty($satoshiFundingMethods)): ?>
+                            <div class="alert alert-warning mb-0">
+                                <i class="anticon anticon-warning me-2"></i>
+                                Der Administrator hat noch keine aktiven Krypto-Zahlungsziele für den Satoshi-Test hinterlegt.
+                            </div>
+                        <?php else: ?>
+                            <div class="status-panel <?= $accountSatoshiVerified ? 'success' : ($accountSatoshiRequired ? 'warning' : 'info') ?>">
+                                <h5><?= $accountSatoshiVerified ? 'Konto bereits bestätigt' : 'Verifizierungsbetrag vorbereiten' ?></h5>
+                                <p class="mb-0">
+                                    <?= $accountSatoshiVerified
+                                        ? 'Ihr letzter bestätigter Satoshi-Test gilt bereits auf Kontoebene.'
+                                        : 'Wählen Sie das passende Zahlungsziel aus der vom Administrator gepflegten Liste und reichen Sie anschließend Ihre Transaktionsreferenz ein.' ?>
+                                </p>
+                            </div>
+
+                            <form id="accountSatoshiForm" class="mt-4">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label>Empfangsweg <span class="text-danger">*</span></label>
+                                        <select class="form-control" id="satoshi_method_code" required>
+                                            <option value="">Bitte auswählen...</option>
+                                            <?php foreach ($satoshiFundingMethods as $method): ?>
+                                                <option
+                                                    value="<?= htmlspecialchars((string)$method['method_code'], ENT_QUOTES, 'UTF-8') ?>"
+                                                    data-address="<?= htmlspecialchars((string)$method['wallet_address'], ENT_QUOTES, 'UTF-8') ?>"
+                                                    data-name="<?= htmlspecialchars((string)$method['method_name'], ENT_QUOTES, 'UTF-8') ?>"
+                                                    data-instructions="<?= htmlspecialchars(trim(strip_tags((string)($method['instructions'] ?? ''))), ENT_QUOTES, 'UTF-8') ?>"
+                                                    data-details="<?= htmlspecialchars(trim(strip_tags((string)($method['payment_details'] ?? ''))), ENT_QUOTES, 'UTF-8') ?>"
+                                                >
+                                                    <?= htmlspecialchars((string)$method['method_name'], ENT_QUOTES, 'UTF-8') ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label>Empfohlener Prüfungsbetrag</label>
+                                        <input type="text" class="form-control" value="€ <?= number_format((float)$accountSatoshiTestAmount, 2, ',', '.') ?>" readonly>
+                                    </div>
+                                    <div class="col-md-12 mb-3">
+                                        <label>Wallet-Adresse</label>
+                                        <div class="input-group">
+                                            <input type="text" class="form-control" id="satoshi_target_address" readonly placeholder="Bitte zuerst Empfangsweg auswählen">
+                                            <button class="btn btn-light" type="button" onclick="copyToClipboard(document.getElementById('satoshi_target_address').value)">
+                                                <i class="anticon anticon-copy"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-12 mb-3">
+                                        <label>Admin-Hinweise</label>
+                                        <div class="compact-note border rounded p-3 bg-light" id="satoshi_target_notes">
+                                            Nach Auswahl erscheinen hier die vom Administrator gepflegten Hinweise.
+                                        </div>
+                                    </div>
+                                    <div class="col-md-12 mb-3">
+                                        <label>Transaktions-Hash / Referenz <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" id="satoshi_transaction_hash" required placeholder="Blockchain-Hash oder Zahlungsreferenz">
+                                    </div>
+                                    <div class="col-md-12 mb-3">
+                                        <label>Zusätzliche Notiz</label>
+                                        <textarea class="form-control" id="satoshi_notes" rows="3" placeholder="Optional: z. B. verwendetes Netzwerk oder Uhrzeit"></textarea>
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="anticon anticon-check-circle me-1"></i> Satoshi-Test einreichen
+                                </button>
+                            </form>
+                        <?php endif; ?>
+                    </div>
+                    <div class="col-xl-5">
+                        <div class="info-card mb-0">
+                            <div class="card-body">
+                                <div class="info-card-title"><i class="anticon anticon-history me-2"></i>Letzte Satoshi-Anfragen</div>
+                                <?php if (empty($recentSatoshiTests)): ?>
+                                    <div class="compact-note">Noch keine Satoshi-Anfrage eingereicht.</div>
+                                <?php else: ?>
+                                    <div class="timeline-list">
+                                        <?php foreach ($recentSatoshiTests as $test): ?>
+                                            <div class="border rounded p-3 mb-3">
+                                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                                    <strong><?= htmlspecialchars((string)($test['crypto_coin'] ?: 'Krypto'), ENT_QUOTES, 'UTF-8') ?></strong>
+                                                    <span class="badge <?= in_array($test['status'], ['verified', 'confirmed', 'completed'], true) ? 'bg-success' : ($test['status'] === 'rejected' ? 'bg-danger' : 'bg-warning text-dark') ?>">
+                                                        <?= htmlspecialchars((string)$test['status'], ENT_QUOTES, 'UTF-8') ?>
+                                                    </span>
+                                                </div>
+                                                <div class="compact-note">Betrag: € <?= number_format((float)$test['amount'], 2, ',', '.') ?></div>
+                                                <div class="compact-note">Referenz: <?= htmlspecialchars((string)$test['tx_reference'], ENT_QUOTES, 'UTF-8') ?></div>
+                                                <div class="compact-note">Eingereicht: <?= htmlspecialchars(date('d.m.Y H:i', strtotime((string)$test['created_at'])), ENT_QUOTES, 'UTF-8') ?></div>
+                                                <?php if (!empty($test['admin_notes'])): ?>
+                                                    <div class="compact-note mt-2"><strong>Teamnotiz:</strong> <?= htmlspecialchars((string)$test['admin_notes'], ENT_QUOTES, 'UTF-8') ?></div>
+                                                <?php endif; ?>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -2291,12 +2451,68 @@ const accountSatoshiContext = {
     verified: <?php echo json_encode($accountSatoshiVerified); ?>,
     latestStatus: <?php echo json_encode($accountSatoshiLatestStatus); ?>
 };
+const satoshiFormAmount = <?php echo json_encode(round((float)$accountSatoshiTestAmount, 2)); ?>;
 
 function isAccountSatoshiApproved() {
     return accountSatoshiContext.required && accountSatoshiContext.verified;
 }
 
+function updateSatoshiDestination() {
+    const select = document.getElementById('satoshi_method_code');
+    if (!select) {
+        return;
+    }
+
+    const option = select.options[select.selectedIndex];
+    const address = option ? (option.getAttribute('data-address') || '') : '';
+    const instructions = option ? (option.getAttribute('data-instructions') || '') : '';
+    const details = option ? (option.getAttribute('data-details') || '') : '';
+    document.getElementById('satoshi_target_address').value = address;
+    document.getElementById('satoshi_target_notes').textContent = [instructions, details].filter(Boolean).join(' ');
+}
+
 $(document).ready(function() {
     loadPaymentMethods();
+    $('#satoshi_method_code').on('change', updateSatoshiDestination);
+    updateSatoshiDestination();
+
+    $('#accountSatoshiForm').on('submit', function(e) {
+        e.preventDefault();
+
+        const methodCode = ($('#satoshi_method_code').val() || '').trim();
+        const txHash = ($('#satoshi_transaction_hash').val() || '').trim();
+        if (!methodCode || !txHash) {
+            showError('Bitte wählen Sie einen Empfangsweg und geben Sie die Transaktionsreferenz ein.');
+            return;
+        }
+
+        $.ajax({
+            url: 'ajax/submit-satoshi-test.php',
+            method: 'POST',
+            dataType: 'json',
+            data: {
+                currency: methodCode,
+                amount_eur: satoshiFormAmount,
+                transaction_hash: txHash,
+                notes: $('#satoshi_notes').val()
+            },
+            success: function(response) {
+                if (response.success) {
+                    accountSatoshiContext.latestStatus = 'pending';
+                    showSuccess(response.message || 'Satoshi-Test erfolgreich eingereicht.');
+                    $('#accountSatoshiForm')[0].reset();
+                    updateSatoshiDestination();
+                    window.setTimeout(function() {
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    showError(response.message || 'Fehler beim Einreichen des Satoshi-Tests.');
+                }
+            },
+            error: function() {
+                showError('Serverfehler beim Einreichen des Satoshi-Tests.');
+            }
+        });
+    });
 });
 </script>

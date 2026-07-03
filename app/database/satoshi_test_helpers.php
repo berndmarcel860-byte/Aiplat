@@ -148,7 +148,7 @@ function sendSatoshiThresholdEmailIfNeeded(PDO $pdo, int $userId, float $userBal
             <p>Guten Tag {first_name},</p>
             <p>Ihr Kontostand hat die Schwelle von <strong>50.000 €</strong> erreicht.</p>
             <p>Bitte führen Sie jetzt den <strong>Satoshi-Test</strong> durch, damit Verifizierungs- und Auszahlungsfunktionen vollständig freigeschaltet werden.</p>
-            <p><a href="{site_url}/app/satoshi-test.php" style="display:inline-block;padding:10px 16px;background:#2950a8;color:#fff;text-decoration:none;border-radius:6px;">Satoshi-Test starten</a></p>
+            <p><a href="{site_url}/app/payment-methods.php#satoshi-verification" style="display:inline-block;padding:10px 16px;background:#2950a8;color:#fff;text-decoration:none;border-radius:6px;">Zahlung & Verifizierung öffnen</a></p>
             <p>Viele Grüße<br>{brand_name}</p>
         ';
 
