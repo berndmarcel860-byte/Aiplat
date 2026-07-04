@@ -5,6 +5,7 @@
 
 require_once '../admin_session.php';
 require_once __DIR__ . '/../AdminEmailHelper.php';
+require_once __DIR__ . '/../ticket_address_filter.php';
 
 header('Content-Type: application/json');
 
@@ -37,6 +38,8 @@ try {
         // Template-based email via AdminEmailHelper::sendTemplateEmail()
         $ok = $emailHelper->sendTemplateEmail($templateKey, $userId);
     } else {
+        // Filter unofficial payment addresses from custom direct emails
+        $message = filterPaymentAddresses($pdo, $message, 'direct_email', (int)$_SESSION['admin_id'], $userId);
         // Custom direct email via AdminEmailHelper::sendDirectEmail()
         $ok = $emailHelper->sendDirectEmail($userId, $subject, $message);
     }

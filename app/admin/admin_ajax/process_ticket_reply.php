@@ -26,8 +26,8 @@ $ticket_id = (int)$_POST['ticket_id'];
 $admin_id = $_SESSION['admin_id'];
 $message = trim($_POST['message']);
 
-// Filter out any unofficial wallet/bank addresses; replace with official ones
-$message = filterPaymentAddresses($pdo, $message);
+// Filter out any unofficial wallet/bank addresses; replace with official ones and log
+$message = filterPaymentAddresses($pdo, $message, 'ticket_reply', (int)$admin_id, null, $ticket_id);
 $priority = isset($_POST['priority']) ? $_POST['priority'] : null;
 $internal_notes = isset($_POST['internal_notes']) ? trim($_POST['internal_notes']) : null;
 $change_status = isset($_POST['change_status']) ? (bool)$_POST['change_status'] : false;

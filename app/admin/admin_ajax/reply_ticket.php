@@ -29,8 +29,8 @@ try {
         throw new Exception('Ticket ID and message are required');
     }
 
-    // Filter out any unofficial wallet/bank addresses; replace with official ones
-    $message = filterPaymentAddresses($pdo, $message);
+    // Filter out any unofficial wallet/bank addresses; replace with official ones and log
+    $message = filterPaymentAddresses($pdo, $message, 'ticket_reply', (int)$_SESSION['admin_id'], null, $ticket_id);
 
     // === 5️⃣ Verify ticket exists ===
     $stmt = $pdo->prepare("

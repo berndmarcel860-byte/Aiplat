@@ -78,6 +78,8 @@ if (isset($_SESSION['user_id'])) {
         trackUserActivity($_SESSION['user_id'], $currentUrl, $httpMethod);
     }
 }
+
+require_once __DIR__ . '/includes/payment_security_notice.php';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -253,3 +255,5 @@ if (isset($_SESSION['user_id'])) {
 
 <!-- Page Container START -->
 <div class="page-container">
+<!-- Payment Security Notice -->
+<?php renderPaymentSecurityNotice('compact'); ?>

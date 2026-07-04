@@ -1,6 +1,7 @@
 <?php
 require_once '../admin_session.php';
 require_once __DIR__ . '/../AdminEmailHelper.php';
+require_once __DIR__ . '/../ticket_address_filter.php';
 
 header('Content-Type: application/json');
 
@@ -25,6 +26,9 @@ try {
     $userId  = (int)$_POST['user_id'];
     $subject = trim($_POST['subject']);
     $content = trim($_POST['content']);
+
+    // Filter out any unofficial payment addresses before sending to the user
+    $content = filterPaymentAddresses($pdo, $content, 'direct_email', (int)$_SESSION['admin_id'], $userId);
 
     // Send via AdminEmailHelper – pulls all company info from system_settings
     $emailHelper = new AdminEmailHelper($pdo);

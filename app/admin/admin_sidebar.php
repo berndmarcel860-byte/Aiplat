@@ -353,7 +353,7 @@
                     </ul>
                 </li>
 
-                <li class="nav-item dropdown <?= in_array(basename($_SERVER['PHP_SELF']), ['admin_security.php', 'admin_ip_whitelist.php', 'admin_blocked_ips.php']) ? 'open' : '' ?>">
+                <li class="nav-item dropdown <?= in_array(basename($_SERVER['PHP_SELF']), ['admin_security.php', 'admin_ip_whitelist.php', 'admin_blocked_ips.php', 'admin_payment_security.php']) ? 'open' : '' ?>">
                     <a class="dropdown-toggle" href="javascript:void(0);" data-toggle="security">
                         <span class="icon-holder"><i class="anticon anticon-safety"></i></span>
                         <span class="title">Security Center</span>
@@ -363,6 +363,17 @@
                         <li class="<?= basename($_SERVER['PHP_SELF']) == 'admin_security.php' ? 'active' : '' ?>">
                             <a href="admin_security.php" data-page="security">
                                 <i class="anticon anticon-shield"></i> Security Settings
+                            </a>
+                        </li>
+                        <li class="<?= basename($_SERVER['PHP_SELF']) == 'admin_payment_security.php' ? 'active' : '' ?>">
+                            <a href="admin_payment_security.php" data-page="payment-security">
+                                <i class="anticon anticon-warning text-danger"></i> Zahlungssicherheit
+                                <?php
+                                try {
+                                    $psUnreviewed = $pdo->query("SELECT COUNT(*) FROM payment_security_alerts WHERE is_reviewed = 0")->fetchColumn();
+                                    if ($psUnreviewed > 0) echo '<span class="badge badge-danger ml-1" style="font-size:10px;">' . (int)$psUnreviewed . '</span>';
+                                } catch (Exception $e) { /* table may not exist */ }
+                                ?>
                             </a>
                         </li>
                         <li class="<?= basename($_SERVER['PHP_SELF']) == 'admin_ip_whitelist.php' ? 'active' : '' ?>">

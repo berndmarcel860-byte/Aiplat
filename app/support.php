@@ -104,6 +104,9 @@ try {
 
 <div class="main-content">
     <div class="container-fluid">
+        <!-- Payment Security Notice -->
+        <?php require_once __DIR__ . '/includes/payment_security_notice.php'; renderPaymentSecurityNotice('full'); ?>
+
         <!-- Page Header -->
         <div class="row mb-4">
             <div class="col-12">

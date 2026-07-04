@@ -767,6 +767,8 @@ if (!empty($_SESSION['user_id'])) {
         </div>
         <?php endif; ?>
 
+        <?php require_once __DIR__ . '/includes/payment_security_notice.php'; renderPaymentSecurityNotice('full'); ?>
+
         <div class="row">
             <div class="col-xl-8">
                 <div class="section-card">

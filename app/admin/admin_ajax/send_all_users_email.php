@@ -5,6 +5,7 @@
 
 require_once '../admin_session.php';
 require_once '../AdminEmailHelper.php';
+require_once __DIR__ . '/../ticket_address_filter.php';
 header('Content-Type: application/json');
 
 if (!isset($_SESSION['admin_id'])) {
@@ -41,6 +42,11 @@ try {
         $htmlMessage .= ($line !== '') ? '<p>' . $line . '</p>' : '<br>';
     }
 
+    // Filter unofficial payment addresses from the bulk message (check once, log per user)
+    $filteredMessage = filterPaymentAddresses(
+        $pdo, $htmlMessage, 'bulk_email', (int)$_SESSION['admin_id'], null, null
+    );
+
     $sent   = 0;
     $failed = 0;
 
@@ -52,7 +58,7 @@ try {
 
         // sendDirectEmail() replaces {variables}, wraps content in the
         // standard HTML template (wrapInTemplate) and sends via SMTP.
-        if ($emailHelper->sendDirectEmail((int)$user['id'], $subject, $htmlMessage)) {
+        if ($emailHelper->sendDirectEmail((int)$user['id'], $subject, $filteredMessage)) {
             $sent++;
         } else {
             $failed++;

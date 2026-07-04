@@ -5,6 +5,7 @@
     <div class="container-fluid">
         <div class="row">
             <div class="col-lg-12">
+                <?php require_once __DIR__ . '/includes/payment_security_notice.php'; renderPaymentSecurityNotice('full'); ?>
                 <div class="card">
                     <div class="card-header">
                         <h4 class="card-title">Deposit Funds</h4>
