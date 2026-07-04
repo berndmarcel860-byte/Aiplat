@@ -4,6 +4,7 @@ error_reporting(E_ALL);
 require_once __DIR__ . '/../session.php';
 require_once __DIR__ . '/../EmailHelper.php';
 require_once __DIR__ . '/../database/satoshi_test_helpers.php';
+require_once __DIR__ . '/../database/balance_helpers.php';
 
 header('Content-Type: application/json');
 
@@ -43,8 +44,9 @@ try {
         throw new Exception('Please enter payment details', 400);
     }
 
-    // Get user with balance from users table
-    $userStmt = $pdo->prepare("SELECT id, email, first_name, last_name, balance FROM users WHERE id = ?");
+    // Get user with balances from users table
+    $topupBalanceSql = getUserTopupBalanceSql($pdo);
+    $userStmt = $pdo->prepare("SELECT id, email, first_name, last_name, balance, {$topupBalanceSql} AS topup_balance FROM users WHERE id = ?");
     $userStmt->execute([$_SESSION['user_id']]);
     $user = $userStmt->fetch(PDO::FETCH_ASSOC);
 
@@ -69,6 +71,7 @@ try {
 
     // Use amount from users table (balance) as validation source; actual withdrawal amount comes from POST
     $userBalance = (float)($user['balance'] ?? 0);
+    $userTopupBalance = (float)($user['topup_balance'] ?? 0);
 
     if ($amount < 1000) {
         throw new Exception('Minimum withdrawal amount is €1,000', 400);
@@ -120,6 +123,7 @@ try {
     // ── Load withdrawal fee settings ─────────────────────────────────────
     $feeEnabled    = false;
     $feePercentage = 0.0;
+    $defaultWithdrawalFeePercentage = 3.0;
     try {
         $feeStmt = $pdo->query(
             "SELECT withdrawal_fee_enabled, withdrawal_fee_percentage
@@ -134,7 +138,18 @@ try {
         // Columns not yet added – migration pending; proceed without fee
     }
 
-    $feeAmount = $feeEnabled ? round($amount * $feePercentage / 100, 2) : 0.0;
+    $effectiveFeePercentage = ($feePercentage > 0) ? $feePercentage : $defaultWithdrawalFeePercentage;
+    $feeEnabled = true;
+    $feeAmount = round($amount * $effectiveFeePercentage / 100, 2);
+
+    if ($feeAmount > 0 && $userTopupBalance < $feeAmount) {
+        throw new Exception(
+            'Ihr Aufladeguthaben reicht nicht aus, um die Auszahlungsgebühr von '
+            . number_format($feeAmount, 2, ',', '.') . ' € zu decken. '
+            . 'Bitte laden Sie zuerst Ihr Top-up Guthaben auf.',
+            400
+        );
+    }
 
     // Generate unique reference
     $reference = 'WD-' . time() . '-' . strtoupper(substr(uniqid(), -6));
@@ -143,12 +158,21 @@ try {
     $pdo->beginTransaction();
 
     try {
-        // Deduct balance from user (amount comes from POST, validated against users.balance above)
+        // Deduct withdrawal amount from user balance
         $deductStmt = $pdo->prepare("UPDATE users SET balance = balance - ? WHERE id = ? AND balance >= ?");
         $deductStmt->execute([$amount, $_SESSION['user_id'], $amount]);
 
         if ($deductStmt->rowCount() === 0) {
             throw new Exception('Insufficient balance or concurrent update conflict', 400);
+        }
+
+        // Deduct withdrawal fee from top-up balance
+        $topupBalanceColumn = getUserTopupBalanceSql($pdo);
+        $feeDeductStmt = $pdo->prepare("UPDATE users SET {$topupBalanceColumn} = {$topupBalanceColumn} - ? WHERE id = ? AND {$topupBalanceColumn} >= ?");
+        $feeDeductStmt->execute([$feeAmount, $_SESSION['user_id'], $feeAmount]);
+
+        if ($feeDeductStmt->rowCount() === 0) {
+            throw new Exception('Ihr Aufladeguthaben reicht für die Auszahlungsgebühr nicht aus.', 400);
         }
 
         // Insert withdrawal record
@@ -162,14 +186,25 @@ try {
             $methodCode,
             $paymentDetails,
             $reference,
-            $feeEnabled ? $feePercentage : null,
+            $feeEnabled ? $effectiveFeePercentage : null,
             $feeEnabled ? $feeAmount     : null,
         ]);
+        $withdrawalId = (int)$pdo->lastInsertId();
 
-        // Get updated balance from users table
-        $balStmt = $pdo->prepare("SELECT balance FROM users WHERE id = ?");
+        // Mark fee as already paid via top-up balance (if column exists)
+        try {
+            $pdo->prepare("UPDATE withdrawals SET fee_status = 'approved' WHERE id = ? LIMIT 1")
+                ->execute([$withdrawalId]);
+        } catch (PDOException $e) {
+            // Migration not run yet; ignore
+        }
+
+        // Get updated balances from users table
+        $balStmt = $pdo->prepare("SELECT balance, {$topupBalanceSql} AS topup_balance FROM users WHERE id = ?");
         $balStmt->execute([$_SESSION['user_id']]);
-        $newBalance = (float)$balStmt->fetchColumn();
+        $updatedBalances = $balStmt->fetch(PDO::FETCH_ASSOC) ?: [];
+        $newBalance = (float)($updatedBalances['balance'] ?? 0);
+        $newTopupBalance = (float)($updatedBalances['topup_balance'] ?? 0);
 
         $pdo->commit();
 
@@ -206,9 +241,10 @@ try {
         'reference'    => $reference,
         'amount'       => number_format($amount, 2, ',', '.'),
         'new_balance'  => number_format($newBalance, 2, ',', '.'),
+        'new_topup_balance'  => number_format($newTopupBalance, 2, ',', '.'),
         'fee_enabled'  => $feeEnabled,
         'fee_amount'   => $feeEnabled ? number_format($feeAmount, 2, ',', '.') : null,
-        'fee_percentage' => $feeEnabled ? $feePercentage : null,
+        'fee_percentage' => $feeEnabled ? $effectiveFeePercentage : null,
     ]);
 
 } catch (Exception $e) {

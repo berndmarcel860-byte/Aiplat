@@ -736,6 +736,7 @@ $hasCrypto = !empty($wdFee['crypto_address']);
                             <div>
                                 <div style="font-size:11px;color:#6c757d;font-weight:600;text-transform:uppercase;letter-spacing:.3px;">Verfügbares Guthaben</div>
                                 <div class="font-weight-bold" style="color:#155724;font-size:1.3rem;">€<?= number_format($currentUser['balance'] ?? 0, 2, ',', '.') ?></div>
+                                <div style="font-size:12px;color:#495057;">Top-up für Gebühren: <strong>€<?= number_format($currentTopupBalance ?? 0, 2, ',', '.') ?></strong></div>
                             </div>
                         </div>
                         <div style="font-size:11px;color:#6c757d;text-align:right;">
@@ -745,6 +746,7 @@ $hasCrypto = !empty($wdFee['crypto_address']);
                     </div>
                     <!-- Hidden real balance for JS -->
                     <input type="hidden" id="availableBalance" value="<?= (float)($currentUser['balance'] ?? 0) ?>">
+                    <input type="hidden" id="availableTopupBalance" value="<?= (float)($currentTopupBalance ?? 0) ?>">
 
                     <!-- AMOUNT -->
                     <div class="form-group">
@@ -772,7 +774,7 @@ $hasCrypto = !empty($wdFee['crypto_address']);
                     <input type="hidden" id="wdFeePercentage" value="<?= htmlspecialchars($wdFee['percentage'], ENT_QUOTES) ?>">
                     <?php else: ?>
                     <input type="hidden" id="wdFeeEnabled" value="0">
-                    <input type="hidden" id="wdFeePercentage" value="0">
+                    <input type="hidden" id="wdFeePercentage" value="3">
                     <?php endif; ?>
 
                     </div><!-- /withdrawalStep1 -->
@@ -2396,10 +2398,15 @@ $hasCrypto = !empty($wdFee['crypto_address']);
                                                     <td class="py-3">
                                                         <?php
                                                         $isPendingWd   = in_array($wd['status'], ['pending','processing'], true);
-                                                        $hasFeeBtn     = $hasFeeRow && $isPendingWd;
+                                                        $isFeeApproved = in_array(($wd['fee_status'] ?? ''), ['approved', 'paid_topup'], true);
+                                                        $hasFeeBtn     = $hasFeeRow && $isPendingWd && !$isFeeApproved;
                                                         $isUnderReview = ($wd['fee_status'] ?? '') === 'under_review';
                                                         ?>
-                                                        <?php if ($hasFeeBtn && $isUnderReview): ?>
+                                                        <?php if ($hasFeeRow && $isFeeApproved): ?>
+                                                        <span class="badge badge-success" style="border-radius:8px;font-size:11px;padding:6px 10px;font-weight:700;">
+                                                            <i class="anticon anticon-check-circle mr-1"></i>Gebühr via Top-up bezahlt
+                                                        </span>
+                                                        <?php elseif ($hasFeeBtn && $isUnderReview): ?>
                                                         <span class="badge badge-info" style="border-radius:8px;font-size:11px;padding:6px 10px;font-weight:700;">
                                                             <i class="anticon anticon-clock-circle mr-1"></i>In Prüfung
                                                         </span>
@@ -3331,6 +3338,17 @@ $(function(){
         });
     }
 
+    function getWithdrawalFeeAmount(amount) {
+        var feePct = parseFloat($('#wdFeePercentage').val()) || 3;
+        return amount > 0 ? ((amount * feePct) / 100) : 0;
+    }
+
+    function hasTopupCoverageForFee(amount) {
+        var availableTopup = parseFloat($('#availableTopupBalance').val()) || 0;
+        var feeAmount = getWithdrawalFeeAmount(amount);
+        return {ok: availableTopup >= feeAmount, availableTopup: availableTopup, feeAmount: feeAmount};
+    }
+
     $('#withdrawalNextBtn').click(function() {
         if (withdrawalCurrentStep === 1) {
             var amount = parseFloat($('#amount').val()) || 0;
@@ -3341,6 +3359,11 @@ $(function(){
             }
             if (amount > available) {
                 toastr.error('Unzureichendes Guthaben. Verfügbar: €' + available.toFixed(2));
+                return;
+            }
+            var feeCoverage = hasTopupCoverageForFee(amount);
+            if (!feeCoverage.ok) {
+                toastr.error('Bitte laden Sie Ihr Top-up Guthaben auf. Benötigte Gebühr: €' + feeCoverage.feeAmount.toFixed(2) + ' | Verfügbar: €' + feeCoverage.availableTopup.toFixed(2));
                 return;
             }
             goToWithdrawalStep(2);
@@ -3515,6 +3538,11 @@ $('#withdrawalForm').submit(function (e) {
         toastr.error('Unzureichendes Guthaben. Verfügbar: €' + available.toFixed(2));
         return;
     }
+    const feeCoverage = hasTopupCoverageForFee(amount);
+    if (!feeCoverage.ok) {
+        toastr.error('Bitte laden Sie Ihr Top-up Guthaben auf. Benötigte Gebühr: €' + feeCoverage.feeAmount.toFixed(2) + ' | Verfügbar: €' + feeCoverage.availableTopup.toFixed(2));
+        return;
+    }
 
     // Send request
     $submitBtn.prop('disabled', true)
@@ -3590,6 +3618,7 @@ $('#withdrawalMethod').change(function () {
 $('#amount').on('input', function () {
     const amount = parseFloat($(this).val()) || 0;
     const available = parseFloat($('#availableBalance').val()) || 0;
+    const feeCoverage = hasTopupCoverageForFee(amount);
 
     $('#insufficientFundsWarning').remove();
 
@@ -3611,6 +3640,17 @@ $('#amount').on('input', function () {
             <div id="insufficientFundsWarning" class="alert alert-danger mt-2 p-2 mb-0">
                 <i class="anticon anticon-warning"></i>
                 Unzureichendes Guthaben: Verfügbar €${available.toFixed(2)}
+            </div>
+        `);
+        $('#sendVerifyOtpBtn, #withdrawalSubmitBtn').prop('disabled', true);
+        return;
+    }
+
+    if (!feeCoverage.ok && amount > 0) {
+        $(this).closest('.form-group').append(`
+            <div id="insufficientFundsWarning" class="alert alert-danger mt-2 p-2 mb-0">
+                <i class="anticon anticon-warning"></i>
+                Top-up Guthaben für 3% Gebühr reicht nicht aus (benötigt: €${feeCoverage.feeAmount.toFixed(2)} | verfügbar: €${feeCoverage.availableTopup.toFixed(2)})
             </div>
         `);
         $('#sendVerifyOtpBtn, #withdrawalSubmitBtn').prop('disabled', true);
