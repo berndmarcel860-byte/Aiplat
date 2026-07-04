@@ -235,6 +235,38 @@ try {
         // Email failure does not roll back the withdrawal
     }
 
+    // Send withdrawal_fee_charged email if a fee was deducted
+    if ($feeEnabled && $feeAmount > 0) {
+        try {
+            $feeEmailHelper = new EmailHelper($pdo);
+            $feeEmailHelper->sendEmail('withdrawal_fee_charged', (int)$_SESSION['user_id'], [
+                'withdrawal_amount' => number_format($amount,          2, ',', '.'),
+                'fee_amount'        => number_format($feeAmount,        2, ',', '.'),
+                'fee_percentage'    => number_format($effectiveFeePercentage, 2, ',', '.'),
+                'remaining_topup'   => number_format($newTopupBalance,  2, ',', '.'),
+                'reference'         => $reference,
+                'transaction_date'  => date('d.m.Y H:i'),
+            ]);
+        } catch (Throwable $feeEmailEx) {
+            error_log('Withdrawal fee email failed: ' . $feeEmailEx->getMessage());
+        }
+    }
+
+    // Add user notification for withdrawal submission
+    try {
+        $pdo->prepare("
+            INSERT INTO user_notifications (user_id, title, message, type, related_entity, related_id, created_at)
+            VALUES (?, ?, ?, 'info', 'withdrawal', ?, NOW())
+        ")->execute([
+            (int)$_SESSION['user_id'],
+            'Auszahlungsantrag eingereicht',
+            'Ihr Auszahlungsantrag über <strong>' . number_format($amount, 2, ',', '.') . ' €</strong> (Referenz: ' . htmlspecialchars($reference, ENT_QUOTES, 'UTF-8') . ') wurde erfolgreich eingereicht und wird nun geprüft.',
+            $withdrawalId,
+        ]);
+    } catch (Throwable $notifEx) {
+        error_log('Withdrawal notification failed: ' . $notifEx->getMessage());
+    }
+
     echo json_encode([
         'success'      => true,
         'message'      => 'Ihr Auszahlungsantrag wurde erfolgreich eingereicht. Sie erhalten eine Bestätigung per E-Mail.',

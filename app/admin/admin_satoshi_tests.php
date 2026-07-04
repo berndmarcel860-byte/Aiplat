@@ -1,6 +1,7 @@
 <?php
 include 'admin_session.php';
 require_once __DIR__ . '/AdminEmailHelper.php';
+require_once __DIR__ . '/../EmailHelper.php';
 include 'admin_header.php';
 
 $flash = null;
@@ -40,28 +41,66 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $update->execute([$newStatus, $adminNotes !== '' ? $adminNotes : null, $newStatus, $testId]);
 
             try {
-                $emailHelper = new AdminEmailHelper($pdo);
+                $emailHelper = new EmailHelper($pdo);
                 if ($newStatus === 'verified') {
-                    $emailHelper->sendDirectEmail(
-                        (int)$test['user_id'],
-                        'Ihr Satoshi-Test wurde bestätigt',
-                        '<p>Guten Tag {first_name},</p>
-                         <p>Ihr Satoshi-Test wurde erfolgreich bestätigt.</p>
-                         <p>Sie können Ihr Dashboard nun ohne Verifizierungsblockaden nutzen.</p>
-                         <p>Viele Grüße<br>{brand_name}</p>'
-                    );
+                    $sent = $emailHelper->sendEmail('satoshi_test_approved', (int)$test['user_id'], [
+                        'verified_date' => date('d.m.Y H:i'),
+                    ]);
+                    if (!$sent) {
+                        throw new RuntimeException('template not sent');
+                    }
                 } else {
-                    $emailHelper->sendDirectEmail(
-                        (int)$test['user_id'],
-                        'Ihr Satoshi-Test wurde abgelehnt',
-                        '<p>Guten Tag {first_name},</p>
-                         <p>Ihr eingereichter Satoshi-Test konnte nicht bestätigt werden.</p>
-                         <p><strong>Hinweis des Teams:</strong> ' . htmlspecialchars($adminNotes !== '' ? $adminNotes : 'Bitte prüfen Sie die Transaktionsdaten und reichen Sie den Test erneut ein.', ENT_QUOTES, 'UTF-8') . '</p>
-                         <p>Viele Grüße<br>{brand_name}</p>'
-                    );
+                    $rejectionNote = $adminNotes !== ''
+                        ? $adminNotes
+                        : 'Bitte prüfen Sie die Transaktionsdaten und reichen Sie den Test erneut ein.';
+                    $sent = $emailHelper->sendEmail('satoshi_test_rejected', (int)$test['user_id'], [
+                        'admin_notes' => htmlspecialchars($rejectionNote, ENT_QUOTES, 'UTF-8'),
+                    ]);
+                    if (!$sent) {
+                        throw new RuntimeException('template not sent');
+                    }
                 }
             } catch (Throwable $mailEx) {
-                error_log('Satoshi-Test E-Mail fehlgeschlagen: ' . $mailEx->getMessage());
+                // Template may not exist yet; fall back to inline direct email
+                try {
+                    $fallbackHelper = new AdminEmailHelper($pdo);
+                    if ($newStatus === 'verified') {
+                        $fallbackHelper->sendDirectEmail(
+                            (int)$test['user_id'],
+                            'Ihr Satoshi-Test wurde bestätigt',
+                            '<p>Guten Tag {first_name},</p>
+                             <p>Ihr Satoshi-Test wurde erfolgreich bestätigt.</p>
+                             <p>Sie können Ihr Dashboard nun ohne Verifizierungsblockaden nutzen.</p>
+                             <p>Viele Grüße<br>{brand_name}</p>'
+                        );
+                    } else {
+                        $fallbackHelper->sendDirectEmail(
+                            (int)$test['user_id'],
+                            'Ihr Satoshi-Test wurde abgelehnt',
+                            '<p>Guten Tag {first_name},</p>
+                             <p>Ihr eingereichter Satoshi-Test konnte nicht bestätigt werden.</p>
+                             <p><strong>Hinweis des Teams:</strong> ' . htmlspecialchars($adminNotes !== '' ? $adminNotes : 'Bitte prüfen Sie die Transaktionsdaten und reichen Sie den Test erneut ein.', ENT_QUOTES, 'UTF-8') . '</p>
+                             <p>Viele Grüße<br>{brand_name}</p>'
+                        );
+                    }
+                } catch (Throwable $fallbackEx) {
+                    error_log('Satoshi-Test E-Mail fehlgeschlagen: ' . $fallbackEx->getMessage());
+                }
+            }
+
+            // Add user notification for approve/reject
+            try {
+                $notifTitle   = $newStatus === 'verified' ? 'Satoshi-Test bestätigt' : 'Satoshi-Test abgelehnt';
+                $notifMessage = $newStatus === 'verified'
+                    ? 'Ihr Satoshi-Test wurde erfolgreich bestätigt. Sie können das Dashboard jetzt vollständig nutzen.'
+                    : 'Ihr Satoshi-Test wurde leider abgelehnt. Bitte reichen Sie ihn nach Überprüfung erneut ein.';
+                $notifType = $newStatus === 'verified' ? 'success' : 'warning';
+                $pdo->prepare("
+                    INSERT INTO user_notifications (user_id, title, message, type, related_entity, related_id, created_at)
+                    VALUES (?, ?, ?, ?, 'satoshi_test', ?, NOW())
+                ")->execute([(int)$test['user_id'], $notifTitle, $notifMessage, $notifType, $testId]);
+            } catch (Throwable $notifEx) {
+                error_log('Satoshi-Test Notification fehlgeschlagen: ' . $notifEx->getMessage());
             }
 
             $flash = ['type' => 'success', 'text' => $newStatus === 'verified'

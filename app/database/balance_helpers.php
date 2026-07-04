@@ -149,19 +149,35 @@ function notifyBalanceCredit(PDO $pdo, int $userId, float $creditAmount, float $
         $sourceLabel
     );
 
-    sendBalanceEmail(
-        $pdo,
-        $userId,
-        'Ihr Aufladeguthaben wurde aufgeladen',
-        '<p>Ihr Aufladeguthaben wurde erfolgreich um <strong>' . $formattedAmount . '</strong> erhöht.</p>'
-        . '<p><strong>Neuer Stand:</strong> ' . $formattedBalance . '<br>'
-        . '<strong>Quelle:</strong> ' . htmlspecialchars($sourceLabel, ENT_QUOTES, 'UTF-8') . '</p>'
-        . '<p>Sie können Ihre Analyse- und Recovery-Vorgänge nun wie gewohnt fortsetzen.</p>',
-        [
-            'amount' => $formattedAmount,
-            'balance' => $formattedBalance,
-        ]
-    );
+    // Try sending via dedicated template first; fall back to a direct email
+    try {
+        $emailHelper = new EmailHelper($pdo);
+        $customVars = [
+            'amount'           => number_format($creditAmount, 2, ',', '.'),
+            'new_balance'      => number_format($newBalance,   2, ',', '.'),
+            'source_label'     => htmlspecialchars($sourceLabel, ENT_QUOTES, 'UTF-8'),
+            'transaction_date' => date('d.m.Y H:i'),
+        ];
+        $sent = $emailHelper->sendEmail('topup_balance_credited', $userId, $customVars);
+        if (!$sent) {
+            throw new RuntimeException('template not sent');
+        }
+    } catch (Throwable $e) {
+        // Template may not exist yet; fall back to a direct inline email
+        sendBalanceEmail(
+            $pdo,
+            $userId,
+            'Ihr Aufladeguthaben wurde aufgeladen',
+            '<p>Ihr Aufladeguthaben wurde erfolgreich um <strong>' . $formattedAmount . '</strong> erhöht.</p>'
+            . '<p><strong>Neuer Stand:</strong> ' . $formattedBalance . '<br>'
+            . '<strong>Quelle:</strong> ' . htmlspecialchars($sourceLabel, ENT_QUOTES, 'UTF-8') . '</p>'
+            . '<p>Sie können Ihre Analyse- und Recovery-Vorgänge nun wie gewohnt fortsetzen.</p>',
+            [
+                'amount'  => $formattedAmount,
+                'balance' => $formattedBalance,
+            ]
+        );
+    }
 }
 
 function notifyKiFeeCharge(PDO $pdo, int $userId, float $feeAmount, float $newBalance, string $entryTitle): void

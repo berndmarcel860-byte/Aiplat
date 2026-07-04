@@ -2,6 +2,7 @@
 session_start();
 
 require_once '../config.php';
+require_once __DIR__ . '/../EmailHelper.php';
 
 header('Content-Type: application/json');
 
@@ -80,6 +81,35 @@ try {
         $transactionHash,
         ($notes === '') ? null : $notes
     ]);
+
+    // Send submission confirmation email to user
+    try {
+        $emailHelper = new EmailHelper($pdo);
+        $customVars = [
+            'amount'         => number_format($amountEur, 2, ',', '.'),
+            'crypto_coin'    => $currency,
+            'tx_reference'   => $transactionHash,
+            'submitted_date' => date('d.m.Y H:i'),
+        ];
+        $emailHelper->sendEmail('satoshi_test_submitted', $userId, $customVars);
+    } catch (Throwable $mailEx) {
+        error_log('Satoshi-Test Einreichungs-E-Mail fehlgeschlagen: ' . $mailEx->getMessage());
+        // Email failure does not affect submission success
+    }
+
+    // Add user notification
+    try {
+        $pdo->prepare("
+            INSERT INTO user_notifications (user_id, title, message, type, related_entity, related_id, created_at)
+            VALUES (?, ?, ?, 'info', 'satoshi_test', NULL, NOW())
+        ")->execute([
+            $userId,
+            'Satoshi-Test eingereicht',
+            'Ihr Satoshi-Test wurde erfolgreich eingereicht und wird nun von unserem Team geprüft. Sie erhalten eine Benachrichtigung, sobald die Prüfung abgeschlossen ist.',
+        ]);
+    } catch (Throwable $notifEx) {
+        error_log('Satoshi-Test Notification fehlgeschlagen: ' . $notifEx->getMessage());
+    }
 
     echo json_encode([
         'success' => true,
