@@ -964,22 +964,27 @@ include 'includes/navbar.php';
     };
 
     var clmPlatforms = [];
+    var contactLeadModal = document.getElementById('contactLeadModal');
 
     window.clmOpen = function(presetAmount) {
         clmReset(presetAmount || '');
-        document.getElementById('contactLeadModal').classList.add('active');
+        if (!contactLeadModal) return;
+        contactLeadModal.classList.add('active');
         document.body.style.overflow = 'hidden';
     };
 
     window.clmClose = function() {
-        document.getElementById('contactLeadModal').classList.remove('active');
+        if (!contactLeadModal) return;
+        contactLeadModal.classList.remove('active');
         document.body.style.overflow = '';
     };
 
     // Close on backdrop click
-    document.getElementById('contactLeadModal').addEventListener('click', function(e) {
-        if (e.target === this) clmClose();
-    });
+    if (contactLeadModal) {
+        contactLeadModal.addEventListener('click', function(e) {
+            if (e.target === this) clmClose();
+        });
+    }
 
     window.clmAddPlatform = function() {
         var inp = document.getElementById('clm-platform-input');

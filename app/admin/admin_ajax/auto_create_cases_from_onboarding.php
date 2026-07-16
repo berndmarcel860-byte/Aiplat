@@ -46,6 +46,43 @@ function difficultyForAmount(float $amount): string
 }
 
 /**
+ * Randomly split a total amount (EUR) into N positive shares.
+ * Ensures the shares sum exactly to the original amount (to cents).
+ */
+function splitAmountRandomly(float $totalAmount, int $parts): array
+{
+    $parts = max(1, $parts);
+    $totalCents = max($parts, (int)round($totalAmount * 100));
+
+    if ($parts === 1) {
+        return [round($totalCents / 100, 2)];
+    }
+
+    $remaining = $totalCents;
+    $shares = [];
+    for ($i = 0; $i < $parts - 1; $i++) {
+        $partsLeft = $parts - $i;
+        $minShare = 1;
+        $maxShare = $remaining - ($partsLeft - 1);
+        $share = mt_rand($minShare, $maxShare);
+        $shares[] = $share;
+        $remaining -= $share;
+    }
+    $shares[] = $remaining;
+
+    // Avoid all-equal shares when mathematically possible.
+    if (count(array_unique($shares)) === 1 && $parts > 1 && $totalCents >= ($parts + 1)) {
+        $shares[0] += 1;
+        $shares[1] -= 1;
+    }
+
+    shuffle($shares);
+    return array_map(static function (int $cents): float {
+        return round($cents / 100, 2);
+    }, $shares);
+}
+
+/**
  * Generate a unique case number, retrying on collision.
  */
 function generateCaseNumber(PDO $pdo): string
@@ -154,8 +191,8 @@ try {
             exit();
         }
 
-        // Distribute amount across platforms (at least 1 EUR per platform)
-        $baseAmount = max(1, floor($totalAmount / $platformCount));
+        // Distribute amount across platforms with randomized shares.
+        $randomizedAmounts = splitAmountRandomly($totalAmount, $platformCount);
 
         $pdo->beginTransaction();
 
@@ -172,7 +209,7 @@ try {
                 $created[] = $caseId;
             }
         } else {
-            foreach ($platformIds as $platformId) {
+            foreach ($platformIds as $idx => $platformId) {
                 $platformId = (int)$platformId;
 
                 // Skip if a case already exists for this user+platform
@@ -187,7 +224,8 @@ try {
                 $description = 'KI-gestützte Fallregistrierung erfolgreich abgeschlossen. '
                     . 'Erste Rückverfolgung der Transaktionen läuft.';
 
-                $caseId = insertCase($pdo, $userId, $platformId, $baseAmount, $description, $adminId);
+                $amount = $randomizedAmounts[$idx] ?? 1.00;
+                $caseId = insertCase($pdo, $userId, $platformId, $amount, $description, $adminId);
                 $created[] = $caseId;
             }
         }

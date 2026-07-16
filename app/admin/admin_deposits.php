@@ -36,6 +36,7 @@ require_once 'admin_header.php';
                             <th>Amount</th>
                             <th>Method</th>
                             <th>Status</th>
+                            <th>Escrow</th>
                             <th>Reference</th>
                             <th>Date</th>
                             <th>Actions</th>
@@ -202,6 +203,18 @@ $(document).ready(function() {
                     failed: 'danger'
                 }[data] || 'secondary';
                 return `<span class="badge badge-${statusClass}">${data.charAt(0).toUpperCase() + data.slice(1)}</span>`;
+            }},
+            { data: 'escrow_status', render: function(data) {
+                if (!data) return '<span class="badge badge-secondary" style="font-size:11px;">–</span>';
+                const map = {
+                    'holding':   { cls: 'info',    icon: '🏦', label: 'Holding' },
+                    'verified':  { cls: 'primary', icon: '✅', label: 'Verified' },
+                    'released':  { cls: 'success', icon: '🎯', label: 'Released' },
+                    'refunded':  { cls: 'warning', icon: '↩️', label: 'Refunded' },
+                    'cancelled': { cls: 'secondary', icon: '❌', label: 'Cancelled' }
+                };
+                const s = map[data.toLowerCase()] || { cls: 'secondary', icon: '❓', label: data };
+                return `<span class="badge badge-${s.cls}" style="font-size:11px;" title="Escrow: ${s.label}">${s.icon} ${s.label}</span>`;
             }},
             { data: 'reference' },
             { data: 'created_at', render: data => new Date(data).toLocaleString() },

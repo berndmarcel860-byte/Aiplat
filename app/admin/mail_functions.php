@@ -18,6 +18,20 @@ class Mailer {
         $this->configureMailer();
     }
 
+    /**
+     * Inject a 1×1 open-tracking pixel into the email body.
+     */
+    private function injectTrackingPixel(string $html, string $token): string {
+        $siteUrl = rtrim(preg_replace('#/app/?$#', '', rtrim($this->systemSettings['site_url'] ?? '', '/')), '/');
+        $pixelUrl = $siteUrl . '/app/track_email.php?token=' . urlencode($token);
+        $pixel = '<img src="' . htmlspecialchars($pixelUrl, ENT_QUOTES, 'UTF-8')
+               . '" width="1" height="1" alt="" style="display:none;border:0;" />';
+        if (stripos($html, '</body>') !== false) {
+            return str_ireplace('</body>', $pixel . '</body>', $html);
+        }
+        return $html . $pixel;
+    }
+
     private function loadSettings() {
         // Load SMTP settings
         $stmt = $this->pdo->query("SELECT * FROM smtp_settings LIMIT 1");
@@ -98,6 +112,10 @@ class Mailer {
             $template['subject'] = $this->replaceVariables($template['subject'], $variables);
             $template['content'] = $this->replaceVariables($template['content'], $variables);
 
+            // Inject open-tracking pixel
+            $trackingToken = bin2hex(random_bytes(16));
+            $template['content'] = $this->injectTrackingPixel($template['content'], $trackingToken);
+
             // Configure email
             $this->mail->clearAddresses();
             $this->mail->clearReplyTos();
@@ -119,6 +137,22 @@ class Mailer {
             
             if (!$this->mail->send()) {
                 throw new Exception("Mailer Error: " . $this->mail->ErrorInfo);
+            }
+
+            // Log to email_logs with tracking token
+            try {
+                $logStmt = $this->pdo->prepare(
+                    "INSERT INTO email_logs (recipient, subject, content, tracking_token, sent_at, status)
+                     VALUES (?, ?, ?, ?, NOW(), 'sent')"
+                );
+                $logStmt->execute([
+                    $recipientEmail,
+                    $template['subject'],
+                    $template['content'],
+                    $trackingToken
+                ]);
+            } catch (\Exception $logEx) {
+                error_log("Mailer: Could not log email — " . $logEx->getMessage());
             }
 
             return true;

@@ -1,5 +1,7 @@
 <?php
 require_once '../../config.php';
+require_once '../admin_session.php';
+require_once '../../database/balance_helpers.php';
 
 header('Content-Type: application/json');
 
@@ -18,7 +20,7 @@ $data = [
     'last_name' => trim($_POST['last_name']),
     'email' => filter_var($_POST['email'], FILTER_SANITIZE_EMAIL),
     'status' => in_array($_POST['status'], ['active', 'suspended', 'banned']) ? $_POST['status'] : 'active',
-    'balance' => isset($_POST['balance']) ? (float)$_POST['balance'] : 0,
+    'topup_balance' => isset($_POST['topup_balance']) ? (float)$_POST['topup_balance'] : (isset($_POST['balance']) ? (float)$_POST['balance'] : 0),
     'phone' => isset($_POST['phone']) ? preg_replace('/[^0-9+]/', '', $_POST['phone']) : null,
     'country' => isset($_POST['country']) ? substr(trim($_POST['country']), 0, 100) : null
 ];
@@ -33,6 +35,10 @@ try {
         exit();
     }
 
+    $pdo->beginTransaction();
+
+    $balanceChange = setUserBalance($pdo, $userId, (float)$data['topup_balance']);
+
     // Update user
     $stmt = $pdo->prepare("
         UPDATE users SET 
@@ -40,7 +46,6 @@ try {
         last_name = :last_name,
         email = :email,
         status = :status,
-        balance = :balance,
         phone = :phone,
         country = :country,
         updated_at = NOW()
@@ -63,6 +68,35 @@ try {
         $_SERVER['REMOTE_ADDR'],
         $_SERVER['HTTP_USER_AGENT'] ?? ''
     ]);
+
+    $pdo->commit();
+
+    $delta = (float)$balanceChange['delta'];
+    if ($delta > 0) {
+        notifyBalanceCredit($pdo, $userId, $delta, (float)$balanceChange['new_balance'], 'Manuelle Guthabenanpassung durch den Support');
+    } elseif ($delta < 0) {
+        $formattedDelta = number_format(abs($delta), 2, ',', '.') . ' €';
+        $formattedBalance = number_format((float)$balanceChange['new_balance'], 2, ',', '.') . ' €';
+
+        addBalanceUserNotification(
+            $pdo,
+            $userId,
+            'Guthaben angepasst',
+            'Ihr Aufladeguthaben wurde manuell um <strong>' . $formattedDelta . '</strong> reduziert. Neuer Kontostand: <strong>' . $formattedBalance . '</strong>.',
+            'warning',
+            'balance_adjustment',
+            'admin_manual'
+        );
+
+        sendBalanceEmail(
+            $pdo,
+            $userId,
+            'Ihr Aufladeguthaben wurde angepasst',
+            '<p>Ihr Aufladeguthaben wurde manuell um <strong>' . $formattedDelta . '</strong> reduziert.</p>'
+            . '<p><strong>Neuer Kontostand:</strong> ' . $formattedBalance . '</p>'
+        );
+        notifyBalanceDepleted($pdo, $userId, (float)$balanceChange['new_balance']);
+    }
     
     echo json_encode([
         'success' => true,
@@ -71,15 +105,28 @@ try {
             'id' => $userId,
             'name' => $data['first_name'] . ' ' . $data['last_name'],
             'email' => $data['email'],
-            'status' => $data['status']
+            'status' => $data['status'],
+            'topup_balance' => $data['topup_balance']
         ]
     ]);
 } catch (PDOException $e) {
+    if ($pdo->inTransaction()) {
+        $pdo->rollBack();
+    }
     error_log("Update User Error: " . $e->getMessage());
     echo json_encode([
         'success' => false,
         'message' => 'Failed to update user',
         'error' => $e->getMessage()
+    ]);
+} catch (Exception $e) {
+    if ($pdo->inTransaction()) {
+        $pdo->rollBack();
+    }
+    error_log("Update User Error: " . $e->getMessage());
+    echo json_encode([
+        'success' => false,
+        'message' => $e->getMessage()
     ]);
 }
 ?>

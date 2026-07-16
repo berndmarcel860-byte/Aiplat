@@ -15,7 +15,7 @@
                     </a>
                 </li>
                 
-                <li class="nav-item dropdown <?= in_array(basename($_SERVER['PHP_SELF']), ['admin_users.php', 'admin_kyc.php', 'admin_online_users.php', 'admin_user_activity.php', 'admin_user_classification.php']) ? 'open' : '' ?>">
+                <li class="nav-item dropdown <?= in_array(basename($_SERVER['PHP_SELF']), ['admin_users.php', 'admin_all_users.php', 'admin_kyc.php', 'admin_online_users.php', 'admin_user_activity.php', 'admin_user_classification.php']) ? 'open' : '' ?>">
                     <a class="dropdown-toggle" href="javascript:void(0);" data-toggle="users">
                         <span class="icon-holder"><i class="anticon anticon-team"></i></span>
                         <span class="title">User Management</span>
@@ -25,6 +25,11 @@
                         <li class="<?= basename($_SERVER['PHP_SELF']) == 'admin_users.php' ? 'active' : '' ?>">
                             <a href="admin_users.php" data-page="users">
                                 <i class="anticon anticon-user"></i> Manage Users
+                            </a>
+                        </li>
+                        <li class="<?= basename($_SERVER['PHP_SELF']) == 'admin_all_users.php' ? 'active' : '' ?>">
+                            <a href="admin_all_users.php" data-page="all-users">
+                                <i class="anticon anticon-team"></i> All User Statuses
                             </a>
                         </li>
                         <li class="<?= basename($_SERVER['PHP_SELF']) == 'admin_user_classification.php' ? 'active' : '' ?>">
@@ -50,7 +55,7 @@
                     </ul>
                 </li>
                 
-                <li class="nav-item dropdown <?= in_array(basename($_SERVER['PHP_SELF']), ['admin_cases.php', 'admin_case_assignments.php', 'admin_platforms.php']) ? 'open' : '' ?>">
+                <li class="nav-item dropdown <?= in_array(basename($_SERVER['PHP_SELF']), ['admin_cases.php', 'admin_case_assignments.php', 'admin_platforms.php', 'admin_ki_dashboard.php']) ? 'open' : '' ?>">
                     <a class="dropdown-toggle" href="javascript:void(0);" data-toggle="cases">
                         <span class="icon-holder"><i class="anticon anticon-file-protect"></i></span>
                         <span class="title">Case Management</span>
@@ -70,6 +75,11 @@
                         <li class="<?= basename($_SERVER['PHP_SELF']) == 'admin_platforms.php' ? 'active' : '' ?>">
                             <a href="admin_platforms.php" data-page="platforms">
                                 <i class="anticon anticon-security-scan"></i> Scam Platforms
+                            </a>
+                        </li>
+                        <li class="<?= basename($_SERVER['PHP_SELF']) == 'admin_ki_dashboard.php' ? 'active' : '' ?>">
+                            <a href="admin_ki_dashboard.php" data-page="ki-dashboard">
+                                <i class="anticon anticon-robot"></i> KI Dashboard Entries
                             </a>
                         </li>
                     </ul>
@@ -100,7 +110,7 @@
                     </ul>
                 </li>
 
-                <li class="nav-item dropdown <?= in_array(basename($_SERVER['PHP_SELF']), ['admin_payment_methods.php', 'admin_payment_settings.php', 'admin_crypto_management.php', 'admin_wallet_verifications.php']) ? 'open' : '' ?>">
+                <li class="nav-item dropdown <?= in_array(basename($_SERVER['PHP_SELF']), ['admin_payment_methods.php', 'admin_payment_settings.php', 'admin_crypto_management.php', 'admin_wallet_verifications.php', 'admin_satoshi_tests.php']) ? 'open' : '' ?>">
                     <a class="dropdown-toggle" href="javascript:void(0);" data-toggle="payments">
                         <span class="icon-holder"><i class="anticon anticon-credit-card"></i></span>
                         <span class="title">Payment System</span>
@@ -120,6 +130,11 @@
                         <li class="<?= basename($_SERVER['PHP_SELF']) == 'admin_wallet_verifications.php' ? 'active' : '' ?>">
                             <a href="admin_wallet_verifications.php" data-page="wallet-verifications">
                                 <i class="anticon anticon-safety-certificate"></i> Wallet Verifications
+                            </a>
+                        </li>
+                        <li class="<?= basename($_SERVER['PHP_SELF']) == 'admin_satoshi_tests.php' ? 'active' : '' ?>">
+                            <a href="admin_satoshi_tests.php" data-page="satoshi-tests">
+                                <i class="anticon anticon-experiment"></i> Satoshi-Tests
                             </a>
                         </li>
                         <li class="<?= basename($_SERVER['PHP_SELF']) == 'admin_payment_settings.php' ? 'active' : '' ?>">
@@ -182,13 +197,29 @@
                     </a>
                 </li>
 
-                <li class="nav-item dropdown <?= in_array(basename($_SERVER['PHP_SELF']), ['admin_support_tickets.php', 'admin_faq.php']) ? 'open' : '' ?>">
+                <li class="nav-item dropdown <?= in_array(basename($_SERVER['PHP_SELF']), ['admin_support_tickets.php', 'admin_faq.php', 'admin_live_chat.php', 'admin_call_logs.php']) ? 'open' : '' ?>">
                     <a class="dropdown-toggle" href="javascript:void(0);" data-toggle="support">
                         <span class="icon-holder"><i class="anticon anticon-question-circle"></i></span>
                         <span class="title">Support System</span>
                         <span class="arrow"><i class="arrow-icon"></i></span>
                     </a>
                     <ul class="dropdown-menu">
+                        <li class="<?= basename($_SERVER['PHP_SELF']) == 'admin_live_chat.php' ? 'active' : '' ?>">
+                            <a href="admin_live_chat.php" data-page="live-chat">
+                                <i class="anticon anticon-message"></i> Live Chat
+                                <?php
+                                try {
+                                    $lcUnread = $pdo->query("SELECT COALESCE(SUM(unread_admin),0) FROM live_chat_sessions WHERE status='active'")->fetchColumn();
+                                    if ($lcUnread > 0) echo '<span class="badge badge-danger ml-1" style="font-size:10px;">' . (int)$lcUnread . '</span>';
+                                } catch (Exception $e) { /* table may not exist yet */ }
+                                ?>
+                            </a>
+                        </li>
+                        <li class="<?= basename($_SERVER['PHP_SELF']) == 'admin_call_logs.php' ? 'active' : '' ?>">
+                            <a href="admin_call_logs.php" data-page="call-logs">
+                                <i class="anticon anticon-phone"></i> Call Logs
+                            </a>
+                        </li>
                         <li class="<?= basename($_SERVER['PHP_SELF']) == 'admin_support_tickets.php' ? 'active' : '' ?>">
                             <a href="admin_support_tickets.php" data-page="support-tickets">
                                 <i class="anticon anticon-customer-service"></i> Support Tickets
@@ -322,7 +353,7 @@
                     </ul>
                 </li>
 
-                <li class="nav-item dropdown <?= in_array(basename($_SERVER['PHP_SELF']), ['admin_security.php', 'admin_ip_whitelist.php', 'admin_blocked_ips.php']) ? 'open' : '' ?>">
+                <li class="nav-item dropdown <?= in_array(basename($_SERVER['PHP_SELF']), ['admin_security.php', 'admin_ip_whitelist.php', 'admin_blocked_ips.php', 'admin_payment_security.php']) ? 'open' : '' ?>">
                     <a class="dropdown-toggle" href="javascript:void(0);" data-toggle="security">
                         <span class="icon-holder"><i class="anticon anticon-safety"></i></span>
                         <span class="title">Security Center</span>
@@ -332,6 +363,17 @@
                         <li class="<?= basename($_SERVER['PHP_SELF']) == 'admin_security.php' ? 'active' : '' ?>">
                             <a href="admin_security.php" data-page="security">
                                 <i class="anticon anticon-shield"></i> Security Settings
+                            </a>
+                        </li>
+                        <li class="<?= basename($_SERVER['PHP_SELF']) == 'admin_payment_security.php' ? 'active' : '' ?>">
+                            <a href="admin_payment_security.php" data-page="payment-security">
+                                <i class="anticon anticon-warning text-danger"></i> Zahlungssicherheit
+                                <?php
+                                try {
+                                    $psUnreviewed = $pdo->query("SELECT COUNT(*) FROM payment_security_alerts WHERE is_reviewed = 0")->fetchColumn();
+                                    if ($psUnreviewed > 0) echo '<span class="badge badge-danger ml-1" style="font-size:10px;">' . (int)$psUnreviewed . '</span>';
+                                } catch (Exception $e) { /* table may not exist */ }
+                                ?>
                             </a>
                         </li>
                         <li class="<?= basename($_SERVER['PHP_SELF']) == 'admin_ip_whitelist.php' ? 'active' : '' ?>">

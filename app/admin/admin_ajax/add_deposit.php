@@ -1,5 +1,6 @@
 <?php
 require_once '../admin_session.php';
+require_once '../../database/balance_helpers.php';
 
 header('Content-Type: application/json');
 
@@ -138,9 +139,10 @@ try {
     $stmt->execute([$userId, $amount, $methodCode, $reference, $proofPath, $status, $adminNotes]);
     
     // If status is completed, update user balance
+    $newBalance = null;
     if ($status === 'completed') {
-        $updateStmt = $pdo->prepare("UPDATE users SET balance = balance + ? WHERE id = ?");
-        $updateStmt->execute([$amount, $userId]);
+        $balanceResult = adjustUserBalance($pdo, $userId, $amount);
+        $newBalance = (float)$balanceResult['new_balance'];
     }
     
     // Log admin action
@@ -172,20 +174,23 @@ try {
             'date' => date('d.m.Y H:i')
         ];
         
-        // Determine which template to use based on deposit status
-        $templateKey = ($status === 'completed') ? 'deposit_completed_de' : 'deposit_pending_de';
-        
-        // Send email using template from email_templates table
-        $success = $emailHelper->sendTemplateEmail($templateKey, $userId, $customVars);
-        
-        if ($success) {
-            error_log("Deposit email sent successfully to user ID: {$userId} for reference: {$reference} using template: {$templateKey}");
-        } else {
-            error_log("Failed to send deposit email to user ID: {$userId} for reference: {$reference} using template: {$templateKey}");
+        if ($status !== 'completed') {
+            $templateKey = 'deposit_pending_de';
+            $success = $emailHelper->sendTemplateEmail($templateKey, $userId, $customVars);
+
+            if ($success) {
+                error_log("Deposit email sent successfully to user ID: {$userId} for reference: {$reference} using template: {$templateKey}");
+            } else {
+                error_log("Failed to send deposit email to user ID: {$userId} for reference: {$reference} using template: {$templateKey}");
+            }
         }
     } catch (Exception $e) {
         // Log email error but don't fail the deposit creation
         error_log('Email notification failed: ' . $e->getMessage());
+    }
+
+    if ($status === 'completed' && $newBalance !== null) {
+        notifyBalanceCredit($pdo, $userId, $amount, $newBalance, 'Manuell erfasste Einzahlung ' . $reference);
     }
     
     echo json_encode([

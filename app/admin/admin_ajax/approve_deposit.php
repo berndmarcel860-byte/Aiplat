@@ -10,6 +10,7 @@ error_reporting(E_ALL);
 // =======================================================
 require_once '../admin_session.php';
 require_once __DIR__ . '/../AdminEmailHelper.php';
+require_once __DIR__ . '/../../database/balance_helpers.php';
 header('Content-Type: application/json');
 
 // =======================================================
@@ -24,6 +25,8 @@ $reference = trim($_POST['reference']);
 
 try {
     $pdo->beginTransaction();
+    $creditedAmount = 0.0;
+    $newBalance = null;
 
     // =======================================================
     // 1️⃣ Fetch transaction by reference
@@ -40,6 +43,7 @@ try {
     // 2️⃣ Allow flexible status (process even if not lowercase 'pending')
     // =======================================================
     $status = strtolower(trim($transaction['status']));
+    $alreadyCompleted = in_array($status, ['completed', 'approved'], true);
     if (!in_array($status, ['pending', 'processing', 'awaiting'])) {
         error_log("⚠️ Transaction with reference '{$reference}' has non-pending status '{$transaction['status']}', continuing anyway.");
     }
@@ -69,14 +73,28 @@ try {
     }
 
     // =======================================================
-    // 5️⃣ Update user balance (only for deposits)
+    // 5️⃣ Update escrow status to 'released' on approval
     // =======================================================
-/*
-    if ($transaction['type'] === 'deposit') {
-        $stmt = $pdo->prepare("UPDATE users SET balance = balance + ? WHERE id = ?");
-        $stmt->execute([$transaction['amount'], $transaction['user_id']]);
+    try {
+        $escrowStmt = $pdo->prepare("
+            UPDATE escrow_accounts e
+            INNER JOIN deposits d ON d.id = e.deposit_id
+            SET e.status = 'released', e.released_at = NOW(), e.released_by = ?
+            WHERE d.reference = ?
+        ");
+        $escrowStmt->execute([$_SESSION['admin_id'], $reference]);
+    } catch (Exception $e) {
+        error_log("Escrow update failed (non-fatal): " . $e->getMessage());
     }
-*/
+
+    // =======================================================
+    // 6️⃣ Update user balance (only for deposits)
+    // =======================================================
+    if ($transaction['type'] === 'deposit' && !$alreadyCompleted) {
+        $balanceResult = adjustUserBalance($pdo, (int)$transaction['user_id'], (float)$transaction['amount']);
+        $creditedAmount = (float)$transaction['amount'];
+        $newBalance = (float)$balanceResult['new_balance'];
+    }
     // =======================================================
     // 6️⃣ Fetch user details
     // =======================================================
@@ -89,60 +107,7 @@ try {
     }
 
     // =======================================================
-    // 7️⃣ Send deposit confirmation email
-    // =======================================================
-    try {
-        $emailHelper = new AdminEmailHelper($pdo);
-        
-        // Lookup payment method name
-        $methodName = 'Unknown';
-        if (!empty($transaction['payment_method_id'])) {
-            $methodStmt = $pdo->prepare("SELECT method_name FROM payment_methods WHERE id = ? LIMIT 1");
-            $methodStmt->execute([$transaction['payment_method_id']]);
-            $method = $methodStmt->fetch(PDO::FETCH_ASSOC);
-            if ($method && !empty($method['method_name'])) {
-                $methodName = $method['method_name'];
-            }
-        }
-        
-        $customVars = [
-            'amount' => number_format($transaction['amount'], 2) . ' €',
-            'payment_method' => $methodName,
-            'transaction_id' => $transaction['reference'] ?? $transaction['id'],
-            'transaction_date' => date('Y-m-d H:i:s'),
-            'transaction_status' => 'Completed',
-            'deposit_id' => $transaction['id']
-        ];
-        
-        $emailHelper->sendTemplateEmail('deposit_received', $user['id'], $customVars);
-    } catch (Exception $e) {
-        error_log("Deposit confirmation email failed: " . $e->getMessage());
-    }
-
-    // =======================================================
-    // 8️⃣ Create user notification
-    // =======================================================
-    try {
-        $notifUser = $pdo->prepare("
-            INSERT INTO user_notifications (user_id, title, message, type, related_entity, related_id, created_at)
-            VALUES (:user_id, :title, :message, :type, :entity, :rel_id, NOW())
-        ");
-        $notifUser->execute([
-            ':user_id' => (int)$transaction['user_id'],
-            ':title' => 'Einzahlung bestätigt',
-            ':message' => 'Ihre Einzahlung über <strong>' 
-                . number_format($transaction['amount'], 2) . ' €</strong> mit Referenz <strong>'
-                . htmlspecialchars($reference) . '</strong> wurde erfolgreich bestätigt.',
-            ':type' => 'success',
-            ':entity' => 'transaction',
-            ':rel_id' => $reference
-        ]);
-    } catch (Exception $e) {
-        error_log("User notification failed: " . $e->getMessage());
-    }
-
-    // =======================================================
-    // 9️⃣ Create admin notification
+    // 7️⃣ Create admin notification
     // =======================================================
     try {
         $notifAdmin = $pdo->prepare("
@@ -164,6 +129,16 @@ try {
 
     $pdo->commit();
 
+    if ($creditedAmount > 0 && $newBalance !== null) {
+        notifyBalanceCredit(
+            $pdo,
+            (int)$transaction['user_id'],
+            $creditedAmount,
+            $newBalance,
+            'Bestätigte Einzahlung ' . $reference
+        );
+    }
+
     echo json_encode([
         'success' => true,
         'message' => 'Deposit approved successfully using reference.'
@@ -180,4 +155,3 @@ try {
     ]);
 }
 ?>
-

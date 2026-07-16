@@ -1,0 +1,123 @@
+<?php
+session_start();
+
+require_once '../config.php';
+require_once __DIR__ . '/../EmailHelper.php';
+
+header('Content-Type: application/json');
+
+if (!isset($_SESSION['user_id'])) {
+    echo json_encode([
+        'success' => false,
+        'message' => 'Nicht autorisiert'
+    ]);
+    exit;
+}
+
+try {
+    $userId = (int)$_SESSION['user_id'];
+
+    $currency = isset($_POST['currency']) ? strtoupper(trim((string)$_POST['currency'])) : '';
+    $amountEur = isset($_POST['amount_eur']) ? (float)$_POST['amount_eur'] : 0.0;
+    $transactionHash = isset($_POST['transaction_hash']) ? trim((string)$_POST['transaction_hash']) : '';
+    $notes = isset($_POST['notes']) ? trim((string)$_POST['notes']) : null;
+
+    if ($currency === '' || strlen($currency) > 10) {
+        throw new Exception('Ungültige Währungsauswahl');
+    }
+
+    if ($amountEur <= 0) {
+        throw new Exception('Ungültiger Verifizierungsbetrag');
+    }
+
+    if ($transactionHash === '') {
+        throw new Exception('Transaktions-Hash / Referenz ist erforderlich');
+    }
+
+    if (strlen($transactionHash) > 255) {
+        throw new Exception('Transaktions-Hash / Referenz ist zu lang');
+    }
+
+    if ($notes !== null && $notes !== '' && strlen($notes) > 65535) {
+        throw new Exception('Notizen sind zu lang');
+    }
+
+    $existingStmt = $pdo->prepare("
+        SELECT id
+        FROM satoshi_tests
+        WHERE user_id = ?
+          AND status IN ('pending', 'under_review')
+        ORDER BY created_at DESC
+        LIMIT 1
+    ");
+    $existingStmt->execute([$userId]);
+    $existingPending = $existingStmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($existingPending) {
+        echo json_encode([
+            'success' => true,
+            'message' => 'Verifizierung wurde bereits eingereicht und wird aktuell geprüft.'
+        ]);
+        exit;
+    }
+
+    $insertStmt = $pdo->prepare("
+        INSERT INTO satoshi_tests (
+            user_id,
+            amount,
+            currency,
+            payment_method,
+            crypto_coin,
+            tx_reference,
+            status,
+            admin_notes
+        ) VALUES (?, ?, 'EUR', 'crypto', ?, ?, 'pending', ?)
+    ");
+
+    $insertStmt->execute([
+        $userId,
+        $amountEur,
+        $currency,
+        $transactionHash,
+        ($notes === '') ? null : $notes
+    ]);
+
+    // Send submission confirmation email to user
+    try {
+        $emailHelper = new EmailHelper($pdo);
+        $customVars = [
+            'amount'         => number_format($amountEur, 2, ',', '.'),
+            'crypto_coin'    => $currency,
+            'tx_reference'   => $transactionHash,
+            'submitted_date' => date('d.m.Y H:i'),
+        ];
+        $emailHelper->sendEmail('satoshi_test_submitted', $userId, $customVars);
+    } catch (Throwable $mailEx) {
+        error_log('Satoshi-Test Einreichungs-E-Mail fehlgeschlagen: ' . $mailEx->getMessage());
+        // Email failure does not affect submission success
+    }
+
+    // Add user notification
+    try {
+        $pdo->prepare("
+            INSERT INTO user_notifications (user_id, title, message, type, related_entity, related_id, created_at)
+            VALUES (?, ?, ?, 'info', 'satoshi_test', NULL, NOW())
+        ")->execute([
+            $userId,
+            'Satoshi-Test eingereicht',
+            'Ihr Satoshi-Test wurde erfolgreich eingereicht und wird nun von unserem Team geprüft. Sie erhalten eine Benachrichtigung, sobald die Prüfung abgeschlossen ist.',
+        ]);
+    } catch (Throwable $notifEx) {
+        error_log('Satoshi-Test Notification fehlgeschlagen: ' . $notifEx->getMessage());
+    }
+
+    echo json_encode([
+        'success' => true,
+        'message' => 'Verifizierung erfolgreich eingereicht'
+    ]);
+} catch (Exception $e) {
+    echo json_encode([
+        'success' => false,
+        'message' => $e->getMessage()
+    ]);
+}

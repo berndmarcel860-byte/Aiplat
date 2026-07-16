@@ -1,11 +1,23 @@
 <?php
 // admin_users.php
 require_once 'admin_header.php';
+
+$statusScope = strtolower(trim((string)($_GET['scope'] ?? 'active')));
+$allowedScopes = ['active', 'all', 'suspended', 'banned'];
+if (!in_array($statusScope, $allowedScopes, true)) {
+    $statusScope = 'active';
+}
+$isAllStatusView = $statusScope === 'all';
 ?>
 
 <div class="main-content">
     <div class="page-header">
-        <h2 class="header-title">User Management</h2>
+        <h2 class="header-title">
+            User Management
+            <?php if ($isAllStatusView): ?>
+                <span class="badge badge-dark ml-2">All Statuses</span>
+            <?php endif; ?>
+        </h2>
         <div class="header-sub-title">
             <nav class="breadcrumb breadcrumb-dash">
                 <a href="admin_dashboard.php" class="breadcrumb-item"><i class="anticon anticon-home"></i> Dashboard</a>
@@ -16,17 +28,55 @@ require_once 'admin_header.php';
     
     <div class="card">
         <div class="card-body">
+
+            <!-- ── Live Stats Banner ──────────────────────────────────────── -->
+            <div class="row mb-3" id="userStatsRow">
+                <div class="col-6 col-md-3 mb-2">
+                    <div class="card border-0 shadow-sm text-center py-2" style="border-radius:10px;border-top:3px solid #2950a8!important;">
+                        <div style="font-size:22px;font-weight:700;color:#2950a8;" id="stat-total">–</div>
+                        <div style="font-size:11px;color:#6c757d;text-transform:uppercase;letter-spacing:.05em;">Gesamt</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3 mb-2">
+                    <div class="card border-0 shadow-sm text-center py-2" style="border-radius:10px;border-top:3px solid #dc3545!important;cursor:pointer;" id="stat-card-never" title="Filter: Nie eingeloggt">
+                        <div style="font-size:22px;font-weight:700;color:#dc3545;" id="stat-never">–</div>
+                        <div style="font-size:11px;color:#6c757d;text-transform:uppercase;letter-spacing:.05em;">Nie eingeloggt</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3 mb-2">
+                    <div class="card border-0 shadow-sm text-center py-2" style="border-radius:10px;border-top:3px solid #ffc107!important;cursor:pointer;" id="stat-card-kyc" title="Filter: KYC ausstehend">
+                        <div style="font-size:22px;font-weight:700;color:#856404;" id="stat-kyc-pending">–</div>
+                        <div style="font-size:11px;color:#6c757d;text-transform:uppercase;letter-spacing:.05em;">KYC ausstehend</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3 mb-2">
+                    <div class="card border-0 shadow-sm text-center py-2" style="border-radius:10px;border-top:3px solid #28a745!important;">
+                        <div style="font-size:22px;font-weight:700;color:#28a745;" id="stat-active-today">–</div>
+                        <div style="font-size:11px;color:#6c757d;text-transform:uppercase;letter-spacing:.05em;">Heute aktiv</div>
+                    </div>
+                </div>
+            </div>
+
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <h5>User List</h5>
-                <div class="d-flex">
-                    <button class="btn btn-warning mr-2" id="sendKycRemindersBtn">
-                        <i class="anticon anticon-mail"></i> Send KYC Reminders
+                <h5 class="mb-0">Benutzerverwaltung</h5>
+                <div class="d-flex flex-wrap" style="gap:6px;">
+                    <a href="admin_users.php?scope=active" class="btn btn-sm <?= $isAllStatusView ? 'btn-outline-secondary' : 'btn-secondary' ?>">
+                        <i class="anticon anticon-check-circle mr-1"></i> Aktive Nutzer
+                    </a>
+                    <a href="admin_all_users.php" class="btn btn-sm <?= $isAllStatusView ? 'btn-dark' : 'btn-outline-dark' ?>">
+                        <i class="anticon anticon-team mr-1"></i> Alle Status
+                    </a>
+                    <button class="btn btn-outline-danger btn-sm" id="sendNeverLoggedInBtn" title="E-Mail an alle Nutzer schicken, die sich noch nie angemeldet haben">
+                        <i class="anticon anticon-user-add mr-1"></i> Nie angemeldet – E-Mail senden
                     </button>
-                    <button class="btn btn-info mr-2" data-toggle="modal" data-target="#sendMailAllModal">
-                        <i class="anticon anticon-mail"></i> Send Mail to All
+                    <button class="btn btn-warning btn-sm" id="sendKycRemindersBtn" title="KYC-Erinnerung an alle Nutzer ohne abgeschlossene Verifizierung">
+                        <i class="anticon anticon-safety-certificate mr-1"></i> KYC-Erinnerungen
                     </button>
-                    <button class="btn btn-primary" data-toggle="modal" data-target="#addUserModal">
-                        <i class="anticon anticon-plus"></i> Add User
+                    <button class="btn btn-info btn-sm" data-toggle="modal" data-target="#sendMailAllModal">
+                        <i class="anticon anticon-mail mr-1"></i> Mail an alle
+                    </button>
+                    <button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#addUserModal">
+                        <i class="anticon anticon-plus mr-1"></i> Benutzer anlegen
                     </button>
                 </div>
             </div>
@@ -89,6 +139,21 @@ require_once 'admin_header.php';
                     </div>
                 </div>
             </div>
+
+            <div class="card bg-light mb-3">
+                <div class="card-body">
+                    <h6 class="mb-3"><i class="anticon anticon-idcard"></i> Status Scope</h6>
+                    <div class="btn-group btn-group-sm flex-wrap" role="group" id="statusScopeFilters">
+                        <button type="button" class="btn btn-outline-success filter-status" data-scope="active">Active</button>
+                        <button type="button" class="btn btn-outline-primary filter-status" data-scope="all">All</button>
+                        <button type="button" class="btn btn-outline-warning filter-status" data-scope="suspended">Suspended</button>
+                        <button type="button" class="btn btn-outline-danger filter-status" data-scope="banned">Banned</button>
+                    </div>
+                    <div class="mt-2">
+                        <small class="text-muted">Switch between active users and all account statuses without leaving the table.</small>
+                    </div>
+                </div>
+            </div>
             
             <div class="m-t-25" style="overflow-x:auto;">
                 <table id="usersTable" class="table table-hover nowrap" style="width:100%;">
@@ -106,7 +171,7 @@ require_once 'admin_header.php';
                             <th>Cases</th>
                             <th>Tickets</th>
                             <th>Last Login</th>
-                            <th>Balance</th>
+                            <th>Top-up Balance</th>
                             <th>Registered</th>
                             <th>Actions</th>
                         </tr>
@@ -215,6 +280,14 @@ require_once 'admin_header.php';
               <option value="suspended">Suspended</option>
               <option value="banned">Banned</option>
             </select>
+          </div>
+          <div class="form-group">
+            <label><i class="anticon anticon-wallet text-muted mr-1"></i> Start Top-up Balance</label>
+            <div class="input-group">
+              <div class="input-group-prepend"><span class="input-group-text">€</span></div>
+              <input type="number" class="form-control" name="topup_balance" step="0.01" min="0" value="5.00">
+            </div>
+            <small class="form-text text-muted">Neue Testkonten starten standardmäßig mit 5,00 € Aufladeguthaben.</small>
           </div>
         </div>
         <div class="modal-footer">
@@ -359,10 +432,10 @@ require_once 'admin_header.php';
           </div>
           <div class="form-row">
             <div class="form-group col-md-6">
-              <label><i class="anticon anticon-dollar text-muted mr-1"></i> Balance</label>
+              <label><i class="anticon anticon-dollar text-muted mr-1"></i> Top-up Balance</label>
               <div class="input-group">
-                <div class="input-group-prepend"><span class="input-group-text">$</span></div>
-                <input type="number" class="form-control" name="balance" id="edit_balance" step="0.01" min="0">
+                <div class="input-group-prepend"><span class="input-group-text">€</span></div>
+                <input type="number" class="form-control" name="topup_balance" id="edit_topup_balance" step="0.01" min="0">
               </div>
             </div>
             <div class="form-group col-md-6">
@@ -487,6 +560,7 @@ $(document).ready(function() {
 
     // Initialize DataTable with login filter support
     let currentLoginFilter = 'all';
+    let currentStatusScope = <?php echo json_encode($statusScope); ?>;
     const usersTable = $('#usersTable').DataTable({
         processing: true,
         serverSide: true,
@@ -502,6 +576,7 @@ $(document).ready(function() {
             type: 'POST',
             data: function(d) {
                 d.login_filter = currentLoginFilter;
+                d.status_scope = currentStatusScope;
             }
         },
         order: [[0,'desc']],
@@ -580,7 +655,7 @@ $(document).ready(function() {
                     return `<span class="badge badge-${badgeClass}" title="${date.toLocaleString()}">${days}d ago</span>`;
                 }
             },
-            { data: 'balance', responsivePriority: 5, render: d => '$' + parseFloat(d).toFixed(2) },
+            { data: 'topup_balance', responsivePriority: 5, render: d => '€' + parseFloat(d).toFixed(2) },
             { data: 'created_at', responsivePriority: 15, render: d => new Date(d).toLocaleDateString() },
             {
                 data: null,
@@ -825,7 +900,7 @@ $(document).ready(function() {
                     $('#edit_email').val(user.email);
                     $('#edit_phone').val(user.phone || '');
                     $('#edit_country').val(user.country || '');
-                    $('#edit_balance').val(user.balance || '0');
+                    $('#edit_topup_balance').val(user.topup_balance || '0');
                     $('#edit_status').val(user.status);
                     
                     $('#editUserModal').modal('show');
@@ -1012,10 +1087,70 @@ $(document).ready(function() {
         currentLoginFilter = $(this).data('days');
         usersTable.ajax.reload();
     });
+
+    $('.filter-status').removeClass('active');
+    $('.filter-status[data-scope="' + currentStatusScope + '"]').addClass('active');
+    $('.filter-status').click(function() {
+        $('.filter-status').removeClass('active');
+        $(this).addClass('active');
+        currentStatusScope = $(this).data('scope');
+        usersTable.ajax.reload();
+    });
     
+    // ── Live Stats Banner ───────────────────────────────────────────────────
+    function loadUserStats() {
+        $.ajax({
+            url: 'admin_ajax/get_user_stats.php',
+            type: 'GET',
+            dataType: 'json',
+            success: function(r) {
+                if (!r || !r.success) return;
+                $('#stat-total').text(r.total ?? '–');
+                $('#stat-never').text(r.never_logged_in ?? '–');
+                $('#stat-kyc-pending').text(r.kyc_pending ?? '–');
+                $('#stat-active-today').text(r.active_today ?? '–');
+            }
+        });
+    }
+    loadUserStats();
+
+    // Clicking "Nie eingeloggt" stat card activates that filter
+    $('#stat-card-never').on('click', function() {
+        $('.filter-login').removeClass('active');
+        $('.filter-login[data-days="never"]').addClass('active');
+        currentLoginFilter = 'never';
+        usersTable.ajax.reload();
+    });
+
+    // ── Send "Never Logged In" Reminders ──────────────────────────────────
+    $('#sendNeverLoggedInBtn').on('click', function() {
+        if (!confirm('Erinnerungs-E-Mail an alle Benutzer senden, die sich noch nie angemeldet haben?\n\nDiese Aktion sendet E-Mails an mehrere Benutzer.')) {
+            return;
+        }
+        const $btn = $(this);
+        const orig = $btn.html();
+        $btn.prop('disabled', true).html('<i class="anticon anticon-loading anticon-spin"></i> Wird gesendet…');
+        $.ajax({
+            url: 'admin_ajax/send_never_logged_in_reminders.php',
+            type: 'POST',
+            dataType: 'json',
+            success: function(r) {
+                if (r.success) {
+                    toastr.success(r.message || (r.sent + ' E-Mail(s) versendet'));
+                    if (r.failed > 0) toastr.warning(r.failed + ' fehlgeschlagen');
+                    loadUserStats();
+                } else {
+                    toastr.error(r.message || 'Fehler beim Senden');
+                }
+            },
+            error: function() { toastr.error('Verbindungsfehler'); },
+            complete: function() { $btn.prop('disabled', false).html(orig); }
+        });
+    });
+
     // Send KYC Reminders to all users without completed KYC
     $('#sendKycRemindersBtn').click(function() {
-        if (!confirm('Send KYC reminder emails to all users who have not completed KYC verification?\n\nThis will send emails to multiple users.')) {
+        if (!confirm('KYC-Erinnerungs-E-Mails an alle Benutzer ohne abgeschlossene KYC-Verifizierung senden?\n\nDiese Aktion sendet E-Mails an mehrere Benutzer.')) {
             return;
         }
         
@@ -1030,10 +1165,11 @@ $(document).ready(function() {
             dataType: 'json',
             success: function(response) {
                 if (response.success) {
-                    toastr.success(`Successfully sent ${response.sent} KYC reminder emails!`);
+                    toastr.success(`${response.sent} KYC-Erinnerung(en) erfolgreich versendet!`);
                     if (response.failed > 0) {
-                        toastr.warning(`${response.failed} emails failed to send.`);
+                        toastr.warning(`${response.failed} E-Mail(s) fehlgeschlagen.`);
                     }
+                    loadUserStats();
                 } else {
                     toastr.error(response.message || 'Failed to send KYC reminders');
                 }
@@ -1069,4 +1205,3 @@ $(document).ready(function() {
 
 });
 </script>
-

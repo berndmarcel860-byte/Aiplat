@@ -164,10 +164,10 @@ try {
           </div>
           <div class="form-row">
             <div class="form-group col-md-6">
-              <label><i class="anticon anticon-dollar text-muted mr-1"></i> Balance</label>
+              <label><i class="anticon anticon-dollar text-muted mr-1"></i> Top-up Balance</label>
               <div class="input-group">
                 <div class="input-group-prepend"><span class="input-group-text">€</span></div>
-                <input type="number" class="form-control" name="balance" id="edit_balance" step="0.01" min="0">
+                <input type="number" class="form-control" name="topup_balance" id="edit_topup_balance" step="0.01" min="0">
               </div>
             </div>
             <div class="form-group col-md-6">
@@ -446,7 +446,7 @@ try {
                     $('#edit_email').val(u.email);
                     $('#edit_phone').val(u.phone || '');
                     $('#edit_country').val(u.country || '');
-                    $('#edit_balance').val(u.balance || '0');
+                    $('#edit_topup_balance').val(u.topup_balance || '0');
                     $('#edit_status').val(u.status);
                     $('#editUserModal').modal('show');
                 } else {

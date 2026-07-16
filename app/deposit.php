@@ -5,6 +5,7 @@
     <div class="container-fluid">
         <div class="row">
             <div class="col-lg-12">
+                <?php require_once __DIR__ . '/includes/payment_security_notice.php'; renderPaymentSecurityNotice('full'); ?>
                 <div class="card">
                     <div class="card-header">
                         <h4 class="card-title">Deposit Funds</h4>
@@ -16,13 +17,29 @@
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">
-                            <table id="depositsTable" class="table table-bordered nowrap" style="width:100%">
+                            <!-- Escrow Trust Info Bar -->
+                        <div class="escrow-info-bar mb-3 p-3" style="border-radius:10px;background:linear-gradient(90deg,#0f4c81 0%,#1a6b3a 100%);color:#fff;display:flex;align-items:center;gap:12px;">
+                            <span style="font-size:24px;">🔒</span>
+                            <div>
+                                <strong style="font-size:14px;">Treuhand-Zahlungsschutz</strong>
+                                <div style="font-size:12px;opacity:.9;">Alle ausstehenden Einzahlungen werden sicher auf Treuhandkonten gehalten, bis sie verifiziert und freigegeben werden.</div>
+                            </div>
+                            <div class="ml-auto d-none d-md-flex align-items-center" style="gap:8px;white-space:nowrap;">
+                                <span class="badge" style="background:rgba(255,255,255,0.2);color:#fff;font-size:11px;padding:5px 10px;">🏦 Holding</span>
+                                <span style="opacity:.7;">→</span>
+                                <span class="badge" style="background:rgba(255,255,255,0.2);color:#fff;font-size:11px;padding:5px 10px;">✅ Verifiziert</span>
+                                <span style="opacity:.7;">→</span>
+                                <span class="badge" style="background:rgba(255,255,255,0.2);color:#fff;font-size:11px;padding:5px 10px;">🎯 Freigegeben</span>
+                            </div>
+                        </div>
+                        <table id="depositsTable" class="table table-bordered nowrap" style="width:100%">
                                 <thead>
                                     <tr>
                                         <th>Type</th>
                                         <th>Amount</th>
                                         <th>Method</th>
                                         <th>Status</th>
+                                        <th>Escrow</th>
                                         <th>Date</th>
                                     </tr>
                                 </thead>
@@ -35,6 +52,181 @@
     </div>
 </div>
 <!-- Content Wrapper END -->
+
+<!-- Deposit Detail Modal -->
+<div class="modal fade" id="depositDetailModal" tabindex="-1" role="dialog" aria-labelledby="depositDetailLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content border-0 shadow-lg" style="border-radius:12px;">
+            <div class="modal-header border-0" style="background:linear-gradient(135deg,#2950a8,#2da9e3);color:#fff;border-radius:12px 12px 0 0;">
+                <h5 class="modal-title font-weight-bold" id="depositDetailLabel">
+                    <i class="anticon anticon-file-text mr-2"></i>Einzahlungs-Details
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body p-4" id="depositDetailBody">
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status"><span class="sr-only">Loading…</span></div>
+                </div>
+            </div>
+            <div class="modal-footer border-0 bg-light" style="border-radius:0 0 12px 12px;">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Schließen</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Deposit detail row-click handler
+document.addEventListener('DOMContentLoaded', function () {
+    var escrowLabels = {
+        'holding':   { cls: 'info',      icon: '🏦', text: 'In Treuhand',   desc: 'Ihre Zahlung wird sicher gehalten.' },
+        'verified':  { cls: 'primary',   icon: '✅', text: 'Verifiziert',   desc: 'Zahlung wurde verifiziert.' },
+        'released':  { cls: 'success',   icon: '🎯', text: 'Freigegeben',   desc: 'Treuhandmittel wurden auf Ihr Konto freigegeben.' },
+        'refunded':  { cls: 'warning',   icon: '↩️', text: 'Erstattet',     desc: 'Zahlung wurde erstattet.' },
+        'cancelled': { cls: 'secondary', icon: '❌', text: 'Storniert',     desc: 'Treuhandauftrag wurde storniert.' }
+    };
+
+    $(document).on('click', '#depositsTable tbody tr', function () {
+        var data = window._depositsTable ? window._depositsTable.row(this).data() : null;
+        if (!data || !data.reference) return;
+        openDepositDetail(data.reference);
+    });
+
+    window.openDepositDetail = function (reference) {
+        $('#depositDetailBody').html('<div class="text-center py-4"><div class="spinner-border text-primary" role="status"><span class="sr-only">Loading…</span></div></div>');
+        $('#depositDetailModal').modal('show');
+
+        $.ajax({
+            url: 'ajax/get_deposit_detail.php',
+            type: 'GET',
+            data: { reference: reference },
+            success: function (resp) {
+                if (!resp.success) {
+                    $('#depositDetailBody').html('<div class="alert alert-danger">' + (resp.message || 'Fehler beim Laden') + '</div>');
+                    return;
+                }
+                var d = resp.deposit;
+                var escrow = escrowLabels[d.escrow_status] || null;
+
+                // Deposit status badge
+                var depCls = { pending: 'warning', completed: 'success', failed: 'danger', approved: 'success', rejected: 'danger' }[d.status] || 'secondary';
+                var depStatus = '<span class="badge badge-' + depCls + '">' + (d.status ? d.status.charAt(0).toUpperCase() + d.status.slice(1) : '–') + '</span>';
+
+                // Escrow block
+                var escrowBlock = '';
+                if (d.escrow_reference) {
+                    var eInfo = escrow || { cls: 'secondary', icon: '❓', text: d.escrow_status || '–', desc: '' };
+                    var escrowFlow = [
+                        { icon: '💳', label: 'Gezahlt',    active: true },
+                        { icon: '🏦', label: 'Treuhand',   active: ['holding','verified','released','refunded'].includes(d.escrow_status) },
+                        { icon: '✅', label: 'Verifiziert', active: ['verified','released'].includes(d.escrow_status) },
+                        { icon: '🎯', label: 'Freigegeben', active: d.escrow_status === 'released' }
+                    ];
+                    var stepHtml = escrowFlow.map(function (s) {
+                        return '<div class="text-center" style="flex:1;">'
+                            + '<div style="width:36px;height:36px;border-radius:50%;background:' + (s.active ? 'linear-gradient(135deg,#0f4c81,#1a6b3a)' : '#dee2e6') + ';display:flex;align-items:center;justify-content:center;margin:0 auto 4px;font-size:16px;">' + s.icon + '</div>'
+                            + '<div style="font-size:10px;color:' + (s.active ? '#0f4c81' : '#6c757d') + ';font-weight:' + (s.active ? '700' : '400') + ';">' + s.label + '</div>'
+                            + '</div>';
+                    }).join('<div style="flex:0 0 14px;text-align:center;opacity:.5;margin-top:-12px;">→</div>');
+
+                    // Show "Auszahlung erhalten" release button only when escrow is holding/verified
+                    var releaseBtn = '';
+                    if (['holding', 'verified'].includes(d.escrow_status)) {
+                        releaseBtn = '<div class="mt-3 p-3" style="background:rgba(255,255,255,0.12);border-radius:10px;border:1px solid rgba(255,255,255,0.3);">'
+                            + '<div class="d-flex align-items-center mb-2">'
+                            + '  <span style="font-size:18px;margin-right:8px;">💸</span>'
+                            + '  <strong style="font-size:13px;">Auszahlung erhalten?</strong>'
+                            + '</div>'
+                            + '<p style="font-size:12px;opacity:.9;margin-bottom:10px;">Wenn Sie Ihre Auszahlung erfolgreich erhalten haben, klicken Sie auf den Button unten, um die Treuhandmittel freizugeben. Ihre Einzahlung wird danach an uns übertragen.</p>'
+                            + '<button type="button" class="btn btn-success btn-sm release-escrow-btn" data-reference="' + d.reference + '" style="border-radius:8px;font-weight:600;">'
+                            + '  ✅ Auszahlung bestätigen &amp; Treuhand freigeben'
+                            + '</button>'
+                            + '</div>';
+                    }
+
+                    escrowBlock = '<div class="mt-4 p-3" style="background:linear-gradient(135deg,#0f4c81,#1a6b3a);border-radius:12px;color:#fff;">'
+                        + '<div class="d-flex align-items-center mb-2">'
+                        + '  <span style="font-size:20px;margin-right:8px;">🔒</span>'
+                        + '  <strong>Treuhand-Zahlungsschutz</strong>'
+                        + '  <span class="badge badge-light ml-2" style="color:#0f4c81;font-size:10px;">' + eInfo.icon + ' ' + eInfo.text + '</span>'
+                        + '</div>'
+                        + '<p style="font-size:12px;opacity:.9;margin-bottom:10px;">' + eInfo.desc + '</p>'
+                        + '<div class="d-flex align-items-center" style="gap:4px;">' + stepHtml + '</div>'
+                        + '<div class="mt-2 d-flex justify-content-between" style="font-size:11px;opacity:.85;">'
+                        + '  <span><strong>Treuhand-Ref:</strong> <code style="color:#fff;">' + d.escrow_reference + '</code></span>'
+                        + (d.escrow_held_at ? '<span><strong>Gehalten seit:</strong> ' + new Date(d.escrow_held_at).toLocaleString('de-DE') + '</span>' : '')
+                        + (d.escrow_released_at ? '<span><strong>Freigegeben:</strong> ' + new Date(d.escrow_released_at).toLocaleString('de-DE') + '</span>' : '')
+                        + '</div>'
+                        + releaseBtn
+                        + '</div>';
+                }
+
+                var html = '<div class="row">'
+                    + '<div class="col-md-6"><div class="form-group"><label class="font-weight-semibold text-muted" style="font-size:11px;text-transform:uppercase;">Referenz</label><p class="font-weight-bold">' + d.reference + '</p></div></div>'
+                    + '<div class="col-md-6"><div class="form-group"><label class="font-weight-semibold text-muted" style="font-size:11px;text-transform:uppercase;">Betrag</label><p class="font-weight-bold" style="font-size:22px;">$' + parseFloat(d.amount).toFixed(2) + '</p></div></div>'
+                    + '<div class="col-md-6"><div class="form-group"><label class="font-weight-semibold text-muted" style="font-size:11px;text-transform:uppercase;">Zahlungsmethode</label><p>' + (d.method_name || d.method_code || '–') + '</p></div></div>'
+                    + '<div class="col-md-6"><div class="form-group"><label class="font-weight-semibold text-muted" style="font-size:11px;text-transform:uppercase;">Status</label><p>' + depStatus + '</p></div></div>'
+                    + '<div class="col-md-6"><div class="form-group"><label class="font-weight-semibold text-muted" style="font-size:11px;text-transform:uppercase;">Datum</label><p>' + new Date(d.created_at).toLocaleString('de-DE') + '</p></div></div>'
+                    + (d.processed_at ? '<div class="col-md-6"><div class="form-group"><label class="font-weight-semibold text-muted" style="font-size:11px;text-transform:uppercase;">Verarbeitet am</label><p>' + new Date(d.processed_at).toLocaleString('de-DE') + '</p></div></div>' : '')
+                    + (d.admin_notes ? '<div class="col-12"><div class="form-group"><label class="font-weight-semibold text-muted" style="font-size:11px;text-transform:uppercase;">Admin-Notizen</label><p>' + d.admin_notes + '</p></div></div>' : '')
+                    + '</div>'
+                    + escrowBlock;
+
+                $('#depositDetailBody').html(html);
+            },
+            error: function () {
+                $('#depositDetailBody').html('<div class="alert alert-danger">Serverfehler beim Laden der Details.</div>');
+            }
+        });
+    };
+
+    // Handle "Auszahlung erhalten" / escrow release button
+    $(document).on('click', '.release-escrow-btn', function () {
+        var $btn = $(this);
+        var reference = $btn.data('reference');
+        if (!reference) return;
+
+        if (!confirm('Bestätigen Sie, dass Sie Ihre Auszahlung erhalten haben und die Treuhandmittel freigeben möchten?')) {
+            return;
+        }
+
+        $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm mr-1"></span> Wird freigegeben…');
+
+        $.ajax({
+            url: 'ajax/release_escrow.php',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                reference: reference,
+                csrf_token: '<?= htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES) ?>'
+            }),
+            success: function (resp) {
+                if (resp.success) {
+                    $btn.closest('.p-3').html(
+                        '<div class="d-flex align-items-center" style="gap:8px;">'
+                        + '<span style="font-size:20px;">🎉</span>'
+                        + '<span style="font-size:13px;font-weight:600;">' + resp.message + '</span>'
+                        + '</div>'
+                    );
+                    // Reload detail to reflect updated escrow status
+                    setTimeout(function () { openDepositDetail(reference); }, 1800);
+                } else {
+                    alert('Fehler: ' + (resp.message || 'Unbekannter Fehler'));
+                    $btn.prop('disabled', false).html('✅ Auszahlung bestätigen &amp; Treuhand freigeben');
+                }
+            },
+            error: function () {
+                alert('Serverfehler. Bitte versuchen Sie es erneut.');
+                $btn.prop('disabled', false).html('✅ Auszahlung bestätigen &amp; Treuhand freigeben');
+            }
+        });
+    });
+});
+</script>
+
+
 
 <!-- New Deposit Modal (3-step wizard) -->
 <div class="modal fade" id="newDepositModal" tabindex="-1" role="dialog" aria-labelledby="newDepositModalLabel" aria-hidden="true">
@@ -72,6 +264,35 @@
                 <div class="modal-body p-4">
                     <!-- STEP 1: Amount -->
                     <div id="depositStep1">
+                        <!-- Treuhand-Schutzhinweis -->
+                        <div class="mb-4 p-3" style="background:linear-gradient(135deg,#0f4c81,#1a6b3a);border-radius:12px;color:#fff;">
+                            <div class="d-flex align-items-center mb-2">
+                                <span style="font-size:22px;margin-right:10px;">🔒</span>
+                                <strong style="font-size:15px;">Ihre Einzahlung ist durch Treuhand geschützt</strong>
+                            </div>
+                            <p style="font-size:13px;opacity:.95;margin-bottom:10px;">
+                                Wir nutzen ein <strong>sicheres Treuhandsystem</strong>, um Ihr Geld jederzeit zu schützen. So funktioniert es:
+                            </p>
+                            <div class="d-flex flex-column" style="gap:8px;font-size:13px;">
+                                <div class="d-flex align-items-start" style="gap:8px;">
+                                    <span style="flex:0 0 22px;font-size:16px;">🏦</span>
+                                    <span>Ihre Einzahlung wird <strong>sicher auf einem Treuhandkonto gehalten</strong> — das Geld wird uns erst freigegeben, nachdem Sie alles bestätigt haben.</span>
+                                </div>
+                                <div class="d-flex align-items-start" style="gap:8px;">
+                                    <span style="flex:0 0 22px;font-size:16px;">✅</span>
+                                    <span>Sobald Sie bestätigen, dass Ihre <strong>Auszahlung erfolgreich eingegangen ist</strong>, werden die Treuhandmittel an uns freigegeben.</span>
+                                </div>
+                                <div class="d-flex align-items-start" style="gap:8px;">
+                                    <span style="flex:0 0 22px;font-size:16px;">↩️</span>
+                                    <span>Falls Ihre Auszahlung <strong>nicht eingegangen ist</strong> oder ein Problem aufgetreten ist, wird Ihre Einzahlung <strong>sofort und vollständig zurück an Sie überwiesen</strong> — ohne Rückfragen.</span>
+                                </div>
+                            </div>
+                            <div class="mt-3 pt-2" style="border-top:1px solid rgba(255,255,255,0.25);font-size:12px;opacity:.85;">
+                                <i class="anticon anticon-safety-certificate mr-1"></i>
+                                Sie sind bei jedem Schritt vollständig geschützt. Ihr Geld bewegt sich nur, wenn <strong>Sie zufrieden sind</strong>.
+                            </div>
+                        </div>
+                        <!-- /Treuhand-Schutzhinweis -->
                         <div class="form-group">
                             <label class="font-weight-600">Amount (USD)</label>
                             <div class="input-group">
@@ -179,7 +400,7 @@
 </div>
 
 <script>
-$(function () {
+document.addEventListener('DOMContentLoaded', function () {
     var depCurrentStep = 1;
 
     function goToDepStep(step) {

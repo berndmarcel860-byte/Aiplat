@@ -42,7 +42,9 @@ try {
                 method_code,
                 status,
                 DATE_FORMAT(created_at, '%Y-%m-%d %H:%i:%s') as created_at,
-                reference
+                reference,
+                fee_percentage,
+                fee_amount
               FROM withdrawals 
               WHERE user_id = :user_id";
 

@@ -49,6 +49,10 @@ try {
     ");
     $stmt->execute([$reason, $_SESSION['admin_id'], $withdrawalId]);
 
+    // === RESTORE USER BALANCE ===
+    $stmt = $pdo->prepare("UPDATE users SET balance = balance + ? WHERE id = ?");
+    $stmt->execute([(float)$withdrawal['amount'], (int)$withdrawal['user_id']]);
+
     // === GET USER ===
     $stmt = $pdo->prepare("SELECT id, email, first_name, last_name, balance FROM users WHERE id = ?");
     $stmt->execute([$withdrawal['user_id']]);

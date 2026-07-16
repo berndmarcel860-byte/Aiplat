@@ -13,10 +13,13 @@ try {
             d.*, 
             u.first_name AS user_first_name, 
             u.last_name AS user_last_name,
-            pm.method_name
+            pm.method_name,
+            e.status AS escrow_status,
+            e.reference AS escrow_reference
         FROM deposits d
         LEFT JOIN users u ON d.user_id = u.id
         LEFT JOIN payment_methods pm ON d.method_code = pm.method_code
+        LEFT JOIN escrow_accounts e ON e.deposit_id = d.id
         WHERE 1=1
     ";
     

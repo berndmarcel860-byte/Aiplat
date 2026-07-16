@@ -702,8 +702,8 @@ try {
                         </div>
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label>Balance (€)</label>
-                                <input type="number" class="form-control" id="editBalance" name="balance" step="0.01">
+                                <label>Top-up Balance (€)</label>
+                                <input type="number" class="form-control" id="editBalance" name="topup_balance" step="0.01">
                             </div>
                         </div>
                     </div>
@@ -1088,7 +1088,7 @@ $(document).ready(function() {
                 $('#editEmail').val(user.email);
                 $('#editPhone').val(user.phone);
                 $('#editStatus').val(user.status);
-                $('#editBalance').val(user.balance);
+                $('#editBalance').val(user.topup_balance || 0);
                 $('#editUserModal').modal('show');
             }
         });
@@ -1182,4 +1182,3 @@ $(document).ready(function() {
     });
 });
 </script>
-

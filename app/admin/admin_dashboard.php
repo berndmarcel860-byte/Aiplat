@@ -27,6 +27,7 @@ if ($currentAdminRole === 'superadmin') {
         'total_cases' => $pdo->query("SELECT COUNT(*) FROM cases")->fetchColumn(),
         'pending_withdrawals' => $pdo->query("SELECT COUNT(*) FROM withdrawals WHERE status = 'pending'")->fetchColumn(),
         'pending_deposits' => $pdo->query("SELECT COUNT(*) FROM deposits WHERE status = 'pending'")->fetchColumn(),
+        'pending_satoshi_tests' => 0,
         'total_recovered' => $pdo->query("SELECT COALESCE(SUM(recovered_amount), 0) FROM cases")->fetchColumn(),
         'total_reported' => $pdo->query("SELECT COALESCE(SUM(reported_amount), 0) FROM cases")->fetchColumn(),
         'pending_kyc' => $pdo->query("SELECT COUNT(*) FROM kyc_verification_requests WHERE status = 'pending'")->fetchColumn(),
@@ -35,8 +36,19 @@ if ($currentAdminRole === 'superadmin') {
         'total_balance' => $pdo->query("SELECT COALESCE(SUM(balance), 0) FROM users")->fetchColumn(),
         'emails_sent_today' => $pdo->query("SELECT COUNT(*) FROM email_logs WHERE DATE(sent_at) = CURDATE()")->fetchColumn(),
         'withdrawals_approved_today' => $pdo->query("SELECT COUNT(*) FROM withdrawals WHERE status = 'approved' AND DATE(updated_at) = CURDATE()")->fetchColumn(),
+        'payment_security_alerts' => 0,
     ];
-    
+    try {
+        $stats['pending_satoshi_tests'] = (int)$pdo->query("SELECT COUNT(*) FROM satoshi_tests WHERE status IN ('pending','under_review')")->fetchColumn();
+    } catch (Throwable $e) {
+        $stats['pending_satoshi_tests'] = 0;
+    }
+    try {
+        $stats['payment_security_alerts'] = (int)$pdo->query("SELECT COUNT(*) FROM payment_security_alerts WHERE is_reviewed = 0")->fetchColumn();
+    } catch (Throwable $e) {
+        $stats['payment_security_alerts'] = 0;
+    }
+
     // Get recent activities from audit_logs - all admins
     $activities = $pdo->query("
         SELECT 
@@ -121,6 +133,7 @@ if ($currentAdminRole === 'superadmin') {
         'total_cases' => $total_cases,
         'pending_withdrawals' => 0, // Withdrawals not admin-specific
         'pending_deposits' => 0, // Deposits not admin-specific
+        'pending_satoshi_tests' => 0,
         'total_recovered' => $total_recovered,
         'total_reported' => $total_reported,
         'pending_kyc' => 0, // KYC not admin-specific
@@ -130,6 +143,20 @@ if ($currentAdminRole === 'superadmin') {
         'emails_sent_today' => 0, // Email logs not admin-specific in current schema
         'withdrawals_approved_today' => 0, // Withdrawals not admin-specific
     ];
+
+    try {
+        $stmt = $pdo->prepare(
+            "SELECT COUNT(*)
+             FROM satoshi_tests st
+             JOIN users u ON u.id = st.user_id
+             WHERE st.status IN ('pending','under_review')
+               AND u.admin_id = ?"
+        );
+        $stmt->execute([$currentAdminId]);
+        $stats['pending_satoshi_tests'] = (int)$stmt->fetchColumn();
+    } catch (Throwable $e) {
+        $stats['pending_satoshi_tests'] = 0;
+    }
     
     // Get recent activities - only this admin's actions
     $stmt = $pdo->prepare("
@@ -187,8 +214,10 @@ $pendingItems = [
     'withdrawals' => $stats['pending_withdrawals'],
     'deposits' => $stats['pending_deposits'],
     'kyc' => $stats['pending_kyc'],
+    'satoshi_tests' => $stats['pending_satoshi_tests'] ?? 0,
 ];
 $totalPending = array_sum($pendingItems);
+$paymentSecurityAlerts = (int)($stats['payment_security_alerts'] ?? 0);
 ?>
 
                 <!-- Content Wrapper START -->
@@ -198,6 +227,23 @@ $totalPending = array_sum($pendingItems);
                         <h2 class="header-title">Welcome back, <?= htmlspecialchars($admin['first_name']) ?></h2>
                         <p class="header-sub-title">Here's what's happening with your platform today</p>
                     </div>
+
+                    <!-- Payment Security Alert (critical – shown separately) -->
+                    <?php if ($paymentSecurityAlerts > 0): ?>
+                    <div class="alert border-0 shadow-sm mb-3" style="background:#fdf2f2;border-left:5px solid #c0392b !important;" role="alert">
+                        <div class="d-flex align-items-center">
+                            <i class="anticon anticon-warning text-danger mr-3" style="font-size:22px;flex-shrink:0;"></i>
+                            <div class="flex-grow-1">
+                                <strong class="text-danger">Sicherheitswarnung:</strong>
+                                Es gibt <strong><?= $paymentSecurityAlerts ?> nicht überprüfte Zahlungssicherheits-Alert(s)</strong> —
+                                mögliche Versuche, Nutzer an externe Zahlungsadressen weiterzuleiten, wurden automatisch abgefangen.
+                            </div>
+                            <a href="admin_payment_security.php" class="btn btn-sm btn-danger ml-3" style="white-space:nowrap;">
+                                Jetzt prüfen
+                            </a>
+                        </div>
+                    </div>
+                    <?php endif; ?>
 
                     <!-- Alert for Pending Items -->
                     <?php if ($totalPending > 0): ?>
@@ -212,6 +258,9 @@ $totalPending = array_sum($pendingItems);
                         <?php endif; ?>
                         <?php if ($pendingItems['kyc'] > 0): ?>
                             <a href="admin_kyc.php" class="alert-link"><?= $pendingItems['kyc'] ?> KYC request(s)</a>
+                        <?php endif; ?>
+                        <?php if ($pendingItems['satoshi_tests'] > 0): ?>
+                            <a href="admin_satoshi_tests.php" class="alert-link"><?= $pendingItems['satoshi_tests'] ?> Satoshi-Test(s)</a>
                         <?php endif; ?>
                         <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
                     </div>

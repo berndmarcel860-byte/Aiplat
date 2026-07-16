@@ -116,8 +116,8 @@ class EmailTemplateHelper {
             ];
         }
 
-        // Cache site URL for tracking pixel generation
-        $this->siteUrl = rtrim($this->systemSettings['site_url'] ?? '', '/');
+        // Cache site URL for tracking pixel generation — strip trailing /app to avoid double path
+        $this->siteUrl = rtrim(preg_replace('#/app/?$#', '', rtrim($this->systemSettings['site_url'] ?? '', '/')), '/');
         if (empty($this->siteUrl)) {
             error_log("EmailTemplateHelper: system_settings.site_url is empty — tracking pixel URLs will be malformed.");
         }

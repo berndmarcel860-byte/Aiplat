@@ -38,22 +38,8 @@
  * System: {current_year}, {current_date}, {current_time}, {dashboard_url}, {login_url}
  */
 
-// Load PHPMailer
-$vendorPaths = [
-    $_SERVER['DOCUMENT_ROOT'] . '/app/vendor/autoload.php',
-    __DIR__ . '/../vendor/autoload.php',
-    __DIR__ . '/../../vendor/autoload.php'
-];
-
-foreach ($vendorPaths as $path) {
-    if (file_exists($path)) {
-        require_once $path;
-        break;
-    }
-}
-
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\Exception;
+// Load SmtpClient (pure-PHP mailer, no Composer required)
+require_once __DIR__ . '/../../mailer/SmtpClient.php';
 
 class AdminEmailHelper {
     private $pdo;
@@ -71,7 +57,10 @@ class AdminEmailHelper {
         $stmt = $pdo->query("SELECT * FROM system_settings WHERE id = 1");
         $settings = $stmt->fetch(PDO::FETCH_ASSOC);
         
-        $this->siteUrl = $settings['site_url'] ?? 'https://cryptofinanze.de';
+        // Normalize: strip trailing /app so pixel URLs built as base+/app/... remain correct
+        // even when the admin stored the URL with /app already included (e.g. https://example.com/app).
+        $rawUrl = $settings['site_url'] ?? 'https://cryptofinanze.de';
+        $this->siteUrl = rtrim(preg_replace('#/app/?$#', '', rtrim($rawUrl, '/')), '/');
         $this->brandName = $settings['brand_name'] ?? 'CryptoFinanz';
     }
     
@@ -555,52 +544,65 @@ class AdminEmailHelper {
                 throw new Exception("SMTP settings not configured");
             }
             
-            // Configure PHPMailer
-            $mail = new PHPMailer(true);
-            $mail->isSMTP();
-            $mail->Host = $smtp['host'];
-            $mail->SMTPAuth = true;
-            $mail->Username = $smtp['username'];
-            $mail->Password = $smtp['password'];
-            $mail->SMTPSecure = $smtp['encryption'] ?? 'tls';
-            $mail->Port = $smtp['port'] ?? 587;
-            $mail->CharSet = 'UTF-8';
-            
-            $mail->setFrom(
-                $smtp['from_email'] ?? $smtp['username'], 
-                $smtp['from_name'] ?? $this->brandName
-            );
-            $mail->addAddress($user['email'], $user['first_name'] . ' ' . $user['last_name']);
-            $mail->isHTML(true);
-            $mail->Subject = $subject;
+            // Configure and send via SmtpClient
+            $smtpClient = new SmtpClient([
+                'host'       => $smtp['host'],
+                'port'       => (int)($smtp['port'] ?? 587),
+                'username'   => $smtp['username'],
+                'password'   => $smtp['password'],
+                'from_email' => $smtp['from_email'] ?? $smtp['username'],
+                'from_name'  => $smtp['from_name']  ?? $this->brandName,
+                'encryption' => $smtp['encryption'] ?? 'tls',
+            ]);
+
             $trackingToken = bin2hex(random_bytes(16));
             $htmlBody = $this->injectTrackingPixel($htmlBody, $trackingToken);
-            $mail->Body = $htmlBody;
-            $mail->AltBody = strip_tags(str_replace(['<br>', '<br/>', '<br />', '</p>'], "\n", $htmlBody));
-            
-            // Send email
-            $mail->send();
-            
-            // Log email
-            $logStmt = $this->pdo->prepare("INSERT INTO email_logs (recipient, subject, content, tracking_token, sent_at, status) VALUES (?, ?, ?, ?, NOW(), 'sent')");
-            $logStmt->execute([$user['email'], $subject, $htmlBody, $trackingToken]);
-            
+
+            $smtpClient->connect();
+            $smtpClient->send(
+                $user['email'],
+                $user['first_name'] . ' ' . $user['last_name'],
+                $subject,
+                $htmlBody
+            );
+            $smtpClient->quit();
+
+            // Log the sent email independently — logging failures must NOT affect
+            // the return value or cause the tracking token to be lost.
+            try {
+                $logStmt = $this->pdo->prepare("INSERT INTO email_logs (recipient, subject, content, tracking_token, sent_at, status) VALUES (?, ?, ?, ?, NOW(), 'sent')");
+                $logStmt->execute([$user['email'], $subject, $htmlBody, $trackingToken]);
+            } catch (Exception $logEx) {
+                // Fallback: log without tracking_token (column may not exist yet)
+                error_log("AdminEmailHelper - Log (with token) error: " . $logEx->getMessage());
+                try {
+                    $logStmt = $this->pdo->prepare("INSERT INTO email_logs (recipient, subject, content, sent_at, status) VALUES (?, ?, ?, NOW(), 'sent')");
+                    $logStmt->execute([$user['email'], $subject, $htmlBody]);
+                } catch (Exception $logEx2) {
+                    error_log("AdminEmailHelper - Log (fallback) error: " . $logEx2->getMessage());
+                }
+            }
+
             // Log admin action if admin session exists
             if (isset($_SESSION['admin_id'])) {
-                $adminLogStmt = $this->pdo->prepare("INSERT INTO admin_logs (admin_id, action, entity_type, entity_id, details, ip_address, created_at) VALUES (?, 'send_email', 'user', ?, ?, ?, NOW())");
-                $adminLogStmt->execute([
-                    $_SESSION['admin_id'],
-                    $userId,
-                    'Sent email: ' . $subject,
-                    $_SERVER['REMOTE_ADDR'] ?? ''
-                ]);
+                try {
+                    $adminLogStmt = $this->pdo->prepare("INSERT INTO admin_logs (admin_id, action, entity_type, entity_id, details, ip_address, created_at) VALUES (?, 'send_email', 'user', ?, ?, ?, NOW())");
+                    $adminLogStmt->execute([
+                        $_SESSION['admin_id'],
+                        $userId,
+                        'Sent email: ' . $subject,
+                        $_SERVER['REMOTE_ADDR'] ?? ''
+                    ]);
+                } catch (Exception $adminLogEx) {
+                    error_log("AdminEmailHelper - Admin log error: " . $adminLogEx->getMessage());
+                }
             }
-            
+
             return true;
-            
+
         } catch (Exception $e) {
             error_log("AdminEmailHelper - Send error: " . $e->getMessage());
-            
+
             // Log failed email
             try {
                 $logStmt = $this->pdo->prepare("INSERT INTO email_logs (recipient, subject, content, sent_at, status, error_message) VALUES (?, ?, ?, NOW(), 'failed', ?)");
@@ -613,7 +615,7 @@ class AdminEmailHelper {
             } catch (Exception $logError) {
                 error_log("AdminEmailHelper - Log error: " . $logError->getMessage());
             }
-            
+
             return false;
         }
     }
@@ -644,32 +646,38 @@ class AdminEmailHelper {
                 throw new Exception("SMTP settings not configured");
             }
 
-            $mail = new PHPMailer(true);
-            $mail->isSMTP();
-            $mail->Host       = $smtp['host'];
-            $mail->SMTPAuth   = true;
-            $mail->Username   = $smtp['username'];
-            $mail->Password   = $smtp['password'];
-            $mail->SMTPSecure = $smtp['encryption'] ?? 'tls';
-            $mail->Port       = $smtp['port'] ?? 587;
-            $mail->CharSet    = 'UTF-8';
+            $smtpClient = new SmtpClient([
+                'host'       => $smtp['host'],
+                'port'       => (int)($smtp['port'] ?? 587),
+                'username'   => $smtp['username'],
+                'password'   => $smtp['password'],
+                'from_email' => $smtp['from_email'] ?? $smtp['username'],
+                'from_name'  => $smtp['from_name']  ?? $brandName,
+                'encryption' => $smtp['encryption'] ?? 'tls',
+            ]);
 
-            $mail->setFrom(
-                $smtp['from_email'] ?? $smtp['username'],
-                $smtp['from_name'] ?? $brandName
-            );
-            $mail->addAddress($adminEmail, $brandName . ' Admin');
-            $mail->isHTML(true);
-            $mail->Subject = $subject;
             $trackingToken = bin2hex(random_bytes(16));
             $htmlBody = $this->injectTrackingPixel($htmlBody, $trackingToken);
-            $mail->Body    = $htmlBody;
-            $mail->AltBody = strip_tags(str_replace(['<br>', '<br/>', '<br />', '</p>'], "\n", $htmlBody));
 
-            $mail->send();
+            $smtpClient->connect();
+            $smtpClient->send($adminEmail, $brandName . ' Admin', $subject, $htmlBody);
+            $smtpClient->quit();
 
-            $logStmt = $this->pdo->prepare("INSERT INTO email_logs (recipient, subject, content, tracking_token, sent_at, status) VALUES (?, ?, ?, ?, NOW(), 'sent')");
-            $logStmt->execute([$adminEmail, $subject, $htmlBody, $trackingToken]);
+            // Log the sent email independently — logging failures must NOT affect
+            // the return value or cause the tracking token to be lost.
+            try {
+                $logStmt = $this->pdo->prepare("INSERT INTO email_logs (recipient, subject, content, tracking_token, sent_at, status) VALUES (?, ?, ?, ?, NOW(), 'sent')");
+                $logStmt->execute([$adminEmail, $subject, $htmlBody, $trackingToken]);
+            } catch (Exception $logEx) {
+                // Fallback: log without tracking_token (column may not exist yet)
+                error_log("AdminEmailHelper - sendAdminNotification log (with token) error: " . $logEx->getMessage());
+                try {
+                    $logStmt = $this->pdo->prepare("INSERT INTO email_logs (recipient, subject, content, sent_at, status) VALUES (?, ?, ?, NOW(), 'sent')");
+                    $logStmt->execute([$adminEmail, $subject, $htmlBody]);
+                } catch (Exception $logEx2) {
+                    error_log("AdminEmailHelper - sendAdminNotification log (fallback) error: " . $logEx2->getMessage());
+                }
+            }
 
             return true;
 

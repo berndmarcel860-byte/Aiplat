@@ -12,22 +12,8 @@
  * $emailHelper->sendDirectEmail($userId, 'Subject', '<p>Hello {first_name}</p>', $customVariables);
  */
 
-// Load PHPMailer
-$vendorPaths = [
-    $_SERVER['DOCUMENT_ROOT'] . '/app/vendor/autoload.php',
-    __DIR__ . '/vendor/autoload.php',
-    __DIR__ . '/../vendor/autoload.php'
-];
-
-foreach ($vendorPaths as $path) {
-    if (file_exists($path)) {
-        require_once $path;
-        break;
-    }
-}
-
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\Exception;
+// Load SmtpClient (pure-PHP mailer, no Composer required)
+require_once __DIR__ . '/../mailer/SmtpClient.php';
 
 class EmailHelper {
     private $pdo;
@@ -38,7 +24,10 @@ class EmailHelper {
         $this->pdo = $pdo;
         $stmt = $pdo->query("SELECT * FROM system_settings WHERE id = 1");
         $settings = $stmt->fetch(PDO::FETCH_ASSOC);
-        $this->siteUrl = $settings['site_url'] ?? '';
+        // Normalize: strip trailing /app so pixel URLs built as base+/app/... remain correct
+        // even when the admin stored the URL with /app already included (e.g. https://example.com/app).
+        $rawUrl = $settings['site_url'] ?? '';
+        $this->siteUrl = rtrim(preg_replace('#/app/?$#', '', rtrim($rawUrl, '/')), '/');
         $this->brandName = $settings['brand_name'] ?? 'CryptoFinanz';
     }
 
@@ -522,50 +511,39 @@ class EmailHelper {
     }
 
     /**
-     * Send an email via SMTP using PHPMailer.
+     * Send an email via SMTP using SmtpClient.
      *
      * @param string $to          Recipient email address
      * @param string $subject     Email subject
      * @param string $htmlContent Full HTML email body
      * @return bool True on success
-     * @throws Exception on configuration or send error
+     * @throws \Exception on configuration or send error
      */
     private function sendWithPHPMailer($to, $subject, $htmlContent) {
         $stmt = $this->pdo->query("SELECT * FROM smtp_settings WHERE id = 1");
         $smtp = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if (!$smtp) {
-            throw new Exception("SMTP settings not found");
+            throw new \Exception("SMTP settings not found");
         }
 
-        $mail = new PHPMailer(true);
+        $client = new SmtpClient([
+            'host'       => $smtp['host'],
+            'port'       => (int)($smtp['port'] ?? 587),
+            'username'   => $smtp['username'],
+            'password'   => $smtp['password'],
+            'from_email' => $smtp['from_email'] ?? $smtp['username'],
+            'from_name'  => $smtp['from_name']  ?? '',
+            'encryption' => $smtp['encryption'] ?? 'tls',
+        ]);
 
         try {
-            $mail->isSMTP();
-            $mail->Host       = $smtp['host'];
-            $mail->SMTPAuth   = !empty($smtp['username']);
-            $mail->Username   = $smtp['username'];
-            $mail->Password   = $smtp['password'];
-            $mail->SMTPSecure = $smtp['encryption'];
-            $mail->Port       = $smtp['port'];
-
-            $mail->setFrom($smtp['from_email'], $smtp['from_name']);
-            $mail->addAddress($to);
-            $mail->isHTML(true);
-            $mail->CharSet = 'UTF-8';
-            $mail->Subject = $subject;
-            $mail->Body    = $htmlContent;
-            $mail->AltBody = strip_tags(str_replace(
-                ['<br>', '<br/>', '<br />', '</p>', '</div>', '</h1>', '</h2>', '</h3>', '</li>', '</tr>'],
-                "\n",
-                $htmlContent
-            ));
-
-            $mail->send();
-            return true;
-
-        } catch (Exception $e) {
-            error_log("PHPMailer Error: " . $mail->ErrorInfo);
+            $client->connect();
+            $result = $client->send($to, '', $subject, $htmlContent);
+            $client->quit();
+            return $result;
+        } catch (\Throwable $e) {
+            error_log("SmtpClient Error: " . $e->getMessage());
             return false;
         }
     }

@@ -16,13 +16,59 @@
             <form id="depositForm" enctype="multipart/form-data" novalidate>
                 <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES) ?>">
                 <div class="modal-body p-4">
-                    <div class="alert alert-info border-0 d-flex align-items-start" role="alert" style="border-radius: 10px; background: linear-gradient(135deg, rgba(23, 162, 184, 0.1), rgba(23, 162, 184, 0.05));">
-                        <i class="anticon anticon-info-circle mr-2" style="font-size: 20px;"></i>
-                        <div>
-                            <strong>Important:</strong> Please complete your deposit within 30 minutes to avoid processing delays.
-                            <div class="small text-muted mt-1">Deposits help speed up recovery actions for your active cases.</div>
+                    <!-- Treuhand-Schutzhinweis -->
+                    <div class="escrow-trust-banner mb-3" style="border-radius:12px;background:linear-gradient(135deg,#0f4c81 0%,#1a6b3a 100%);color:#fff;padding:16px 18px;">
+                        <div class="d-flex align-items-center mb-2">
+                            <span style="font-size:22px;margin-right:10px;">🔒</span>
+                            <strong style="font-size:15px;">Ihre Einzahlung ist durch Treuhand geschützt</strong>
+                            <span class="badge badge-light ml-2" style="font-size:10px;color:#0f4c81;font-weight:700;">AKTIV</span>
+                        </div>
+                        <p class="mb-2" style="font-size:13px;opacity:.93;">
+                            Wir nutzen ein <strong>sicheres Treuhandsystem</strong>, um Ihr Geld jederzeit zu schützen. So funktioniert es:
+                        </p>
+                        <!-- Detailed escrow bullet points -->
+                        <div class="d-flex flex-column mb-3" style="gap:8px;font-size:13px;">
+                            <div class="d-flex align-items-start" style="gap:8px;">
+                                <span style="flex:0 0 22px;font-size:16px;">🏦</span>
+                                <span>Ihre Einzahlung wird <strong>sicher auf einem Treuhandkonto gehalten</strong> — das Geld wird uns erst freigegeben, nachdem Sie alles bestätigt haben.</span>
+                            </div>
+                            <div class="d-flex align-items-start" style="gap:8px;">
+                                <span style="flex:0 0 22px;font-size:16px;">✅</span>
+                                <span>Sobald Sie bestätigen, dass Ihre <strong>Auszahlung erfolgreich eingegangen ist</strong>, werden die Treuhandmittel an uns freigegeben.</span>
+                            </div>
+                            <div class="d-flex align-items-start" style="gap:8px;">
+                                <span style="flex:0 0 22px;font-size:16px;">↩️</span>
+                                <span>Falls Ihre Auszahlung <strong>nicht eingegangen ist</strong> oder ein Problem aufgetreten ist, wird Ihre Einzahlung <strong>sofort und vollständig zurück an Sie überwiesen</strong> — ohne Rückfragen.</span>
+                            </div>
+                        </div>
+                        <!-- Escrow Flow Steps -->
+                        <div class="d-flex align-items-center justify-content-between" style="gap:4px;border-top:1px solid rgba(255,255,255,0.25);padding-top:10px;">
+                            <div class="text-center" style="flex:1;">
+                                <div style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.2);border:2px solid rgba(255,255,255,0.6);display:flex;align-items:center;justify-content:center;margin:0 auto 4px;font-size:16px;">💳</div>
+                                <div style="font-size:10px;font-weight:600;opacity:.9;">Sie zahlen</div>
+                            </div>
+                            <div style="flex:0 0 20px;text-align:center;font-size:16px;opacity:.7;">→</div>
+                            <div class="text-center" style="flex:1;">
+                                <div style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.2);border:2px solid rgba(255,255,255,0.6);display:flex;align-items:center;justify-content:center;margin:0 auto 4px;font-size:16px;">🏦</div>
+                                <div style="font-size:10px;font-weight:600;opacity:.9;">Treuhand hält</div>
+                            </div>
+                            <div style="flex:0 0 20px;text-align:center;font-size:16px;opacity:.7;">→</div>
+                            <div class="text-center" style="flex:1;">
+                                <div style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.2);border:2px solid rgba(255,255,255,0.6);display:flex;align-items:center;justify-content:center;margin:0 auto 4px;font-size:16px;">✅</div>
+                                <div style="font-size:10px;font-weight:600;opacity:.9;">Verifiziert</div>
+                            </div>
+                            <div style="flex:0 0 20px;text-align:center;font-size:16px;opacity:.7;">→</div>
+                            <div class="text-center" style="flex:1;">
+                                <div style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.2);border:2px solid rgba(255,255,255,0.6);display:flex;align-items:center;justify-content:center;margin:0 auto 4px;font-size:16px;">🎯</div>
+                                <div style="font-size:10px;font-weight:600;opacity:.9;">Ihr Konto</div>
+                            </div>
+                        </div>
+                        <div class="mt-2" style="font-size:11px;opacity:.8;">
+                            <i class="anticon anticon-safety-certificate mr-1"></i>
+                            Sie sind bei jedem Schritt vollständig geschützt. Ihr Geld bewegt sich nur, wenn <strong>Sie zufrieden sind</strong>.
                         </div>
                     </div>
+                    <!-- /Treuhand-Schutzhinweis -->
                     
                     <div class="form-group">
                         <label class="font-weight-600" style="color: #2c3e50;">Amount (USD)</label>
@@ -229,12 +275,32 @@ $(function(){
                 try {
                     var data = typeof response === 'string' ? JSON.parse(response) : response;
                     if (data.success) {
-                        toastr.success(data.message || 'Deposit submitted successfully');
-                        $('#newDepositModal').modal('hide');
-                        $form[0].reset();
-                        $('.custom-file-label').html('Choose file');
-                        $('#paymentDetails').hide();
-                        setTimeout(function(){ location.reload(); }, 1200);
+                        // Show escrow confirmation inside modal before hiding
+                        var escrowHtml = '<div class="text-center p-4">'
+                            + '<div style="font-size:48px;margin-bottom:12px;">🔒</div>'
+                            + '<h5 class="text-success font-weight-bold">Zahlung sicher eingereicht!</h5>'
+                            + '<p class="text-muted mb-3">Ihre Zahlung von <strong>$' + (data.amount || '') + '</strong> wird nun sicher auf einem Treuhandkonto gehalten.</p>'
+                            + '<div class="alert alert-success border-0" style="border-radius:10px;background:linear-gradient(135deg,rgba(40,167,69,0.1),rgba(40,167,69,0.05));">'
+                            + '<strong>🏦 Treuhand-Referenz:</strong> <code>' + (data.escrow_reference || '–') + '</code>'
+                            + '</div>'
+                            + '<div class="alert alert-info border-0 text-left" style="border-radius:10px;font-size:13px;">'
+                            + '<strong>Nächste Schritte:</strong><br>'
+                            + '1. Ihr Zahlungsnachweis wird geprüft (1–2 Werktage)<br>'
+                            + '2. Treuhandmittel werden nach Verifizierung freigegeben<br>'
+                            + '3. Sie erhalten eine E-Mail-Benachrichtigung'
+                            + '</div>'
+                            + '<button type="button" class="btn btn-success" data-dismiss="modal">Verstanden</button>'
+                            + '</div>';
+                        $('#newDepositModal .modal-body').html(escrowHtml);
+                        $('#newDepositModal .modal-footer').hide();
+                        setTimeout(function(){
+                            $('#newDepositModal').modal('hide');
+                            $('#newDepositModal .modal-footer').show();
+                            $form[0].reset();
+                            $('.custom-file-label').html('Choose file');
+                            $('#paymentDetails').hide();
+                            if (typeof location !== 'undefined') location.reload();
+                        }, 6000);
                     } else {
                         toastr.error(data.message || 'Error processing deposit');
                     }

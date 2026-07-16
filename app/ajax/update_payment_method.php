@@ -52,6 +52,9 @@ try {
         $account_holder = trim($_POST['account_holder'] ?? '');
         $iban           = preg_replace('/\s+/', '', strtoupper(trim($_POST['iban'] ?? '')));
         $bic            = trim($_POST['bic'] ?? '');
+        $account_number = trim($_POST['account_number'] ?? '');
+        $routing_number = trim($_POST['routing_number'] ?? '');
+        $sort_code      = trim($_POST['sort_code'] ?? '');
         $label          = trim($_POST['label'] ?? '');
 
         if (!empty($iban) && !preg_match('/^[A-Z]{2}[0-9]{2}[A-Z0-9]{1,30}$/', $iban)) {
@@ -61,7 +64,8 @@ try {
         $stmt = $pdo->prepare(
             "UPDATE user_payment_methods
              SET payment_method = ?, bank_name = ?, account_holder = ?,
-                 iban = ?, bic = ?, label = ?, updated_at = NOW()
+                 iban = ?, bic = ?, account_number = ?, routing_number = ?,
+                 sort_code = ?, label = ?, updated_at = NOW()
              WHERE id = ? AND user_id = ?"
         );
         $stmt->execute([
@@ -70,6 +74,9 @@ try {
             $account_holder ?: null,
             $iban ?: null,
             $bic ?: null,
+            $account_number ?: null,
+            $routing_number ?: null,
+            $sort_code ?: null,
             $label ?: $payment_method,
             $id,
             $user_id

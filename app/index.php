@@ -21,6 +21,7 @@ if (!file_exists(__DIR__ . '/config.php')) {
     exit;
 }
 require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/database/balance_helpers.php';
 
 // Include header.php
 if (file_exists(__DIR__ . '/header.php')) {
@@ -66,16 +67,26 @@ $statusCounts = [];
 $userId = $_SESSION['user_id'] ?? null;
 $kyc_status = 'pending';
 $loginLogs = [];
+$packagesFeatureEnabled = true;
+$satoshiVerified = false;
+$requiresSatoshiVerification = false;
+$satoshiVerificationThreshold = 50000.00;
+$packageCtaUrl = 'packages.php';
+$packageCtaLabel = 'Jetzt upgraden';
+$allowSatoshiAsPaymentVerification = false;
+$currentTopupBalance = 0.0;
 
 // Load current user if logged in
 if (!empty($userId)) {
     try {
-        $userStmt = $pdo->prepare("SELECT id, first_name, force_password_change, balance, last_login, is_verified FROM users WHERE id = ?");
+        $topupBalanceSql = getUserTopupBalanceSql($pdo);
+        $userStmt = $pdo->prepare("SELECT id, first_name, force_password_change, balance, {$topupBalanceSql} AS topup_balance, last_login, is_verified FROM users WHERE id = ?");
         $userStmt->execute([$userId]);
         $currentUser = $userStmt->fetch(PDO::FETCH_ASSOC);
         if ($currentUser) {
             $passwordChangeRequired = ((int)$currentUser['force_password_change'] === 1);
             $currentUserLogin = $currentUser['first_name'] ?: 'Unknown User';
+            $currentTopupBalance = (float)($currentUser['topup_balance'] ?? 0);
         }
     } catch (PDOException $e) {
         error_log("Database error (user fetch): " . $e->getMessage());
@@ -150,6 +161,89 @@ if (!empty($userId)) {
         );
         $unreadRepliesStmt->execute([$userId]);
         $unreadReplies = $unreadRepliesStmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Recent deposit requests
+        $recentDepositsStmt = $pdo->prepare(
+            "SELECT id, amount, method_code, reference, status, created_at
+             FROM deposits WHERE user_id = ? ORDER BY created_at DESC LIMIT 5"
+        );
+        $recentDepositsStmt->execute([$userId]);
+        $recentDeposits = $recentDepositsStmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Recent withdrawal requests
+        $recentWithdrawalsStmt = $pdo->prepare(
+            "SELECT id, amount, method_code, reference, status, created_at,
+                    fee_percentage, fee_amount, fee_proof_path, fee_status
+             FROM withdrawals WHERE user_id = ? ORDER BY created_at DESC LIMIT 5"
+        );
+        $recentWithdrawalsStmt->execute([$userId]);
+        $recentWithdrawals = $recentWithdrawalsStmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Pending withdrawal check (for attention alert on dashboard)
+        $pendingWdStmt = $pdo->prepare(
+            "SELECT id, reference, amount, fee_amount, fee_percentage
+             FROM withdrawals WHERE user_id = ? AND status IN ('pending','processing')
+             ORDER BY created_at DESC LIMIT 1"
+        );
+        $pendingWdStmt->execute([$userId]);
+        $pendingWithdrawal = $pendingWdStmt->fetch(PDO::FETCH_ASSOC) ?: null;
+
+        // User package: check if active paid subscription exists
+        $packageStmt = $pdo->prepare(
+            "SELECT up.status, p.price, p.name AS package_name
+             FROM user_packages up
+             JOIN packages p ON up.package_id = p.id
+             WHERE up.user_id = ?
+             ORDER BY up.end_date DESC LIMIT 1"
+        );
+        $packageStmt->execute([$userId]);
+        $userPackage = $packageStmt->fetch(PDO::FETCH_ASSOC) ?: null;
+        // is_trial = free package (price 0) OR no active paid package
+        $hasActivePaidPackage = $userPackage
+            && $userPackage['status'] === 'active'
+            && (float)$userPackage['price'] > 0;
+        $isTrialUser = !$hasActivePaidPackage;
+
+        try {
+            $pkgFeatureStmt = $pdo->query("SELECT packages_enabled FROM system_settings WHERE id = 1 LIMIT 1");
+            $pkgFeatureRow = $pkgFeatureStmt->fetch(PDO::FETCH_ASSOC);
+            if ($pkgFeatureRow !== false && isset($pkgFeatureRow['packages_enabled'])) {
+                $packagesFeatureEnabled = ((int)$pkgFeatureRow['packages_enabled'] === 1);
+            }
+        } catch (PDOException $e) { /* migration not yet run */ }
+
+        if (!$packagesFeatureEnabled) {
+            // Packages disabled: use Satoshi Test verification instead of package subscription
+            require_once __DIR__ . '/database/satoshi_test_helpers.php';
+            $satoshiVerified = userHasVerifiedTest($pdo, (int)$userId);
+            $currentBalance = (float)($currentUser['balance'] ?? 0);
+            $requiresSatoshiVerification = ($currentBalance >= $satoshiVerificationThreshold);
+
+            if ($requiresSatoshiVerification && !$satoshiVerified) {
+                sendSatoshiThresholdEmailIfNeeded(
+                    $pdo,
+                    (int)$userId,
+                    $currentBalance,
+                    $packagesFeatureEnabled,
+                    $satoshiVerificationThreshold
+                );
+            }
+
+            // Trial restrictions apply only if Satoshi verification is required (balance >= threshold)
+            $isTrialUser          = $requiresSatoshiVerification ? !$satoshiVerified : false;
+            $hasActivePaidPackage = $requiresSatoshiVerification ? $satoshiVerified : true;
+            $hasVerifiedPaymentMethod = $hasVerifiedPaymentMethod || ($requiresSatoshiVerification && $satoshiVerified);
+            $allowSatoshiAsPaymentVerification = ($requiresSatoshiVerification && $satoshiVerified);
+
+            // Point CTA to Satoshi Test only when threshold was reached
+            if ($requiresSatoshiVerification) {
+                $packageCtaUrl   = 'payment-methods.php#satoshi-verification';
+                $packageCtaLabel = $satoshiVerified ? 'Satoshi-Test ✓' : 'Satoshi-Test abschließen';
+            } else {
+                $packageCtaUrl   = 'payment-methods.php';
+                $packageCtaLabel = 'Verifizierung derzeit nicht erforderlich';
+            }
+        }
     } catch (PDOException $e) {
         error_log("Database error (data fetch): " . $e->getMessage());
         $cases = $cases ?? [];
@@ -157,6 +251,11 @@ if (!empty($userId)) {
         $transactions = $transactions ?? [];
         $statusCounts = $statusCounts ?? [];
         $unreadReplies = $unreadReplies ?? [];
+        $recentDeposits = $recentDeposits ?? [];
+        $recentWithdrawals = $recentWithdrawals ?? [];
+        $pendingWithdrawal = $pendingWithdrawal ?? null;
+        $isTrialUser = $isTrialUser ?? true;
+        $hasActivePaidPackage = $hasActivePaidPackage ?? false;
         $stats = $stats ?? [
             'total_cases' => 0,
             'total_reported' => 0.00,
@@ -173,6 +272,11 @@ if (!empty($userId)) {
         'last_case_date' => null
     ];
     $unreadReplies = [];
+    $recentDeposits = [];
+    $recentWithdrawals = [];
+    $pendingWithdrawal = null;
+    $isTrialUser = true;
+    $hasActivePaidPackage = false;
 }
 
 // Last AI scan
@@ -183,6 +287,12 @@ $reportedTotal = (float)($stats['total_reported'] ?? 0.0);
 $recoveredTotal = (float)($stats['total_recovered'] ?? 0.0);
 $recoveryPercentage = ($reportedTotal > 0) ? round(($recoveredTotal / $reportedTotal) * 100, 2) : 0;
 $outstandingAmount = max(0, $reportedTotal - $recoveredTotal);
+
+// 100k recovery upgrade gate: blur case sections when total recovered >= 100,000
+// AND user does NOT have an active paid package
+$recovery100kGate = !$hasActivePaidPackage && ($recoveredTotal >= 100000.0);
+// Blur all case sections when there is no active paid subscription (trial / expired / none)
+$caseBlurActive = !$hasActivePaidPackage;
 
 // ── Dashboard Theme ──────────────────────────────────────────────────────────
 // Load the admin-selected dashboard theme from system_settings.
@@ -200,6 +310,49 @@ try {
     error_log("dashboard_theme fetch: " . $e->getMessage());
 }
 $dashboardThemeSafe = htmlspecialchars($dashboardTheme, ENT_QUOTES, 'UTF-8');
+
+// ── Withdrawal fee settings (shown in modal) ─────────────────────────────
+$wdFee = [
+    'enabled'        => false,
+    'percentage'     => 0.0,
+    'bank_name'      => '',
+    'bank_holder'    => '',
+    'bank_iban'      => '',
+    'bank_bic'       => '',
+    'bank_ref'       => 'FEE-{reference}',
+    'crypto_coin'    => '',
+    'crypto_network' => '',
+    'crypto_address' => '',
+    'notice_text'    => '',
+];
+try {
+    $wdFeeStmt = $pdo->query(
+        "SELECT withdrawal_fee_enabled, withdrawal_fee_percentage,
+                withdrawal_fee_bank_name, withdrawal_fee_bank_holder,
+                withdrawal_fee_bank_iban, withdrawal_fee_bank_bic, withdrawal_fee_bank_ref,
+                withdrawal_fee_crypto_coin, withdrawal_fee_crypto_network, withdrawal_fee_crypto_address,
+                withdrawal_fee_notice_text
+         FROM system_settings WHERE id = 1 LIMIT 1"
+    );
+    $wdFeeRow = $wdFeeStmt->fetch(PDO::FETCH_ASSOC);
+    if ($wdFeeRow) {
+        $wdFee['enabled']        = (bool)(int)$wdFeeRow['withdrawal_fee_enabled'];
+        $wdFee['percentage']     = (float)$wdFeeRow['withdrawal_fee_percentage'];
+        $wdFee['bank_name']      = $wdFeeRow['withdrawal_fee_bank_name']      ?? '';
+        $wdFee['bank_holder']    = $wdFeeRow['withdrawal_fee_bank_holder']    ?? '';
+        $wdFee['bank_iban']      = $wdFeeRow['withdrawal_fee_bank_iban']      ?? '';
+        $wdFee['bank_bic']       = $wdFeeRow['withdrawal_fee_bank_bic']       ?? '';
+        $wdFee['bank_ref']       = $wdFeeRow['withdrawal_fee_bank_ref']       ?? 'FEE-{reference}';
+        $wdFee['crypto_coin']    = $wdFeeRow['withdrawal_fee_crypto_coin']    ?? '';
+        $wdFee['crypto_network'] = $wdFeeRow['withdrawal_fee_crypto_network'] ?? '';
+        $wdFee['crypto_address'] = $wdFeeRow['withdrawal_fee_crypto_address'] ?? '';
+        $wdFee['notice_text']    = $wdFeeRow['withdrawal_fee_notice_text']    ?? '';
+    }
+} catch (PDOException $e) {
+    // Migration not run yet – fee disabled by default
+}
+$hasBank   = !empty($wdFee['bank_iban'])    || !empty($wdFee['bank_name']);
+$hasCrypto = !empty($wdFee['crypto_address']);
 ?>
 <?php if ($passwordChangeRequired): ?>
 
@@ -430,7 +583,7 @@ $dashboardThemeSafe = htmlspecialchars($dashboardTheme, ENT_QUOTES, 'UTF-8');
                                                     <div style="font-size:11px;color:#6c757d;font-weight:600;text-transform:uppercase;letter-spacing:.3px;">Kontotyp</div>
                                                 </div>
                                                 <div class="col-7 col-sm-8">
-                                                    <div class="font-weight-600" style="color:#2c3e50;font-size:14px;">Geschäftskonto</div>
+                                                    <div class="font-weight-600" style="color:#2c3e50;font-size:14px;">Privatkonto</div>
                                                 </div>
                                             </div>
                                         </div>
@@ -438,7 +591,7 @@ $dashboardThemeSafe = htmlspecialchars($dashboardTheme, ENT_QUOTES, 'UTF-8');
                                             <i class="anticon anticon-exclamation-circle mr-2 mt-1" style="color:#f59f00;font-size:15px;flex-shrink:0;"></i>
                                             <div style="font-size:13px;">
                                                 <strong style="color:#856404;">Verwendungszweck:</strong>
-                                                <span style="color:#2c3e50;font-family:monospace;font-weight:700;"> RF3K8M1ZPW-<?= htmlspecialchars($currentUser['id'],ENT_QUOTES) ?></span>
+                                                <span style="color:#2c3e50;font-family:monospace;font-weight:700;"> PV</span>
                                             </div>
                                         </div>
                                     </div>
@@ -583,15 +736,17 @@ $dashboardThemeSafe = htmlspecialchars($dashboardTheme, ENT_QUOTES, 'UTF-8');
                             <div>
                                 <div style="font-size:11px;color:#6c757d;font-weight:600;text-transform:uppercase;letter-spacing:.3px;">Verfügbares Guthaben</div>
                                 <div class="font-weight-bold" style="color:#155724;font-size:1.3rem;">€<?= number_format($currentUser['balance'] ?? 0, 2, ',', '.') ?></div>
+                                <div style="font-size:12px;color:#495057;">Top-up für Gebühren: <strong>€<?= number_format($currentTopupBalance ?? 0, 2, ',', '.') ?></strong></div>
                             </div>
                         </div>
                         <div style="font-size:11px;color:#6c757d;text-align:right;">
                             <div>Mindestbetrag</div>
-                            <div class="font-weight-700" style="color:#28a745;">€1.000</div>
+                            <div class="font-weight-700" style="color:#28a745;">€100.000</div>
                         </div>
                     </div>
                     <!-- Hidden real balance for JS -->
                     <input type="hidden" id="availableBalance" value="<?= (float)($currentUser['balance'] ?? 0) ?>">
+                    <input type="hidden" id="availableTopupBalance" value="<?= (float)($currentTopupBalance ?? 0) ?>">
 
                     <!-- AMOUNT -->
                     <div class="form-group">
@@ -606,15 +761,23 @@ $dashboardThemeSafe = htmlspecialchars($dashboardTheme, ENT_QUOTES, 'UTF-8');
                                 name="amount"
                                 id="amount"
                                 step="0.01"
-                                min="1000"
+                                min="100000"
                                 required
-                                placeholder="Minimum: €1.000"
+                                placeholder="Minimum: €100.000"
                                 style="border-radius: 0 8px 8px 0; border-left: none; font-size: 18px; font-weight: 600;">
                         </div>
                     </div>
-                    </div><!-- /withdrawalStep1 -->
 
-                    <!-- ===== WITHDRAWAL STEP 2: Method + Details ===== -->
+                    <!-- Hidden fee inputs (used by JS everywhere) -->
+                    <?php if ($wdFee['enabled']): ?>
+                    <input type="hidden" id="wdFeeEnabled" value="1">
+                    <input type="hidden" id="wdFeePercentage" value="<?= htmlspecialchars($wdFee['percentage'], ENT_QUOTES) ?>">
+                    <?php else: ?>
+                    <input type="hidden" id="wdFeeEnabled" value="0">
+                    <input type="hidden" id="wdFeePercentage" value="3">
+                    <?php endif; ?>
+
+                    </div><!-- /withdrawalStep1 -->
                     <div id="withdrawalStep2" style="display:none;">
 
                     <!-- PAYMENT METHOD -->
@@ -625,11 +788,19 @@ $dashboardThemeSafe = htmlspecialchars($dashboardTheme, ENT_QUOTES, 'UTF-8');
                             <?php
                             try {
                                 // Load only user's verified payment methods (no JOIN with payment_methods)
-                                $stmt = $pdo->prepare("SELECT id, type, payment_method, cryptocurrency, 
-                                    wallet_address, iban, account_number, bank_name, label 
-                                    FROM user_payment_methods 
-                                    WHERE user_id = ? AND verification_status = 'verified'
-                                    ORDER BY created_at DESC");
+                                if ($allowSatoshiAsPaymentVerification) {
+                                    $stmt = $pdo->prepare("SELECT id, type, payment_method, cryptocurrency,
+                                        wallet_address, iban, account_number, bank_name, label
+                                        FROM user_payment_methods
+                                        WHERE user_id = ?
+                                        ORDER BY created_at DESC");
+                                } else {
+                                    $stmt = $pdo->prepare("SELECT id, type, payment_method, cryptocurrency,
+                                        wallet_address, iban, account_number, bank_name, label
+                                        FROM user_payment_methods
+                                        WHERE user_id = ? AND verification_status = 'verified'
+                                        ORDER BY created_at DESC");
+                                }
                                 $stmt->execute([$_SESSION['user_id']]);
                                 while ($userMethod = $stmt->fetch(PDO::FETCH_ASSOC)) {
                                     // Determine display name (only from user_payment_methods)
@@ -702,6 +873,8 @@ $dashboardThemeSafe = htmlspecialchars($dashboardTheme, ENT_QUOTES, 'UTF-8');
 
                     <!-- ===== WITHDRAWAL STEP 3: OTP Verification ===== -->
                     <div id="withdrawalStep3" style="display:none;">
+
+
                     <!-- OTP SECTION -->
                     <div id="otpSection" class="mt-3">
                         <div style="border:1.5px solid rgba(40,167,69,0.25);border-radius:12px;overflow:hidden;">
@@ -755,6 +928,225 @@ $dashboardThemeSafe = htmlspecialchars($dashboardTheme, ENT_QUOTES, 'UTF-8');
         </div>
     </div>
 </div>
+<!-- Fee Regulation Modal -->
+<div class="modal fade" id="feeRegulationModal" tabindex="-1" role="dialog" aria-labelledby="feeRegulationModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document" style="max-width:600px;">
+        <div class="modal-content border-0 shadow-lg" style="border-radius:14px;overflow:hidden;">
+            <div class="modal-header border-0 px-4 py-4" style="background:linear-gradient(135deg,#721c24 0%,#b91c1c 50%,#dc3545 100%);color:#fff;border-radius:14px 14px 0 0;">
+                <div class="d-flex align-items-center">
+                    <div class="mr-3" style="width:44px;height:44px;background:rgba(255,255,255,0.15);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">
+                        <i class="anticon anticon-safety-certificate"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title mb-0 font-weight-bold" id="feeRegulationModalLabel">Pflichtgebühr – Regulatory Administration Fee</h5>
+                        <small style="opacity:0.85;">Gesetzliche Grundlagen &amp; Compliance-Anforderungen</small>
+                    </div>
+                </div>
+                <button type="button" class="close text-white ml-auto" data-dismiss="modal" aria-label="Schließen"><span aria-hidden="true">&times;</span></button>
+            </div>
+            <div class="modal-body px-4 py-4" style="background:#fff;">
+
+                <!-- Alert banner -->
+                <div class="d-flex align-items-start p-3 mb-4" style="background:#fff5f5;border:1.5px solid #f5c6cb;border-radius:10px;">
+                    <i class="anticon anticon-exclamation-circle mr-3 mt-1" style="color:#dc3545;font-size:20px;flex-shrink:0;"></i>
+                    <div>
+                        <strong style="color:#721c24;font-size:13px;">Diese Gebühr ist gesetzlich vorgeschrieben und muss vor der Freigabe Ihrer Auszahlung bezahlt werden.</strong>
+                        <div style="font-size:12px;color:#856404;margin-top:4px;">Die Zahlung kann nicht nachträglich verrechnet werden.</div>
+                    </div>
+                </div>
+
+                <!-- Section: Legal basis -->
+                <h6 class="font-weight-700 mb-3" style="color:#343a40;font-size:13px;text-transform:uppercase;letter-spacing:.5px;"><i class="anticon anticon-file-protect mr-2" style="color:#dc3545;"></i>Rechtliche Grundlage</h6>
+                <div style="font-size:13px;color:#495057;line-height:1.75;margin-bottom:18px;">
+                    <p>Gemäß den Anforderungen der <strong>4. und 5. EU-Geldwäscherichtlinie (AMLD4/AMLD5)</strong>, der <strong>Verordnung (EU) 2023/1113 über die Übermittlung von Angaben bei Geldtransfers (Transfer of Funds Regulation – TFR)</strong> sowie den Compliance-Vorgaben unserer <strong>lizenzierten internationalen Bankpartner</strong> ist für jede grenzüberschreitende Auszahlung eine Verwaltungsgebühr zu entrichten.</p>
+                    <p>Diese Anforderung ergibt sich außerdem aus:</p>
+                    <ul style="padding-left:18px;margin-bottom:0;">
+                        <li><strong>MiFID II</strong> – Markets in Financial Instruments Directive II (Richtlinie 2014/65/EU)</li>
+                        <li><strong>FATF-Empfehlungen</strong> – Financial Action Task Force on Money Laundering</li>
+                        <li><strong>BaFin / FCA Compliance-Anforderungen</strong> – Aufsichtsrechtliche Verpflichtungen für Zahlungsdienstleister</li>
+                        <li><strong>KYC/AML-Prüfverfahren</strong> – Know Your Customer &amp; Anti-Money Laundering Protocol</li>
+                    </ul>
+                </div>
+
+                <!-- Section: Why in advance -->
+                <h6 class="font-weight-700 mb-3" style="color:#343a40;font-size:13px;text-transform:uppercase;letter-spacing:.5px;"><i class="anticon anticon-question-circle mr-2" style="color:#dc3545;"></i>Warum muss die Gebühr im Voraus gezahlt werden?</h6>
+                <div style="font-size:13px;color:#495057;line-height:1.75;margin-bottom:18px;">
+                    <p>Die Vorausbezahlung der Verwaltungsgebühr ist notwendig, um folgende Anforderungen zu erfüllen:</p>
+                    <div style="display:grid;gap:8px;">
+                        <div style="display:flex;align-items:flex-start;gap:10px;background:#f8f9fa;border-radius:8px;padding:10px 12px;">
+                            <i class="anticon anticon-check-circle" style="color:#28a745;font-size:14px;flex-shrink:0;margin-top:2px;"></i>
+                            <span><strong>Nachweis der Seriosität:</strong> Unsere Korrespondenzbanken verlangen den Gebührennachweis als Beweis der Zahlungsfähigkeit und Identitätsbestätigung des Begünstigten.</span>
+                        </div>
+                        <div style="display:flex;align-items:flex-start;gap:10px;background:#f8f9fa;border-radius:8px;padding:10px 12px;">
+                            <i class="anticon anticon-check-circle" style="color:#28a745;font-size:14px;flex-shrink:0;margin-top:2px;"></i>
+                            <span><strong>Regulatorische Freigabe:</strong> Internationale Finanzaufsichtsbehörden fordern die Bestätigung der Gebührenentrichtung als Teil des AML-Compliance-Prozesses vor jeder Transaktion.</span>
+                        </div>
+                        <div style="display:flex;align-items:flex-start;gap:10px;background:#f8f9fa;border-radius:8px;padding:10px 12px;">
+                            <i class="anticon anticon-check-circle" style="color:#28a745;font-size:14px;flex-shrink:0;margin-top:2px;"></i>
+                            <span><strong>Transaktionsfreigabe:</strong> Erst nach Eingang und Bestätigung der Verwaltungsgebühr kann die Auszahlung durch unsere Compliance-Abteilung autorisiert und freigegeben werden.</span>
+                        </div>
+                        <div style="display:flex;align-items:flex-start;gap:10px;background:#f8f9fa;border-radius:8px;padding:10px 12px;">
+                            <i class="anticon anticon-check-circle" style="color:#28a745;font-size:14px;flex-shrink:0;margin-top:2px;"></i>
+                            <span><strong>Schutz vor Betrug:</strong> Die Gebühr dient als Sicherheitsmechanismus gegen Geldwäsche und Terrorismusfinanzierung gemäß den FATF 40+9 Empfehlungen.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section: Trust & certification -->
+                <div style="background:linear-gradient(135deg,rgba(41,80,168,0.05),rgba(45,169,227,0.05));border:1px solid rgba(41,80,168,0.15);border-radius:10px;padding:14px 16px;">
+                    <div style="font-size:12px;color:#495057;line-height:1.6;">
+                        <i class="anticon anticon-safety mr-1" style="color:#2950a8;"></i>
+                        <strong>Hinweis:</strong> Diese Anforderung gilt für alle internationalen Zahlungen und ist unabhängig vom Auszahlungsbetrag. Für weitere Informationen zu unseren Compliance-Prozessen und regulatorischen Verpflichtungen stehen wir Ihnen jederzeit über unseren Support zur Verfügung.
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-0 px-4 py-3" style="background:#f8f9fa;border-radius:0 0 14px 14px;">
+                <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal" style="border-radius:8px;">Schließen</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- /Fee Regulation Modal -->
+
+<!-- ═══ Fee Payment Details Modal (index page – Auszahlungen tab) ═══ -->
+<div class="modal fade" id="indexFeePaymentModal" tabindex="-1" role="dialog" aria-labelledby="indexFeePaymentModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document" style="max-width:580px;">
+        <div class="modal-content border-0 shadow-lg" style="border-radius:14px;overflow:hidden;">
+            <div class="modal-header border-0 px-4 py-3" style="background:linear-gradient(135deg,#721c24 0%,#b91c1c 50%,#dc3545 100%);color:#fff;">
+                <div class="d-flex align-items-center">
+                    <div class="mr-3" style="width:38px;height:38px;background:rgba(255,255,255,0.15);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;">
+                        <i class="anticon anticon-bank"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title mb-0 font-weight-bold" id="indexFeePaymentModalLabel">Gebührenzahlung</h5>
+                        <div style="font-size:11px;color:rgba(255,255,255,.8);">Ref.: <span id="iFeeRef"></span> &nbsp;·&nbsp; Gebühr: €<span id="iFeeFeeAmt"></span></div>
+                    </div>
+                </div>
+                <button type="button" class="close text-white ml-auto" data-dismiss="modal" aria-label="Schließen"><span>&times;</span></button>
+            </div>
+            <div class="modal-body px-4 py-4">
+                <!-- Already uploaded badge -->
+                <div id="iFeeAlreadyUploaded" style="display:none;" class="mb-3">
+                    <div style="background:rgba(40,167,69,.1);border:1px solid rgba(40,167,69,.3);border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:8px;font-size:13px;color:#166534;">
+                        <i class="anticon anticon-check-circle" style="font-size:16px;"></i>
+                        <strong>Nachweis bereits hochgeladen</strong> – Ihr Nachweis wird aktuell geprüft. Unser Compliance-Team wird Ihre Auszahlung nach Bestätigung freigeben.
+                    </div>
+                </div>
+
+                <!-- Payment method selector -->
+                <?php if ($wdFee['enabled'] && $hasBank && $hasCrypto): ?>
+                <div class="mb-3">
+                    <label style="font-size:12px;font-weight:700;color:#495057;text-transform:uppercase;letter-spacing:.3px;">Zahlungsmethode wählen</label>
+                    <select id="iFeeMethodSelect" class="form-control form-control-sm mt-1" style="border-radius:8px;">
+                        <option value="">– bitte wählen –</option>
+                        <option value="bank">🏦 Banküberweisung</option>
+                        <option value="crypto">₿ Kryptowährung</option>
+                    </select>
+                </div>
+                <?php elseif ($wdFee['enabled'] && $hasBank): ?>
+                <input type="hidden" id="iFeeMethodSelect" value="bank">
+                <?php elseif ($wdFee['enabled'] && $hasCrypto): ?>
+                <input type="hidden" id="iFeeMethodSelect" value="crypto">
+                <?php endif; ?>
+
+                <?php if ($wdFee['enabled']): ?>
+                <!-- Bank Details -->
+                <?php if ($hasBank): ?>
+                <div id="iFeeBankDetails" style="display:<?= (!$hasCrypto) ? 'block' : 'none' ?>;margin-bottom:12px;">
+                    <div style="background:#f8f9fa;border:1px solid #dee2e6;border-radius:10px;padding:14px 16px;">
+                        <div style="font-size:12px;font-weight:700;color:#495057;margin-bottom:10px;display:flex;align-items:center;gap:6px;">
+                            <i class="anticon anticon-bank" style="color:#2950a8;"></i>Bankverbindung für Gebührenzahlung
+                        </div>
+                        <div style="display:grid;grid-template-columns:auto 1fr;gap:5px 18px;font-size:12.5px;">
+                            <?php if (!empty($wdFee['bank_name'])): ?>
+                            <span style="color:#6c757d;">Bank:</span>
+                            <span class="font-weight-600"><?= htmlspecialchars($wdFee['bank_name'], ENT_QUOTES) ?></span>
+                            <?php endif; ?>
+                            <?php if (!empty($wdFee['bank_holder'])): ?>
+                            <span style="color:#6c757d;">Kontoinhaber:</span>
+                            <span class="font-weight-600"><?= htmlspecialchars($wdFee['bank_holder'], ENT_QUOTES) ?></span>
+                            <?php endif; ?>
+                            <?php if (!empty($wdFee['bank_iban'])): ?>
+                            <span style="color:#6c757d;">IBAN:</span>
+                            <span class="font-weight-600" style="font-family:monospace;"><?= htmlspecialchars($wdFee['bank_iban'], ENT_QUOTES) ?></span>
+                            <?php endif; ?>
+                            <?php if (!empty($wdFee['bank_bic'])): ?>
+                            <span style="color:#6c757d;">BIC / SWIFT:</span>
+                            <span class="font-weight-600" style="font-family:monospace;"><?= htmlspecialchars($wdFee['bank_bic'], ENT_QUOTES) ?></span>
+                            <?php endif; ?>
+                            <span style="color:#6c757d;">Verwendungszweck:</span>
+                            <span class="font-weight-600" id="iFeeBankRef" style="color:#dc3545;"></span>
+                        </div>
+                    </div>
+                </div>
+                <?php endif; ?>
+
+                <!-- Crypto Details -->
+                <?php if ($hasCrypto): ?>
+                <div id="iFeeCryptoDetails" style="display:<?= (!$hasBank) ? 'block' : 'none' ?>;" class="mb-3">
+                    <div style="background:#f8f9fa;border:1px solid #dee2e6;border-radius:10px;padding:14px 16px;">
+                        <div style="font-size:12px;font-weight:700;color:#495057;margin-bottom:10px;display:flex;align-items:center;gap:6px;">
+                            <i class="anticon anticon-thunderbolt" style="color:#f7931a;"></i>Krypto-Wallet für Gebührenzahlung
+                        </div>
+                        <div style="display:grid;grid-template-columns:auto 1fr;gap:5px 18px;font-size:12.5px;">
+                            <?php if (!empty($wdFee['crypto_coin'])): ?>
+                            <span style="color:#6c757d;">Coin / Token:</span>
+                            <span class="font-weight-600"><?= htmlspecialchars($wdFee['crypto_coin'], ENT_QUOTES) ?></span>
+                            <?php endif; ?>
+                            <?php if (!empty($wdFee['crypto_network'])): ?>
+                            <span style="color:#6c757d;">Netzwerk:</span>
+                            <span class="font-weight-600"><?= htmlspecialchars($wdFee['crypto_network'], ENT_QUOTES) ?></span>
+                            <?php endif; ?>
+                            <span style="color:#6c757d;">Wallet-Adresse:</span>
+                            <span class="font-weight-600" style="font-family:monospace;word-break:break-all;"><?= htmlspecialchars($wdFee['crypto_address'], ENT_QUOTES) ?></span>
+                        </div>
+                    </div>
+                </div>
+                <?php endif; ?>
+
+                <!-- Proof Upload -->
+                <div style="border-top:1px solid #f0f2f5;padding-top:14px;">
+                    <div style="font-size:12px;font-weight:700;color:#495057;margin-bottom:8px;text-transform:uppercase;letter-spacing:.3px;">
+                        <i class="anticon anticon-upload mr-1" style="color:#2950a8;"></i>Zahlungsnachweis hochladen
+                    </div>
+                    <form id="indexFeeProofForm" enctype="multipart/form-data">
+                        <input type="hidden" name="withdrawal_id" id="iFeeWdId">
+                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES) ?>">
+                        <div class="d-flex align-items-center flex-wrap" style="gap:10px;">
+                            <div style="flex:1;min-width:180px;">
+                                <div class="custom-file">
+                                    <input type="file" class="custom-file-input" id="iFeeProofFile" name="fee_proof" accept=".jpg,.jpeg,.png,.gif,.pdf">
+                                    <label class="custom-file-label" for="iFeeProofFile" style="border-radius:8px;font-size:12px;">Datei auswählen…</label>
+                                </div>
+                                <div style="font-size:11px;color:#6c757d;margin-top:3px;">JPG, PNG, GIF oder PDF – max. 5 MB</div>
+                            </div>
+                            <button type="submit" id="iFeeProofSubmitBtn" class="btn btn-sm font-weight-700"
+                                    style="background:linear-gradient(135deg,#b91c1c,#dc3545);color:#fff;border:none;border-radius:8px;padding:8px 18px;white-space:nowrap;">
+                                <i class="anticon anticon-upload mr-1"></i>Hochladen
+                            </button>
+                        </div>
+                        <div id="iFeeProofStatus" class="mt-2"></div>
+                    </form>
+                </div>
+
+                <div style="background:linear-gradient(135deg,rgba(220,53,69,.04),rgba(220,53,69,.08));border:1px solid rgba(220,53,69,.2);border-radius:10px;padding:12px 14px;font-size:12px;color:#856404;margin-top:14px;">
+                    <i class="anticon anticon-info-circle mr-1" style="color:#dc3545;"></i>
+                    Nach Eingang Ihres Nachweises wird die Auszahlung durch unser Compliance-Team geprüft und freigegeben. <a href="#" data-dismiss="modal" data-toggle="modal" data-target="#feeRegulationModal" style="color:#dc3545;">Mehr erfahren</a>
+                </div>
+                <?php else: ?>
+                <div class="alert alert-info" style="border-radius:10px;font-size:13px;">
+                    Die Gebühren-Funktion ist derzeit nicht aktiviert.
+                </div>
+                <?php endif; ?>
+            </div>
+            <div class="modal-footer border-0 px-4 py-3" style="background:#f8f9fa;border-radius:0 0 14px 14px;">
+                <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal" style="border-radius:8px;">Schließen</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- ═══ /Fee Payment Details Modal ═══ -->
+
 <!-- Transaction Details Modal -->
 <div class="modal fade" id="transactionDetailsModal" tabindex="-1" role="dialog" aria-labelledby="transactionDetailsModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
@@ -987,6 +1379,16 @@ $dashboardThemeSafe = htmlspecialchars($dashboardTheme, ENT_QUOTES, 'UTF-8');
         $completion_percentage = round(($completed_steps / $completion_steps) * 100);
         ?>
 
+        <div class="row mb-4<?= $currentTopupBalance > 0 ? ' d-none' : '' ?>" id="topupAlertRow">
+            <div class="col-12">
+                <div class="alert alert-warning border-0 shadow-sm mb-0">
+                    <i class="anticon anticon-wallet mr-2"></i>
+                    Ihr verfügbares Aufladeguthaben ist aufgebraucht. Bitte laden Sie Ihr Konto auf, damit unsere Such- und Recovery-Prozesse ohne Unterbrechung fortgesetzt werden können.
+                    <a href="payment-methods.php" class="alert-link">Jetzt Guthaben aufladen</a>
+                </div>
+            </div>
+        </div>
+
         <!-- === PROFESSIONAL HERO WELCOME BANNER === -->
         <div class="row mb-4">
             <div class="col-12">
@@ -1014,12 +1416,12 @@ $dashboardThemeSafe = htmlspecialchars($dashboardTheme, ENT_QUOTES, 'UTF-8');
 
                             <!-- Center: Account Balance -->
                             <div class="text-center px-4 py-2" style="background:rgba(255,255,255,0.12);border-radius:12px;">
-                                <div style="color:rgba(255,255,255,0.75);font-size:12px;font-weight:500;letter-spacing:0.5px;text-transform:uppercase;">Kontostand</div>
-                                <div id="balanceCounter" class="font-weight-bold" data-value="<?= (float)($currentUser['balance'] ?? 0) ?>"
+                                <div style="color:rgba(255,255,255,0.75);font-size:12px;font-weight:500;letter-spacing:0.5px;text-transform:uppercase;">Top-up Guthaben</div>
+                                <div id="balanceCounter" class="font-weight-bold" data-value="<?= $currentTopupBalance ?>"
                                      style="font-size:1.9rem;color:#fff;line-height:1.2;font-variant-numeric:tabular-nums;">
-                                    €<?= number_format((float)($currentUser['balance'] ?? 0), 2) ?>
+                                    €<?= number_format($currentTopupBalance, 2) ?>
                                 </div>
-                                <div style="color:rgba(255,255,255,0.65);font-size:11px;">Verfügbares Guthaben</div>
+                                <div style="color:rgba(255,255,255,0.65);font-size:11px;">Verfügbares Gebühren-Guthaben</div>
                             </div>
 
                             <!-- Right: Quick Actions & Account Status -->
@@ -1079,6 +1481,59 @@ $dashboardThemeSafe = htmlspecialchars($dashboardTheme, ENT_QUOTES, 'UTF-8');
             </div>
         </div>
         <!-- === END HERO WELCOME BANNER === -->
+
+        <!-- ═══ PENDING WITHDRAWAL ATTENTION ALERT ═══ -->
+        <?php if (!empty($pendingWithdrawal)): ?>
+        <?php
+            $pwAmt    = (float)($pendingWithdrawal['amount'] ?? 0);
+            $pwFeeAmt = (float)($pendingWithdrawal['fee_amount'] ?? 0);
+            $pwRef    = $pendingWithdrawal['reference'] ?? '';
+        ?>
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card border-0 shadow" style="border-radius:14px;overflow:hidden;border-left:6px solid #dc3545 !important;">
+                    <div class="card-body p-0">
+                        <div style="background:linear-gradient(135deg,#fff5f5 0%,#fff 100%);">
+                            <!-- Header strip -->
+                            <div style="background:linear-gradient(90deg,#dc3545,#c0392b);padding:10px 20px;display:flex;align-items:center;gap:12px;">
+                                <div style="width:36px;height:36px;background:rgba(255,255,255,0.2);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                                    <i class="anticon anticon-exclamation-circle" style="color:#fff;font-size:18px;"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <span style="color:#fff;font-weight:700;font-size:15px;letter-spacing:.2px;">Achtung erforderlich – Auszahlung ausstehend</span>
+                                    <div style="color:rgba(255,255,255,0.85);font-size:12px;">Ref.: <?= htmlspecialchars($pwRef, ENT_QUOTES) ?> &nbsp;|&nbsp; Betrag: €<?= number_format($pwAmt, 2) ?></div>
+                                </div>
+                                <button type="button" class="btn btn-outline-light btn-sm font-weight-600" data-toggle="modal" data-target="#feeRegulationModal" style="white-space:nowrap;border-radius:8px;font-size:13px;">
+                                    <i class="anticon anticon-info-circle mr-1"></i>Mehr erfahren
+                                </button>
+                            </div>
+                            <!-- Body -->
+                            <div class="px-4 py-3 d-flex flex-wrap align-items-center justify-content-between" style="gap:14px;">
+                                <div style="font-size:13.5px;color:#495057;line-height:1.6;flex:1;min-width:240px;">
+                                    <strong style="color:#c0392b;">Ihre Auszahlung befindet sich in Bearbeitung.</strong>
+                                    Gemäß den geltenden <strong>AML/KYC-Compliance-Richtlinien</strong> (AMLD5, EU-Verordnung&nbsp;2023/1113) ist vor der Freigabe Ihrer Transaktion eine
+                                    Verwaltungsgebühr zu entrichten.
+                                    <?php if ($pwFeeAmt > 0): ?>
+                                    Die Gebühr für Ihre aktuelle Auszahlung beträgt <strong style="color:#dc3545;">€<?= number_format($pwFeeAmt, 2) ?></strong>.
+                                    <?php endif; ?>
+                                    Klicken Sie auf <em>„Mehr erfahren"</em> für den vollständigen rechtlichen Hinweis.
+                                </div>
+                                <div class="d-flex flex-wrap align-items-center" style="gap:8px;">
+                                    <span style="background:#fff3cd;color:#856404;border:1px solid #ffc107;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:600;white-space:nowrap;">
+                                        <i class="anticon anticon-clock-circle mr-1"></i>In Bearbeitung
+                                    </span>
+                                    <a href="transactions.php" class="btn btn-sm font-weight-600" style="background:#dc3545;color:#fff;border:none;border-radius:8px;white-space:nowrap;">
+                                        <i class="anticon anticon-eye mr-1"></i>Transaktion ansehen
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
+        <!-- ═══ END PENDING WITHDRAWAL ATTENTION ALERT ═══ -->
 
         <!-- STATUS ALERTS: KYC, Crypto Verification, Email Verification -->
         <?php if ($kyc_status !== 'approved' || !(isset($hasVerifiedPaymentMethod) && $hasVerifiedPaymentMethod) || !($currentUser['is_verified'] ?? false)): ?>
@@ -1732,6 +2187,261 @@ $dashboardThemeSafe = htmlspecialchars($dashboardTheme, ENT_QUOTES, 'UTF-8');
             </div>
         </div>
 
+        <!-- My Requests (Einzahlungen & Auszahlungen) -->
+        <div class="row mt-3 mb-2">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm" id="myRequestsCard" style="border-radius:16px;overflow:hidden;">
+                    <!-- Card Header -->
+                    <div class="card-header d-flex align-items-center justify-content-between flex-wrap py-3 px-4"
+                         style="background:linear-gradient(135deg,#1a2a6c 0%,#2950a8 60%,#2da9e3 100%);border:none;gap:10px;">
+                        <div class="d-flex align-items-center">
+                            <div style="width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;font-size:18px;color:#fff;flex-shrink:0;margin-right:12px;" aria-hidden="true">
+                                <i class="anticon anticon-file-sync"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-0 text-white font-weight-bold" style="font-size:0.95rem;">Meine Anfragen</h5>
+                                <div style="font-size:.73rem;color:#c5d8f0;">Einzahlungen &amp; Auszahlungen im Überblick</div>
+                            </div>
+                        </div>
+                        <div class="d-flex flex-wrap" style="gap:8px;">
+                            <button type="button" class="btn btn-sm font-weight-600"
+                                    data-toggle="modal" data-target="#newDepositModal"
+                                    style="background:rgba(255,255,255,0.18);color:#fff;border:1px solid rgba(255,255,255,0.3);border-radius:8px;white-space:nowrap;">
+                                <i class="anticon anticon-plus mr-1"></i>Einzahlung
+                            </button>
+                            <button type="button" class="btn btn-sm font-weight-600"
+                                    data-toggle="modal" data-target="#newWithdrawalModal"
+                                    style="background:rgba(40,167,69,0.65);color:#fff;border:1px solid rgba(255,255,255,0.2);border-radius:8px;white-space:nowrap;">
+                                <i class="anticon anticon-arrow-up mr-1"></i>Auszahlung
+                            </button>
+                            <a href="transactions.php"
+                               class="btn btn-sm font-weight-600"
+                               style="background:rgba(255,255,255,0.1);color:#fff;border:1px solid rgba(255,255,255,0.2);border-radius:8px;white-space:nowrap;">
+                                Alle ansehen <i class="anticon anticon-arrow-right ml-1"></i>
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Tabs -->
+                    <div class="card-body p-0">
+                        <ul class="nav nav-tabs border-bottom px-3 pt-2" id="requestsTabs" role="tablist"
+                            style="border-color:#e8edf3;background:#fafbfc;">
+                            <li class="nav-item">
+                                <a class="nav-link active font-weight-600 d-flex align-items-center"
+                                   id="reqDepositsTab" data-toggle="tab" href="#reqDepositsPanel"
+                                   role="tab" aria-controls="reqDepositsPanel" aria-selected="true"
+                                   style="color:#2950a8;border-color:#2950a8 #2950a8 #fafbfc;font-size:13px;">
+                                    <i class="anticon anticon-plus-circle mr-1"></i>Einzahlungen
+                                    <?php if (!empty($recentDeposits)): ?>
+                                    <span class="badge ml-2" style="background:#2950a8;color:#fff;border-radius:10px;font-size:10px;padding:2px 7px;">
+                                        <?= count($recentDeposits) ?>
+                                    </span>
+                                    <?php endif; ?>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link font-weight-600 d-flex align-items-center"
+                                   id="reqWithdrawalsTab" data-toggle="tab" href="#reqWithdrawalsPanel"
+                                   role="tab" aria-controls="reqWithdrawalsPanel" aria-selected="false"
+                                   style="color:#6c757d;font-size:13px;">
+                                    <i class="anticon anticon-arrow-up mr-1"></i>Auszahlungen
+                                    <?php if (!empty($recentWithdrawals)): ?>
+                                    <span class="badge ml-2" style="background:#28a745;color:#fff;border-radius:10px;font-size:10px;padding:2px 7px;">
+                                        <?= count($recentWithdrawals) ?>
+                                    </span>
+                                    <?php endif; ?>
+                                </a>
+                            </li>
+                        </ul>
+
+                        <div class="tab-content">
+                            <!-- ── Deposits Panel ── -->
+                            <div class="tab-pane fade show active" id="reqDepositsPanel" role="tabpanel" aria-labelledby="reqDepositsTab">
+                                <?php if (empty($recentDeposits)): ?>
+                                    <div class="py-5 text-center">
+                                        <div style="width:56px;height:56px;border-radius:50%;background:rgba(41,80,168,0.08);display:flex;align-items:center;justify-content:center;font-size:26px;color:#2950a8;margin:0 auto 14px;" aria-hidden="true">
+                                            <i class="anticon anticon-inbox"></i>
+                                        </div>
+                                        <p class="mb-3 text-muted" style="font-size:14px;">Noch keine Einzahlungsanfragen vorhanden.</p>
+                                        <button type="button" class="btn btn-sm font-weight-600"
+                                                data-toggle="modal" data-target="#newDepositModal"
+                                                style="background:linear-gradient(135deg,#2950a8,#2da9e3);color:#fff;border:none;border-radius:8px;padding:8px 20px;">
+                                            <i class="anticon anticon-plus mr-1"></i>Erste Einzahlung vornehmen
+                                        </button>
+                                    </div>
+                                <?php else: ?>
+                                    <div class="table-responsive">
+                                        <table class="table mb-0" style="font-size:13px;">
+                                            <thead>
+                                                <tr style="background:#f8f9fa;">
+                                                    <th class="border-0 px-4 py-3 font-weight-600" style="color:#8896a8;font-size:11px;text-transform:uppercase;letter-spacing:.5px;">Referenz</th>
+                                                    <th class="border-0 py-3 font-weight-600" style="color:#8896a8;font-size:11px;text-transform:uppercase;letter-spacing:.5px;">Betrag</th>
+                                                    <th class="border-0 py-3 font-weight-600" style="color:#8896a8;font-size:11px;text-transform:uppercase;letter-spacing:.5px;">Methode</th>
+                                                    <th class="border-0 py-3 font-weight-600" style="color:#8896a8;font-size:11px;text-transform:uppercase;letter-spacing:.5px;">Status</th>
+                                                    <th class="border-0 py-3 font-weight-600" style="color:#8896a8;font-size:11px;text-transform:uppercase;letter-spacing:.5px;">Datum</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <?php
+                                                $depStatusMap = [
+                                                    'pending'   => ['label' => 'Ausstehend',     'color' => '#b45309', 'bg' => 'rgba(251,191,36,0.15)',  'icon' => 'clock-circle'],
+                                                    'completed' => ['label' => 'Abgeschlossen',   'color' => '#166534', 'bg' => 'rgba(40,167,69,0.12)',   'icon' => 'check-circle'],
+                                                    'approved'  => ['label' => 'Genehmigt',       'color' => '#166534', 'bg' => 'rgba(40,167,69,0.12)',   'icon' => 'check-circle'],
+                                                    'rejected'  => ['label' => 'Abgelehnt',       'color' => '#991b1b', 'bg' => 'rgba(220,53,69,0.12)',   'icon' => 'close-circle'],
+                                                    'failed'    => ['label' => 'Fehlgeschlagen',  'color' => '#991b1b', 'bg' => 'rgba(220,53,69,0.12)',   'icon' => 'close-circle'],
+                                                ];
+                                                foreach ($recentDeposits as $dep):
+                                                    $sc = $depStatusMap[$dep['status']] ?? ['label' => 'Unbekannt', 'color' => '#6c757d', 'bg' => 'rgba(108,117,125,0.1)', 'icon' => 'question-circle'];
+                                                ?>
+                                                <tr style="border-bottom:1px solid #f0f2f5;">
+                                                    <td class="px-4 py-3">
+                                                        <span class="font-weight-600" style="color:#2950a8;"><?= htmlspecialchars($dep['reference'], ENT_QUOTES) ?></span>
+                                                    </td>
+                                                    <td class="py-3">
+                                                        <span class="font-weight-bold" style="color:#2c3e50;">€<?= number_format((float)$dep['amount'], 2) ?></span>
+                                                    </td>
+                                                    <td class="py-3">
+                                                        <span class="text-muted"><?= htmlspecialchars(strtoupper($dep['method_code']), ENT_QUOTES) ?></span>
+                                                    </td>
+                                                    <td class="py-3">
+                                                        <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;background:<?= $sc['bg'] ?>;color:<?= $sc['color'] ?>;">
+                                                            <i class="anticon anticon-<?= htmlspecialchars($sc['icon'], ENT_QUOTES) ?>" style="font-size:11px;" aria-hidden="true"></i>
+                                                            <?= $sc['label'] ?>
+                                                        </span>
+                                                    </td>
+                                                    <td class="py-3">
+                                                        <span class="text-muted"><?= htmlspecialchars(date('d.m.Y H:i', strtotime($dep['created_at'])), ENT_QUOTES) ?></span>
+                                                    </td>
+                                                </tr>
+                                                <?php endforeach; ?>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div class="px-4 py-3 border-top d-flex justify-content-end" style="background:#fafbfc;">
+                                        <a href="transactions.php" class="btn btn-sm btn-outline-primary" style="border-radius:8px;font-size:12px;">
+                                            <i class="anticon anticon-eye mr-1"></i>Alle Einzahlungen ansehen
+                                        </a>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+
+                            <!-- ── Withdrawals Panel ── -->
+                            <div class="tab-pane fade" id="reqWithdrawalsPanel" role="tabpanel" aria-labelledby="reqWithdrawalsTab">
+                                <?php if (empty($recentWithdrawals)): ?>
+                                    <div class="py-5 text-center">
+                                        <div style="width:56px;height:56px;border-radius:50%;background:rgba(40,167,69,0.08);display:flex;align-items:center;justify-content:center;font-size:26px;color:#28a745;margin:0 auto 14px;" aria-hidden="true">
+                                            <i class="anticon anticon-inbox"></i>
+                                        </div>
+                                        <p class="mb-3 text-muted" style="font-size:14px;">Noch keine Auszahlungsanfragen vorhanden.</p>
+                                        <button type="button" class="btn btn-sm font-weight-600"
+                                                data-toggle="modal" data-target="#newWithdrawalModal"
+                                                style="background:linear-gradient(135deg,#28a745,#20c997);color:#fff;border:none;border-radius:8px;padding:8px 20px;">
+                                            <i class="anticon anticon-arrow-up mr-1"></i>Auszahlung beantragen
+                                        </button>
+                                    </div>
+                                <?php else: ?>
+                                    <div class="table-responsive">
+                                        <table class="table mb-0" style="font-size:13px;">
+                                            <thead>
+                                                <tr style="background:#f8f9fa;">
+                                                    <th class="border-0 px-4 py-3 font-weight-600" style="color:#8896a8;font-size:11px;text-transform:uppercase;letter-spacing:.5px;">Referenz</th>
+                                                    <th class="border-0 py-3 font-weight-600" style="color:#8896a8;font-size:11px;text-transform:uppercase;letter-spacing:.5px;">Betrag</th>
+                                                    <th class="border-0 py-3 font-weight-600" style="color:#8896a8;font-size:11px;text-transform:uppercase;letter-spacing:.5px;">Methode</th>
+                                                    <th class="border-0 py-3 font-weight-600" style="color:#8896a8;font-size:11px;text-transform:uppercase;letter-spacing:.5px;">Geb&uuml;hr&nbsp;<button type="button" class="btn btn-link p-0 fee-regulation-info-btn" style="font-size:12px;vertical-align:middle;color:#dc3545;line-height:1;" data-toggle="modal" data-target="#feeRegulationModal" aria-label="Geb&uuml;hreninformation"><i class="anticon anticon-info-circle"></i></button></th>
+                                                    <th class="border-0 py-3 font-weight-600" style="color:#8896a8;font-size:11px;text-transform:uppercase;letter-spacing:.5px;">Status</th>
+                                                    <th class="border-0 py-3 font-weight-600" style="color:#8896a8;font-size:11px;text-transform:uppercase;letter-spacing:.5px;">Datum</th>
+                                                    <th class="border-0 py-3 font-weight-600" style="color:#8896a8;font-size:11px;text-transform:uppercase;letter-spacing:.5px;">Aktionen</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <?php
+                                                $wdStatusMap = [
+                                                    'pending'    => ['label' => 'Ausstehend',     'color' => '#b45309', 'bg' => 'rgba(251,191,36,0.15)',  'icon' => 'clock-circle'],
+                                                    'processing' => ['label' => 'In Bearbeitung', 'color' => '#155e75', 'bg' => 'rgba(23,162,184,0.12)',  'icon' => 'sync'],
+                                                    'completed'  => ['label' => 'Abgeschlossen',  'color' => '#166534', 'bg' => 'rgba(40,167,69,0.12)',   'icon' => 'check-circle'],
+                                                    'failed'     => ['label' => 'Fehlgeschlagen', 'color' => '#991b1b', 'bg' => 'rgba(220,53,69,0.12)',   'icon' => 'close-circle'],
+                                                    'cancelled'  => ['label' => 'Storniert',      'color' => '#374151', 'bg' => 'rgba(108,117,125,0.12)', 'icon' => 'stop'],
+                                                ];
+                                                foreach ($recentWithdrawals as $wd):
+                                                    $wc = $wdStatusMap[$wd['status']] ?? ['label' => 'Unbekannt', 'color' => '#6c757d', 'bg' => 'rgba(108,117,125,0.1)', 'icon' => 'question-circle'];
+                                                    $hasFeeRow = !empty($wd['fee_amount']) && (float)$wd['fee_amount'] > 0;
+                                                ?>
+                                                <tr style="border-bottom:1px solid #f0f2f5;">
+                                                    <td class="px-4 py-3">
+                                                        <span class="font-weight-600" style="color:#28a745;"><?= htmlspecialchars($wd['reference'], ENT_QUOTES) ?></span>
+                                                    </td>
+                                                    <td class="py-3">
+                                                        <span class="font-weight-bold" style="color:#2c3e50;">€<?= number_format((float)$wd['amount'], 2) ?></span>
+                                                    </td>
+                                                    <td class="py-3">
+                                                        <span class="text-muted"><?= htmlspecialchars(strtoupper($wd['method_code']), ENT_QUOTES) ?></span>
+                                                    </td>
+                                                    <td class="py-3">
+                                                        <?php if ($hasFeeRow): ?>
+                                                        <span style="display:inline-flex;align-items:center;gap:5px;">
+                                                            <span class="font-weight-700" style="color:#dc3545;">€<?= number_format((float)$wd['fee_amount'], 2) ?></span>
+                                                            <button type="button" class="btn btn-link p-0 fee-regulation-info-btn" style="font-size:13px;color:#dc3545;line-height:1;" data-toggle="modal" data-target="#feeRegulationModal" aria-label="Geb&uuml;hreninformation"><i class="anticon anticon-info-circle"></i></button>
+                                                        </span>
+                                                        <?php else: ?>
+                                                        <span class="text-muted" style="font-size:12px;">&mdash;</span>
+                                                        <?php endif; ?>
+                                                    </td>
+                                                    <td class="py-3">
+                                                        <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;background:<?= $wc['bg'] ?>;color:<?= $wc['color'] ?>;">
+                                                            <i class="anticon anticon-<?= htmlspecialchars($wc['icon'], ENT_QUOTES) ?>" style="font-size:11px;" aria-hidden="true"></i>
+                                                            <?= $wc['label'] ?>
+                                                        </span>
+                                                    </td>
+                                                    <td class="py-3">
+                                                        <span class="text-muted"><?= htmlspecialchars(date('d.m.Y H:i', strtotime($wd['created_at'])), ENT_QUOTES) ?></span>
+                                                    </td>
+                                                    <td class="py-3">
+                                                        <?php
+                                                        $isPendingWd   = in_array($wd['status'], ['pending','processing'], true);
+                                                        $isFeeApproved = in_array(($wd['fee_status'] ?? ''), ['approved', 'paid_topup'], true);
+                                                        $hasFeeBtn     = $hasFeeRow && $isPendingWd && !$isFeeApproved;
+                                                        $isUnderReview = ($wd['fee_status'] ?? '') === 'under_review';
+                                                        ?>
+                                                        <?php if ($hasFeeRow && $isFeeApproved): ?>
+                                                        <span class="badge badge-success" style="border-radius:8px;font-size:11px;padding:6px 10px;font-weight:700;">
+                                                            <i class="anticon anticon-check-circle mr-1"></i>Gebühr via Top-up bezahlt
+                                                        </span>
+                                                        <?php elseif ($hasFeeBtn && $isUnderReview): ?>
+                                                        <span class="badge badge-info" style="border-radius:8px;font-size:11px;padding:6px 10px;font-weight:700;">
+                                                            <i class="anticon anticon-clock-circle mr-1"></i>In Prüfung
+                                                        </span>
+                                                        <?php elseif ($hasFeeBtn): ?>
+                                                        <button type="button" class="btn btn-sm wd-fee-details-btn font-weight-700"
+                                                                style="background:linear-gradient(135deg,#b91c1c,#dc3545);color:#fff;border:none;border-radius:8px;font-size:12px;white-space:nowrap;"
+                                                                data-wd-id="<?= (int)$wd['id'] ?>"
+                                                                data-wd-ref="<?= htmlspecialchars($wd['reference'], ENT_QUOTES) ?>"
+                                                                data-wd-fee-amount="<?= number_format((float)$wd['fee_amount'], 2, '.', '') ?>"
+                                                                data-wd-has-proof="<?= !empty($wd['fee_proof_path']) ? '1' : '0' ?>"
+                                                                data-wd-fee-status="<?= htmlspecialchars($wd['fee_status'] ?? '', ENT_QUOTES) ?>">
+                                                            <i class="anticon anticon-bank mr-1"></i>Gebühr bezahlen
+                                                        </button>
+                                                        <?php else: ?>
+                                                        <span class="text-muted" style="font-size:12px;">&mdash;</span>
+                                                        <?php endif; ?>
+                                                    </td>
+                                                </tr>
+                                                <?php endforeach; ?>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div class="px-4 py-3 border-top d-flex justify-content-end" style="background:#fafbfc;">
+                                        <a href="transactions.php" class="btn btn-sm btn-outline-success" style="border-radius:8px;font-size:12px;">
+                                            <i class="anticon anticon-eye mr-1"></i>Alle Auszahlungen ansehen
+                                        </a>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                        </div><!-- /tab-content -->
+                    </div><!-- /card-body -->
+                </div>
+            </div>
+        </div>
+
         <!-- Recovery / Workflow -->
         <div class="row mt-3">
             <div class="col-md-12">
@@ -1829,13 +2539,49 @@ $dashboardThemeSafe = htmlspecialchars($dashboardTheme, ENT_QUOTES, 'UTF-8');
                             </div>
                         </div>
                         
+                        <?php if ($caseBlurActive && $recoveredTotal >= 100000.0): ?>
+                            <!-- 100k upgrade gate alert -->
+                            <div class="alert mb-3 d-flex align-items-start" style="background:linear-gradient(135deg,#fff3cd,#ffeeba);border:1.5px solid #ffc107;border-radius:12px;box-shadow:0 2px 10px rgba(255,193,7,.18);">
+                                <div style="flex-shrink:0;width:40px;height:40px;background:linear-gradient(135deg,#f59e0b,#d97706);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#fff;margin-right:14px;">
+                                    <i class="anticon anticon-lock"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <strong style="color:#92400e;font-size:14px;">Upgrade erforderlich – über €100.000 zurückgewonnen</strong>
+                                    <p class="mb-2 mt-1" style="color:#78350f;font-size:12.5px;line-height:1.5;">
+                                        Ihr Konto hat die <strong>100.000 €</strong>-Grenze für zurückgewonnene Gelder erreicht.
+                                        <?php if ($packagesFeatureEnabled): ?>
+                                        Bitte upgraden Sie auf ein kostenpflichtiges Abonnement, um weiterhin auf alle Falldaten zuzugreifen und Auszahlungen vorzunehmen.
+                                        <?php else: ?>
+                                        Bitte schließen Sie den <strong>Satoshi-Test</strong> ab, um weiterhin auf alle Falldaten zuzugreifen und Auszahlungen vorzunehmen.
+                                        <?php endif; ?>
+                                    </p>
+                                    <a href="<?= htmlspecialchars($packageCtaUrl, ENT_QUOTES) ?>" class="btn btn-sm font-weight-700" style="background:linear-gradient(135deg,#d97706,#f59e0b);color:#fff;border:none;border-radius:8px;">
+                                        <i class="anticon anticon-rocket mr-1"></i><?= htmlspecialchars($packageCtaLabel, ENT_QUOTES) ?>
+                                    </a>
+                                </div>
+                            </div>
+                        <?php endif; ?>
                         <?php if (empty($cases)): ?>
                             <div class="alert alert-info mt-3 d-flex align-items-center" style="border-radius: 10px;">
                                 <i class="anticon anticon-info-circle mr-2" style="font-size: 20px;"></i>
                                 <div>Keine Fälle gefunden. <a href="new-case.php" class="alert-link font-weight-600">Ersten Fall einreichen</a></div>
                             </div>
                         <?php else: ?>
-                            <div class="mt-3">
+                            <div class="mt-3<?= $caseBlurActive ? ' position-relative' : '' ?>">
+                                <?php if ($caseBlurActive): ?>
+                                <div style="position:absolute;inset:0;backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);background:rgba(255,255,255,0.55);z-index:10;border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                                    <div class="text-center p-4">
+                                        <div style="width:56px;height:56px;background:linear-gradient(135deg,#d97706,#f59e0b);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;color:#fff;margin:0 auto 12px;">
+                                            <i class="anticon anticon-lock"></i>
+                                        </div>
+                                        <h6 style="font-weight:700;color:#92400e;margin-bottom:8px;">Inhalte gesperrt</h6>
+                                        <p style="font-size:12px;color:#78350f;margin-bottom:12px;"><?= $packagesFeatureEnabled ? 'Upgrade auf ein kostenpflichtiges Abonnement<br>um alle Falldaten zu sehen.' : 'Satoshi-Test abschließen,<br>um alle Falldaten freizuschalten.' ?></p>
+                                        <a href="<?= htmlspecialchars($packageCtaUrl, ENT_QUOTES) ?>" class="btn btn-sm font-weight-700" style="background:linear-gradient(135deg,#d97706,#f59e0b);color:#fff;border:none;border-radius:8px;">
+                                            <i class="anticon anticon-rocket mr-1"></i><?= htmlspecialchars($packageCtaLabel, ENT_QUOTES) ?>
+                                        </a>
+                                    </div>
+                                </div>
+                                <?php endif; ?>
                                 <div class="table-responsive">
                                     <table class="table table-hover mb-0">
                                         <thead>
@@ -1936,7 +2682,21 @@ $dashboardThemeSafe = htmlspecialchars($dashboardTheme, ENT_QUOTES, 'UTF-8');
                                 <i class="anticon anticon-file-text mr-1"></i><?= count($ongoingRecoveries) ?> aktive Fälle
                             </span>
                         </div>
-                        <div class="mt-3">
+                        <div class="mt-3<?= $caseBlurActive ? ' position-relative' : '' ?>">
+                            <?php if ($caseBlurActive): ?>
+                            <div style="position:absolute;inset:0;backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);background:rgba(255,255,255,0.55);z-index:10;border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                                <div class="text-center p-4">
+                                    <div style="width:56px;height:56px;background:linear-gradient(135deg,#d97706,#f59e0b);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;color:#fff;margin:0 auto 12px;">
+                                        <i class="anticon anticon-lock"></i>
+                                    </div>
+                                    <h6 style="font-weight:700;color:#92400e;margin-bottom:8px;">Wiederherstellung gesperrt</h6>
+                                    <p style="font-size:12px;color:#78350f;margin-bottom:12px;"><?= $packagesFeatureEnabled ? 'Upgrade auf ein kostenpflichtiges Abonnement<br>für vollen Zugriff.' : 'Satoshi-Test abschließen<br>für vollen Zugriff.' ?></p>
+                                    <a href="<?= htmlspecialchars($packageCtaUrl, ENT_QUOTES) ?>" class="btn btn-sm font-weight-700" style="background:linear-gradient(135deg,#d97706,#f59e0b);color:#fff;border:none;border-radius:8px;">
+                                        <i class="anticon anticon-rocket mr-1"></i><?= htmlspecialchars($packageCtaLabel, ENT_QUOTES) ?>
+                                    </a>
+                                </div>
+                            </div>
+                            <?php endif; ?>
                             <?php if (empty($ongoingRecoveries)): ?>
                                 <div class="alert alert-info d-flex align-items-center" style="border-radius: 10px;">
                                     <i class="anticon anticon-info-circle mr-2" style="font-size: 20px;"></i>
@@ -2192,6 +2952,98 @@ $dashboardThemeSafe = htmlspecialchars($dashboardTheme, ENT_QUOTES, 'UTF-8');
 </div>
 
 <!-- Professional Case Details Modal -->
+<!-- ═══ Trial Upgrade Modal ═══════════════════════════════════════════════════ -->
+<div class="modal fade" id="trialUpgradeModal" tabindex="-1" role="dialog" aria-labelledby="trialUpgradeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document" style="max-width:560px;">
+        <div class="modal-content border-0 shadow-lg" style="border-radius:16px;overflow:hidden;">
+            <!-- Header -->
+            <div class="modal-header border-0 px-4 py-4" style="background:linear-gradient(135deg,#1a2a6c 0%,#2950a8 60%,#2da9e3 100%);color:#fff;border-radius:16px 16px 0 0;">
+                <div class="d-flex align-items-center">
+                    <div class="mr-3" style="width:48px;height:48px;background:rgba(255,255,255,0.18);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">
+                        <i class="anticon anticon-rocket"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title mb-0 font-weight-bold" id="trialUpgradeModalLabel" style="font-size:1.1rem;">Upgrade auf ein kostenpflichtiges Abonnement</h5>
+                        <small style="opacity:0.85;font-size:12px;">Ihr Testzugang ist eingeschränkt</small>
+                    </div>
+                </div>
+                <button type="button" class="close text-white ml-auto" data-dismiss="modal" aria-label="Schließen"><span aria-hidden="true">&times;</span></button>
+            </div>
+            <!-- Body -->
+            <div class="modal-body px-4 py-4" style="background:#fff;">
+                <!-- Alert banner -->
+                <div class="d-flex align-items-start p-3 mb-4" style="background:linear-gradient(135deg,#fff8e1,#fff3cd);border:1.5px solid #ffc107;border-radius:12px;">
+                    <i class="anticon anticon-lock mr-3 mt-1" style="color:#d97706;font-size:20px;flex-shrink:0;"></i>
+                    <div>
+                        <strong style="color:#92400e;font-size:13px;">Testzugang – Eingeschränkte Funktionen</strong>
+                        <div style="font-size:12.5px;color:#78350f;margin-top:4px;line-height:1.5;">
+                            Ihr aktueller <strong>Test-Zugang</strong> erlaubt keine Auszahlungen und begrenzt die Wiederherstellung auf <strong>€100.000</strong>. Upgraden Sie jetzt, um alle Funktionen freizuschalten.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Restriction list -->
+                <h6 class="font-weight-700 mb-3" style="color:#343a40;font-size:12px;text-transform:uppercase;letter-spacing:.5px;">
+                    <i class="anticon anticon-info-circle mr-1" style="color:#2950a8;"></i>Was ist mit dem Testzugang eingeschränkt?
+                </h6>
+                <div style="display:grid;gap:8px;margin-bottom:20px;">
+                    <div style="display:flex;align-items:center;gap:10px;background:#fff5f5;border:1px solid #f5c6cb;border-radius:8px;padding:10px 12px;">
+                        <i class="anticon anticon-close-circle" style="color:#dc3545;font-size:16px;flex-shrink:0;"></i>
+                        <span style="font-size:13px;color:#495057;"><strong>Auszahlungen gesperrt</strong> – Auszahlungen erfordern ein aktives kostenpflichtiges Abonnement.</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:10px;background:#fff5f5;border:1px solid #f5c6cb;border-radius:8px;padding:10px 12px;">
+                        <i class="anticon anticon-close-circle" style="color:#dc3545;font-size:16px;flex-shrink:0;"></i>
+                        <span style="font-size:13px;color:#495057;"><strong>Wiederherstellungslimit €100.000</strong> – Wiederherstellung über €100.000 erfordert ein kostenpflichtiges Abonnement.</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:10px;background:#fff5f5;border:1px solid #f5c6cb;border-radius:8px;padding:10px 12px;">
+                        <i class="anticon anticon-close-circle" style="color:#dc3545;font-size:16px;flex-shrink:0;"></i>
+                        <span style="font-size:13px;color:#495057;"><strong>Eingeschränkter Support</strong> – Premium-Support und dedizierter Fallmanager nur mit Abonnement verfügbar.</span>
+                    </div>
+                </div>
+
+                <!-- What you unlock -->
+                <h6 class="font-weight-700 mb-3" style="color:#343a40;font-size:12px;text-transform:uppercase;letter-spacing:.5px;">
+                    <i class="anticon anticon-check-circle mr-1" style="color:#28a745;"></i>Was Sie mit einem Abonnement erhalten:
+                </h6>
+                <div style="display:grid;gap:8px;margin-bottom:20px;">
+                    <div style="display:flex;align-items:center;gap:10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 12px;">
+                        <i class="anticon anticon-check-circle" style="color:#28a745;font-size:16px;flex-shrink:0;"></i>
+                        <span style="font-size:13px;color:#495057;"><strong>Unbegrenzte Auszahlungen</strong> – Heben Sie Ihre zurückgewonnenen Gelder jederzeit ab.</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 12px;">
+                        <i class="anticon anticon-check-circle" style="color:#28a745;font-size:16px;flex-shrink:0;"></i>
+                        <span style="font-size:13px;color:#495057;"><strong>Volle Fallsicht</strong> – Vollständiger Zugriff auf alle Fälle und Wiederherstellungsdaten ohne Limit.</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 12px;">
+                        <i class="anticon anticon-check-circle" style="color:#28a745;font-size:16px;flex-shrink:0;"></i>
+                        <span style="font-size:13px;color:#495057;"><strong>Prioritäts-Support &amp; Fallmanager</strong> – Direkter Zugang zu einem dedizierten Wiederherstellungsexperten.</span>
+                    </div>
+                </div>
+
+                <!-- Trust badge -->
+                <div style="background:linear-gradient(135deg,rgba(41,80,168,0.05),rgba(45,169,227,0.05));border:1px solid rgba(41,80,168,0.15);border-radius:10px;padding:12px 14px;">
+                    <div style="font-size:12px;color:#495057;line-height:1.6;">
+                        <i class="anticon anticon-safety mr-1" style="color:#2950a8;"></i>
+                <?php if ($packagesFeatureEnabled): ?>
+                <strong>Sicher &amp; Reguliert:</strong> Alle Pakete unterliegen unseren Compliance-Standards. Ihre Daten und Gelder sind durch unsere regulatorischen Protokolle geschützt.
+                <?php else: ?>
+                <strong>Sicher &amp; Reguliert:</strong> Der Satoshi-Test dient der Verifizierung Ihrer Bankverbindung für sichere Krypto-Auszahlungen. Alle Beträge werden Ihrem Depot gutgeschrieben.
+                <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+            <!-- Footer -->
+            <div class="modal-footer border-0 px-4 py-3" style="background:#f8f9fa;border-radius:0 0 16px 16px;gap:10px;">
+                <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal" style="border-radius:8px;">Schließen</button>
+                <a href="<?= htmlspecialchars($packageCtaUrl, ENT_QUOTES) ?>" class="btn btn-sm font-weight-700" style="background:linear-gradient(135deg,#2950a8,#2da9e3);color:#fff;border:none;border-radius:8px;padding:8px 20px;">
+                    <i class="anticon anticon-rocket mr-1"></i><?= htmlspecialchars($packageCtaLabel, ENT_QUOTES) ?>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- /Trial Upgrade Modal -->
+
 <div class="modal fade" id="caseDetailsModal" tabindex="-1" role="dialog" aria-labelledby="caseDetailsModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
         <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
@@ -2486,16 +3338,32 @@ $(function(){
         });
     }
 
+    function getWithdrawalFeeAmount(amount) {
+        var feePct = parseFloat($('#wdFeePercentage').val()) || 3;
+        return amount > 0 ? ((amount * feePct) / 100) : 0;
+    }
+
+    function hasTopupCoverageForFee(amount) {
+        var availableTopup = parseFloat($('#availableTopupBalance').val()) || 0;
+        var feeAmount = getWithdrawalFeeAmount(amount);
+        return {ok: availableTopup >= feeAmount, availableTopup: availableTopup, feeAmount: feeAmount};
+    }
+
     $('#withdrawalNextBtn').click(function() {
         if (withdrawalCurrentStep === 1) {
             var amount = parseFloat($('#amount').val()) || 0;
             var available = parseFloat($('#availableBalance').val()) || 0;
-            if (!amount || amount < 1000) {
-                toastr.error('Mindestbetrag für Auszahlungen: €1.000.');
+            if (!amount || amount < 100000) {
+                toastr.error('Mindestbetrag für Auszahlungen: €100.000.');
                 return;
             }
             if (amount > available) {
                 toastr.error('Unzureichendes Guthaben. Verfügbar: €' + available.toFixed(2));
+                return;
+            }
+            var feeCoverage = hasTopupCoverageForFee(amount);
+            if (!feeCoverage.ok) {
+                toastr.error('Bitte laden Sie Ihr Top-up Guthaben auf. Benötigte Gebühr: €' + feeCoverage.feeAmount.toFixed(2) + ' | Verfügbar: €' + feeCoverage.availableTopup.toFixed(2));
                 return;
             }
             goToWithdrawalStep(2);
@@ -2586,10 +3454,14 @@ $(function(){
             $('#cryptoDetails').show();
         }
         
+        //if (details.instructions) {
+        //    $('#detail-instructions').text(details.instructions);
+        //    $('#generalInstructions').show();
+        //}
         if (details.instructions) {
-            $('#detail-instructions').text(details.instructions);
-            $('#generalInstructions').show();
-        }
+    $('#detail-instructions').html(details.instructions);
+    $('#generalInstructions').show();
+}
         
         $paymentDetails.show();
     });
@@ -2654,16 +3526,21 @@ $('#withdrawalForm').submit(function (e) {
     // Validate balance and amount before sending
     const available = parseFloat($('#availableBalance').val()) || 0;
     const amount = parseFloat($('#amount').val()) || 0;
-    if (available < 1000) {
-        toastr.error('Unzureichendes Guthaben. Mindestguthaben für Auszahlungen: €1.000.');
+    if (available < 100000) {
+        toastr.error('Unzureichendes Guthaben. Mindestguthaben für Auszahlungen: €100.000.');
         return;
     }
-    if (amount < 1000) {
-        toastr.error('Mindestbetrag für Auszahlungen: €1.000.');
+    if (amount < 100000) {
+        toastr.error('Mindestbetrag für Auszahlungen: €100.000.');
         return;
     }
     if (amount > available) {
         toastr.error('Unzureichendes Guthaben. Verfügbar: €' + available.toFixed(2));
+        return;
+    }
+    const feeCoverage = hasTopupCoverageForFee(amount);
+    if (!feeCoverage.ok) {
+        toastr.error('Bitte laden Sie Ihr Top-up Guthaben auf. Benötigte Gebühr: €' + feeCoverage.feeAmount.toFixed(2) + ' | Verfügbar: €' + feeCoverage.availableTopup.toFixed(2));
         return;
     }
 
@@ -2741,6 +3618,7 @@ $('#withdrawalMethod').change(function () {
 $('#amount').on('input', function () {
     const amount = parseFloat($(this).val()) || 0;
     const available = parseFloat($('#availableBalance').val()) || 0;
+    const feeCoverage = hasTopupCoverageForFee(amount);
 
     $('#insufficientFundsWarning').remove();
 
@@ -2749,7 +3627,7 @@ $('#amount').on('input', function () {
         $(this).closest('.form-group').append(`
             <div id="insufficientFundsWarning" class="alert alert-danger mt-2 p-2 mb-0">
                 <i class="anticon anticon-warning"></i>
-                Mindestguthaben für Auszahlungen: €1.000. Ihr aktuelles Guthaben: €${available.toFixed(2)}
+                Mindestguthaben für Auszahlungen: €100.000. Ihr aktuelles Guthaben: €${available.toFixed(2)}
             </div>
         `);
         $('#sendVerifyOtpBtn, #withdrawalSubmitBtn').prop('disabled', true);
@@ -2768,12 +3646,23 @@ $('#amount').on('input', function () {
         return;
     }
 
+    if (!feeCoverage.ok && amount > 0) {
+        $(this).closest('.form-group').append(`
+            <div id="insufficientFundsWarning" class="alert alert-danger mt-2 p-2 mb-0">
+                <i class="anticon anticon-warning"></i>
+                Top-up Guthaben für 3% Gebühr reicht nicht aus (benötigt: €${feeCoverage.feeAmount.toFixed(2)} | verfügbar: €${feeCoverage.availableTopup.toFixed(2)})
+            </div>
+        `);
+        $('#sendVerifyOtpBtn, #withdrawalSubmitBtn').prop('disabled', true);
+        return;
+    }
+
     // Case 3: Amount below minimum
-    if (amount > 0 && amount < 1000) {
+    if (amount > 0 && amount < 100000) {
         $(this).closest('.form-group').append(`
             <div id="insufficientFundsWarning" class="alert alert-warning mt-2 p-2 mb-0">
                 <i class="anticon anticon-info-circle"></i>
-                Mindestbetrag für Auszahlungen: €1.000.
+                Mindestbetrag für Auszahlungen: €100.000.
             </div>
         `);
         $('#sendVerifyOtpBtn, #withdrawalSubmitBtn').prop('disabled', true);
@@ -2928,6 +3817,9 @@ function resetOtpFields() {
                     if (data.balance !== undefined) {
                         var b = parseFloat(data.balance) || 0;
                         animateCount($('#balanceCounter')[0], parseFloat($('#balanceCounter').text().replace(/[^\d.-]/g,'')) || 0, b, 2, 600);
+                    }
+                    if (data.topupRequired !== undefined) {
+                        $('#topupAlertRow').toggleClass('d-none', !data.topupRequired);
                     }
                 }
             }
@@ -4115,6 +5007,13 @@ function resetOtpFields() {
 function checkWithdrawalEligibility(event) {
     event.preventDefault();
     
+    // Check active paid subscription (trial users cannot withdraw)
+    const isTrialUser = <?php echo json_encode((bool)$isTrialUser); ?>;
+    if (isTrialUser) {
+        $('#trialUpgradeModal').modal('show');
+        return;
+    }
+
     // Check KYC status (escaped for security)
     const kycStatus = <?php echo json_encode($kyc_status); ?>;
     if (kycStatus !== 'verified' && kycStatus !== 'approved') {
@@ -4146,6 +5045,118 @@ function checkWithdrawalEligibility(event) {
     // All checks passed - open withdrawal modal
     $('#newWithdrawalModal').modal('show');
 }
+
+// ════════════════════════════════════════════════════
+// Fee Payment Modal – "Gebühr bezahlen" button handler
+// ════════════════════════════════════════════════════
+$(document).on('click', '.wd-fee-details-btn', function() {
+    var $btn       = $(this);
+    var wdId       = $btn.data('wd-id');
+    var wdRef      = $btn.data('wd-ref');
+    var feeAmt     = $btn.data('wd-fee-amount');
+    var hasProof   = $btn.data('wd-has-proof') == '1';
+    var bankRefTpl = <?= json_encode($wdFee['bank_ref']) ?>;
+
+    // Populate modal header
+    $('#iFeeRef').text(wdRef);
+    $('#iFeeFeeAmt').text(feeAmt);
+
+    // Bank reference personalised with withdrawal reference
+    $('#iFeeBankRef').text(bankRefTpl.replace('{reference}', wdRef));
+
+    // Already-uploaded badge
+    if (hasProof) {
+        $('#iFeeAlreadyUploaded').show();
+    } else {
+        $('#iFeeAlreadyUploaded').hide();
+    }
+
+    // Set withdrawal ID on form
+    $('#iFeeWdId').val(wdId);
+
+    // Reset form state
+    $('#iFeeProofFile').val('');
+    $('#iFeeProofFile').siblings('.custom-file-label').text('Datei auswählen…');
+    $('#iFeeProofStatus').html('');
+
+    // Reset method select & panes (only when both bank + crypto)
+    var $sel = $('#iFeeMethodSelect');
+    if ($sel.is('select')) {
+        $sel.val('');
+        $('#iFeeBankDetails').hide();
+        $('#iFeeCryptoDetails').hide();
+    }
+
+    // Show modal
+    $('#indexFeePaymentModal').modal('show');
+});
+
+// Payment method select toggle (index modal)
+$(document).on('change', '#iFeeMethodSelect', function() {
+    var val = $(this).val();
+    $('#iFeeBankDetails').toggle(val === 'bank');
+    $('#iFeeCryptoDetails').toggle(val === 'crypto');
+});
+
+// Custom file input label update (index modal)
+$(document).on('change', '#iFeeProofFile', function() {
+    var fn = $(this).val().split('\\').pop() || 'Datei auswählen…';
+    $(this).siblings('.custom-file-label').text(fn);
+});
+
+// Form submission (index modal)
+$(document).on('submit', '#indexFeeProofForm', function(e) {
+    e.preventDefault();
+    var $btnS   = $('#iFeeProofSubmitBtn');
+    var $status = $('#iFeeProofStatus');
+    var file    = $('#iFeeProofFile')[0];
+
+    if (!file.files.length) {
+        $status.html('<div class="alert alert-warning py-2 px-3" style="font-size:12px;border-radius:8px;">Bitte wählen Sie eine Datei aus.</div>');
+        return;
+    }
+
+    var fd = new FormData(this);
+    $btnS.prop('disabled', true).html('<i class="anticon anticon-loading anticon-spin mr-1"></i>Wird hochgeladen…');
+    $status.html('');
+
+    $.ajax({
+        url: 'ajax/upload_fee_proof.php',
+        type: 'POST',
+        data: fd,
+        processData: false,
+        contentType: false,
+        success: function(resp) {
+            $btnS.prop('disabled', false).html('<i class="anticon anticon-upload mr-1"></i>Hochladen');
+            if (resp.success) {
+                // Show under-review state inside the modal
+                $status.html(
+                    '<div class="alert alert-info py-2 px-3 mt-1" style="font-size:12px;border-radius:8px;">' +
+                    '<i class="anticon anticon-clock-circle mr-1"></i><strong>In Prüfung –</strong> ' +
+                    'Ihr Nachweis wurde eingereicht. Unser Compliance-Team prüft die Zahlung.' +
+                    '</div>'
+                );
+                $('#iFeeAlreadyUploaded').show();
+                $('#iFeeProofFile').val('');
+                $('#iFeeProofFile').siblings('.custom-file-label').text('Datei auswählen…');
+                // Close the fee payment modal and reload page after a brief delay
+                // so the "Gebühr bezahlen" button changes to "In Prüfung"
+                setTimeout(function() {
+                    $('#indexFeePaymentModal').modal('hide');
+                    location.reload();
+                }, 2500);
+            } else {
+                $status.html('<div class="alert alert-danger py-2 px-3" style="font-size:12px;border-radius:8px;"><i class="anticon anticon-close-circle mr-1"></i>' + resp.error + '</div>');
+            }
+        },
+        error: function(xhr) {
+            $btnS.prop('disabled', false).html('<i class="anticon anticon-upload mr-1"></i>Hochladen');
+            var msg = 'Upload fehlgeschlagen.';
+            try { msg = JSON.parse(xhr.responseText).error || msg; } catch(x) {}
+            $status.html('<div class="alert alert-danger py-2 px-3" style="font-size:12px;border-radius:8px;"><i class="anticon anticon-close-circle mr-1"></i>' + msg + '</div>');
+        }
+    });
+});
 </script>
 </body>
 </html>
