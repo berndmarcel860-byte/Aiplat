@@ -1,0 +1,201 @@
+/**
+ * Dashboard Theme 4 – Minimalist (Ultra-Clean, Flat, Airy)
+ * Pure white, hairline borders, generous whitespace, large numerics.
+ * No colored backgrounds, no gradients, no box shadows.
+ */
+
+.db-theme-4 {
+  background: #ffffff;
+  font-family: 'Inter', 'Helvetica Neue', sans-serif;
+}
+
+/* ── Hero Section ─────────────────────────────── */
+.db-theme-4 .db-hero {
+  background: #ffffff !important;
+  border: none !important;
+  border-bottom: 1px solid #e8e8e8 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 36px 36px 28px !important;
+  color: #111111 !important;
+}
+
+.db-theme-4 .db-hero .hero-welcome-text {
+  color: #999999 !important;
+  font-size: 12px !important;
+  font-weight: 400 !important;
+  letter-spacing: 0.3px !important;
+}
+
+.db-theme-4 .db-hero .hero-name {
+  color: #111111 !important;
+  font-weight: 300 !important;
+  font-size: 32px !important;
+  letter-spacing: -1px !important;
+}
+
+.db-theme-4 .db-hero .hero-balance-label {
+  color: #aaaaaa !important;
+  font-size: 11px !important;
+  font-weight: 400 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 1.2px !important;
+}
+
+.db-theme-4 .db-hero .hero-balance-value {
+  color: #111111 !important;
+  font-size: 36px !important;
+  font-weight: 300 !important;
+  letter-spacing: -1.5px !important;
+}
+
+.db-theme-4 .db-hero .trust-badge {
+  background: transparent !important;
+  border: 1px solid #e0e0e0 !important;
+  color: #666666 !important;
+  border-radius: 100px !important;
+  padding: 3px 10px !important;
+  font-size: 11px !important;
+  font-weight: 400 !important;
+}
+
+.db-theme-4 .db-hero .hero-progress .progress {
+  background: #f0f0f0 !important;
+  height: 2px !important;
+  border-radius: 1px !important;
+  box-shadow: none !important;
+}
+
+.db-theme-4 .db-hero .hero-progress .progress-bar {
+  background: #111111 !important;
+}
+
+.db-theme-4 .db-hero .hero-trust-strip {
+  display: none !important;
+}
+
+/* ── Buttons ──────────────────────────────────── */
+.db-theme-4 .btn-hero-deposit,
+.db-theme-4 .btn-hero-withdraw,
+.db-theme-4 .btn-hero-txn,
+.db-theme-4 .btn-theme-primary {
+  background: #111111 !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 2px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.3px !important;
+  box-shadow: none !important;
+}
+
+.db-theme-4 .btn-hero-deposit:hover,
+.db-theme-4 .btn-hero-withdraw:hover,
+.db-theme-4 .btn-hero-txn:hover,
+.db-theme-4 .btn-theme-primary:hover {
+  background: #333333 !important;
+  color: #ffffff !important;
+}
+
+/* ── KPI Cards ────────────────────────────────── */
+.db-theme-4 .kpi-card-wrapper .card {
+  background: #ffffff !important;
+  border: 1px solid #e8e8e8 !important;
+  border-radius: 2px !important;
+  box-shadow: none !important;
+}
+
+.db-theme-4 .kpi-card-wrapper .card > [style*="linear-gradient"],
+.db-theme-4 .kpi-card-wrapper .card > div[style*="background:"] {
+  background: #ffffff !important;
+  border-bottom: 1px solid #e8e8e8 !important;
+  padding: 20px 24px !important;
+}
+
+.db-theme-4 .kpi-icon-badge {
+  background: #f5f5f5 !important;
+  border-radius: 2px !important;
+}
+
+.db-theme-4 .kpi-icon-badge i {
+  color: #444444 !important;
+}
+
+.db-theme-4 .kpi-trend-badge {
+  display: none !important;
+}
+
+.db-theme-4 .kpi-value {
+  color: #111111 !important;
+  font-size: 32px !important;
+  font-weight: 300 !important;
+  letter-spacing: -1px !important;
+  line-height: 1.1 !important;
+}
+
+.db-theme-4 .kpi-label {
+  color: #999999 !important;
+  font-size: 11px !important;
+  font-weight: 400 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 1px !important;
+}
+
+/* ── Section Headers ──────────────────────────── */
+.db-theme-4 .section-header {
+  background: #ffffff !important;
+  border-bottom: 1px solid #e8e8e8 !important;
+  padding: 18px 24px !important;
+  border-radius: 2px 2px 0 0 !important;
+}
+
+.db-theme-4 .section-header h5,
+.db-theme-4 .section-header h6 {
+  color: #111111 !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 1px !important;
+}
+
+/* ── Transaction Rows ─────────────────────────── */
+.db-theme-4 .txn-row {
+  border-bottom: 1px solid #f0f0f0 !important;
+  background: #ffffff !important;
+}
+
+.db-theme-4 .txn-row:hover {
+  background: #fafafa !important;
+}
+
+.db-theme-4 .txn-icon-wrap {
+  background: #f5f5f5 !important;
+  border-radius: 50% !important;
+  color: #444444 !important;
+}
+
+.db-theme-4 .txn-chevron {
+  display: none !important;
+}
+
+/* ── Modals ───────────────────────────────────── */
+.db-theme-4 .modal-header-themed {
+  background: #ffffff !important;
+  border-bottom: 1px solid #e8e8e8 !important;
+  padding: 24px 28px !important;
+  color: #111111 !important;
+}
+
+.db-theme-4 .modal-header-themed h5,
+.db-theme-4 .modal-header-themed .close {
+  color: #111111 !important;
+}
+
+.db-theme-4 .modal-content {
+  border-radius: 2px !important;
+  border: 1px solid #e0e0e0 !important;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.08) !important;
+}
+
+/* ── Amounts ──────────────────────────────────── */
+.db-theme-4 .amount-positive { color: #2d6a4f !important; font-weight: 500 !important; }
+.db-theme-4 .amount-negative { color: #c0392b !important; font-weight: 500 !important; }

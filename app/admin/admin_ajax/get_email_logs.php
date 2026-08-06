@@ -21,7 +21,7 @@ try {
             e.status,
             e.sent_at,
             e.opened_at,
-            t.template_key
+            COALESCE(t.template_key, e.template_key) AS template_key
         FROM email_logs e
         LEFT JOIN email_templates t ON e.template_id = t.id
         LEFT JOIN users u ON e.recipient = u.email
@@ -63,7 +63,7 @@ try {
     $totalRecords = $stmt->fetchColumn();
     
     $orderColumn = isset($_POST['order'][0]['column']) ? (int)$_POST['order'][0]['column'] : 0;
-    $orderDirection = isset($_POST['order'][0]['dir']) ? $_POST['order'][0]['dir'] : 'desc';
+    $orderDirection = (isset($_POST['order'][0]['dir']) && strtolower($_POST['order'][0]['dir']) === 'asc') ? 'ASC' : 'DESC';
     
     $columns = ['e.id', 'e.recipient', 'e.subject', 't.template_key', 'e.status', 'e.sent_at', 'e.opened_at'];
     

@@ -1,0 +1,54 @@
+/**
+ * Dashboard Theme 1 – Klassisch (Classic Gradient)
+ * Default gradient design. Uses existing inline styles, minimal overrides.
+ */
+
+/* ──────────────────────────────────────────────
+   Theme 1 is the baseline – only minor polish
+   ────────────────────────────────────────────── */
+.db-theme-1 {
+  background: #f0f4f8;
+}
+
+.db-theme-1 .card {
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(41, 80, 168, 0.08);
+}
+
+/* Stat cards keep their gradient headers */
+.db-theme-1 .kpi-card-header {
+  border-radius: 12px 12px 0 0;
+}
+
+/* Thin blue progress bar on hero */
+.db-theme-1 .hero-progress-bar {
+  background: linear-gradient(90deg, #2950a8, #2da9e3);
+}
+
+/* Transaction rows */
+.db-theme-1 .txn-row {
+  border-bottom: 1px solid #f0f0f0;
+  transition: background 0.18s;
+}
+.db-theme-1 .txn-row:hover {
+  background: rgba(41, 80, 168, 0.04);
+}
+
+/* Modal header stays blue gradient */
+.db-theme-1 .modal-header-themed {
+  background: linear-gradient(135deg, #1a2a6c 0%, #2950a8 50%, #2da9e3 100%);
+  color: #fff;
+}
+
+/* Buttons */
+.db-theme-1 .btn-theme-primary {
+  background: linear-gradient(135deg, #2950a8, #2da9e3);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+}
+.db-theme-1 .btn-theme-primary:hover {
+  opacity: 0.9;
+  color: #fff;
+}

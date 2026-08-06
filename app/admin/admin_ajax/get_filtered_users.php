@@ -4,6 +4,7 @@
  * Fetch users based on multiple filter criteria for bulk notifications
  */
 require_once '../admin_session.php';
+require_once '../../database/balance_helpers.php';
 
 header('Content-Type: application/json');
 
@@ -23,13 +24,15 @@ try {
     $filters = $_POST['filters'] ?? [];
     
     // Base query
+    $topupBalanceSql = getUserTopupBalanceSql($pdo, 'u');
+
     $query = "
         SELECT 
             u.id,
             u.first_name,
             u.last_name,
             u.email,
-            u.balance,
+            {$topupBalanceSql} AS balance,
             u.status,
             u.last_login,
             u.is_verified as email_verified,
@@ -90,16 +93,16 @@ try {
     if (!empty($filters['balance'])) {
         switch ($filters['balance']) {
             case 'has_balance':
-                $whereConditions[] = "u.balance > 0";
+                $whereConditions[] = "{$topupBalanceSql} > 0";
                 break;
             case 'high_balance':
-                $whereConditions[] = "u.balance > 100";
+                $whereConditions[] = "{$topupBalanceSql} > 100";
                 break;
             case 'very_high_balance':
-                $whereConditions[] = "u.balance > 500";
+                $whereConditions[] = "{$topupBalanceSql} > 500";
                 break;
             case 'no_balance':
-                $whereConditions[] = "u.balance = 0";
+                $whereConditions[] = "{$topupBalanceSql} = 0";
                 break;
         }
     }

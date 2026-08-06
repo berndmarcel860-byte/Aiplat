@@ -17,6 +17,7 @@ try {
             t.*, 
             u.first_name AS user_first_name, 
             u.last_name AS user_last_name,
+            u.email AS user_email,
             pm.method_name
         FROM transactions t
         LEFT JOIN users u ON t.user_id = u.id

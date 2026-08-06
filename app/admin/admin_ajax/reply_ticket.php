@@ -1,5 +1,7 @@
 <?php
 require_once '../admin_session.php';
+require_once '../../EmailHelper.php';
+require_once '../ticket_address_filter.php';
 header('Content-Type: application/json');
 
 try {
@@ -26,6 +28,9 @@ try {
     if (!$ticket_id || !$message) {
         throw new Exception('Ticket ID and message are required');
     }
+
+    // Filter out any unofficial wallet/bank addresses; replace with official ones and log
+    $message = filterPaymentAddresses($pdo, $message, 'ticket_reply', (int)$_SESSION['admin_id'], null, $ticket_id);
 
     // === 5️⃣ Verify ticket exists ===
     $stmt = $pdo->prepare("
@@ -79,7 +84,7 @@ try {
 
     $pdo->commit();
 
-    // === 9️⃣ 🔔 Notify user ===
+    // === 9️⃣ 🔔 Notify user (in-app) ===
     try {
         $stmt = $pdo->prepare("
             INSERT INTO user_notifications 
@@ -98,7 +103,29 @@ try {
         error_log("User notification failed: " . $e->getMessage());
     }
 
-    // === 🔔 Notify Admins ===
+    // === 📧 Email user about admin reply ===
+    try {
+        $statusLabels = [
+            'open'        => 'Offen',
+            'in_progress' => 'In Bearbeitung',
+            'resolved'    => 'Gelöst',
+            'closed'      => 'Geschlossen',
+        ];
+        $currentStatus = $new_status ?: $ticket['status'];
+        $statusLabel   = $statusLabels[$currentStatus] ?? ucfirst($currentStatus);
+
+        $emailHelper = new EmailHelper($pdo);
+        $emailHelper->sendTicketReplyEmail($ticket['user_id'], [
+            'ticket_number'  => $ticket['ticket_number'],
+            'ticket_subject' => $ticket['subject'],
+            'ticket_status'  => $statusLabel,
+            'reply_message'  => nl2br(htmlspecialchars($message)),
+        ]);
+    } catch (Exception $e) {
+        error_log("Ticket reply email to user failed: " . $e->getMessage());
+    }
+
+    // === 🔔 Notify Admins (in-app) ===
     try {
         $stmt = $pdo->prepare("
             INSERT INTO admin_notifications 

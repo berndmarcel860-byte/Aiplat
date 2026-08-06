@@ -2,20 +2,8 @@
 // ajax/kyc_submit.php
 require_once __DIR__ . '/../session.php';
 
-// Use statements must be at the very top
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\SMTP;
-use PHPMailer\PHPMailer\Exception;
-
 ini_set('display_errors', 0);
 error_reporting(E_ALL);
-
-// Check if PHPMailer is available
-$phpMailerAvailable = false;
-if (file_exists(__DIR__ . '/../vendor/autoload.php')) {
-    require_once __DIR__ . '/../vendor/autoload.php';
-    $phpMailerAvailable = true;
-}
 
 header('Content-Type: application/json');
 
@@ -218,10 +206,15 @@ try {
         
         $kycId = $pdo->lastInsertId();
         
-        // Send KYC pending email
+        // Send KYC pending email via EmailHelper
         try {
-            sendKYCPendingEmail($pdo, $user, $documentType, $kycId);
-        } catch (Exception $emailError) {
+            require_once __DIR__ . '/../EmailHelper.php';
+            $emailHelper = new EmailHelper($pdo);
+            $emailHelper->sendKycPendingEmail($_SESSION['user_id'], [
+                'document_type' => $documentType,
+                'kyc_id'        => (string)$kycId,
+            ]);
+        } catch (Throwable $emailError) {
             error_log("KYC email sending failed: " . $emailError->getMessage());
             // Continue processing even if email fails
         }
@@ -264,248 +257,3 @@ try {
     ]);
 }
 
-/**
- * Send KYC pending email in German
- */
-function sendKYCPendingEmail($pdo, $user, $documentType, $kycId) {
-    global $phpMailerAvailable;
-    
-    try {
-        // Get SMTP settings
-        $smtpStmt = $pdo->prepare("SELECT * FROM smtp_settings WHERE is_active = 1 LIMIT 1");
-        $smtpStmt->execute();
-        $smtpSettings = $smtpStmt->fetch();
-        
-        if (!$smtpSettings) {
-            throw new Exception("No active SMTP configuration found");
-        }
-
-        // Get email template from database
-        $templateStmt = $pdo->prepare("SELECT * FROM email_templates WHERE template_key = 'kyc_pending' LIMIT 1");
-        $templateStmt->execute();
-        $template = $templateStmt->fetch();
-
-        // Get system settings
-        $systemStmt = $pdo->prepare("SELECT * FROM system_settings WHERE id = 1");
-        $systemStmt->execute();
-        $systemSettings = $systemStmt->fetch();
-
-        // Prepare template variables for replacement
-        $variables = [
-            '{first_name}' => $user['first_name'] ?? '',
-            '{last_name}' => $user['last_name'] ?? '',
-            '{user_name}' => $user['first_name'] . ' ' . $user['last_name'],
-            '{email}' => $user['email'],
-            '{document_type}' => $documentType,
-            '{kyc_id}' => $kycId,
-            '{date}' => date('Y-m-d H:i:s'),
-            '{current_year}' => date('Y'),
-            '{site_name}' => 'Fundtracer AI',
-            '{site_url}' => $systemSettings['site_url'] ?? 'https://your-site.com',
-            '{support_email}' => $systemSettings['contact_email'] ?? 'support@your-site.com',
-            '{brand_name}' => $systemSettings['brand_name'] ?? 'Fundtracer AI',
-            '{contact_phone}' => $systemSettings['contact_phone'] ?? '',
-'{fca_reference_number}' => $systemSettings['fca_reference_number'] ?? '',
-'{company_address}' => $systemSettings['company_address'] ?? '',
-            '{contact_email}' => $systemSettings['contact_email'] ?? ''
-        ];
-
-        // Use template from database or fallback to default German template
-        if ($template) {
-            $subject = $template['subject'] ?? 'KYC-Verifizierung ausstehend - ' . $kycId;
-            $htmlBody = $template['content'] ?? getDefaultKYCPendingTemplate();
-            
-            // Replace variables in template
-            foreach ($variables as $key => $value) {
-                $subject = str_replace($key, $value, $subject);
-                $htmlBody = str_replace($key, $value, $htmlBody);
-            }
-        } else {
-            // Use default German template if no database template found
-            $subject = 'KYC-Verifizierung ausstehend - ' . $kycId;
-            $htmlBody = getDefaultKYCPendingTemplate();
-            
-            // Replace variables in default template
-            foreach ($variables as $key => $value) {
-                $subject = str_replace($key, $value, $subject);
-                $htmlBody = str_replace($key, $value, $htmlBody);
-            }
-        }
-
-        $textBody = strip_tags($htmlBody);
-
-        // Send email using PHPMailer if available
-        if ($phpMailerAvailable) {
-            $mail = new PHPMailer(true);
-            
-            // Server settings
-            $mail->isSMTP();
-            $mail->Host       = $smtpSettings['host'];
-            $mail->SMTPAuth   = true;
-            $mail->Username   = $smtpSettings['username'];
-            $mail->Password   = $smtpSettings['password'];
-            $mail->SMTPSecure = $smtpSettings['encryption'] === 'ssl' ? PHPMailer::ENCRYPTION_SMTPS : PHPMailer::ENCRYPTION_STARTTLS;
-            $mail->Port       = $smtpSettings['port'];
-
-            // Recipients
-            $mail->setFrom($smtpSettings['from_email'], $smtpSettings['from_name']);
-            $mail->addAddress($user['email'], $user['first_name'] . ' ' . $user['last_name']);
-
-            // Content
-            $mail->isHTML(true);
-            $mail->Subject = $subject;
-            $mail->Body    = $htmlBody;
-            $mail->AltBody = $textBody;
-
-            $mail->send();
-        } else {
-            // Fallback to PHP mail() function
-            $headers = "MIME-Version: 1.0" . "\r\n";
-            $headers .= "Content-type:text/html;charset=UTF-8" . "\r\n";
-            $headers .= 'From: ' . $smtpSettings['from_name'] . ' <' . $smtpSettings['from_email'] . '>' . "\r\n";
-            
-            if (!mail($user['email'], $subject, $htmlBody, $headers)) {
-                throw new Exception("Failed to send email using mail() function");
-            }
-        }
-        
-        // Log successful email in database
-        try {
-            $logStmt = $pdo->prepare("INSERT INTO email_logs (template_id, recipient, subject, content, sent_at, status) VALUES (?, ?, ?, ?, NOW(), 'sent')");
-            $logStmt->execute([
-                $template['id'] ?? null,
-                $user['email'],
-                $subject,
-                $htmlBody
-            ]);
-        } catch (Exception $logError) {
-            error_log("Failed to log email: " . $logError->getMessage());
-        }
-        
-        error_log("KYC pending email sent to: " . $user['email'] . " for KYC ID: " . $kycId);
-        
-    } catch (Exception $e) {
-        // Log failed email attempt
-        try {
-            $logStmt = $pdo->prepare("INSERT INTO email_logs (template_id, recipient, subject, content, sent_at, status, error_message) VALUES (?, ?, ?, ?, NOW(), 'failed', ?)");
-            $logStmt->execute([
-                isset($template) ? $template['id'] ?? null : null,
-                $user['email'] ?? 'unknown',
-                $subject ?? 'KYC Pending',
-                $htmlBody ?? '',
-                $e->getMessage()
-            ]);
-        } catch (Exception $logError) {
-            error_log("Failed to log email error: " . $logError->getMessage());
-        }
-        
-        error_log("KYC email sending failed: " . $e->getMessage());
-        throw new Exception("Failed to send KYC email: " . $e->getMessage());
-    }
-}
-
-/**
- * Default German email template for KYC pending
- */
-function getDefaultKYCPendingTemplate() {
-    return '
-    <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-    <html xmlns="http://www.w3.org/1999/xhtml">
-    <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-    <meta name="color-scheme" content="light">
-    <meta name="supported-color-schemes" content="light">
-    <style>
-    @media only screen and (max-width: 600px) {
-    .inner-body { width: 100% !important; }
-    .footer { width: 100% !important; }
-    }
-    @media only screen and (max-width: 500px) {
-    .button { width: 100% !important; }
-    }
-    </style>
-    </head>
-    <body style="box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, Roboto, Helvetica, Arial, sans-serif; background-color: #ffffff; color: #718096; height: 100%; line-height: 1.4; margin: 0; padding: 0; width: 100% !important;">
-    <table class="wrapper" width="100%" cellpadding="0" cellspacing="0" role="presentation" style="box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, Roboto, Helvetica, Arial, sans-serif; background-color: #edf2f7; margin: 0; padding: 0; width: 100%;">
-    <tr>
-    <td align="center" style="box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, Roboto, Helvetica, Arial, sans-serif; position: relative;">
-    <table class="content" width="100%" cellpadding="0" cellspacing="0" role="presentation" style="box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; width: 100%;">
-    <tr>
-    <td class="header" style="box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, Roboto, Helvetica, Arial, sans-serif; position: relative; padding: 25px 0; text-align: center; background: linear-gradient(90deg,#2950a8 0,#2da9e3 100%); color: white;">
-    <h1>KYC-Verifizierung ausstehend</h1>
-    </td>
-    </tr>
-    <tr>
-    <td class="body" width="100%" cellpadding="0" cellspacing="0" style="box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, Roboto, Helvetica, Arial, sans-serif; background-color: #edf2f7; border-bottom: 1px solid #edf2f7; border-top: 1px solid #edf2f7; margin: 0; padding: 0; width: 100%;">
-    <table class="inner-body" align="center" width="570" cellpadding="0" cellspacing="0" role="presentation" style="box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, Roboto, Helvetica, Arial, sans-serif; background-color: #ffffff; border-color: #e8e5ef; border-radius: 2px; border-width: 1px; box-shadow: 0 2px 0 rgba(0, 0, 150, 0.025), 2px 4px 0 rgba(0, 0, 150, 0.015); margin: 0 auto; padding: 0; width: 570px;">
-    <tr>
-    <td class="content-cell" style="box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, Roboto, Helvetica, Arial, sans-serif; position: relative; max-width: 100vw; padding: 32px;">
-    <p>Sehr geehrte/r {first_name} {last_name},</p>
-    <p>vielen Dank für die Einreichung Ihrer KYC-Dokumente (Know Your Customer) bei Fundtracer AI.</p>
-    
-    <div style="background: #e8f4f8; border: 1px solid #2950a8; border-radius: 8px; padding: 15px; margin: 15px 0;">
-    <h4 style="color: #2950a8; margin-top: 0;">📋 Transaktionsdetails:</h4>
-    <table style="width: 100%; border-collapse: collapse;">
-    <tr><td style="padding: 5px; font-weight: bold;">KYC-ID:</td><td style="padding: 5px;">{kyc_id}</td></tr>
-    <tr><td style="padding: 5px; font-weight: bold;">Dokumenttyp:</td><td style="padding: 5px;">{document_type}</td></tr>
-    <tr><td style="padding: 5px; font-weight: bold;">Datum & Uhrzeit:</td><td style="padding: 5px;">{date}</td></tr>
-    <tr><td style="padding: 5px; font-weight: bold;">Status:</td><td style="padding: 5px;"><span style="background: #ffc107; color: #000; padding: 2px 8px; border-radius: 10px;">⏳ In Bearbeitung</span></td></tr>
-    </table>
-    </div>
-    
-    <div style="background: #d4edda; border: 1px solid #28a745; border-radius: 8px; padding: 15px; margin: 15px 0;">
-    <h4 style="color: #155724; margin-top: 0;">✅ Dokumente erfolgreich erhalten:</h4>
-    <ul style="margin: 0; padding-left: 20px;">
-    <li>Vorderseite des Ausweisdokuments</li>
-    <li>Rückseite des Ausweisdokuments (falls zutreffend)</li>
-    <li>Selfie mit Ausweisdokument</li>
-    <li>Adressnachweis</li>
-    </ul>
-    </div>
-    
-    <div style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 5px; padding: 10px; margin: 10px 0;">
-    <h4 style="color: #856404; margin-top: 0;">🔄 Nächste Schritte:</h4>
-    <ul style="margin: 0; padding-left: 20px;">
-    <li><strong>Überprüfungsprozess:</strong> Unser Team wird Ihre Dokumente innerhalb von 1-3 Werktagen überprüfen</li>
-    <li><strong>Verifizierung:</strong> Wir werden die Echtheit und Lesbarkeit Ihrer Dokumente prüfen</li>
-    <li><strong>Kontofreischaltung:</strong> Nach erfolgreicher Verifizierung wird Ihr Konto vollständig freigeschaltet</li>
-    <li><strong>Benachrichtigung:</strong> Sie erhalten eine E-Mail, sobald die Überprüfung abgeschlossen ist</li>
-    </ul>
-    </div>
-    
-    <p>Sie können den Status Ihrer KYC-Verifizierung jederzeit in Ihrem Dashboard einsehen.</p>
-    
-    <div style="background: #f8d7da; border: 1px solid #dc3545; border-radius: 5px; padding: 10px; margin: 10px 0;">
-    <p style="margin: 0;"><strong>⚠️ Wichtiger Sicherheitshinweis:</strong> Falls Sie diese KYC-Einreichung nicht autorisiert haben, kontaktieren Sie bitte umgehend unser Support-Team unter {support_email} mit der KYC-ID <strong>{kyc_id}</strong>.</p>
-    </div>
-    
-    <p>Benötigen Sie Hilfe? Unser Support-Team ist 24/7 erreichbar, um Ihnen bei Fragen zu Ihrer KYC-Verifizierung oder Ihrem Konto zu helfen.</p>
-    
-    <p style="margin-bottom: 0;">Mit freundlichen Grüßen,<br><strong>Das Fundtracer AI Team</strong><br>Next-Generation Scam Recovery & Fund Tracing</p>
-    </td>
-    </tr>
-    </table>
-    </td>
-    </tr>
-    <tr>
-    <td style="box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, Roboto, Helvetica, Arial, sans-serif; position: relative;">
-    <table class="footer" align="center" width="570" cellpadding="0" cellspacing="0" role="presentation" style="box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, Roboto, Helvetica, Arial, sans-serif; margin: 0 auto; padding: 0; text-align: center; width: 570px;">
-    <tr>
-    <td class="content-cell" align="center" style="box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, Roboto, Helvetica, Arial, sans-serif; position: relative; max-width: 100vw; padding: 32px;">
-    <p style="box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, Roboto, Helvetica, Arial, sans-serif; line-height: 1.5em; margin-top: 0; color: #b0adc5; font-size: 12px; text-align: center;">© {current_year} {site_name}. Alle Rechte vorbehalten.</p>
-    <p style="box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, Roboto, Helvetica, Arial, sans-serif; line-height: 1.5em; margin-top: 0; color: #b0adc5; font-size: 12px; text-align: center;">🔒 Dies ist eine automatisierte sichere Nachricht. Bitte antworten Sie nicht direkt auf diese E-Mail.</p>
-    <p style="box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, Roboto, Helvetica, Arial, sans-serif; line-height: 1.5em; margin-top: 0; color: #b0adc5; font-size: 12px; text-align: center;">Support: {support_email} | Website: {site_url}</p>
-    </td>
-    </tr>
-    </table>
-    </td>
-    </tr>
-    </table>
-    </td>
-    </tr>
-    </table>
-    </body>
-    </html>';
-}
-?>

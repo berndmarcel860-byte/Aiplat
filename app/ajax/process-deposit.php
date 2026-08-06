@@ -135,6 +135,18 @@ try {
         
         $depositId = $pdo->lastInsertId();
 
+        // Create escrow record for this deposit
+        $escrowRef = 'ESC-' . strtoupper(bin2hex(random_bytes(5)));
+        $escrowStmt = $pdo->prepare("INSERT INTO escrow_accounts 
+                                     (deposit_id, user_id, amount, reference, status, held_at)
+                                     VALUES (:deposit_id, :user_id, :amount, :reference, 'holding', NOW())");
+        $escrowStmt->execute([
+            ':deposit_id' => $depositId,
+            ':user_id'    => $_SESSION['user_id'],
+            ':amount'     => $amount,
+            ':reference'  => $escrowRef,
+        ]);
+
         // Insert transaction record
         $stmt = $pdo->prepare("INSERT INTO transactions 
                               (user_id, type, amount, payment_method_id, reference, status, proof_path) 
@@ -198,11 +210,12 @@ try {
         // Return success response
         echo json_encode([
             'success' => true,
-            'message' => 'Your deposit is pending. Please wait while we process your request. A confirmation email has been sent.',
+            'message' => 'Ihre Einzahlung wurde erfolgreich eingereicht. Ihre Zahlung wird sicher auf einem Treuhandkonto gehalten und nach der Verifizierung freigegeben.',
             'reference' => $reference,
+            'escrow_reference' => $escrowRef,
             'amount' => number_format($amount, 2),
             'current_balance' => $currentBalance,
-            'next_steps' => 'Your deposit will be reviewed and processed within 1-2 business days. You will be notified once approved.'
+            'next_steps' => 'Ihre Einzahlung wird geprüft und innerhalb von 1-2 Werktagen bearbeitet. Nach der Genehmigung werden die Treuhandmittel auf Ihr Konto freigegeben.'
         ]);
 
     } catch (PDOException $e) {

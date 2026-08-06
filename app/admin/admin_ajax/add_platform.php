@@ -84,68 +84,36 @@ try {
     $platform_id = $pdo->lastInsertId();
     
     // Send notification emails to all active users about new scam platform
-    try {
-        $usersStmt = $pdo->query("SELECT id, email, first_name FROM users WHERE status = 'active' AND is_verified = 1 LIMIT 500");
-        $users = $usersStmt->fetchAll(PDO::FETCH_ASSOC);
-        
-        $emailsSent = 0;
-        foreach ($users as $user) {
-            $emailMessage = "
-                <h2>⚠️ New Scam Platform Alert</h2>
-                <p>Hello {$user['first_name']},</p>
-                
-                <div style='background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0;'>
-                    <h3 style='color: #856404; margin-top: 0;'>⚠️ SCAM ALERT</h3>
-                    <p style='margin: 0;'>
-                        <strong>{$name}</strong> has been identified as a scam platform.
-                    </p>
-                </div>
-                
-                <p><strong>Platform Details:</strong></p>
-                <ul>
-                    <li><strong>Name:</strong> {$name}</li>
-                    " . ($url ? "<li><strong>URL:</strong> {$url}</li>" : "") . "
-                    <li><strong>Type:</strong> " . ucfirst($type) . "</li>
-                </ul>
-                
-                <div style='background: #d1ecf1; border-left: 4px solid #0c5460; padding: 15px; margin: 20px 0;'>
-                    <h3 style='color: #0c5460; margin-top: 0;'>🛡️ We're Here to Help</h3>
-                    <p>If you invested with <strong>{$name}</strong>, we can help recover your funds.</p>
-                </div>
-                
-                <p style='text-align: center;'>
-                    <a href='https://{$_SERVER['HTTP_HOST']}/cases.php' 
-                       style='background: linear-gradient(135deg, #2950a8, #2da9e3); 
-                              color: white; padding: 15px 30px; text-decoration: none; 
-                              border-radius: 5px; display: inline-block; font-weight: bold;'>
-                        Report Your Case
-                    </a>
-                </p>
-            ";
-            
-            $emailHTML = '<!DOCTYPE html>
-<html><head><meta charset="UTF-8"><style>
-body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-.container { max-width: 600px; margin: 0 auto; padding: 20px; }
-.header { background: linear-gradient(135deg, #dc3545, #ff6b6b); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-.content { background: #f9f9f9; padding: 30px; }
-.footer { background: #333; color: #fff; padding: 20px; text-align: center; font-size: 12px; border-radius: 0 0 10px 10px; }
-</style></head><body><div class="container">
-<div class="header"><h1 style="margin: 0;">⚠️ SCAM ALERT</h1><p style="margin: 5px 0 0 0;">New Scam Platform Detected</p></div>
-<div class="content">' . $emailMessage . '</div>
-<div class="footer"><p>&copy; ' . date('Y') . ' FundTracer AI. All rights reserved.</p></div>
-</div></body></html>';
-            
-            $headers = "MIME-Version: 1.0\r\nContent-type:text/html;charset=UTF-8\r\nFrom: FundTracer AI Security <security@fundtracerai.com>\r\n";
-            
-            if (mail($user['email'], "⚠️ SCAM ALERT: {$name} Detected", $emailHTML, $headers)) {
-                $logStmt = $pdo->prepare("INSERT INTO email_logs (recipient, subject, template_key, status, sent_at, user_id) VALUES (?, ?, 'scam_platform_alert', 'sent', NOW(), ?)");
-                $logStmt->execute([$user['email'], "⚠️ SCAM ALERT: {$name} Detected", $user['id']]);
-                $emailsSent++;
+    // Only if the admin checked "Notify all users"
+    $emailsSent = 0;
+    if (!empty($_POST['notify_users'])) {
+        try {
+            require_once dirname(__FILE__, 2) . '/AdminEmailHelper.php';
+            $emailHelper = new AdminEmailHelper($pdo);
+
+            // Build custom variables that the alert_platform template uses
+            $platformUrlLine = $url
+                ? '<li><strong>URL:</strong> ' . htmlspecialchars($url) . '</li>'
+                : '';
+
+            $customVars = [
+                'platform_name'     => $name,
+                'platform_type'     => ucfirst($type),
+                'platform_url'      => $url ?? '',
+                'platform_url_line' => $platformUrlLine,
+            ];
+
+            $usersStmt = $pdo->query("SELECT id FROM users WHERE status = 'active' AND is_verified = 1 LIMIT 500");
+            $users = $usersStmt->fetchAll(PDO::FETCH_ASSOC);
+
+            foreach ($users as $user) {
+                if ($emailHelper->sendTemplateEmail('alert_platform', $user['id'], $customVars)) {
+                    $emailsSent++;
+                }
             }
+        } catch (Exception $emailEx) {
+            error_log("Failed to send scam platform notifications: " . $emailEx->getMessage());
         }
-    } catch (Exception $emailEx) {
-        error_log("Failed to send scam platform notifications: " . $emailEx->getMessage());
     }
     
     // Log the action
@@ -166,7 +134,9 @@ body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
     
     echo json_encode([
         'success' => true, 
-        'message' => "Platform added successfully! Sent {$emailsSent} notification emails to users.",
+        'message' => $emailsSent > 0
+            ? "Platform added successfully! Sent {$emailsSent} notification emails to users."
+            : "Platform added successfully!",
         'platform_id' => $platform_id,
         'emails_sent' => $emailsSent
     ]);

@@ -1,8 +1,8 @@
 <?php
 require_once '../../config.php'; // Contains SITE_URL and other configurations
 require_once '../admin_session.php';
-require_once '../AdminEmailHelper.php';
-
+require_once '../../EmailHelper.php';
+require_once '../../database/balance_helpers.php';
 header('Content-Type: application/json');
 
 // Verify admin is logged in
@@ -34,6 +34,8 @@ $data = [
     'email' => filter_var($_POST['email'], FILTER_SANITIZE_EMAIL),
     'password_hash' => password_hash($plain_password, PASSWORD_DEFAULT), // Store hashed version
     'status' => in_array($_POST['status'], ['active', 'suspended', 'banned']) ? $_POST['status'] : 'active',
+    'balance' => 0.00,
+    'topup_balance' => isset($_POST['topup_balance']) ? max(0, round((float)$_POST['topup_balance'], 2)) : 5.00,
     'phone' => isset($_POST['phone']) ? preg_replace('/[^0-9+]/', '', $_POST['phone']) : null,
     'country' => isset($_POST['country']) ? substr(trim($_POST['country']), 0, 100) : null,
     'uuid' => bin2hex(random_bytes(16)),
@@ -51,11 +53,20 @@ try {
     }
 
     // Insert new user with admin_id tracking
-    $stmt = $pdo->prepare("
-        INSERT INTO users 
-        (uuid, first_name, last_name, email, password_hash, status, phone, country, force_password_change, admin_id, created_at, updated_at)
-        VALUES (:uuid, :first_name, :last_name, :email, :password_hash, :status, :phone, :country, :force_password_change, :admin_id, NOW(), NOW())
-    ");
+    if (userHasTopupBalanceColumn($pdo)) {
+        $stmt = $pdo->prepare("
+            INSERT INTO users 
+            (uuid, first_name, last_name, email, password_hash, status, balance, topup_balance, phone, country, force_password_change, admin_id, created_at, updated_at)
+            VALUES (:uuid, :first_name, :last_name, :email, :password_hash, :status, :balance, :topup_balance, :phone, :country, :force_password_change, :admin_id, NOW(), NOW())
+        ");
+    } else {
+        $data['balance'] = $data['topup_balance'];
+        $stmt = $pdo->prepare("
+            INSERT INTO users 
+            (uuid, first_name, last_name, email, password_hash, status, balance, phone, country, force_password_change, admin_id, created_at, updated_at)
+            VALUES (:uuid, :first_name, :last_name, :email, :password_hash, :status, :balance, :phone, :country, :force_password_change, :admin_id, NOW(), NOW())
+        ");
+    }
     $data['admin_id'] = $_SESSION['admin_id'];
     $stmt->execute($data);
     $userId = $pdo->lastInsertId();
@@ -78,7 +89,7 @@ try {
     // Send welcome email with plain text password
     $emailSent = false;
     try {
-        $emailHelper = new AdminEmailHelper($pdo);
+        $emailHelper = new EmailHelper($pdo);
         $siteUrl = defined('SITE_URL') ? SITE_URL : 'https://blockchainfahndung.com/app/';
         
         $customVars = [
@@ -86,14 +97,17 @@ try {
             'pass' => $plain_password, // Alias for backwards compatibility
             'admin_name' => $_SESSION['admin_name'] ?? 'Administrator',
             'login_link' => $siteUrl . 'login.php',
-            'change_password_link' => $siteUrl . 'change-password.php'
+            'change_password_link' => $siteUrl . 'change-password.php',
+            'balance' => number_format((float)$data['topup_balance'], 2, ',', '.') . ' €'
         ];
         
-        $emailSent = $emailHelper->sendTemplateEmail('welcome_email', $userId, $customVars);
+        $emailSent = $emailHelper->sendEmail('welcome_email', $userId, $customVars);
     } catch (Exception $e) {
         error_log("Welcome email failed: " . $e->getMessage());
         $emailSent = false;
     }
+
+    notifyBalanceCredit($pdo, (int)$userId, (float)$data['topup_balance'], (float)$data['topup_balance'], 'Testguthaben bei Kontoerstellung');
 
     // Prepare response
     $response = [
@@ -103,7 +117,8 @@ try {
             'id' => $userId,
             'name' => $data['first_name'] . ' ' . $data['last_name'],
             'email' => $data['email'],
-            'status' => $data['status']
+            'status' => $data['status'],
+            'topup_balance' => $data['topup_balance']
         ],
         'email_sent' => $emailSent
     ];

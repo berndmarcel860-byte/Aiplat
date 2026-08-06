@@ -15,6 +15,7 @@ try {
     $contact_phone = $_POST['contact_phone'] ?? '';
     $company_address = $_POST['company_address'] ?? '';
     $fca_reference_number = $_POST['fca_reference_number'] ?? '';
+    $licens_url = $_POST['licens_url'] ?? '';
     $logo_url = $_POST['logo_url'] ?? '';
     
     // Basic validation
@@ -28,6 +29,10 @@ try {
     
     if (!empty($contact_email) && !filter_var($contact_email, FILTER_VALIDATE_EMAIL)) {
         throw new Exception('Invalid email address');
+    }
+
+    if (!empty($licens_url) && !filter_var($licens_url, FILTER_VALIDATE_URL)) {
+        throw new Exception('Invalid BaFin verification URL');
     }
     
     $pdo->beginTransaction();
@@ -47,6 +52,7 @@ try {
                 contact_phone = ?,
                 company_address = ?,
                 fca_reference_number = ?,
+                licens_url = ?,
                 logo_url = ?,
                 updated_at = NOW()
             WHERE id = ?
@@ -58,6 +64,7 @@ try {
             $contact_phone,
             $company_address,
             $fca_reference_number,
+            $licens_url,
             $logo_url,
             $exists['id']
         ]);
@@ -65,8 +72,8 @@ try {
         // Insert new settings
         $stmt = $pdo->prepare("
             INSERT INTO system_settings 
-            (brand_name, site_url, contact_email, contact_phone, company_address, fca_reference_number, logo_url, created_at, updated_at) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+            (brand_name, site_url, contact_email, contact_phone, company_address, fca_reference_number, licens_url, logo_url, created_at, updated_at) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
         ");
         $stmt->execute([
             $brand_name,
@@ -75,6 +82,7 @@ try {
             $contact_phone,
             $company_address,
             $fca_reference_number,
+            $licens_url,
             $logo_url
         ]);
     }

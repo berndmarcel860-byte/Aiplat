@@ -1,16 +1,23 @@
 <?php
 // admin_users.php
-// === ENABLE PHP ERRORS (TEMPORARILY) ===
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
-
 require_once 'admin_header.php';
+
+$statusScope = strtolower(trim((string)($_GET['scope'] ?? 'active')));
+$allowedScopes = ['active', 'all', 'suspended', 'banned'];
+if (!in_array($statusScope, $allowedScopes, true)) {
+    $statusScope = 'active';
+}
+$isAllStatusView = $statusScope === 'all';
 ?>
 
 <div class="main-content">
     <div class="page-header">
-        <h2 class="header-title">User Management</h2>
+        <h2 class="header-title">
+            User Management
+            <?php if ($isAllStatusView): ?>
+                <span class="badge badge-dark ml-2">All Statuses</span>
+            <?php endif; ?>
+        </h2>
         <div class="header-sub-title">
             <nav class="breadcrumb breadcrumb-dash">
                 <a href="admin_dashboard.php" class="breadcrumb-item"><i class="anticon anticon-home"></i> Dashboard</a>
@@ -21,18 +28,97 @@ require_once 'admin_header.php';
     
     <div class="card">
         <div class="card-body">
+
+            <!-- ── Live Stats Banner ──────────────────────────────────────── -->
+            <div class="row mb-3" id="userStatsRow">
+                <div class="col-6 col-md-3 mb-2">
+                    <div class="card border-0 shadow-sm text-center py-2" style="border-radius:10px;border-top:3px solid #2950a8!important;">
+                        <div style="font-size:22px;font-weight:700;color:#2950a8;" id="stat-total">–</div>
+                        <div style="font-size:11px;color:#6c757d;text-transform:uppercase;letter-spacing:.05em;">Gesamt</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3 mb-2">
+                    <div class="card border-0 shadow-sm text-center py-2" style="border-radius:10px;border-top:3px solid #dc3545!important;cursor:pointer;" id="stat-card-never" title="Filter: Nie eingeloggt">
+                        <div style="font-size:22px;font-weight:700;color:#dc3545;" id="stat-never">–</div>
+                        <div style="font-size:11px;color:#6c757d;text-transform:uppercase;letter-spacing:.05em;">Nie eingeloggt</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3 mb-2">
+                    <div class="card border-0 shadow-sm text-center py-2" style="border-radius:10px;border-top:3px solid #ffc107!important;cursor:pointer;" id="stat-card-kyc" title="Filter: KYC ausstehend">
+                        <div style="font-size:22px;font-weight:700;color:#856404;" id="stat-kyc-pending">–</div>
+                        <div style="font-size:11px;color:#6c757d;text-transform:uppercase;letter-spacing:.05em;">KYC ausstehend</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3 mb-2">
+                    <div class="card border-0 shadow-sm text-center py-2" style="border-radius:10px;border-top:3px solid #28a745!important;">
+                        <div style="font-size:22px;font-weight:700;color:#28a745;" id="stat-active-today">–</div>
+                        <div style="font-size:11px;color:#6c757d;text-transform:uppercase;letter-spacing:.05em;">Heute aktiv</div>
+                    </div>
+                </div>
+            </div>
+
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <h5>User List</h5>
-                <div class="d-flex">
-                    <button class="btn btn-warning mr-2" id="sendKycRemindersBtn">
-                        <i class="anticon anticon-mail"></i> Send KYC Reminders
+                <h5 class="mb-0">Benutzerverwaltung</h5>
+                <div class="d-flex flex-wrap" style="gap:6px;">
+                    <a href="admin_users.php?scope=active" class="btn btn-sm <?= $isAllStatusView ? 'btn-outline-secondary' : 'btn-secondary' ?>">
+                        <i class="anticon anticon-check-circle mr-1"></i> Aktive Nutzer
+                    </a>
+                    <a href="admin_all_users.php" class="btn btn-sm <?= $isAllStatusView ? 'btn-dark' : 'btn-outline-dark' ?>">
+                        <i class="anticon anticon-team mr-1"></i> Alle Status
+                    </a>
+                    <button class="btn btn-outline-danger btn-sm" id="sendNeverLoggedInBtn" title="E-Mail an alle Nutzer schicken, die sich noch nie angemeldet haben">
+                        <i class="anticon anticon-user-add mr-1"></i> Nie angemeldet – E-Mail senden
                     </button>
-                    <button class="btn btn-primary" data-toggle="modal" data-target="#addUserModal">
-                        <i class="anticon anticon-plus"></i> Add User
+                    <button class="btn btn-warning btn-sm" id="sendKycRemindersBtn" title="KYC-Erinnerung an alle Nutzer ohne abgeschlossene Verifizierung">
+                        <i class="anticon anticon-safety-certificate mr-1"></i> KYC-Erinnerungen
+                    </button>
+                    <button class="btn btn-info btn-sm" data-toggle="modal" data-target="#sendMailAllModal">
+                        <i class="anticon anticon-mail mr-1"></i> Mail an alle
+                    </button>
+                    <button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#addUserModal">
+                        <i class="anticon anticon-plus mr-1"></i> Benutzer anlegen
                     </button>
                 </div>
             </div>
             
+            <!-- Quick Service Navigation -->
+            <div class="card mb-3" style="border-left:4px solid #2950a8;">
+                <div class="card-body py-2 px-3">
+                    <div class="d-flex flex-wrap align-items-center" style="gap:6px;">
+                        <small class="text-muted font-weight-semibold mr-2" style="white-space:nowrap;">
+                            <i class="anticon anticon-appstore mr-1"></i> Quick Services:
+                        </small>
+                        <a href="admin_user_classification.php" class="btn btn-xs btn-outline-info" style="font-size:12px;">
+                            <i class="anticon anticon-filter mr-1"></i> Classification
+                        </a>
+                        <a href="admin_kyc.php" class="btn btn-xs btn-outline-warning" style="font-size:12px;">
+                            <i class="anticon anticon-safety-certificate mr-1"></i> KYC Review
+                        </a>
+                        <a href="admin_cases.php" class="btn btn-xs btn-outline-primary" style="font-size:12px;">
+                            <i class="anticon anticon-folder-open mr-1"></i> Cases
+                        </a>
+                        <a href="admin_deposits.php?status=pending" class="btn btn-xs btn-outline-success" style="font-size:12px;">
+                            <i class="anticon anticon-arrow-down mr-1"></i> Deposits
+                        </a>
+                        <a href="admin_withdrawals.php?status=pending" class="btn btn-xs btn-outline-danger" style="font-size:12px;">
+                            <i class="anticon anticon-arrow-up mr-1"></i> Withdrawals
+                        </a>
+                        <a href="admin_support_tickets.php" class="btn btn-xs btn-outline-secondary" style="font-size:12px;">
+                            <i class="anticon anticon-customer-service mr-1"></i> Tickets
+                        </a>
+                        <a href="admin_send_notifications.php" class="btn btn-xs btn-outline-secondary" style="font-size:12px;">
+                            <i class="anticon anticon-notification mr-1"></i> Notifications
+                        </a>
+                        <a href="admin_transactions.php" class="btn btn-xs btn-outline-secondary" style="font-size:12px;">
+                            <i class="anticon anticon-swap mr-1"></i> Transactions
+                        </a>
+                        <a href="admin_user_packages.php" class="btn btn-xs btn-outline-secondary" style="font-size:12px;">
+                            <i class="anticon anticon-gift mr-1"></i> Packages
+                        </a>
+                    </div>
+                </div>
+            </div>
+
             <!-- Login Activity Filters -->
             <div class="card bg-light mb-3">
                 <div class="card-body">
@@ -53,18 +139,39 @@ require_once 'admin_header.php';
                     </div>
                 </div>
             </div>
+
+            <div class="card bg-light mb-3">
+                <div class="card-body">
+                    <h6 class="mb-3"><i class="anticon anticon-idcard"></i> Status Scope</h6>
+                    <div class="btn-group btn-group-sm flex-wrap" role="group" id="statusScopeFilters">
+                        <button type="button" class="btn btn-outline-success filter-status" data-scope="active">Active</button>
+                        <button type="button" class="btn btn-outline-primary filter-status" data-scope="all">All</button>
+                        <button type="button" class="btn btn-outline-warning filter-status" data-scope="suspended">Suspended</button>
+                        <button type="button" class="btn btn-outline-danger filter-status" data-scope="banned">Banned</button>
+                    </div>
+                    <div class="mt-2">
+                        <small class="text-muted">Switch between active users and all account statuses without leaving the table.</small>
+                    </div>
+                </div>
+            </div>
             
-            <div class="m-t-25">
-                <table id="usersTable" class="table table-hover">
+            <div class="m-t-25" style="overflow-x:auto;">
+                <table id="usersTable" class="table table-hover nowrap" style="width:100%;">
                     <thead>
                         <tr>
                             <th>ID</th>
                             <th>Name</th>
                             <th>Email</th>
+                            <th>Phone</th>
+                            <th>Country</th>
                             <th>Status</th>
-                            <th>KYC Status</th>
+                            <th>KYC</th>
+                            <th>Wallet</th>
+                            <th>Onboarding</th>
+                            <th>Cases</th>
+                            <th>Tickets</th>
                             <th>Last Login</th>
-                            <th>Balance</th>
+                            <th>Top-up Balance</th>
                             <th>Registered</th>
                             <th>Actions</th>
                         </tr>
@@ -76,35 +183,45 @@ require_once 'admin_header.php';
     </div>
 </div>
 
-<!-- 🔹 User Details Modal (Tabs for each related section) -->
+<!-- User Details Modal (Tabs) -->
 <div class="modal fade" id="userDetailsModal" tabindex="-1" role="dialog" aria-labelledby="userDetailsModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-xl modal-dialog-scrollable" role="document">
     <div class="modal-content">
-      <div class="modal-header bg-primary text-white">
-        <h5 class="modal-title"><i class="anticon anticon-user"></i> User Details</h5>
+      <div class="modal-header" style="background:linear-gradient(90deg,#2950a8,#2da9e3);color:#fff;">
+        <h5 class="modal-title">
+          <span style="background:rgba(255,255,255,0.2);border-radius:50%;width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;margin-right:8px;">
+            <i class="anticon anticon-user"></i>
+          </span>
+          User Details
+        </h5>
         <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
           <span aria-hidden="true">&times;</span>
         </button>
       </div>
-      <div class="modal-body">
-        <ul class="nav nav-tabs" id="userDetailsTabs" role="tablist">
-          <li class="nav-item"><a class="nav-link active" id="tab-basic" data-toggle="tab" href="#basicInfo" role="tab">Basic Info</a></li>
-          <li class="nav-item"><a class="nav-link" id="tab-onboarding" data-toggle="tab" href="#onboarding" role="tab">Onboarding</a></li>
-          <li class="nav-item"><a class="nav-link" id="tab-kyc" data-toggle="tab" href="#kyc" role="tab">KYC</a></li>
-          <li class="nav-item"><a class="nav-link" id="tab-payments" data-toggle="tab" href="#payments" role="tab">Payments</a></li>
-          <li class="nav-item"><a class="nav-link" id="tab-transactions" data-toggle="tab" href="#transactions" role="tab">Transactions</a></li>
-          <li class="nav-item"><a class="nav-link" id="tab-cases" data-toggle="tab" href="#cases" role="tab">Cases</a></li>
-          <li class="nav-item"><a class="nav-link" id="tab-tickets" data-toggle="tab" href="#tickets" role="tab">Tickets</a></li>
+      <div class="modal-body p-0">
+        <ul class="nav nav-tabs nav-tabs-line px-3 pt-2" id="userDetailsTabs" role="tablist" style="flex-wrap:nowrap;overflow-x:auto;">
+          <li class="nav-item"><a class="nav-link active" id="tab-basic" data-toggle="tab" href="#basicInfo" role="tab"><i class="anticon anticon-idcard mr-1"></i>Overview</a></li>
+          <li class="nav-item"><a class="nav-link" id="tab-onboarding" data-toggle="tab" href="#onboarding" role="tab"><i class="anticon anticon-solution mr-1"></i>Onboarding</a></li>
+          <li class="nav-item"><a class="nav-link" id="tab-kyc" data-toggle="tab" href="#kyc" role="tab"><i class="anticon anticon-safety mr-1"></i>KYC</a></li>
+          <li class="nav-item"><a class="nav-link" id="tab-payments" data-toggle="tab" href="#payments" role="tab"><i class="anticon anticon-credit-card mr-1"></i>Payments</a></li>
+          <li class="nav-item"><a class="nav-link" id="tab-transactions" data-toggle="tab" href="#transactions" role="tab"><i class="anticon anticon-swap mr-1"></i>Transactions</a></li>
+          <li class="nav-item"><a class="nav-link" id="tab-cases" data-toggle="tab" href="#cases" role="tab"><i class="anticon anticon-folder mr-1"></i>Cases</a></li>
+          <li class="nav-item"><a class="nav-link" id="tab-tickets" data-toggle="tab" href="#tickets" role="tab"><i class="anticon anticon-customer-service mr-1"></i>Tickets</a></li>
+          <li class="nav-item"><a class="nav-link" id="tab-emaillogs" data-toggle="tab" href="#emailLogs" role="tab"><i class="anticon anticon-mail mr-1"></i>Email Logs</a></li>
+          <li class="nav-item"><a class="nav-link" id="tab-sendemail" data-toggle="tab" href="#sendEmailTab" role="tab"><i class="anticon anticon-send mr-1"></i>Send Email</a></li>
+          <li class="nav-item"><a class="nav-link" id="tab-sendnotif" data-toggle="tab" href="#sendNotifTab" role="tab"><i class="anticon anticon-notification mr-1"></i>Send Notification</a></li>
         </ul>
-
-        <div class="tab-content mt-3" id="userDetailsContent">
-          <div class="tab-pane fade show active" id="basicInfo" role="tabpanel"><div class="text-center p-3 text-muted">Loading...</div></div>
-          <div class="tab-pane fade" id="onboarding" role="tabpanel"><div class="text-center p-3 text-muted">Loading...</div></div>
-          <div class="tab-pane fade" id="kyc" role="tabpanel"><div class="text-center p-3 text-muted">Loading...</div></div>
-          <div class="tab-pane fade" id="payments" role="tabpanel"><div class="text-center p-3 text-muted">Loading...</div></div>
-          <div class="tab-pane fade" id="transactions" role="tabpanel"><div class="text-center p-3 text-muted">Loading...</div></div>
-          <div class="tab-pane fade" id="cases" role="tabpanel"><div class="text-center p-3 text-muted">Loading...</div></div>
-          <div class="tab-pane fade" id="tickets" role="tabpanel"><div class="text-center p-3 text-muted">Loading...</div></div>
+        <div class="tab-content p-3" id="userDetailsContent">
+          <div class="tab-pane fade show active" id="basicInfo" role="tabpanel"><div class="text-center p-3 text-muted"><i class="anticon anticon-loading anticon-spin"></i> Loading...</div></div>
+          <div class="tab-pane fade" id="onboarding" role="tabpanel"><div class="text-center p-3 text-muted"><i class="anticon anticon-loading anticon-spin"></i> Loading...</div></div>
+          <div class="tab-pane fade" id="kyc" role="tabpanel"><div class="text-center p-3 text-muted"><i class="anticon anticon-loading anticon-spin"></i> Loading...</div></div>
+          <div class="tab-pane fade" id="payments" role="tabpanel"><div class="text-center p-3 text-muted"><i class="anticon anticon-loading anticon-spin"></i> Loading...</div></div>
+          <div class="tab-pane fade" id="transactions" role="tabpanel"><div class="text-center p-3 text-muted"><i class="anticon anticon-loading anticon-spin"></i> Loading...</div></div>
+          <div class="tab-pane fade" id="cases" role="tabpanel"><div class="text-center p-3 text-muted"><i class="anticon anticon-loading anticon-spin"></i> Loading...</div></div>
+          <div class="tab-pane fade" id="tickets" role="tabpanel"><div class="text-center p-3 text-muted"><i class="anticon anticon-loading anticon-spin"></i> Loading...</div></div>
+          <div class="tab-pane fade" id="emailLogs" role="tabpanel"><div class="text-center p-3 text-muted"><i class="anticon anticon-loading anticon-spin"></i> Loading...</div></div>
+          <div class="tab-pane fade" id="sendEmailTab" role="tabpanel"><div class="text-center p-3 text-muted"><i class="anticon anticon-loading anticon-spin"></i> Loading...</div></div>
+          <div class="tab-pane fade" id="sendNotifTab" role="tabpanel"><div class="text-center p-3 text-muted"><i class="anticon anticon-loading anticon-spin"></i> Loading...</div></div>
         </div>
       </div>
     </div>
@@ -115,33 +232,67 @@ require_once 'admin_header.php';
 <div class="modal fade" id="addUserModal">
   <div class="modal-dialog">
     <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Add New User</h5>
-        <button type="button" class="close" data-dismiss="modal"><i class="anticon anticon-close"></i></button>
+      <div class="modal-header" style="background:linear-gradient(90deg,#2950a8,#2da9e3);color:#fff;">
+        <h5 class="modal-title">
+          <span style="background:rgba(255,255,255,0.2);border-radius:50%;width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;margin-right:8px;">
+            <i class="anticon anticon-user-add"></i>
+          </span>
+          Add New User
+        </h5>
+        <button type="button" class="close text-white" data-dismiss="modal"><i class="anticon anticon-close"></i></button>
       </div>
       <form id="addUserForm">
         <div class="modal-body">
-          <div class="form-group"><label>First Name</label><input type="text" class="form-control" name="first_name" required></div>
-          <div class="form-group"><label>Last Name</label><input type="text" class="form-control" name="last_name" required></div>
-          <div class="form-group"><label>Email</label><input type="email" class="form-control" name="email" required></div>
+          <div class="form-row">
+            <div class="form-group col-md-6">
+              <label><i class="anticon anticon-user text-muted mr-1"></i> First Name <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" name="first_name" placeholder="First name" required>
+            </div>
+            <div class="form-group col-md-6">
+              <label><i class="anticon anticon-user text-muted mr-1"></i> Last Name <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" name="last_name" placeholder="Last name" required>
+            </div>
+          </div>
           <div class="form-group">
-            <label>Phone Number</label>
+            <label><i class="anticon anticon-mail text-muted mr-1"></i> Email <span class="text-danger">*</span></label>
+            <input type="email" class="form-control" name="email" placeholder="user@example.com" required>
+          </div>
+          <div class="form-group">
+            <label><i class="anticon anticon-phone text-muted mr-1"></i> Phone Number</label>
             <input type="tel" class="form-control" name="phone" placeholder="+1234567890">
             <small class="form-text text-muted">Optional. International format preferred (e.g., +1234567890)</small>
           </div>
-          <div class="form-group"><label>Password</label><input type="text" class="form-control" name="password" value="ceM8fFXV" required></div>
           <div class="form-group">
-            <label>Status</label>
+            <label><i class="anticon anticon-lock text-muted mr-1"></i> Password <span class="text-danger">*</span></label>
+            <div class="input-group">
+              <input type="password" class="form-control" name="password" id="add_password" value="ceM8fFXV" required>
+              <div class="input-group-append">
+                <button type="button" class="btn btn-outline-secondary" id="toggleAddPwd" tabindex="-1" title="Show/Hide password">
+                  <i class="anticon anticon-eye"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label><i class="anticon anticon-check-circle text-muted mr-1"></i> Status</label>
             <select class="form-control" name="status">
               <option value="active">Active</option>
               <option value="suspended">Suspended</option>
               <option value="banned">Banned</option>
             </select>
           </div>
+          <div class="form-group">
+            <label><i class="anticon anticon-wallet text-muted mr-1"></i> Start Top-up Balance</label>
+            <div class="input-group">
+              <div class="input-group-prepend"><span class="input-group-text">€</span></div>
+              <input type="number" class="form-control" name="topup_balance" step="0.01" min="0" value="5.00">
+            </div>
+            <small class="form-text text-muted">Neue Testkonten starten standardmäßig mit 5,00 € Aufladeguthaben.</small>
+          </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-          <button type="submit" class="btn btn-primary">Add User</button>
+          <button type="button" class="btn btn-default" data-dismiss="modal"><i class="anticon anticon-close mr-1"></i>Cancel</button>
+          <button type="submit" class="btn btn-primary"><i class="anticon anticon-user-add mr-1"></i>Add User</button>
         </div>
       </form>
     </div>
@@ -152,36 +303,85 @@ require_once 'admin_header.php';
 <div class="modal fade" id="sendMailModal">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Send Email to User</h5>
-        <button type="button" class="close" data-dismiss="modal"><i class="anticon anticon-close"></i></button>
+      <div class="modal-header" style="background:linear-gradient(90deg,#28a745,#20c997);color:#fff;">
+        <h5 class="modal-title">
+          <span style="background:rgba(255,255,255,0.2);border-radius:50%;width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;margin-right:8px;">
+            <i class="anticon anticon-mail"></i>
+          </span>
+          Send Email to User
+        </h5>
+        <button type="button" class="close text-white" data-dismiss="modal"><i class="anticon anticon-close"></i></button>
       </div>
       <form id="sendMailForm">
         <div class="modal-body">
           <input type="hidden" name="user_id" id="send_mail_user_id">
           <div class="form-group">
-            <label>Recipient</label>
-            <input type="text" class="form-control" id="send_mail_recipient" readonly>
+            <label><i class="anticon anticon-user text-muted mr-1"></i> Recipient</label>
+            <input type="text" class="form-control bg-light" id="send_mail_recipient" readonly>
           </div>
           <div class="form-group">
-            <label>Subject</label>
+            <label><i class="anticon anticon-tag text-muted mr-1"></i> Subject <span class="text-danger">*</span></label>
             <input type="text" class="form-control" name="subject" id="send_mail_subject" placeholder="Enter email subject" required>
           </div>
           <div class="form-group">
-            <label>Message</label>
-            <textarea class="form-control" name="message" id="send_mail_content" rows="8" placeholder="Enter your message here. It will be wrapped in a professional HTML template automatically." required></textarea>
+            <label><i class="anticon anticon-align-left text-muted mr-1"></i> Message <span class="text-danger">*</span></label>
+            <textarea class="form-control" name="message" id="send_mail_content" rows="8" placeholder="Enter your message here. HTML is supported." required></textarea>
             <small class="form-text text-muted">
-              <strong>Variables available:</strong> {first_name}, {last_name}, {email}, {user_id}, {balance}, {status}, {site_url}, {site_name}, {contact_email}
+              <strong>Variables:</strong> {first_name}, {last_name}, {email}, {user_id}, {balance}, {status}, {site_url}, {site_name}, {contact_email}
             </small>
           </div>
-          <div class="alert alert-info">
-            <i class="anticon anticon-info-circle"></i> Your message will be automatically wrapped in the professional KryptoX HTML email template with gradient header, signature, and footer.
+          <div class="alert alert-info mb-0">
+            <i class="anticon anticon-info-circle"></i> Your message will be automatically wrapped in the professional HTML email template with header, signature, and footer.
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-          <button type="submit" class="btn btn-primary">
-            <i class="anticon anticon-send"></i> Send Email
+          <button type="button" class="btn btn-default" data-dismiss="modal"><i class="anticon anticon-close mr-1"></i>Cancel</button>
+          <button type="submit" class="btn btn-success">
+            <i class="anticon anticon-send mr-1"></i> Send Email
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Send Mail to All Users Modal -->
+<div class="modal fade" id="sendMailAllModal">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header" style="background:linear-gradient(90deg,#17a2b8,#138496);color:#fff;">
+        <h5 class="modal-title">
+          <span style="background:rgba(255,255,255,0.2);border-radius:50%;width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;margin-right:8px;">
+            <i class="anticon anticon-mail"></i>
+          </span>
+          Send Email to All Active Users
+        </h5>
+        <button type="button" class="close text-white" data-dismiss="modal"><i class="anticon anticon-close"></i></button>
+      </div>
+      <form id="sendMailAllForm">
+        <div class="modal-body">
+          <div class="alert alert-warning">
+            <i class="anticon anticon-warning"></i> <strong>Warning:</strong> This will send an email to <strong>all active verified users</strong>. Please double-check your subject and message before sending.
+          </div>
+          <div class="form-group">
+            <label><i class="anticon anticon-tag text-muted mr-1"></i> Subject <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" name="subject" id="send_mail_all_subject" placeholder="Enter email subject" required>
+          </div>
+          <div class="form-group">
+            <label><i class="anticon anticon-align-left text-muted mr-1"></i> Message <span class="text-danger">*</span></label>
+            <textarea class="form-control" name="message" id="send_mail_all_content" rows="8" placeholder="Enter your message here. HTML is supported." required></textarea>
+            <small class="form-text text-muted">
+              <strong>Variables:</strong> {first_name}, {last_name}, {email}, {user_id}, {site_url}, {site_name}, {contact_email}
+            </small>
+          </div>
+          <div class="alert alert-info mb-0">
+            <i class="anticon anticon-info-circle"></i> Your message will be automatically wrapped in the professional HTML email template with header, signature, and footer.
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal"><i class="anticon anticon-close mr-1"></i>Cancel</button>
+          <button type="submit" class="btn btn-info">
+            <i class="anticon anticon-send mr-1"></i> Send to All Users
           </button>
         </div>
       </form>
@@ -193,62 +393,162 @@ require_once 'admin_header.php';
 <div class="modal fade" id="editUserModal">
   <div class="modal-dialog">
     <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Edit User</h5>
-        <button type="button" class="close" data-dismiss="modal"><i class="anticon anticon-close"></i></button>
+      <div class="modal-header" style="background:linear-gradient(90deg,#6f42c1,#e83e8c);color:#fff;">
+        <h5 class="modal-title">
+          <span style="background:rgba(255,255,255,0.2);border-radius:50%;width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;margin-right:8px;">
+            <i class="anticon anticon-edit"></i>
+          </span>
+          Edit User
+        </h5>
+        <button type="button" class="close text-white" data-dismiss="modal"><i class="anticon anticon-close"></i></button>
       </div>
       <form id="editUserForm">
         <div class="modal-body">
           <input type="hidden" name="id" id="edit_user_id">
-          <div class="form-group">
-            <label>First Name</label>
-            <input type="text" class="form-control" name="first_name" id="edit_first_name" required>
+          <p class="text-muted small mb-3"><i class="anticon anticon-info-circle mr-1"></i> Fields marked <span class="text-danger">*</span> are required.</p>
+          <div class="form-row">
+            <div class="form-group col-md-6">
+              <label><i class="anticon anticon-user text-muted mr-1"></i> First Name <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" name="first_name" id="edit_first_name" required>
+            </div>
+            <div class="form-group col-md-6">
+              <label><i class="anticon anticon-user text-muted mr-1"></i> Last Name <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" name="last_name" id="edit_last_name" required>
+            </div>
           </div>
           <div class="form-group">
-            <label>Last Name</label>
-            <input type="text" class="form-control" name="last_name" id="edit_last_name" required>
-          </div>
-          <div class="form-group">
-            <label>Email</label>
+            <label><i class="anticon anticon-mail text-muted mr-1"></i> Email <span class="text-danger">*</span></label>
             <input type="email" class="form-control" name="email" id="edit_email" required>
           </div>
-          <div class="form-group">
-            <label>Phone</label>
-            <input type="text" class="form-control" name="phone" id="edit_phone">
+          <div class="form-row">
+            <div class="form-group col-md-6">
+              <label><i class="anticon anticon-phone text-muted mr-1"></i> Phone</label>
+              <input type="text" class="form-control" name="phone" id="edit_phone">
+            </div>
+            <div class="form-group col-md-6">
+              <label><i class="anticon anticon-global text-muted mr-1"></i> Country</label>
+              <input type="text" class="form-control" name="country" id="edit_country">
+            </div>
           </div>
-          <div class="form-group">
-            <label>Country</label>
-            <input type="text" class="form-control" name="country" id="edit_country">
-          </div>
-          <div class="form-group">
-            <label>Balance</label>
-            <input type="number" class="form-control" name="balance" id="edit_balance" step="0.01">
-          </div>
-          <div class="form-group">
-            <label>Status</label>
-            <select class="form-control" name="status" id="edit_status">
-              <option value="active">Active</option>
-              <option value="suspended">Suspended</option>
-              <option value="banned">Banned</option>
-            </select>
+          <div class="form-row">
+            <div class="form-group col-md-6">
+              <label><i class="anticon anticon-dollar text-muted mr-1"></i> Top-up Balance</label>
+              <div class="input-group">
+                <div class="input-group-prepend"><span class="input-group-text">€</span></div>
+                <input type="number" class="form-control" name="topup_balance" id="edit_topup_balance" step="0.01" min="0">
+              </div>
+            </div>
+            <div class="form-group col-md-6">
+              <label><i class="anticon anticon-check-circle text-muted mr-1"></i> Status</label>
+              <select class="form-control" name="status" id="edit_status">
+                <option value="active">Active</option>
+                <option value="suspended">Suspended</option>
+                <option value="banned">Banned</option>
+              </select>
+            </div>
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-          <button type="submit" class="btn btn-primary">Update User</button>
+          <button type="button" class="btn btn-default" data-dismiss="modal"><i class="anticon anticon-close mr-1"></i>Cancel</button>
+          <button type="submit" class="btn btn-primary"><i class="anticon anticon-save mr-1"></i>Save Changes</button>
         </div>
       </form>
     </div>
   </div>
 </div>
 
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteUserModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" style="max-width:420px;">
+    <div class="modal-content">
+      <div class="modal-header" style="background:#dc3545;color:#fff;border-bottom:none;">
+        <h5 class="modal-title">
+          <span style="background:rgba(255,255,255,0.2);border-radius:50%;width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;margin-right:8px;">
+            <i class="anticon anticon-warning"></i>
+          </span>
+          Confirm Suspension
+        </h5>
+        <button type="button" class="close text-white" data-dismiss="modal"><span>&times;</span></button>
+      </div>
+      <div class="modal-body text-center py-4">
+        <div style="font-size:48px;color:#dc3545;margin-bottom:12px;"><i class="anticon anticon-exclamation-circle"></i></div>
+        <p class="mb-1">You are about to suspend:</p>
+        <h5 id="deleteUserName" class="text-danger mb-1"></h5>
+        <p class="text-muted small mb-0" id="deleteUserEmail"></p>
+        <hr>
+        <p class="text-muted small mb-0">The user will be hidden from the active list but <strong>not deleted</strong> from the database. This action can be reversed by editing the user's status.</p>
+      </div>
+      <div class="modal-footer justify-content-center">
+        <button type="button" class="btn btn-default" data-dismiss="modal"><i class="anticon anticon-close mr-1"></i>Cancel</button>
+        <button type="button" class="btn btn-danger" id="confirmDeleteUserBtn"><i class="anticon anticon-stop mr-1"></i>Suspend User</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+/* ── Admin Users Table: desktop + mobile responsive fixes ── */
+#usersTable_wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+#usersTable_wrapper .dataTables_scroll {
+    overflow-x: auto;
+}
+/* Compact action buttons on small screens */
+@media (max-width: 767px) {
+    #usersTable td,
+    #usersTable th {
+        font-size: 0.8rem;
+        padding: 0.35rem 0.5rem;
+    }
+    /* Responsive toggle row detail */
+    tr.child td.child {
+        padding: 0.5rem 1rem;
+    }
+    /* Allow the login filter buttons to wrap on mobile */
+    .btn-group[role="group"] {
+        flex-wrap: wrap;
+    }
+    .btn-group[role="group"] .btn {
+        margin: 2px;
+        border-radius: 4px;
+    }
+    /* Full-width action buttons header flex on mobile */
+    .page-header .header-action {
+        flex-wrap: wrap;
+    }
+    .d-flex.justify-content-between.align-items-center.mb-3 {
+        flex-direction: column;
+        align-items: flex-start !important;
+        gap: 0.5rem;
+    }
+    .d-flex.justify-content-between.align-items-center.mb-3 > .d-flex {
+        flex-wrap: wrap;
+        gap: 0.25rem;
+    }
+}
+/* Responsive row-detail child row style */
+tr.child td.child ul {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.25rem 1rem;
+}
+@media (max-width: 480px) {
+    tr.child td.child ul {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+
 <?php require_once 'admin_footer.php'; ?>
 
 <script>
 // Utility functions
-window.escapeHtml = function(str) {
+const escapeHtml = function(str) {
     return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
 };
+window.escapeHtml = escapeHtml;
 
 window.decodeHtml = function(html) {
     const txt = document.createElement('textarea');
@@ -260,43 +560,91 @@ $(document).ready(function() {
 
     // Initialize DataTable with login filter support
     let currentLoginFilter = 'all';
+    let currentStatusScope = <?php echo json_encode($statusScope); ?>;
     const usersTable = $('#usersTable').DataTable({
         processing: true,
         serverSide: true,
+        responsive: {
+            details: {
+                type: 'column',
+                target: 'tr'
+            }
+        },
+        autoWidth: false,
         ajax: { 
             url: 'admin_ajax/get_users.php', 
             type: 'POST',
             data: function(d) {
                 d.login_filter = currentLoginFilter;
+                d.status_scope = currentStatusScope;
             }
         },
         order: [[0,'desc']],
         columns: [
-            { data: 'id' },
-            { data: null, render: data => data.first_name + ' ' + data.last_name },
-            { data: 'email' },
+            { data: 'id', responsivePriority: 14 },
+            { data: null, responsivePriority: 2, render: (data, type, row) => escapeHtml(row.first_name + ' ' + row.last_name) },
+            { data: 'email', responsivePriority: 3, render: d => escapeHtml(d) },
+            { 
+                data: 'phone',
+                responsivePriority: 8,
+                render: d => d ? escapeHtml(d) : '<span class="text-muted">—</span>'
+            },
+            { 
+                data: 'country',
+                responsivePriority: 9,
+                render: d => d ? escapeHtml(d) : '<span class="text-muted">—</span>'
+            },
             { 
                 data: 'status',
+                responsivePriority: 4,
                 render: data => {
-                    const cls = {active:'success', suspended:'warning', banned:'danger'}[data];
-                    return `<span class="badge badge-${cls}">${data}</span>`;
+                    const cls = {active:'success', suspended:'warning', banned:'danger'}[data] ?? 'secondary';
+                    return `<span class="badge badge-${cls}">${escapeHtml(data)}</span>`;
                 }
             },
             { 
                 data: 'kyc_status',
+                responsivePriority: 6,
                 render: function(data) {
-                    if (!data || data === 'none' || data === 'pending') {
-                        return '<span class="badge badge-warning">Pending</span>';
-                    } else if (data === 'approved') {
-                        return '<span class="badge badge-success">Verified</span>';
-                    } else if (data === 'rejected') {
-                        return '<span class="badge badge-danger">Rejected</span>';
-                    }
-                    return '<span class="badge badge-secondary">Unknown</span>';
+                    if (!data || data === 'none') return '<span class="badge badge-secondary">None</span>';
+                    if (data === 'pending') return '<span class="badge badge-warning">Pending</span>';
+                    if (data === 'approved') return '<span class="badge badge-success">Verified</span>';
+                    if (data === 'rejected') return '<span class="badge badge-danger">Rejected</span>';
+                    return `<span class="badge badge-secondary">${escapeHtml(data)}</span>`;
                 }
+            },
+            {
+                data: 'wallet_status',
+                responsivePriority: 11,
+                render: function(data) {
+                    if (!data || data === 'none') return '<span class="badge badge-secondary">None</span>';
+                    if (data === 'pending') return '<span class="badge badge-warning">Pending</span>';
+                    if (data === 'verifying') return '<span class="badge badge-info">Verifying</span>';
+                    if (data === 'verified') return '<span class="badge badge-success">Verified</span>';
+                    if (data === 'failed') return '<span class="badge badge-danger">Failed</span>';
+                    return `<span class="badge badge-secondary">${escapeHtml(data)}</span>`;
+                }
+            },
+            {
+                data: 'onboarding_done',
+                responsivePriority: 10,
+                render: function(data) {
+                    return parseInt(data) ? '<span class="badge badge-success">Done</span>' : '<span class="badge badge-warning">Pending</span>';
+                }
+            },
+            {
+                data: 'cases_count',
+                responsivePriority: 12,
+                render: d => `<span class="badge badge-${parseInt(d) > 0 ? 'primary' : 'light text-muted'}">${parseInt(d)}</span>`
+            },
+            {
+                data: 'tickets_count',
+                responsivePriority: 13,
+                render: d => `<span class="badge badge-${parseInt(d) > 0 ? 'info' : 'light text-muted'}">${parseInt(d)}</span>`
             },
             { 
                 data: 'last_login',
+                responsivePriority: 7,
                 render: function(data) {
                     if (!data) return '<span class="badge badge-danger">Never</span>';
                     const date = new Date(data);
@@ -307,39 +655,109 @@ $(document).ready(function() {
                     return `<span class="badge badge-${badgeClass}" title="${date.toLocaleString()}">${days}d ago</span>`;
                 }
             },
-            { data: 'balance', render: d => '$' + parseFloat(d).toFixed(2) },
-            { data: 'created_at', render: d => new Date(d).toLocaleDateString() },
+            { data: 'topup_balance', responsivePriority: 5, render: d => '€' + parseFloat(d).toFixed(2) },
+            { data: 'created_at', responsivePriority: 15, render: d => new Date(d).toLocaleDateString() },
             {
                 data: null,
+                orderable: false,
+                responsivePriority: 1,
                 render: function(data, type, row) {
-                    const email = window.escapeHtml(data.email);
-                    const name = window.escapeHtml(data.first_name + ' ' + data.last_name);
+                    const email = escapeHtml(row.email);
+                    const name  = escapeHtml(row.first_name + ' ' + row.last_name);
                     return `
-                    <div class="btn-group">
-                        <button class="btn btn-sm btn-info view-user" data-id="${data.id}" title="View Details">
-                            <i class="anticon anticon-eye"></i>
+                    <div class="d-flex align-items-center" style="gap:4px;">
+                      <button class="btn btn-sm btn-info open-tab" title="View Details"
+                              data-id="${row.id}" data-tab="basicInfo">
+                        <i class="anticon anticon-eye"></i>
+                      </button>
+                      <a href="admin_view_users.php?id=${row.id}" class="btn btn-sm btn-primary" title="Full Profile Page" target="_blank">
+                        <i class="anticon anticon-profile"></i>
+                      </a>
+                      <div class="dropdown">
+                        <button class="btn btn-sm btn-light border dropdown-toggle" type="button"
+                                data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"
+                                style="min-width:90px;">
+                          <i class="anticon anticon-setting mr-1"></i> Actions
                         </button>
-                        <button class="btn btn-sm btn-primary edit-user" data-id="${data.id}" title="Edit User">
-                            <i class="anticon anticon-edit"></i>
-                        </button>
-                        <button class="btn btn-sm btn-success send-mail-user" data-id="${data.id}" data-email="${email}" data-name="${name}" title="Send Email">
-                            <i class="anticon anticon-mail"></i>
-                        </button>
-                        <button class="btn btn-sm btn-danger delete-user" data-id="${data.id}" title="Delete User">
-                            <i class="anticon anticon-delete"></i>
-                        </button>
+                        <div class="dropdown-menu dropdown-menu-right shadow-sm" style="min-width:220px;">
+                          <h6 class="dropdown-header text-truncate" style="max-width:210px;">${name}</h6>
+                          <div class="dropdown-divider"></div>
+
+                          <h6 class="dropdown-header" style="font-size:10px;color:#999;text-transform:uppercase;letter-spacing:.06em;">View Details</h6>
+                          <a href="admin_view_users.php?id=${row.id}" class="dropdown-item" target="_blank">
+                            <i class="anticon anticon-profile text-primary mr-2"></i> Full Profile Page
+                          </a>
+                          <a href="#" class="dropdown-item open-tab" data-id="${row.id}" data-tab="basicInfo">
+                            <i class="anticon anticon-idcard text-secondary mr-2"></i> Overview (Modal)
+                          </a>
+                          <a href="#" class="dropdown-item open-tab" data-id="${row.id}" data-tab="onboarding">
+                            <i class="anticon anticon-solution mr-2" style="color:#6f42c1;"></i> Onboarding
+                          </a>
+
+                          <div class="dropdown-divider"></div>
+                          <h6 class="dropdown-header" style="font-size:10px;color:#999;text-transform:uppercase;letter-spacing:.06em;">User Services</h6>
+                          <a href="#" class="dropdown-item open-tab" data-id="${row.id}" data-tab="kyc">
+                            <i class="anticon anticon-safety text-warning mr-2"></i> KYC Verification
+                          </a>
+                          <a href="#" class="dropdown-item open-tab" data-id="${row.id}" data-tab="cases">
+                            <i class="anticon anticon-folder text-primary mr-2"></i> Cases
+                            ${parseInt(row.cases_count) > 0 ? `<span class="badge badge-primary float-right">${row.cases_count}</span>` : ''}
+                          </a>
+                          <a href="#" class="dropdown-item open-tab" data-id="${row.id}" data-tab="tickets">
+                            <i class="anticon anticon-customer-service text-info mr-2"></i> Support Tickets
+                            ${parseInt(row.tickets_count) > 0 ? `<span class="badge badge-info float-right">${row.tickets_count}</span>` : ''}
+                          </a>
+                          <a href="#" class="dropdown-item open-tab" data-id="${row.id}" data-tab="transactions">
+                            <i class="anticon anticon-swap text-success mr-2"></i> Transactions
+                          </a>
+                          <a href="#" class="dropdown-item open-tab" data-id="${row.id}" data-tab="payments">
+                            <i class="anticon anticon-wallet text-secondary mr-2"></i> Wallet / Payments
+                          </a>
+
+                          <div class="dropdown-divider"></div>
+                          <h6 class="dropdown-header" style="font-size:10px;color:#999;text-transform:uppercase;letter-spacing:.06em;">Communication</h6>
+                          <a href="#" class="dropdown-item open-tab" data-id="${row.id}" data-tab="sendNotifTab">
+                            <i class="anticon anticon-notification text-danger mr-2"></i> Send Notification
+                          </a>
+                          <a href="#" class="dropdown-item send-mail-user" data-id="${row.id}" data-email="${email}" data-name="${name}">
+                            <i class="anticon anticon-mail text-success mr-2"></i> Send Email
+                          </a>
+                          <a href="#" class="dropdown-item open-tab" data-id="${row.id}" data-tab="emaillogs">
+                            <i class="anticon anticon-read text-muted mr-2"></i> Email Logs
+                          </a>
+
+                          <div class="dropdown-divider"></div>
+                          <h6 class="dropdown-header" style="font-size:10px;color:#999;text-transform:uppercase;letter-spacing:.06em;">Account</h6>
+                          <a href="#" class="dropdown-item edit-user" data-id="${row.id}">
+                            <i class="anticon anticon-edit text-primary mr-2"></i> Edit User
+                          </a>
+                          <a href="#" class="dropdown-item text-danger delete-user" data-id="${row.id}" data-name="${name}" data-email="${email}">
+                            <i class="anticon anticon-stop mr-2"></i> Suspend User
+                          </a>
+                        </div>
+                      </div>
                     </div>`;
                 }
             }
         ]
     });
 
-    // 🧠 View User Details
-    $('#usersTable').on('click', '.view-user', function() {
-        const userId = $(this).data('id');
+    // Helper: show error on a specific tab pane and switch to it
+    function showTabError(tabId, msg) {
+        var html = '<div class="alert alert-danger m-3">' + escapeHtml(msg) + '</div>';
+        $('#' + tabId).html(html);
+        $('#basicInfo').html(html);
+        $('#userDetailsTabs a[href="#' + tabId + '"]').tab('show');
+    }
+
+    // Helper: open modal to a specific tab
+    // Tab switch happens AFTER content is loaded so the user never sees "Loading..." on the target tab.
+    function openUserTab(userId, tabId) {
         $('#userDetailsModal').modal('show');
-        // clear & show loading placeholders
+        // Reset all panes to a loading placeholder while the request is in flight
         $('#userDetailsContent .tab-pane').html('<div class="text-center p-3 text-muted"><i class="anticon anticon-loading anticon-spin"></i> Loading...</div>');
+        // Pre-activate the requested tab so the tab header highlights immediately
+        $('#userDetailsTabs a[href="#' + tabId + '"]').tab('show');
 
         $.ajax({
             url: 'admin_ajax/get_user.php',
@@ -347,29 +765,97 @@ $(document).ready(function() {
             data: { id: userId },
             dataType: 'json',
             success: function(res) {
-                console.log('Modal data:', res);
-
-                if (!res.success) {
-                    $('#basicInfo').html(`<div class="alert alert-warning">${res.message || 'No data found'}</div>`);
+                if (!res || !res.success) {
+                    showTabError(tabId, (res && res.message) ? res.message : 'No data found');
                     return;
                 }
 
-                // Delay render slightly to ensure modal DOM is ready
-                setTimeout(() => {
-                    $('#basicInfo').html(res.html.basic);
-                    $('#onboarding').html(res.html.onboarding);
-                    $('#kyc').html(res.html.kyc);
-                    $('#payments').html(res.html.payments);
-                    $('#transactions').html(res.html.transactions);
-                    $('#cases').html(res.html.cases);
-                    $('#tickets').html(res.html.tickets);
-                }, 100);
+                // Populate every pane with server-rendered HTML
+                $('#basicInfo').html(res.html.basic);
+                $('#onboarding').html(res.html.onboarding);
+                $('#kyc').html(res.html.kyc);
+                $('#payments').html(res.html.payments);
+                $('#transactions').html(res.html.transactions);
+                $('#cases').html(res.html.cases);
+                $('#tickets').html(res.html.tickets);
+                $('#emailLogs').html(res.html.email_logs);
+                $('#sendEmailTab').html(res.html.send_email);
+                $('#sendNotifTab').html(res.html.send_notification);
+
+                // Switch to the requested tab AFTER content is ready
+                $('#userDetailsTabs a[href="#' + tabId + '"]').tab('show');
+
+                // Wire up Send Email form inside modal
+                $('#modalSendMailForm').off('submit').on('submit', function(e) {
+                    e.preventDefault();
+                    const $btn = $('#modalSendMailBtn');
+                    $btn.prop('disabled', true).html('<i class="anticon anticon-loading anticon-spin mr-1"></i> Sending…');
+                    $.ajax({
+                        url: 'admin_ajax/send_universal_email.php',
+                        type: 'POST',
+                        data: $(this).serialize(),
+                        dataType: 'json',
+                        success: function(r) {
+                            if (r.success) {
+                                toastr.success(r.message || 'Email sent!');
+                                $('#modalSendMailForm')[0].reset();
+                                $('#emailLogs').html('<div class="text-center p-3 text-muted"><i class="anticon anticon-loading anticon-spin"></i> Refreshing…</div>');
+                                $.get('admin_ajax/get_user.php', { id: $('#modalSendMailForm input[name="user_id"]').val() }, function(r2) {
+                                    if (r2.success) $('#emailLogs').html(r2.html.email_logs);
+                                }, 'json');
+                            } else {
+                                toastr.error(r.message || 'Failed to send email');
+                            }
+                        },
+                        error: function() { toastr.error('Error sending email'); },
+                        complete: function() {
+                            $btn.prop('disabled', false).html('<i class="anticon anticon-send mr-1"></i> Send Email');
+                        }
+                    });
+                });
+
+                // Wire up Send Notification form inside modal
+                $('#modalSendNotifForm').off('submit').on('submit', function(e) {
+                    e.preventDefault();
+                    const $btn = $('#modalSendNotifBtn');
+                    $btn.prop('disabled', true).html('<i class="anticon anticon-loading anticon-spin mr-1"></i> Sending…');
+                    $.ajax({
+                        url: 'admin_ajax/send_bulk_notifications.php',
+                        type: 'POST',
+                        data: {
+                            template_key: $(this).find('[name=template_key]').val(),
+                            users: JSON.stringify([{
+                                id: $(this).find('[name=user_id]').val(),
+                                email: $(this).find('[name=user_email]').val() || ''
+                            }])
+                        },
+                        dataType: 'json',
+                        success: function(r) {
+                            if (r.success) {
+                                toastr.success(r.message || 'Notification sent!');
+                                $('#modalSendNotifForm')[0].reset();
+                            } else {
+                                toastr.error(r.message || 'Failed to send notification');
+                            }
+                        },
+                        error: function() { toastr.error('Error sending notification'); },
+                        complete: function() {
+                            $btn.prop('disabled', false).html('<i class="anticon anticon-notification mr-1"></i> Send Notification');
+                        }
+                    });
+                });
             },
             error: function(xhr) {
-                console.error('Error response:', xhr.responseText);
-                $('#basicInfo').html('<div class="alert alert-danger">Error loading user details.</div>');
+                console.error('get_user error:', xhr.status, xhr.responseText);
+                showTabError(tabId, 'Error loading user details (HTTP ' + xhr.status + ').');
             }
         });
+    }
+
+    // 🔗 Section action links — open modal to specific tab
+    $('#usersTable').on('click', '.open-tab', function(e) {
+        e.preventDefault();
+        openUserTab($(this).data('id'), $(this).data('tab'));
     });
 
     // 🟢 Add User
@@ -395,7 +881,8 @@ $(document).ready(function() {
     });
 
     // ✏️ Edit User
-    $('#usersTable').on('click', '.edit-user', function() {
+    $('#usersTable').on('click', '.edit-user', function(e) {
+        e.preventDefault();
         const userId = $(this).data('id');
         
         // Fetch user data
@@ -413,7 +900,7 @@ $(document).ready(function() {
                     $('#edit_email').val(user.email);
                     $('#edit_phone').val(user.phone || '');
                     $('#edit_country').val(user.country || '');
-                    $('#edit_balance').val(user.balance || '0');
+                    $('#edit_topup_balance').val(user.topup_balance || '0');
                     $('#edit_status').val(user.status);
                     
                     $('#editUserModal').modal('show');
@@ -459,22 +946,32 @@ $(document).ready(function() {
         });
     });
     
-    // 🗑️ Delete User (Suspend)
-    $('#usersTable').on('click', '.delete-user', function() {
-        const userId = $(this).data('id');
-        
-        if (!confirm('Are you sure you want to suspend this user? (Note: User will be hidden from list but not deleted from database)')) {
-            return;
-        }
+    // 🗑️ Delete User (Suspend) — uses confirmation modal
+    let pendingDeleteId = null;
+    $('#usersTable').on('click', '.delete-user', function(e) {
+        e.preventDefault();
+        pendingDeleteId = $(this).data('id');
+        const name  = window.decodeHtml(String($(this).data('name')));
+        const email = window.decodeHtml(String($(this).data('email')));
+        $('#deleteUserName').text(name);
+        $('#deleteUserEmail').text(email);
+        $('#deleteUserModal').modal('show');
+    });
+
+    $('#confirmDeleteUserBtn').on('click', function() {
+        if (!pendingDeleteId) return;
+        const $btn = $(this);
+        $btn.prop('disabled', true).html('<i class="anticon anticon-loading anticon-spin mr-1"></i> Suspending...');
         
         $.ajax({
             url: 'admin_ajax/delete_user.php',
             type: 'POST',
-            data: { id: userId },
+            data: { id: pendingDeleteId },
             dataType: 'json',
             success: function(response) {
                 if (response.success) {
                     toastr.success(response.message);
+                    $('#deleteUserModal').modal('hide');
                     usersTable.ajax.reload();
                 } else {
                     toastr.error(response.message || 'Failed to suspend user');
@@ -482,12 +979,17 @@ $(document).ready(function() {
             },
             error: function() {
                 toastr.error('Failed to suspend user');
+            },
+            complete: function() {
+                pendingDeleteId = null;
+                $btn.prop('disabled', false).html('<i class="anticon anticon-stop mr-1"></i>Suspend User');
             }
         });
     });
     
     // 📧 Send Mail to User
-    $('#usersTable').on('click', '.send-mail-user', function() {
+    $('#usersTable').on('click', '.send-mail-user', function(e) {
+        e.preventDefault();
         const userId = $(this).data('id');
         const userEmail = $(this).data('email');
         const userName = $(this).data('name');
@@ -504,10 +1006,6 @@ $(document).ready(function() {
     $('#sendMailForm').submit(function(e) {
         e.preventDefault();
         
-        if (!confirm('Are you sure you want to send this email?')) {
-            return;
-        }
-        
         $.ajax({
             url: 'admin_ajax/send_universal_email.php',
             type: 'POST',
@@ -515,7 +1013,7 @@ $(document).ready(function() {
             dataType: 'json',
             beforeSend: function() {
                 $('#sendMailForm button[type="submit"]').prop('disabled', true)
-                    .html('<i class="anticon anticon-loading anticon-spin"></i> Sending...');
+                    .html('<i class="anticon anticon-loading anticon-spin mr-1"></i> Sending...');
             },
             success: function(response) {
                 if (response.success) {
@@ -532,11 +1030,56 @@ $(document).ready(function() {
             },
             complete: function() {
                 $('#sendMailForm button[type="submit"]').prop('disabled', false)
-                    .html('<i class="anticon anticon-send"></i> Send Email');
+                    .html('<i class="anticon anticon-send mr-1"></i> Send Email');
             }
         });
     });
     
+    // Send Mail to All Users Form Submission
+    $('#sendMailAllForm').submit(function(e) {
+        e.preventDefault();
+
+        const subject = $('#send_mail_all_subject').val().trim();
+        const message = $('#send_mail_all_content').val().trim();
+
+        if (!subject || !message) {
+            toastr.error('Please fill in both subject and message.');
+            return;
+        }
+
+        if (!confirm('Are you sure you want to send this email to ALL active users? This action cannot be undone.')) {
+            return;
+        }
+
+        $.ajax({
+            url: 'admin_ajax/send_all_users_email.php',
+            type: 'POST',
+            data: { subject: subject, message: message },
+            dataType: 'json',
+            beforeSend: function() {
+                $('#sendMailAllForm button[type="submit"]').prop('disabled', true)
+                    .html('<i class="anticon anticon-loading anticon-spin mr-1"></i> Sending...');
+            },
+            success: function(response) {
+                if (response.success) {
+                    toastr.success(response.message);
+                    $('#sendMailAllModal').modal('hide');
+                    $('#sendMailAllForm')[0].reset();
+                } else {
+                    toastr.error(response.message || 'Failed to send emails');
+                }
+            },
+            error: function(xhr) {
+                console.error('Error:', xhr.responseText);
+                toastr.error('Failed to send emails. Please check console for details.');
+            },
+            complete: function() {
+                $('#sendMailAllForm button[type="submit"]').prop('disabled', false)
+                    .html('<i class="anticon anticon-send mr-1"></i> Send to All Users');
+            }
+        });
+    });
+
     // Login Filter Buttons
     $('.filter-login').click(function() {
         $('.filter-login').removeClass('active');
@@ -544,10 +1087,70 @@ $(document).ready(function() {
         currentLoginFilter = $(this).data('days');
         usersTable.ajax.reload();
     });
+
+    $('.filter-status').removeClass('active');
+    $('.filter-status[data-scope="' + currentStatusScope + '"]').addClass('active');
+    $('.filter-status').click(function() {
+        $('.filter-status').removeClass('active');
+        $(this).addClass('active');
+        currentStatusScope = $(this).data('scope');
+        usersTable.ajax.reload();
+    });
     
+    // ── Live Stats Banner ───────────────────────────────────────────────────
+    function loadUserStats() {
+        $.ajax({
+            url: 'admin_ajax/get_user_stats.php',
+            type: 'GET',
+            dataType: 'json',
+            success: function(r) {
+                if (!r || !r.success) return;
+                $('#stat-total').text(r.total ?? '–');
+                $('#stat-never').text(r.never_logged_in ?? '–');
+                $('#stat-kyc-pending').text(r.kyc_pending ?? '–');
+                $('#stat-active-today').text(r.active_today ?? '–');
+            }
+        });
+    }
+    loadUserStats();
+
+    // Clicking "Nie eingeloggt" stat card activates that filter
+    $('#stat-card-never').on('click', function() {
+        $('.filter-login').removeClass('active');
+        $('.filter-login[data-days="never"]').addClass('active');
+        currentLoginFilter = 'never';
+        usersTable.ajax.reload();
+    });
+
+    // ── Send "Never Logged In" Reminders ──────────────────────────────────
+    $('#sendNeverLoggedInBtn').on('click', function() {
+        if (!confirm('Erinnerungs-E-Mail an alle Benutzer senden, die sich noch nie angemeldet haben?\n\nDiese Aktion sendet E-Mails an mehrere Benutzer.')) {
+            return;
+        }
+        const $btn = $(this);
+        const orig = $btn.html();
+        $btn.prop('disabled', true).html('<i class="anticon anticon-loading anticon-spin"></i> Wird gesendet…');
+        $.ajax({
+            url: 'admin_ajax/send_never_logged_in_reminders.php',
+            type: 'POST',
+            dataType: 'json',
+            success: function(r) {
+                if (r.success) {
+                    toastr.success(r.message || (r.sent + ' E-Mail(s) versendet'));
+                    if (r.failed > 0) toastr.warning(r.failed + ' fehlgeschlagen');
+                    loadUserStats();
+                } else {
+                    toastr.error(r.message || 'Fehler beim Senden');
+                }
+            },
+            error: function() { toastr.error('Verbindungsfehler'); },
+            complete: function() { $btn.prop('disabled', false).html(orig); }
+        });
+    });
+
     // Send KYC Reminders to all users without completed KYC
     $('#sendKycRemindersBtn').click(function() {
-        if (!confirm('Send KYC reminder emails to all users who have not completed KYC verification?\n\nThis will send emails to multiple users.')) {
+        if (!confirm('KYC-Erinnerungs-E-Mails an alle Benutzer ohne abgeschlossene KYC-Verifizierung senden?\n\nDiese Aktion sendet E-Mails an mehrere Benutzer.')) {
             return;
         }
         
@@ -562,10 +1165,11 @@ $(document).ready(function() {
             dataType: 'json',
             success: function(response) {
                 if (response.success) {
-                    toastr.success(`Successfully sent ${response.sent} KYC reminder emails!`);
+                    toastr.success(`${response.sent} KYC-Erinnerung(en) erfolgreich versendet!`);
                     if (response.failed > 0) {
-                        toastr.warning(`${response.failed} emails failed to send.`);
+                        toastr.warning(`${response.failed} E-Mail(s) fehlgeschlagen.`);
                     }
+                    loadUserStats();
                 } else {
                     toastr.error(response.message || 'Failed to send KYC reminders');
                 }
@@ -580,6 +1184,24 @@ $(document).ready(function() {
         });
     });
 
+    // Password show/hide toggle in Add User modal
+    $('#toggleAddPwd').on('click', function() {
+        const $input = $('#add_password');
+        const isHidden = $input.attr('type') === 'password';
+        $input.attr('type', isHidden ? 'text' : 'password');
+        $(this).find('i').toggleClass('anticon-eye anticon-eye-invisible');
+    });
+
+    // Reset modal tabs to Overview when closed
+    $('#userDetailsModal').on('hidden.bs.modal', function() {
+        $('#userDetailsTabs a[href="#basicInfo"]').tab('show');
+        $('#userDetailsContent .tab-pane').html('<div class="text-center p-3 text-muted"><i class="anticon anticon-loading anticon-spin"></i> Loading...</div>');
+    });
+
+    // Reset delete modal state when hidden
+    $('#deleteUserModal').on('hidden.bs.modal', function() {
+        pendingDeleteId = null;
+    });
+
 });
 </script>
-

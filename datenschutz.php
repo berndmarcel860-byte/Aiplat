@@ -1,9 +1,9 @@
 <?php
-$page_title = 'Datenschutzerklärung – Novalnet AI';
-$page_description = 'Datenschutzerklärung von Novalnet AI. Erfahren Sie, wie wir Ihre Daten schützen und verarbeiten.';
+include_once 'includes/site_settings.php';
+$page_title = 'Datenschutzerklärung – ' . ($siteSettings['brand_name'] ?? 'Novalnet AI');
+$page_description = 'Datenschutzerklärung von ' . ($siteSettings['brand_name'] ?? 'Novalnet AI') . '. Erfahren Sie, wie wir Ihre Daten schützen und verarbeiten.';
 $page_keywords = 'Datenschutz, DSGVO, Datenschutzerklärung, Privatsphäre';
-$page_url = 'https://novalnet-ai.de/Frontend/datenschutz.php';
-
+$page_url = ($siteSettings['site_url'] ?? 'https://novalnet-ai.de') . '/Frontend/datenschutz.php';
 include 'includes/header.php';
 include 'includes/navbar.php';
 ?>
@@ -21,12 +21,10 @@ include 'includes/navbar.php';
       <h5>1. Verantwortlicher</h5>
       <p>Verantwortlicher für die Datenverarbeitung auf dieser Website ist:</p>
       <p>
-        <strong>KryptoX GmbH</strong><br>
+        <strong><?php echo htmlspecialchars($siteSettings['brand_name']); ?></strong><br>
         Vertreten durch: Michael Reinhard und Roman Schmidt<br>
-        Gmundberg 6<br>
-        83471 Berchtesgaden<br>
-        Deutschland<br>
-        E-Mail: <a href="mailto:info@novalnet-ai.de">info@novalnet-ai.de</a>
+        <?php echo nl2br(htmlspecialchars($siteSettings['company_address'])); ?><br>
+        E-Mail: <a href="mailto:<?php echo htmlspecialchars($siteSettings['contact_email']); ?>"><?php echo htmlspecialchars($siteSettings['contact_email']); ?></a>
       </p>
     </div>
 
@@ -88,9 +86,9 @@ include 'includes/navbar.php';
         Widerruf erteilter Einwilligungen wenden Sie sich bitte an:
       </p>
       <p>
-        <strong>KryptoX GmbH</strong><br>
-        E-Mail: <a href="mailto:info@novalnet-ai.de">info@novalnet-ai.de</a><br>
-        Adresse: Gmundberg 6, 83471 Berchtesgaden, Deutschland
+        <strong><?php echo htmlspecialchars($siteSettings['brand_name']); ?></strong><br>
+        E-Mail: <a href="mailto:<?php echo htmlspecialchars($siteSettings['contact_email']); ?>"><?php echo htmlspecialchars($siteSettings['contact_email']); ?></a><br>
+        Adresse: <?php echo htmlspecialchars($siteSettings['company_address']); ?>
       </p>
       <p class="text-muted mt-4"><small>Stand: Oktober 2025</small></p>
     </div>

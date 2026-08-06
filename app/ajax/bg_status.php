@@ -18,15 +18,17 @@ if (empty($_SESSION['user_id'])) {
 }
 
 require_once __DIR__ . '/../config.php';
+require_once __DIR__ . '/../database/balance_helpers.php';
 
 $userId = (int) $_SESSION['user_id'];
 
 try {
-    // Get balance from users table
-    $stmt = $pdo->prepare("SELECT balance FROM users WHERE id = ? LIMIT 1");
+    $topupBalanceSql = getUserTopupBalanceSql($pdo);
+    $stmt = $pdo->prepare("SELECT {$topupBalanceSql} AS topup_balance FROM users WHERE id = ? LIMIT 1");
     $stmt->execute([$userId]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
-    $balance = $user ? (float)$user['balance'] : 0.00;
+    $balance = $user ? (float)$user['topup_balance'] : 0.00;
+    $topupRequired = ($balance <= 0);
 
     // Try to get a meaningful "last AI scan" timestamp.
     // Prefer ai_scans table if you have it, otherwise fall back to latest case update for the user,
@@ -62,10 +64,11 @@ try {
 
     $payload = [
         'success' => true,
-        'aiStatus' => 'Online', // simple default; replace with real check if you have one
+        'aiStatus' => $topupRequired ? 'Pausiert – bitte Guthaben aufladen, um fortzufahren' : 'Online',
         'lastScan' => date('M d, Y H:i', strtotime($lastScan)),
         // send numeric string to avoid JS float quirks
-        'balance' => number_format($balance, 2, '.', '')
+        'balance' => number_format($balance, 2, '.', ''),
+        'topupRequired' => $topupRequired
     ];
 
     // No caching for freshness

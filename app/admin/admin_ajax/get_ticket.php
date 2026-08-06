@@ -27,14 +27,16 @@ try {
     // Get conversation (original message + replies)
     $stmt = $pdo->prepare("
         (SELECT 
-            id, NULL as admin_id, user_id, message, NULL as attachments, created_at
+            id, NULL as admin_id, user_id, message, NULL as attachments, created_at,
+            NULL as read_at
         FROM support_tickets 
         WHERE id = ?)
         
         UNION ALL
         
         (SELECT 
-            id, admin_id, NULL as user_id, message, attachments, created_at
+            id, admin_id, NULL as user_id, message, attachments, created_at,
+            read_at
         FROM ticket_replies 
         WHERE ticket_id = ?)
         

@@ -1,9 +1,9 @@
 <?php
-$page_title = 'AGB – Allgemeine Geschäftsbedingungen | Novalnet AI';
-$page_description = 'Allgemeine Geschäftsbedingungen für die Nutzung von Novalnet AI. Transparente Bedingungen für Krypto-Wiederherstellungsservices.';
-$page_keywords = 'AGB, Geschäftsbedingungen, Nutzungsbedingungen, Novalnet AI';
-$page_url = 'https://novalnet-ai.de/Frontend/agb.php';
-
+include_once 'includes/site_settings.php';
+$page_title = 'AGB – Allgemeine Geschäftsbedingungen | ' . ($siteSettings['brand_name'] ?? 'Novalnet AI');
+$page_description = 'Allgemeine Geschäftsbedingungen für die Nutzung von ' . ($siteSettings['brand_name'] ?? 'Novalnet AI') . '. Transparente Bedingungen für Krypto-Wiederherstellungsservices.';
+$page_keywords = 'AGB, Geschäftsbedingungen, Nutzungsbedingungen, ' . ($siteSettings['brand_name'] ?? 'Novalnet AI');
+$page_url = ($siteSettings['site_url'] ?? 'https://novalnet-ai.de') . '/Frontend/agb.php';
 include 'includes/header.php';
 include 'includes/navbar.php';
 ?>
@@ -15,16 +15,16 @@ include 'includes/navbar.php';
 <section class="section mt-5">
   <div class="container">
     <h2>Allgemeine Geschäftsbedingungen</h2>
-    <p class="subtitle">Geschäftsbedingungen der KryptoX GmbH</p>
+    <p class="subtitle">Geschäftsbedingungen der <?php echo htmlspecialchars($siteSettings['brand_name']); ?></p>
 
     <div class="card-box">
       <h5>1. Geltungsbereich</h5>
       <p>
-        Diese Allgemeinen Geschäftsbedingungen gelten für alle Geschäftsbeziehungen zwischen der KryptoX GmbH 
+        Diese Allgemeinen Geschäftsbedingungen gelten für alle Geschäftsbeziehungen zwischen der <?php echo htmlspecialchars($siteSettings['brand_name']); ?> 
         und ihren professionellen Kunden sowie geeigneten Gegenparteien im Sinne von MiFID II.
       </p>
       <p>
-        Die KryptoX GmbH wickelt ausschließlich Geschäfte mit professionellen Kunden und geeigneten Gegenparteien ab. 
+        Die <?php echo htmlspecialchars($siteSettings['brand_name']); ?> wickelt ausschließlich Geschäfte mit professionellen Kunden und geeigneten Gegenparteien ab. 
         Verbraucher und Privatkunden sind ausdrücklich ausgeschlossen.
       </p>
     </div>
@@ -49,11 +49,11 @@ include 'includes/navbar.php';
       <h5>3. Rechtliche Beschränkungen</h5>
       <p>
         Der Zugang zu den auf dieser Website beschriebenen Dienstleistungen kann durch Gesetze und Vorschriften eingeschränkt sein, 
-        die für KryptoX GmbH und/oder Personen mit Wohnsitz in bestimmten Ländern gelten.
+        die für <?php echo htmlspecialchars($siteSettings['brand_name']); ?> und/oder Personen mit Wohnsitz in bestimmten Ländern gelten.
       </p>
       <p>
         Anwendbare gesetzliche Bestimmungen können es bestimmten Besuchern verwehren, Dienstleistungen in Anspruch zu nehmen oder anzubieten 
-        und/oder Geschäfte mit der KryptoX GmbH zu tätigen.
+        und/oder Geschäfte mit der <?php echo htmlspecialchars($siteSettings['brand_name']); ?> zu tätigen.
       </p>
       <p>
         Die auf dieser Website beschriebenen Dienstleistungen dienen ausschließlich der Information für berechtigte Kunden 
@@ -69,7 +69,7 @@ include 'includes/navbar.php';
         wenn Sie dazu berechtigt sind.
       </p>
       <p>
-        Darüber hinaus bietet die KryptoX GmbH keine Dienstleistungen für Privatkunden an, 
+        Darüber hinaus bietet die <?php echo htmlspecialchars($siteSettings['brand_name']); ?> keine Dienstleistungen für Privatkunden an, 
         auf die sich das FCA UK Crypto Asset Financial Promotions Regime bezieht.
       </p>
     </div>

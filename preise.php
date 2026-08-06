@@ -1,9 +1,9 @@
 <?php
-$page_title = 'Preise – Transparente Gebühren | Novalnet AI';
+include_once 'includes/site_settings.php';
+$page_title = 'Preise – Transparente Gebühren | ' . ($siteSettings['brand_name'] ?? 'Novalnet AI');
 $page_description = 'Transparente Preisgestaltung für Krypto-Wiederherstellung. Keine versteckten Kosten, erfolgsbasierte Gebühren.';
 $page_keywords = 'Preise, Gebühren, Kosten, Pricing, Krypto Wiederherstellung';
-$page_url = 'https://novalnet-ai.de/Frontend/preise.php';
-
+$page_url = ($siteSettings['site_url'] ?? 'https://novalnet-ai.de') . '/Frontend/preise.php';
 include 'includes/header.php';
 include 'includes/navbar.php';
 ?>

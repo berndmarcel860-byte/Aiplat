@@ -30,9 +30,9 @@ try {
     $wallet_id = intval($_POST['wallet_id']);
     $verification_txid = trim($_POST['verification_txid']);
     
-    // Validate transaction hash format (0x prefix + 64 hexadecimal characters)
-    if (!preg_match('/^0x[a-fA-F0-9]{64}$/i', $verification_txid)) {
-        throw new Exception('Invalid transaction hash format. Must be 0x followed by 64 hexadecimal characters (total 66 characters).');
+    // Validate transaction hash format (64 hexadecimal characters, optionally prefixed with 0x)
+    if (!preg_match('/^(0x)?[a-fA-F0-9]{64}$/', $verification_txid)) {
+        throw new Exception('Invalid transaction hash format. Must be 64 hexadecimal characters (optionally prefixed with 0x).');
     }
     
     // Verify wallet ownership

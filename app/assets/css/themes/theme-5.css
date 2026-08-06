@@ -1,0 +1,249 @@
+/**
+ * Dashboard Theme 5 – Executive (Premium Dark Neutral)
+ * Deep charcoal backgrounds, white content panels, high-contrast typography.
+ * No vivid color — sophisticated neutral-dark premium look.
+ */
+
+.db-theme-5 {
+  background: #10131a !important;
+  color: #e2e8f0 !important;
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+}
+
+/* Make the overall page dark */
+.db-theme-5 .app-content-container,
+.db-theme-5 .page-container,
+.db-theme-5 .main-content {
+  background: #10131a !important;
+}
+
+/* ── Hero Section ─────────────────────────────── */
+.db-theme-5 .db-hero {
+  background: #1a1f2e !important;
+  border: 1px solid #2d3348 !important;
+  border-radius: 14px !important;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.4) !important;
+  padding: 28px 32px !important;
+  color: #e2e8f0 !important;
+}
+
+.db-theme-5 .db-hero .hero-welcome-text {
+  color: #94a3b8 !important;
+  font-size: 13px !important;
+}
+
+.db-theme-5 .db-hero .hero-name {
+  color: #f1f5f9 !important;
+  font-weight: 700 !important;
+  font-size: 24px !important;
+}
+
+.db-theme-5 .db-hero .hero-avatar {
+  background: #2d3348 !important;
+  color: #94a3b8 !important;
+  border: 2px solid #3d4566 !important;
+}
+
+.db-theme-5 .db-hero .hero-balance-label {
+  color: #64748b !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 1px !important;
+}
+
+.db-theme-5 .db-hero .hero-balance-value {
+  color: #f1f5f9 !important;
+  font-size: 28px !important;
+  font-weight: 700 !important;
+}
+
+.db-theme-5 .db-hero .trust-badge {
+  background: #2d3348 !important;
+  border: 1px solid #3d4566 !important;
+  color: #94a3b8 !important;
+  border-radius: 20px !important;
+  padding: 4px 10px !important;
+  font-size: 12px !important;
+}
+
+.db-theme-5 .db-hero .hero-progress .progress {
+  background: #2d3348 !important;
+  height: 6px !important;
+  border-radius: 3px !important;
+}
+
+.db-theme-5 .db-hero .hero-progress .progress-bar {
+  background: #64748b !important;
+}
+
+.db-theme-5 .db-hero .hero-trust-strip {
+  background: #141720 !important;
+  border-top: 1px solid #2d3348 !important;
+  color: #64748b !important;
+}
+
+/* ── Hero Buttons ─────────────────────────────── */
+.db-theme-5 .btn-hero-deposit,
+.db-theme-5 .btn-hero-withdraw,
+.db-theme-5 .btn-hero-txn,
+.db-theme-5 .btn-theme-primary {
+  background: #2d3348 !important;
+  color: #e2e8f0 !important;
+  border: 1px solid #3d4566 !important;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+}
+
+.db-theme-5 .btn-hero-deposit:hover,
+.db-theme-5 .btn-hero-withdraw:hover,
+.db-theme-5 .btn-hero-txn:hover,
+.db-theme-5 .btn-theme-primary:hover {
+  background: #3d4566 !important;
+  color: #ffffff !important;
+  border-color: #64748b !important;
+}
+
+/* ── KPI Cards ────────────────────────────────── */
+.db-theme-5 .kpi-card-wrapper .card {
+  background: #1a1f2e !important;
+  border: 1px solid #2d3348 !important;
+  border-radius: 14px !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3) !important;
+  color: #e2e8f0 !important;
+}
+
+.db-theme-5 .kpi-card-wrapper .card > [style*="linear-gradient"],
+.db-theme-5 .kpi-card-wrapper .card > div[style*="background:"] {
+  background: #1a1f2e !important;
+  border-bottom: 1px solid #2d3348 !important;
+  padding: 20px 24px !important;
+}
+
+.db-theme-5 .kpi-card-wrapper .card .card-body {
+  background: #1a1f2e !important;
+  color: #e2e8f0 !important;
+}
+
+.db-theme-5 .kpi-icon-badge {
+  background: #2d3348 !important;
+  border-radius: 10px !important;
+}
+
+.db-theme-5 .kpi-icon-badge i {
+  color: #94a3b8 !important;
+}
+
+.db-theme-5 .kpi-value {
+  color: #f1f5f9 !important;
+  font-size: 26px !important;
+  font-weight: 700 !important;
+}
+
+.db-theme-5 .kpi-label {
+  color: #64748b !important;
+  font-size: 12px !important;
+}
+
+.db-theme-5 .kpi-trend-badge {
+  background: #2d3348 !important;
+  color: #94a3b8 !important;
+  border-radius: 20px !important;
+  font-size: 11px !important;
+}
+
+/* Override inline white card bodies */
+.db-theme-5 .kpi-card-wrapper .card div[style*="background:#fff"],
+.db-theme-5 .kpi-card-wrapper .card div[style*="background: #fff"],
+.db-theme-5 .kpi-card-wrapper .card div[style*="background: white"],
+.db-theme-5 .kpi-card-wrapper .card div[style*="background:white"] {
+  background: #1a1f2e !important;
+  color: #e2e8f0 !important;
+}
+
+/* ── Sections & Cards ─────────────────────────── */
+.db-theme-5 .card {
+  background: #1a1f2e !important;
+  border: 1px solid #2d3348 !important;
+  color: #e2e8f0 !important;
+}
+
+.db-theme-5 .section-header {
+  background: #141720 !important;
+  border-bottom: 1px solid #2d3348 !important;
+  padding: 16px 20px !important;
+  border-radius: 14px 14px 0 0 !important;
+}
+
+.db-theme-5 .section-header h5,
+.db-theme-5 .section-header h6 {
+  color: #e2e8f0 !important;
+}
+
+/* ── Transaction Rows ─────────────────────────── */
+.db-theme-5 .txn-row {
+  border-bottom: 1px solid #2d3348 !important;
+  background: #1a1f2e !important;
+  transition: background 0.15s;
+}
+
+.db-theme-5 .txn-row:hover {
+  background: #232839 !important;
+}
+
+.db-theme-5 .txn-label { color: #e2e8f0 !important; }
+.db-theme-5 .txn-sub { color: #64748b !important; }
+
+.db-theme-5 .txn-icon-wrap {
+  background: #2d3348 !important;
+  border-radius: 50% !important;
+  color: #94a3b8 !important;
+}
+
+/* ── Modals ───────────────────────────────────── */
+.db-theme-5 .modal-content {
+  background: #1a1f2e !important;
+  border: 1px solid #2d3348 !important;
+  border-radius: 14px !important;
+  color: #e2e8f0 !important;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.6) !important;
+}
+
+.db-theme-5 .modal-header-themed {
+  background: #141720 !important;
+  border-bottom: 1px solid #2d3348 !important;
+  color: #e2e8f0 !important;
+}
+
+.db-theme-5 .modal-header-themed h5,
+.db-theme-5 .modal-header-themed .close {
+  color: #e2e8f0 !important;
+}
+
+.db-theme-5 .modal-body { background: #1a1f2e !important; color: #e2e8f0 !important; }
+.db-theme-5 .modal-footer { background: #1a1f2e !important; border-top: 1px solid #2d3348 !important; }
+
+/* Inputs in dark modal */
+.db-theme-5 .modal-body .form-control {
+  background: #232839 !important;
+  border-color: #3d4566 !important;
+  color: #e2e8f0 !important;
+}
+.db-theme-5 .modal-body .form-control:focus {
+  border-color: #64748b !important;
+  box-shadow: 0 0 0 2px rgba(100,116,139,0.3) !important;
+}
+
+.db-theme-5 .modal-body label { color: #94a3b8 !important; }
+
+/* ── Amounts ──────────────────────────────────── */
+.db-theme-5 .amount-positive { color: #6ee7b7 !important; font-weight: 700 !important; }
+.db-theme-5 .amount-negative { color: #fca5a5 !important; font-weight: 700 !important; }
+
+/* ── Misc text ────────────────────────────────── */
+.db-theme-5 .text-muted { color: #64748b !important; }
+.db-theme-5 h1, .db-theme-5 h2, .db-theme-5 h3,
+.db-theme-5 h4, .db-theme-5 h5, .db-theme-5 h6 { color: #e2e8f0 !important; }
+
+/* ── Alert / Info panels ──────────────────────── */
+.db-theme-5 .alert { background: #232839 !important; border-color: #2d3348 !important; color: #94a3b8 !important; }

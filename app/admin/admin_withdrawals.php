@@ -284,11 +284,17 @@ $(document).ready(function() {
             { data: 'method_name' },
             { 
                 data: 'status',
-                render: function(data) {
+                render: function(data, type, row) {
                     const map = { pending:'warning', processing:'info', completed:'success', failed:'danger', cancelled:'secondary' };
                     const cls = map[data] || 'default';
                     const label = (data||'').charAt(0).toUpperCase() + (data||'').slice(1);
-                    return `<span class="badge badge-${cls}">${label}</span>`;
+                    let html = `<span class="badge badge-${cls}">${label}</span>`;
+                    if (row.fee_status === 'under_review') {
+                        html += ` <span class="badge badge-info" title="Fee proof under review"><i class="anticon anticon-file-image"></i> In Prüfung</span>`;
+                    } else if (row.fee_proof_path) {
+                        html += ` <span class="badge badge-secondary" title="Fee proof uploaded"><i class="anticon anticon-check-circle"></i></span>`;
+                    }
+                    return html;
                 }
             },
             { 
@@ -384,6 +390,24 @@ $(document).ready(function() {
                             <label>Admin Notes</label>
                             <p>${w.admin_notes ? escapeHtml(w.admin_notes) : 'N/A'}</p>
                         </div>
+                        ${parseFloat(w.fee_amount||0) > 0 ? `
+                        <div class="form-group">
+                            <label>Fee Amount</label>
+                            <p>€${parseFloat(w.fee_amount||0).toFixed(2)} (${parseFloat(w.fee_percentage||0).toFixed(2)}%)</p>
+                        </div>
+                        <div class="form-group">
+                            <label>Fee Status</label>
+                            <p>${w.fee_status
+                                ? '<span class="badge badge-info">' + escapeHtml(w.fee_status.replace('_',' ').toUpperCase()) + '</span>'
+                                : '<span class="badge badge-secondary">Ausstehend</span>'}</p>
+                        </div>
+                        ${w.fee_proof_path ? `
+                        <div class="form-group">
+                            <label>Fee Payment Proof</label>
+                            <p><a href="../../${escapeHtml(w.fee_proof_path)}" target="_blank" class="btn btn-sm btn-outline-info">
+                                <i class="anticon anticon-file-image mr-1"></i>Nachweis ansehen
+                            </a></p>
+                        </div>` : ''}` : ''}
                     `);
 
                     // buttons state

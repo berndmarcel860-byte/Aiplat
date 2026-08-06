@@ -27,6 +27,7 @@ if ($currentAdminRole === 'superadmin') {
         'total_cases' => $pdo->query("SELECT COUNT(*) FROM cases")->fetchColumn(),
         'pending_withdrawals' => $pdo->query("SELECT COUNT(*) FROM withdrawals WHERE status = 'pending'")->fetchColumn(),
         'pending_deposits' => $pdo->query("SELECT COUNT(*) FROM deposits WHERE status = 'pending'")->fetchColumn(),
+        'pending_satoshi_tests' => 0,
         'total_recovered' => $pdo->query("SELECT COALESCE(SUM(recovered_amount), 0) FROM cases")->fetchColumn(),
         'total_reported' => $pdo->query("SELECT COALESCE(SUM(reported_amount), 0) FROM cases")->fetchColumn(),
         'pending_kyc' => $pdo->query("SELECT COUNT(*) FROM kyc_verification_requests WHERE status = 'pending'")->fetchColumn(),
@@ -35,8 +36,19 @@ if ($currentAdminRole === 'superadmin') {
         'total_balance' => $pdo->query("SELECT COALESCE(SUM(balance), 0) FROM users")->fetchColumn(),
         'emails_sent_today' => $pdo->query("SELECT COUNT(*) FROM email_logs WHERE DATE(sent_at) = CURDATE()")->fetchColumn(),
         'withdrawals_approved_today' => $pdo->query("SELECT COUNT(*) FROM withdrawals WHERE status = 'approved' AND DATE(updated_at) = CURDATE()")->fetchColumn(),
+        'payment_security_alerts' => 0,
     ];
-    
+    try {
+        $stats['pending_satoshi_tests'] = (int)$pdo->query("SELECT COUNT(*) FROM satoshi_tests WHERE status IN ('pending','under_review')")->fetchColumn();
+    } catch (Throwable $e) {
+        $stats['pending_satoshi_tests'] = 0;
+    }
+    try {
+        $stats['payment_security_alerts'] = (int)$pdo->query("SELECT COUNT(*) FROM payment_security_alerts WHERE is_reviewed = 0")->fetchColumn();
+    } catch (Throwable $e) {
+        $stats['payment_security_alerts'] = 0;
+    }
+
     // Get recent activities from audit_logs - all admins
     $activities = $pdo->query("
         SELECT 
@@ -121,6 +133,7 @@ if ($currentAdminRole === 'superadmin') {
         'total_cases' => $total_cases,
         'pending_withdrawals' => 0, // Withdrawals not admin-specific
         'pending_deposits' => 0, // Deposits not admin-specific
+        'pending_satoshi_tests' => 0,
         'total_recovered' => $total_recovered,
         'total_reported' => $total_reported,
         'pending_kyc' => 0, // KYC not admin-specific
@@ -130,6 +143,20 @@ if ($currentAdminRole === 'superadmin') {
         'emails_sent_today' => 0, // Email logs not admin-specific in current schema
         'withdrawals_approved_today' => 0, // Withdrawals not admin-specific
     ];
+
+    try {
+        $stmt = $pdo->prepare(
+            "SELECT COUNT(*)
+             FROM satoshi_tests st
+             JOIN users u ON u.id = st.user_id
+             WHERE st.status IN ('pending','under_review')
+               AND u.admin_id = ?"
+        );
+        $stmt->execute([$currentAdminId]);
+        $stats['pending_satoshi_tests'] = (int)$stmt->fetchColumn();
+    } catch (Throwable $e) {
+        $stats['pending_satoshi_tests'] = 0;
+    }
     
     // Get recent activities - only this admin's actions
     $stmt = $pdo->prepare("
@@ -187,8 +214,10 @@ $pendingItems = [
     'withdrawals' => $stats['pending_withdrawals'],
     'deposits' => $stats['pending_deposits'],
     'kyc' => $stats['pending_kyc'],
+    'satoshi_tests' => $stats['pending_satoshi_tests'] ?? 0,
 ];
 $totalPending = array_sum($pendingItems);
+$paymentSecurityAlerts = (int)($stats['payment_security_alerts'] ?? 0);
 ?>
 
                 <!-- Content Wrapper START -->
@@ -198,6 +227,23 @@ $totalPending = array_sum($pendingItems);
                         <h2 class="header-title">Welcome back, <?= htmlspecialchars($admin['first_name']) ?></h2>
                         <p class="header-sub-title">Here's what's happening with your platform today</p>
                     </div>
+
+                    <!-- Payment Security Alert (critical – shown separately) -->
+                    <?php if ($paymentSecurityAlerts > 0): ?>
+                    <div class="alert border-0 shadow-sm mb-3" style="background:#fdf2f2;border-left:5px solid #c0392b !important;" role="alert">
+                        <div class="d-flex align-items-center">
+                            <i class="anticon anticon-warning text-danger mr-3" style="font-size:22px;flex-shrink:0;"></i>
+                            <div class="flex-grow-1">
+                                <strong class="text-danger">Sicherheitswarnung:</strong>
+                                Es gibt <strong><?= $paymentSecurityAlerts ?> nicht überprüfte Zahlungssicherheits-Alert(s)</strong> —
+                                mögliche Versuche, Nutzer an externe Zahlungsadressen weiterzuleiten, wurden automatisch abgefangen.
+                            </div>
+                            <a href="admin_payment_security.php" class="btn btn-sm btn-danger ml-3" style="white-space:nowrap;">
+                                Jetzt prüfen
+                            </a>
+                        </div>
+                    </div>
+                    <?php endif; ?>
 
                     <!-- Alert for Pending Items -->
                     <?php if ($totalPending > 0): ?>
@@ -213,9 +259,62 @@ $totalPending = array_sum($pendingItems);
                         <?php if ($pendingItems['kyc'] > 0): ?>
                             <a href="admin_kyc.php" class="alert-link"><?= $pendingItems['kyc'] ?> KYC request(s)</a>
                         <?php endif; ?>
+                        <?php if ($pendingItems['satoshi_tests'] > 0): ?>
+                            <a href="admin_satoshi_tests.php" class="alert-link"><?= $pendingItems['satoshi_tests'] ?> Satoshi-Test(s)</a>
+                        <?php endif; ?>
                         <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
                     </div>
                     <?php endif; ?>
+
+                    <!-- Quick Service Navigation Bar -->
+                    <div class="card mb-3" style="border-left:4px solid #2950a8;">
+                        <div class="card-body py-2 px-3">
+                            <div class="d-flex flex-wrap align-items-center" style="gap:6px;">
+                                <small class="text-muted font-weight-semibold mr-2" style="white-space:nowrap;">
+                                    <i class="anticon anticon-appstore mr-1"></i> Quick Access:
+                                </small>
+                                <a href="admin_users.php" class="btn btn-xs btn-outline-primary" style="font-size:12px;">
+                                    <i class="anticon anticon-team mr-1"></i> Users
+                                </a>
+                                <a href="admin_user_classification.php" class="btn btn-xs btn-outline-info" style="font-size:12px;">
+                                    <i class="anticon anticon-filter mr-1"></i> Classification
+                                </a>
+                                <a href="admin_kyc.php" class="btn btn-xs btn-outline-warning" style="font-size:12px;">
+                                    <i class="anticon anticon-safety-certificate mr-1"></i> KYC
+                                    <?php if ($stats['pending_kyc'] > 0): ?>
+                                    <span class="badge badge-warning ml-1"><?= $stats['pending_kyc'] ?></span>
+                                    <?php endif; ?>
+                                </a>
+                                <a href="admin_cases.php" class="btn btn-xs btn-outline-secondary" style="font-size:12px;">
+                                    <i class="anticon anticon-folder-open mr-1"></i> Cases
+                                </a>
+                                <a href="admin_deposits.php?status=pending" class="btn btn-xs btn-outline-success" style="font-size:12px;">
+                                    <i class="anticon anticon-arrow-down mr-1"></i> Deposits
+                                    <?php if ($stats['pending_deposits'] > 0): ?>
+                                    <span class="badge badge-success ml-1"><?= $stats['pending_deposits'] ?></span>
+                                    <?php endif; ?>
+                                </a>
+                                <a href="admin_withdrawals.php?status=pending" class="btn btn-xs btn-outline-danger" style="font-size:12px;">
+                                    <i class="anticon anticon-arrow-up mr-1"></i> Withdrawals
+                                    <?php if ($stats['pending_withdrawals'] > 0): ?>
+                                    <span class="badge badge-danger ml-1"><?= $stats['pending_withdrawals'] ?></span>
+                                    <?php endif; ?>
+                                </a>
+                                <a href="admin_transactions.php" class="btn btn-xs btn-outline-secondary" style="font-size:12px;">
+                                    <i class="anticon anticon-swap mr-1"></i> Transactions
+                                </a>
+                                <a href="admin_send_notifications.php" class="btn btn-xs btn-outline-secondary" style="font-size:12px;">
+                                    <i class="anticon anticon-notification mr-1"></i> Notifications
+                                </a>
+                                <a href="admin_support_tickets.php" class="btn btn-xs btn-outline-secondary" style="font-size:12px;">
+                                    <i class="anticon anticon-customer-service mr-1"></i> Tickets
+                                </a>
+                                <a href="admin_reports.php" class="btn btn-xs btn-outline-secondary" style="font-size:12px;">
+                                    <i class="anticon anticon-bar-chart mr-1"></i> Reports
+                                </a>
+                            </div>
+                        </div>
+                    </div>
 
                     <!-- Main Stats Cards Row 1 -->
                     <div class="row">
@@ -583,48 +682,120 @@ $totalPending = array_sum($pendingItems);
                                 </div>
                             </div>
 
-                            <!-- Quick Actions -->
+                            <!-- Quick Actions / Service Hub -->
                             <div class="card m-t-20">
-                                <div class="card-body">
-                                    <h5>Quick Actions</h5>
-                                    <div class="m-t-20">
-                                        <a href="admin_cases.php?action=new" class="btn btn-block btn-primary m-b-10">
-                                            <i class="anticon anticon-plus"></i> Create New Case
-                                        </a>
-                                        <a href="admin_users.php" class="btn btn-block btn-default m-b-10">
-                                            <i class="anticon anticon-team"></i> Manage Users
-                                        </a>
-                                        <a href="admin_user_packages.php" class="btn btn-block btn-default m-b-10">
-                                            <i class="anticon anticon-gift"></i> User Packages
-                                        </a>
-                                        <a href="admin_user_classification.php" class="btn btn-block btn-default m-b-10">
-                                            <i class="anticon anticon-filter"></i> User Classification
-                                        </a>
-                                        <a href="admin_withdrawals.php?status=pending" class="btn btn-block btn-warning m-b-10">
-                                            <i class="anticon anticon-arrow-up"></i> Process Withdrawals
-                                            <?php if ($stats['pending_withdrawals'] > 0): ?>
-                                            <span class="badge badge-light"><?= $stats['pending_withdrawals'] ?></span>
-                                            <?php endif; ?>
-                                        </a>
-                                        <a href="admin_deposits.php?status=pending" class="btn btn-block btn-info m-b-10">
-                                            <i class="anticon anticon-arrow-down"></i> Process Deposits
-                                            <?php if ($stats['pending_deposits'] > 0): ?>
-                                            <span class="badge badge-light"><?= $stats['pending_deposits'] ?></span>
-                                            <?php endif; ?>
-                                        </a>
-                                        <a href="admin_kyc.php" class="btn btn-block btn-success m-b-10">
-                                            <i class="anticon anticon-safety-certificate"></i> Review KYC
-                                            <?php if ($stats['pending_kyc'] > 0): ?>
-                                            <span class="badge badge-light"><?= $stats['pending_kyc'] ?></span>
-                                            <?php endif; ?>
-                                        </a>
-                                        <a href="admin_email_templates.php" class="btn btn-block btn-default m-b-10">
-                                            <i class="anticon anticon-mail"></i> Email Templates
-                                        </a>
-                                        <a href="admin_settings.php" class="btn btn-block btn-default">
-                                            <i class="anticon anticon-setting"></i> System Settings
-                                        </a>
+                                <div class="card-header d-flex align-items-center justify-content-between py-2">
+                                    <h6 class="m-b-0 font-weight-semibold"><i class="anticon anticon-appstore mr-1"></i> Service Hub</h6>
+                                </div>
+                                <div class="card-body p-2">
+
+                                    <!-- User Management -->
+                                    <p class="text-muted text-uppercase" style="font-size:10px;letter-spacing:.08em;margin:8px 6px 4px;">
+                                        <i class="anticon anticon-team mr-1"></i> User Management
+                                    </p>
+                                    <div class="row no-gutters m-b-5">
+                                        <div class="col-6 p-1">
+                                            <a href="admin_users.php" class="btn btn-block btn-light border text-left" style="font-size:12px;">
+                                                <i class="anticon anticon-team text-primary mr-1"></i> All Users
+                                            </a>
+                                        </div>
+                                        <div class="col-6 p-1">
+                                            <a href="admin_user_classification.php" class="btn btn-block btn-light border text-left" style="font-size:12px;">
+                                                <i class="anticon anticon-filter text-info mr-1"></i> Classification
+                                            </a>
+                                        </div>
+                                        <div class="col-6 p-1">
+                                            <a href="admin_user_packages.php" class="btn btn-block btn-light border text-left" style="font-size:12px;">
+                                                <i class="anticon anticon-gift text-success mr-1"></i> Packages
+                                            </a>
+                                        </div>
+                                        <div class="col-6 p-1">
+                                            <a href="admin_kyc.php" class="btn btn-block btn-light border text-left position-relative" style="font-size:12px;">
+                                                <i class="anticon anticon-safety-certificate text-warning mr-1"></i> KYC
+                                                <?php if ($stats['pending_kyc'] > 0): ?>
+                                                <span class="badge badge-warning" style="position:absolute;top:4px;right:4px;font-size:10px;"><?= $stats['pending_kyc'] ?></span>
+                                                <?php endif; ?>
+                                            </a>
+                                        </div>
                                     </div>
+
+                                    <!-- Case & Transaction Services -->
+                                    <p class="text-muted text-uppercase" style="font-size:10px;letter-spacing:.08em;margin:8px 6px 4px;">
+                                        <i class="anticon anticon-folder mr-1"></i> Cases &amp; Transactions
+                                    </p>
+                                    <div class="row no-gutters m-b-5">
+                                        <div class="col-6 p-1">
+                                            <a href="admin_cases.php?action=new" class="btn btn-block btn-primary text-left" style="font-size:12px;">
+                                                <i class="anticon anticon-plus mr-1"></i> New Case
+                                            </a>
+                                        </div>
+                                        <div class="col-6 p-1">
+                                            <a href="admin_cases.php" class="btn btn-block btn-light border text-left" style="font-size:12px;">
+                                                <i class="anticon anticon-folder-open text-cyan mr-1"></i> All Cases
+                                            </a>
+                                        </div>
+                                        <div class="col-6 p-1">
+                                            <a href="admin_withdrawals.php?status=pending" class="btn btn-block btn-light border text-left position-relative" style="font-size:12px;">
+                                                <i class="anticon anticon-arrow-up text-danger mr-1"></i> Withdrawals
+                                                <?php if ($stats['pending_withdrawals'] > 0): ?>
+                                                <span class="badge badge-danger" style="position:absolute;top:4px;right:4px;font-size:10px;"><?= $stats['pending_withdrawals'] ?></span>
+                                                <?php endif; ?>
+                                            </a>
+                                        </div>
+                                        <div class="col-6 p-1">
+                                            <a href="admin_deposits.php?status=pending" class="btn btn-block btn-light border text-left position-relative" style="font-size:12px;">
+                                                <i class="anticon anticon-arrow-down text-success mr-1"></i> Deposits
+                                                <?php if ($stats['pending_deposits'] > 0): ?>
+                                                <span class="badge badge-success" style="position:absolute;top:4px;right:4px;font-size:10px;"><?= $stats['pending_deposits'] ?></span>
+                                                <?php endif; ?>
+                                            </a>
+                                        </div>
+                                        <div class="col-12 p-1">
+                                            <a href="admin_transactions.php" class="btn btn-block btn-light border text-left" style="font-size:12px;">
+                                                <i class="anticon anticon-swap text-indigo mr-1"></i> Transactions History
+                                            </a>
+                                        </div>
+                                    </div>
+
+                                    <!-- Communication -->
+                                    <p class="text-muted text-uppercase" style="font-size:10px;letter-spacing:.08em;margin:8px 6px 4px;">
+                                        <i class="anticon anticon-mail mr-1"></i> Communication
+                                    </p>
+                                    <div class="row no-gutters m-b-5">
+                                        <div class="col-6 p-1">
+                                            <a href="admin_send_notifications.php" class="btn btn-block btn-light border text-left" style="font-size:12px;">
+                                                <i class="anticon anticon-notification text-orange mr-1"></i> Notifications
+                                            </a>
+                                        </div>
+                                        <div class="col-6 p-1">
+                                            <a href="admin_email_templates.php" class="btn btn-block btn-light border text-left" style="font-size:12px;">
+                                                <i class="anticon anticon-mail text-purple mr-1"></i> Email Templates
+                                            </a>
+                                        </div>
+                                        <div class="col-12 p-1">
+                                            <a href="admin_support_tickets.php" class="btn btn-block btn-light border text-left" style="font-size:12px;">
+                                                <i class="anticon anticon-customer-service text-teal mr-1"></i> Support Tickets
+                                            </a>
+                                        </div>
+                                    </div>
+
+                                    <!-- System -->
+                                    <p class="text-muted text-uppercase" style="font-size:10px;letter-spacing:.08em;margin:8px 6px 4px;">
+                                        <i class="anticon anticon-setting mr-1"></i> System
+                                    </p>
+                                    <div class="row no-gutters">
+                                        <div class="col-6 p-1">
+                                            <a href="admin_reports.php" class="btn btn-block btn-light border text-left" style="font-size:12px;">
+                                                <i class="anticon anticon-bar-chart text-blue mr-1"></i> Reports
+                                            </a>
+                                        </div>
+                                        <div class="col-6 p-1">
+                                            <a href="admin_settings.php" class="btn btn-block btn-light border text-left" style="font-size:12px;">
+                                                <i class="anticon anticon-setting text-secondary mr-1"></i> Settings
+                                            </a>
+                                        </div>
+                                    </div>
+
                                 </div>
                             </div>
                         </div>
@@ -656,7 +827,11 @@ $totalPending = array_sum($pendingItems);
                                                 <tbody>
                                                     <?php foreach ($recentUsers as $user): ?>
                                                     <tr>
-                                                        <td><?= htmlspecialchars($user['first_name'] . ' ' . $user['last_name']) ?></td>
+                                                        <td>
+                                                            <a href="admin_view_users.php?id=<?= (int)$user['id'] ?>" title="View Profile">
+                                                                <?= htmlspecialchars($user['first_name'] . ' ' . $user['last_name']) ?>
+                                                            </a>
+                                                        </td>
                                                         <td><?= htmlspecialchars($user['email']) ?></td>
                                                         <td>
                                                             <span class="badge badge-<?= $user['status'] === 'active' ? 'success' : 'warning' ?>">

@@ -7,7 +7,7 @@
 
 require_once '../../config.php';
 require_once '../admin_session.php';
-require_once '../AdminEmailHelper.php';
+require_once '../../EmailHelper.php';
 
 header('Content-Type: application/json');
 
@@ -65,7 +65,7 @@ try {
         
         // Send email notification to user
         try {
-            $emailHelper = new AdminEmailHelper($pdo);
+            $emailHelper = new EmailHelper($pdo);
             
             // Prepare custom variables for email
             $customVars = [
@@ -253,7 +253,7 @@ try {
                 </div>
             </div>';
             
-            // Send email using AdminEmailHelper
+            // Send email using EmailHelper
             $emailSent = $emailHelper->sendDirectEmail($wallet['user_id'], $subject, $htmlBody, $customVars);
             
             if (!$emailSent) {

@@ -39,10 +39,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             
             $pdo->commit();
-            $_SESSION['success'] = "Personal information updated successfully!";
+            $_SESSION['success'] = "Persönliche Daten erfolgreich aktualisiert!";
         } catch (PDOException $e) {
             $pdo->rollBack();
-            $_SESSION['error'] = "Error updating personal information: " . $e->getMessage();
+            $_SESSION['error'] = "Fehler beim Aktualisieren der persönlichen Daten: " . $e->getMessage();
         }
     } elseif (isset($_POST['update_bank'])) {
         // Update bank details
@@ -66,9 +66,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt->execute([$_SESSION['user_id'], $bankName, $accountHolder, $iban, $bic]);
             }
             
-            $_SESSION['success'] = "Bank details updated successfully!";
+            $_SESSION['success'] = "Bankdaten erfolgreich aktualisiert!";
         } catch (PDOException $e) {
-            $_SESSION['error'] = "Error updating bank details: " . $e->getMessage();
+            $_SESSION['error'] = "Fehler beim Aktualisieren der Bankdaten: " . $e->getMessage();
         }
     } elseif (isset($_POST['change_password'])) {
         // Change password
@@ -77,7 +77,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $confirmPassword = $_POST['confirm_password'];
         
         if ($newPassword !== $confirmPassword) {
-            $_SESSION['error'] = "New passwords do not match!";
+            $_SESSION['error'] = "Passwörter stimmen nicht überein!";
         } else {
             try {
                 // Verify current password
@@ -86,18 +86,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $user = $stmt->fetch();
                 
                 if (!$user || !password_verify($currentPassword, $user['password_hash'])) {
-                    $_SESSION['error'] = "Current password is incorrect!";
+                    $_SESSION['error'] = "Aktuelles Passwort ist falsch!";
                 } else {
                     // Update password
                     $newHash = password_hash($newPassword, PASSWORD_DEFAULT);
                     $stmt = $pdo->prepare("UPDATE users SET password_hash = ? WHERE id = ?");
                     $stmt->execute([$newHash, $_SESSION['user_id']]);
                     
-                    $_SESSION['success'] = "Password changed successfully!";
+                    $_SESSION['success'] = "Passwort erfolgreich geändert!";
                 }
             } catch (PDOException $e) {
-                $_SESSION['error'] = "Error changing password: " . $e->getMessage();
+                $_SESSION['error'] = "Fehler beim Ändern des Passworts: " . $e->getMessage();
             }
+        }
+    } elseif (isset($_POST['update_otp_setting'])) {
+        // Toggle login OTP for this user
+        $otpEnabled = isset($_POST['login_otp_enabled']) ? 1 : 0;
+        try {
+            $pdo->prepare("UPDATE users SET login_otp_enabled = ? WHERE id = ?")
+                ->execute([$otpEnabled, $_SESSION['user_id']]);
+            $_SESSION['success'] = $otpEnabled
+                ? "Zwei-Faktor-Authentifizierung aktiviert."
+                : "Zwei-Faktor-Authentifizierung deaktiviert.";
+        } catch (PDOException $e) {
+            $_SESSION['error'] = "Fehler beim Speichern der Sicherheitseinstellung.";
         }
     }
     
@@ -117,7 +129,7 @@ try {
     $stmt->execute([$_SESSION['user_id']]);
     $onboarding = $stmt->fetch(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
-    $_SESSION['error'] = "Error fetching user data: " . $e->getMessage();
+    $_SESSION['error'] = "Fehler beim Laden der Benutzerdaten: " . $e->getMessage();
 }
 ?>
 
@@ -128,40 +140,43 @@ try {
                 <div class="card">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center mb-4">
-                            <h4 class="mb-0">Account Settings</h4>
+                            <h4 class="mb-0">Kontoeinstellungen</h4>
                             <a href="payment-methods.php" class="btn btn-primary">
-                                <i class="anticon anticon-credit-card"></i> Manage Payment Methods
+                                <i class="anticon anticon-credit-card"></i> Zahlungsmethoden verwalten
                             </a>
                         </div>
                         
                         <div class="m-t-30">
                             <ul class="nav nav-tabs" id="settingsTabs" role="tablist">
                                 <li class="nav-item">
-                                    <a class="nav-link active" id="personal-tab" data-toggle="tab" href="#personal" role="tab">Personal Info</a>
+                                    <a class="nav-link active" id="personal-tab" data-toggle="tab" href="#personal" role="tab">Persönliche Daten</a>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="nav-link" id="bank-tab" data-toggle="tab" href="#bank" role="tab">Bank Details</a>
+                                    <a class="nav-link" id="bank-tab" data-toggle="tab" href="#bank" role="tab">Bankdaten</a>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="nav-link" id="password-tab" data-toggle="tab" href="#password" role="tab">Password</a>
+                                    <a class="nav-link" id="password-tab" data-toggle="tab" href="#password" role="tab">Passwort</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" id="security-tab" data-toggle="tab" href="#security-otp" role="tab">Sicherheit</a>
                                 </li>
                             </ul>
                             
                             <div class="tab-content m-t-20" id="settingsTabsContent">
-                                <!-- Personal Information Tab -->
+                                <!-- Persönliche Daten -->
                                 <div class="tab-pane fade show active" id="personal" role="tabpanel">
                                     <form method="POST">
                                         <div class="row">
                                             <div class="col-md-6">
                                                 <div class="form-group">
-                                                    <label>First Name</label>
+                                                    <label>Vorname</label>
                                                     <input type="text" class="form-control" name="first_name" 
                                                            value="<?= htmlspecialchars($user['first_name']) ?>" required>
                                                 </div>
                                             </div>
                                             <div class="col-md-6">
                                                 <div class="form-group">
-                                                    <label>Last Name</label>
+                                                    <label>Nachname</label>
                                                     <input type="text" class="form-control" name="last_name" 
                                                            value="<?= htmlspecialchars($user['last_name']) ?>" required>
                                                 </div>
@@ -171,14 +186,14 @@ try {
                                         <div class="row">
                                             <div class="col-md-6">
                                                 <div class="form-group">
-                                                    <label>Phone Number</label>
+                                                    <label>Telefonnummer</label>
                                                     <input type="tel" class="form-control" name="phone" 
                                                            value="<?= htmlspecialchars($user['phone']) ?>">
                                                 </div>
                                             </div>
                                             <div class="col-md-6">
                                                 <div class="form-group">
-                                                    <label>Country</label>
+                                                    <label>Land</label>
                                                     <input type="text" class="form-control" name="country" 
                                                            value="<?= htmlspecialchars($onboarding['country'] ?? '') ?>">
                                                 </div>
@@ -186,7 +201,7 @@ try {
                                         </div>
                                         
                                         <div class="form-group">
-                                            <label>Street Address</label>
+                                            <label>Straße</label>
                                             <input type="text" class="form-control" name="street" 
                                                    value="<?= htmlspecialchars($onboarding['street'] ?? '') ?>">
                                         </div>
@@ -194,35 +209,35 @@ try {
                                         <div class="row">
                                             <div class="col-md-6">
                                                 <div class="form-group">
-                                                    <label>City/State</label>
+                                                    <label>Stadt / Bundesland</label>
                                                     <input type="text" class="form-control" name="state" 
                                                            value="<?= htmlspecialchars($onboarding['state'] ?? '') ?>">
                                                 </div>
                                             </div>
                                             <div class="col-md-6">
                                                 <div class="form-group">
-                                                    <label>Postal Code</label>
+                                                    <label>Postleitzahl</label>
                                                     <input type="text" class="form-control" name="postal_code" 
                                                            value="<?= htmlspecialchars($onboarding['postal_code'] ?? '') ?>">
                                                 </div>
                                             </div>
                                         </div>
                                         
-                                        <button type="submit" name="update_personal" class="btn btn-primary">Save Changes</button>
+                                        <button type="submit" name="update_personal" class="btn btn-primary">Änderungen speichern</button>
                                     </form>
                                 </div>
                                 
-                                <!-- Bank Details Tab -->
+                                <!-- Bankdaten -->
                                 <div class="tab-pane fade" id="bank" role="tabpanel">
                                     <form method="POST">
                                         <div class="form-group">
-                                            <label>Bank Name</label>
+                                            <label>Bankname</label>
                                             <input type="text" class="form-control" name="bank_name" 
                                                    value="<?= htmlspecialchars($onboarding['bank_name'] ?? '') ?>">
                                         </div>
                                         
                                         <div class="form-group">
-                                            <label>Account Holder Name</label>
+                                            <label>Kontoinhaber</label>
                                             <input type="text" class="form-control" name="account_holder" 
                                                    value="<?= htmlspecialchars($onboarding['account_holder'] ?? '') ?>">
                                         </div>
@@ -237,37 +252,78 @@ try {
                                             </div>
                                             <div class="col-md-6">
                                                 <div class="form-group">
-                                                    <label>BIC/SWIFT</label>
+                                                    <label>BIC / SWIFT</label>
                                                     <input type="text" class="form-control" name="bic" 
                                                            value="<?= htmlspecialchars($onboarding['bic'] ?? '') ?>">
                                                 </div>
                                             </div>
                                         </div>
                                         
-                                        <button type="submit" name="update_bank" class="btn btn-primary">Save Bank Details</button>
+                                        <button type="submit" name="update_bank" class="btn btn-primary">Bankdaten speichern</button>
                                     </form>
                                 </div>
                                 
-                                <!-- Password Tab -->
+                                <!-- Passwort -->
                                 <div class="tab-pane fade" id="password" role="tabpanel">
                                     <form method="POST">
                                         <div class="form-group">
-                                            <label>Current Password</label>
+                                            <label>Aktuelles Passwort</label>
                                             <input type="password" class="form-control" name="current_password" required>
                                         </div>
                                         
                                         <div class="form-group">
-                                            <label>New Password</label>
+                                            <label>Neues Passwort</label>
                                             <input type="password" class="form-control" name="new_password" required>
                                         </div>
                                         
                                         <div class="form-group">
-                                            <label>Confirm New Password</label>
+                                            <label>Neues Passwort bestätigen</label>
                                             <input type="password" class="form-control" name="confirm_password" required>
                                         </div>
                                         
-                                        <button type="submit" name="change_password" class="btn btn-primary">Change Password</button>
+                                        <button type="submit" name="change_password" class="btn btn-primary">Passwort ändern</button>
                                     </form>
+                                </div>
+
+                                <!-- Sicherheit / OTP -->
+                                <div class="tab-pane fade" id="security-otp" role="tabpanel">
+                                    <div class="row justify-content-center">
+                                        <div class="col-md-8">
+                                            <div class="card border-0 shadow-sm mb-4">
+                                                <div class="card-header" style="background:linear-gradient(135deg,#1a3a5c,#0d2137);color:#fff;border-radius:6px 6px 0 0;">
+                                                    <h5 class="mb-0"><i class="anticon anticon-safety mr-2"></i>Zwei-Faktor-Authentifizierung (2FA)</h5>
+                                                </div>
+                                                <div class="card-body">
+                                                    <p class="text-muted" style="font-size:14px;">
+                                                        Wenn aktiviert, erhalten Sie bei jeder Anmeldung von einem neuen Gerät oder nach 5 Tagen Inaktivität einen einmaligen Sicherheitscode per E-Mail.
+                                                    </p>
+                                                    <div class="alert alert-info py-2 px-3" style="font-size:13px;">
+                                                        <i class="anticon anticon-info-circle mr-1"></i>
+                                                        Der Code wird nicht erneut angefordert, wenn Sie sich innerhalb von 5 Tagen vom gleichen Gerät/IP anmelden.
+                                                    </div>
+                                                    <form method="POST" class="mt-3">
+                                                        <div class="d-flex align-items-center justify-content-between p-3 rounded" style="background:#f8f9fa;border:1px solid #e9ecef;">
+                                                            <div>
+                                                                <strong style="font-size:15px;">Login-OTP aktivieren</strong><br>
+                                                                <small class="text-muted">E-Mail-Verifizierung bei der Anmeldung</small>
+                                                            </div>
+                                                            <div class="custom-control custom-switch">
+                                                                <input type="checkbox" class="custom-control-input" id="login_otp_enabled"
+                                                                       name="login_otp_enabled" value="1"
+                                                                       <?= (!isset($user['login_otp_enabled']) || $user['login_otp_enabled']) ? 'checked' : '' ?>>
+                                                                <label class="custom-control-label" for="login_otp_enabled"></label>
+                                                            </div>
+                                                        </div>
+                                                        <div class="mt-3">
+                                                            <button type="submit" name="update_otp_setting" class="btn btn-primary">
+                                                                <i class="anticon anticon-save mr-1"></i> Einstellung speichern
+                                                            </button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>

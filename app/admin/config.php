@@ -22,10 +22,23 @@ try {
     $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
     $pdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
     
-    // Set timezone
-    $pdo->exec("SET time_zone = '+00:00'");
 } catch (PDOException $e) {
     die("Database connection failed: " . $e->getMessage());
+}
+
+// Set application timezone — adjust APP_TIMEZONE env var or edit this value to match your server location
+$appTimezone = getenv('APP_TIMEZONE') ?: 'Europe/Berlin';
+date_default_timezone_set($appTimezone);
+
+// Sync MySQL session timezone with PHP timezone (handles DST automatically)
+try {
+    $tzObj  = new DateTimeZone($appTimezone);
+    $offset = $tzObj->getOffset(new DateTime('now', new DateTimeZone('UTC')));
+    $hours  = intdiv($offset, 3600);
+    $mins   = abs($offset % 3600) / 60;
+    $pdo->exec("SET time_zone = " . $pdo->quote(sprintf('%+03d:%02d', $hours, $mins)));
+} catch (Exception $e) {
+    error_log("Timezone sync error: " . $e->getMessage());
 }
 
 // Define base URL

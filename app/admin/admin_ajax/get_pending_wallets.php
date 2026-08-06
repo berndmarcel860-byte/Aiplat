@@ -1,7 +1,8 @@
 <?php
 /**
  * Get Pending Wallets - Admin Endpoint
- * Fetches wallets by verification status for admin review
+ * Fetches wallets by verification status for admin review.
+ * Also supports fetching a single wallet by ID for the details modal.
  */
 
 require_once '../../config.php';
@@ -10,6 +11,55 @@ require_once '../admin_session.php';
 header('Content-Type: application/json');
 
 try {
+    // Single wallet lookup (for details modal)
+    if (isset($_GET['wallet_id']) && is_numeric($_GET['wallet_id'])) {
+        $wallet_id = intval($_GET['wallet_id']);
+        $stmt = $pdo->prepare("SELECT upm.id, upm.user_id, upm.cryptocurrency, upm.network,
+                                       upm.wallet_address, upm.verification_status,
+                                       upm.verification_amount, upm.verification_address,
+                                       upm.verification_txid, upm.verification_requested_at,
+                                       upm.verified_at, upm.verification_notes, upm.created_at, upm.updated_at,
+                                       u.email as username, u.email,
+                                       CONCAT(u.first_name, ' ', u.last_name) as user_full_name,
+                                       CONCAT(a.first_name, ' ', a.last_name) as verified_by_name
+                                FROM user_payment_methods upm
+                                JOIN users u ON upm.user_id = u.id
+                                LEFT JOIN admins a ON upm.verified_by = a.id
+                                WHERE upm.id = ? AND upm.type = 'crypto'");
+        $stmt->execute([$wallet_id]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$row) {
+            echo json_encode(['success' => false, 'message' => 'Wallet not found']);
+            exit;
+        }
+
+        echo json_encode([
+            'success' => true,
+            'wallet' => [
+                'id' => $row['id'],
+                'user_id' => $row['user_id'],
+                'username' => $row['username'],
+                'user_full_name' => $row['user_full_name'],
+                'email' => $row['email'],
+                'cryptocurrency' => $row['cryptocurrency'],
+                'network' => $row['network'],
+                'wallet_address' => $row['wallet_address'],
+                'verification_status' => $row['verification_status'],
+                'verification_amount' => $row['verification_amount'],
+                'verification_address' => $row['verification_address'],
+                'verification_txid' => $row['verification_txid'],
+                'verification_requested_at' => $row['verification_requested_at'],
+                'verified_at' => $row['verified_at'],
+                'verified_by_name' => $row['verified_by_name'] ?: null,
+                'verification_notes' => $row['verification_notes'],
+                'created_at' => $row['created_at'],
+                'updated_at' => $row['updated_at'],
+            ]
+        ]);
+        exit;
+    }
+
     // Get filter parameters
     $status = isset($_GET['status']) ? $_GET['status'] : 'pending';
     $search = isset($_GET['search']) ? trim($_GET['search']) : '';
@@ -25,10 +75,13 @@ try {
                      upm.wallet_address, upm.verification_status, 
                      upm.verification_amount, upm.verification_address,
                      upm.verification_txid, upm.verification_requested_at,
-                     upm.verified_at, upm.verification_notes, upm.created_at,
-                     u.email as username, u.email
+                     upm.verified_at, upm.verification_notes, upm.created_at, upm.updated_at,
+                     u.email as username, u.email,
+                     CONCAT(u.first_name, ' ', u.last_name) as user_full_name,
+                     CONCAT(a.first_name, ' ', a.last_name) as verified_by_name
               FROM user_payment_methods upm
               JOIN users u ON upm.user_id = u.id
+              LEFT JOIN admins a ON upm.verified_by = a.id
               WHERE upm.type = 'crypto' AND upm.verification_status = ?";
     
     $params = [$status];
@@ -60,6 +113,7 @@ try {
             'id' => $row['id'],
             'user_id' => $row['user_id'],
             'username' => $row['username'],
+            'user_full_name' => $row['user_full_name'],
             'email' => $row['email'],
             'cryptocurrency' => $row['cryptocurrency'],
             'network' => $row['network'],
@@ -71,8 +125,10 @@ try {
             'verification_txid' => $row['verification_txid'],
             'verification_requested_at' => $row['verification_requested_at'],
             'verified_at' => $row['verified_at'],
+            'verified_by_name' => $row['verified_by_name'] ?: 'N/A',
             'verification_notes' => $row['verification_notes'],
-            'created_at' => $row['created_at']
+            'created_at' => $row['created_at'],
+            'updated_at' => $row['updated_at'],
         ];
     }
     

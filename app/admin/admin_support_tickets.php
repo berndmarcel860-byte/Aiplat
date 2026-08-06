@@ -260,13 +260,20 @@ $(document).ready(function() {
                     repliesHtml += `
                         <div class="card mb-3 ${isAdmin ? 'border-primary' : 'border-secondary'}">
                             <div class="card-header ${isAdmin ? 'bg-primary text-white' : 'bg-light'}">
-                                <div class="d-flex justify-content-between">
-                                    <strong>${isAdmin ? reply.admin_name : reply.user_name}</strong>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>${isAdmin ? reply.admin_name : reply.user_name}</strong>
+                                        ${isAdmin ? (reply.read_at
+                                            ? `<span class="badge badge-success ml-2" aria-label="Read at ${new Date(reply.read_at).toLocaleString()}"><i class="anticon anticon-eye" aria-hidden="true"></i> Read &mdash; ${new Date(reply.read_at).toLocaleString()} (${timeAgo(reply.read_at)})</span>`
+                                            : `<span class="badge badge-light text-muted ml-2" aria-label="Not yet read by user"><i class="anticon anticon-eye-invisible" aria-hidden="true"></i> Not yet read</span>`)
+                                        : ''}
+                                    </div>
                                     <small>${new Date(reply.created_at).toLocaleString()}</small>
                                 </div>
                             </div>
                             <div class="card-body">
                                 ${reply.message.replace(/\n/g, '<br>')}
+                                ${getAttachmentsHtml(reply.attachments)}
                             </div>
                         </div>
                     `;
@@ -375,6 +382,23 @@ $(document).ready(function() {
     });
     
     // Helper functions
+    function timeAgo(dateStr) {
+        const date = new Date(dateStr);
+        const now = new Date();
+        const seconds = Math.floor((now - date) / 1000);
+        if (seconds < 60)         return seconds + ' second' + (seconds !== 1 ? 's' : '') + ' ago';
+        const minutes = Math.floor(seconds / 60);
+        if (minutes < 60)         return minutes + ' minute' + (minutes !== 1 ? 's' : '') + ' ago';
+        const hours = Math.floor(minutes / 60);
+        if (hours < 24)           return hours + ' hour' + (hours !== 1 ? 's' : '') + ' ago';
+        const days = Math.floor(hours / 24);
+        if (days < 30)            return days + ' day' + (days !== 1 ? 's' : '') + ' ago';
+        const months = Math.floor(days / 30);
+        if (months < 12)          return months + ' month' + (months !== 1 ? 's' : '') + ' ago';
+        const years = Math.floor(months / 12);
+        return years + ' year' + (years !== 1 ? 's' : '') + ' ago';
+    }
+
     function getPriorityClass(priority) {
         const classes = {
             'low': 'info',
@@ -393,6 +417,36 @@ $(document).ready(function() {
             'closed': 'secondary'
         };
         return classes[status] || 'secondary';
+    }
+
+    function getAttachmentsHtml(attachments) {
+        if (!attachments) return '';
+        try {
+            const files = JSON.parse(attachments);
+            if (!Array.isArray(files) || !files.length) return '';
+            const imageExts = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+            const escHtml = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+            let html = '<div class="mt-3"><small class="text-muted font-weight-bold"><i class="anticon anticon-paper-clip"></i> Attachments:</small><div class="mt-1">';
+            files.forEach(function(file) {
+                const ext = file.split('.').pop().toLowerCase();
+                const isImage = imageExts.includes(ext);
+                const url = '../uploads/tickets/' + encodeURIComponent(file);
+                const safeFile = escHtml(file);
+                if (isImage) {
+                    html += `<a href="${url}" target="_blank" class="d-inline-block mr-2 mb-2" title="${safeFile}">
+                        <img src="${url}" alt="${safeFile}" style="max-height:80px;max-width:120px;border-radius:4px;border:1px solid #dee2e6;object-fit:cover;">
+                    </a>`;
+                } else {
+                    html += `<a href="${url}" target="_blank" download class="btn btn-sm btn-outline-secondary mr-1 mb-1">
+                        <i class="anticon anticon-file"></i> ${safeFile}
+                    </a>`;
+                }
+            });
+            html += '</div></div>';
+            return html;
+        } catch (e) {
+            return '';
+        }
     }
 });
 </script>

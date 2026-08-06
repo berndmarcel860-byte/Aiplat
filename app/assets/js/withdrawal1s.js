@@ -1,4 +1,7 @@
 $(document).ready(function() {
+    // Only run on pages that have the withdrawals table
+    if (!$('#withdrawalsTable').length) return;
+
     // Initialize withdrawals table
     const withdrawalsTable = $('#withdrawalsTable').DataTable({
         processing: true,

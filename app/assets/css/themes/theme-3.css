@@ -1,0 +1,209 @@
+/**
+ * Dashboard Theme 3 – Professionell (Corporate Structure)
+ * White background, dark section dividers, left-accent-border on cards,
+ * tabular data-first layout. Monospaced numbers. No colored backgrounds.
+ */
+
+.db-theme-3 {
+  background: #f4f5f7;
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+}
+
+/* ── Hero Section ─────────────────────────────── */
+.db-theme-3 .db-hero {
+  background: #ffffff !important;
+  border-radius: 4px !important;
+  box-shadow: none !important;
+  border-left: 4px solid #1a3a6e !important;
+  border-top: 1px solid #dde1e9 !important;
+  border-right: 1px solid #dde1e9 !important;
+  border-bottom: 1px solid #dde1e9 !important;
+  padding: 24px 28px !important;
+  color: #1a202c !important;
+}
+
+.db-theme-3 .db-hero .hero-welcome-text {
+  color: #4a5568 !important;
+  font-size: 13px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.8px !important;
+  font-weight: 600 !important;
+}
+
+.db-theme-3 .db-hero .hero-name {
+  color: #1a202c !important;
+  font-weight: 800 !important;
+  font-size: 24px !important;
+  letter-spacing: -0.3px !important;
+}
+
+.db-theme-3 .db-hero .hero-balance-label {
+  color: #718096 !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  letter-spacing: 1px !important;
+  text-transform: uppercase !important;
+}
+
+.db-theme-3 .db-hero .hero-balance-value {
+  color: #1a202c !important;
+  font-size: 30px !important;
+  font-weight: 800 !important;
+  font-variant-numeric: tabular-nums !important;
+  letter-spacing: -0.5px !important;
+}
+
+.db-theme-3 .db-hero .trust-badge {
+  background: transparent !important;
+  border: 1px solid #1a3a6e !important;
+  color: #1a3a6e !important;
+  border-radius: 3px !important;
+  padding: 3px 8px !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.3px !important;
+}
+
+/* Trust bar strip */
+.db-theme-3 .hero-trust-strip {
+  background: #f4f5f7 !important;
+  border-top: 1px solid #dde1e9 !important;
+  padding: 10px 28px !important;
+  font-size: 11px !important;
+  color: #718096 !important;
+  letter-spacing: 0.4px !important;
+}
+
+/* ── KPI Cards ────────────────────────────────── */
+.db-theme-3 .kpi-card-wrapper .card {
+  background: #ffffff !important;
+  border-radius: 4px !important;
+  box-shadow: none !important;
+  border: 1px solid #dde1e9 !important;
+  border-top: 3px solid #1a3a6e !important;
+}
+
+.db-theme-3 .kpi-card-wrapper .card > [style*="linear-gradient"],
+.db-theme-3 .kpi-card-wrapper .card > div[style*="background:"] {
+  background: #ffffff !important;
+  border-bottom: 1px solid #eff1f5 !important;
+  padding: 16px 20px !important;
+}
+
+.db-theme-3 .kpi-icon-badge {
+  background: #eff3fc !important;
+  border-radius: 4px !important;
+}
+
+.db-theme-3 .kpi-icon-badge i {
+  color: #1a3a6e !important;
+}
+
+.db-theme-3 .kpi-value {
+  color: #1a202c !important;
+  font-size: 28px !important;
+  font-weight: 800 !important;
+  font-variant-numeric: tabular-nums !important;
+  letter-spacing: -0.5px !important;
+}
+
+.db-theme-3 .kpi-label {
+  color: #718096 !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+}
+
+.db-theme-3 .kpi-trend-badge {
+  background: transparent !important;
+  border: 1px solid currentColor !important;
+  border-radius: 3px !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  padding: 2px 6px !important;
+}
+
+/* ── Section Headers ──────────────────────────── */
+.db-theme-3 .section-header {
+  background: #ffffff !important;
+  border-bottom: 1px solid #dde1e9 !important;
+  padding: 14px 20px !important;
+  border-radius: 4px 4px 0 0 !important;
+}
+
+.db-theme-3 .section-header h5,
+.db-theme-3 .section-header h6 {
+  color: #1a202c !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.7px !important;
+}
+
+/* ── Transaction Rows ─────────────────────────── */
+.db-theme-3 .txn-row {
+  border-bottom: 1px solid #eff1f5 !important;
+  background: #ffffff !important;
+}
+
+.db-theme-3 .txn-row:nth-child(odd) {
+  background: #fafbfc !important;
+}
+
+.db-theme-3 .txn-row:hover {
+  background: #eff3fc !important;
+}
+
+.db-theme-3 .txn-icon-wrap {
+  background: #eff3fc !important;
+  border-radius: 4px !important;
+  color: #1a3a6e !important;
+}
+
+/* ── Modals ───────────────────────────────────── */
+.db-theme-3 .modal-header-themed {
+  background: #ffffff !important;
+  border-bottom: 2px solid #dde1e9 !important;
+  color: #1a202c !important;
+}
+
+.db-theme-3 .modal-header-themed h5,
+.db-theme-3 .modal-header-themed .close {
+  color: #1a202c !important;
+}
+
+.db-theme-3 .modal-content {
+  border-radius: 4px !important;
+  border: 1px solid #dde1e9 !important;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.14) !important;
+}
+
+/* ── Buttons ──────────────────────────────────── */
+.db-theme-3 .btn-theme-primary {
+  background: #1a3a6e !important;
+  color: #ffffff !important;
+  border-radius: 4px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.4px !important;
+  font-size: 13px !important;
+  text-transform: uppercase !important;
+}
+
+.db-theme-3 .btn-theme-primary:hover {
+  background: #2950a8 !important;
+  color: #ffffff !important;
+}
+
+/* ── Amounts ──────────────────────────────────── */
+.db-theme-3 .amount-positive {
+  color: #276749 !important;
+  font-weight: 700 !important;
+  font-variant-numeric: tabular-nums !important;
+}
+
+.db-theme-3 .amount-negative {
+  color: #9b1c1c !important;
+  font-weight: 700 !important;
+  font-variant-numeric: tabular-nums !important;
+}

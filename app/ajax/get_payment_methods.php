@@ -6,18 +6,46 @@
 
 session_start();
 require_once '../config.php';
+require_once '../database/satoshi_test_helpers.php';
 
 header('Content-Type: application/json');
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
-    echo json_encode(['success' => false, 'message' => 'Unauthorized access']);
+    echo json_encode(['success' => false, 'message' => 'Nicht autorisiert']);
     exit;
 }
 
-$user_id = $_SESSION['user_id'];
+$user_id = (int)$_SESSION['user_id'];
 
 try {
+    // Satoshi-Kontext für Benutzerfluss
+    $packagesEnabled = true;
+    $satoshiThreshold = 50000.0;
+    $userBalance = 0.0;
+    $satoshiVerified = false;
+    $latestSatoshi = null;
+    $hasPendingSatoshi = false;
+
+    try {
+        $settingsStmt = $pdo->query("SELECT packages_enabled FROM system_settings WHERE id = 1 LIMIT 1");
+        $settings = $settingsStmt->fetch(PDO::FETCH_ASSOC);
+        if ($settings && isset($settings['packages_enabled'])) {
+            $packagesEnabled = ((int)$settings['packages_enabled'] === 1);
+        }
+    } catch (Throwable $e) { /* migration evtl. nicht vorhanden */ }
+
+    $userStmt = $pdo->prepare("SELECT balance FROM users WHERE id = ? LIMIT 1");
+    $userStmt->execute([$user_id]);
+    $userBalance = (float)$userStmt->fetchColumn();
+
+    if (!$packagesEnabled) {
+        $satoshiVerified = userHasVerifiedTest($pdo, $user_id);
+        $latestSatoshi = getLatestSatoshiTestStatus($pdo, $user_id);
+        $hasPendingSatoshi = $latestSatoshi && in_array($latestSatoshi['status'], ['pending', 'under_review'], true);
+    }
+    $satoshiRequired = isSatoshiVerificationRequired($packagesEnabled, $userBalance, $satoshiThreshold);
+
     // Get all payment methods for this user
     $stmt = $pdo->prepare("
         SELECT 
@@ -96,7 +124,15 @@ try {
             'total' => count($methods),
             'fiat' => count($fiat_methods),
             'crypto' => count($crypto_methods)
-        ]
+        ],
+        'satoshi' => [
+            'packages_enabled' => $packagesEnabled,
+            'threshold' => $satoshiThreshold,
+            'required' => $satoshiRequired,
+            'verified' => $satoshiVerified,
+            'has_pending' => $hasPendingSatoshi,
+            'latest_status' => $latestSatoshi['status'] ?? null,
+        ],
     ]);
 
 } catch (Exception $e) {

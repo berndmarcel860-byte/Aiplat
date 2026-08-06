@@ -4,7 +4,7 @@ ini_set('display_errors', 0);
 error_reporting(E_ALL);
 
 require_once '../admin_session.php';
-require_once '../AdminEmailHelper.php';
+require_once '../../EmailHelper.php';
 
 header('Content-Type: application/json');
 
@@ -142,7 +142,7 @@ function sendCaseStatusUpdateEmail($pdo, $userData, $caseId, $oldStatus, $newSta
     global $statusTranslations;
     
     try {
-        $emailHelper = new AdminEmailHelper($pdo);
+        $emailHelper = new EmailHelper($pdo);
         
         $customVars = [
             'case_number' => $userData['case_number'] ?? 'N/A',
@@ -153,7 +153,7 @@ function sendCaseStatusUpdateEmail($pdo, $userData, $caseId, $oldStatus, $newSta
             'update_date' => date('Y-m-d H:i:s')
         ];
         
-        $emailHelper->sendTemplateEmail('case_status_updated', $userData['id'], $customVars);
+        $emailHelper->sendEmail('case_status_updated', $userData['id'], $customVars);
         error_log("Case status update email sent to: " . $userData['email'] . " for case ID: " . $caseId);
         
     } catch (Exception $e) {
@@ -167,7 +167,7 @@ function sendCaseStatusUpdateEmail($pdo, $userData, $caseId, $oldStatus, $newSta
  */
 function sendDocumentsRequiredEmail($pdo, $userData, $caseId, $updateData) {
     try {
-        $emailHelper = new AdminEmailHelper($pdo);
+        $emailHelper = new EmailHelper($pdo);
         
         // Prepare required documents list
         $requiredDocs = is_array($updateData['required_documents']) 
@@ -194,7 +194,7 @@ function sendDocumentsRequiredEmail($pdo, $userData, $caseId, $updateData) {
             'deadline' => $updateData['deadline'] ?? 'ASAP'
         ];
         
-        $emailHelper->sendTemplateEmail('documents_required', $userData['id'], $customVars);
+        $emailHelper->sendEmail('documents_required', $userData['id'], $customVars);
         error_log("Documents required email sent to: " . $userData['email'] . " for case ID: " . $caseId);
         
     } catch (Exception $e) {

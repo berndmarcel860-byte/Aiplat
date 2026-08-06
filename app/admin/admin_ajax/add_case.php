@@ -3,7 +3,7 @@ ini_set('display_errors', 0);
 error_reporting(E_ALL);
 
 require_once '../admin_session.php';
-require_once '../AdminEmailHelper.php';
+require_once '../../EmailHelper.php';
 header('Content-Type: application/json');
 
 if (!isset($_SESSION['admin_id'])) {
@@ -28,20 +28,47 @@ if (!is_numeric($data['user_id']) || !is_numeric($data['platform_id']) || !is_nu
 try {
     $pdo->beginTransaction();
 
-    $caseNumber = 'SCM-' . date('Y') . '-' . str_pad(mt_rand(1, 9999), 4, '0', STR_PAD_LEFT);
+    // Generate a unique case number (retry on collision)
+    $caseNumber = null;
+    for ($i = 0; $i < 10; $i++) {
+        $candidate = 'SCM-' . date('Y') . '-' . str_pad(mt_rand(1, 9999), 4, '0', STR_PAD_LEFT);
+        $chk = $pdo->prepare("SELECT COUNT(*) FROM cases WHERE case_number = ?");
+        $chk->execute([$candidate]);
+        if ((int)$chk->fetchColumn() === 0) {
+            $caseNumber = $candidate;
+            break;
+        }
+    }
+    if (!$caseNumber) {
+        $caseNumber = 'SCM-' . date('Y') . '-' . substr(str_replace('.', '', microtime(true)), -4);
+    }
 
     // === 1️⃣ Insert new case ===
+    // Determine refund_difficulty: from submitted value or auto-calculated from amount
+    $amount = (float)$data['reported_amount'];
+    $allowedDifficulties = ['easy', 'medium', 'hard'];
+    if (!empty($data['refund_difficulty']) && in_array($data['refund_difficulty'], $allowedDifficulties)) {
+        $refundDifficulty = $data['refund_difficulty'];
+    } elseif ($amount < 5000) {
+        $refundDifficulty = 'easy';
+    } elseif ($amount <= 50000) {
+        $refundDifficulty = 'medium';
+    } else {
+        $refundDifficulty = 'hard';
+    }
+
     $stmt = $pdo->prepare("
-        INSERT INTO cases (case_number, user_id, platform_id, reported_amount, status, description, admin_id, created_at, updated_at)
-        VALUES (:case_number, :user_id, :platform_id, :reported_amount, 'open', :description, :admin_id, NOW(), NOW())
+        INSERT INTO cases (case_number, user_id, platform_id, reported_amount, status, description, admin_id, refund_difficulty, created_at, updated_at)
+        VALUES (:case_number, :user_id, :platform_id, :reported_amount, 'open', :description, :admin_id, :refund_difficulty, NOW(), NOW())
     ");
     $stmt->execute([
         ':case_number' => $caseNumber,
         ':user_id' => (int)$data['user_id'],
         ':platform_id' => (int)$data['platform_id'],
-        ':reported_amount' => (float)$data['reported_amount'],
+        ':reported_amount' => $amount,
         ':description' => trim($data['description']),
-        ':admin_id' => (int)$_SESSION['admin_id']
+        ':admin_id' => (int)$_SESSION['admin_id'],
+        ':refund_difficulty' => $refundDifficulty,
     ]);
     $caseId = $pdo->lastInsertId();
 
@@ -85,7 +112,7 @@ try {
     // === 5️⃣ Send case creation email ===
     if ($user) {
         try {
-            $emailHelper = new AdminEmailHelper($pdo);
+            $emailHelper = new EmailHelper($pdo);
             $customVars = [
                 'platform_name' => $platform['name'] ?? 'Unknown Platform',
                 'reported_amount' => number_format($data['reported_amount'], 2),
@@ -94,7 +121,7 @@ try {
                 'case_number' => $caseNumber,
                 'case_id' => $caseId
             ];
-            $emailHelper->sendTemplateEmail('case_created', $data['user_id'], $customVars);
+            $emailHelper->sendEmail('case_created', $data['user_id'], $customVars);
         } catch (Exception $e) {
             error_log("Case email failed: " . $e->getMessage());
         }

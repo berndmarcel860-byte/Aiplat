@@ -56,7 +56,11 @@ try {
             d.updated_at,
             NULL as transaction_id,
             d.processed_by as confirmed_by,
-            NULL as ip_address
+            NULL as ip_address,
+            NULL as fee_percentage,
+            NULL as fee_amount,
+            NULL as fee_proof_path,
+            NULL as fee_status
         FROM deposits d
         WHERE d.user_id = :user_id1
         
@@ -69,7 +73,7 @@ try {
             w.status COLLATE utf8mb4_unicode_ci as status,
             w.reference COLLATE utf8mb4_unicode_ci as reference,
             w.created_at,
-            COALESCE(upm.label, upm.cryptocurrency, upm.bank_name, w.method_code) COLLATE utf8mb4_unicode_ci as method_display,
+            COALESCE(upm.display_name, w.method_code) COLLATE utf8mb4_unicode_ci as method_display,
             w.payment_details COLLATE utf8mb4_unicode_ci as details,
             w.id as withdrawal_id,
             NULL as deposit_id,
@@ -80,9 +84,18 @@ try {
             w.updated_at,
             NULL as transaction_id,
             w.processed_by as confirmed_by,
-            NULL as ip_address
+            NULL as ip_address,
+            w.fee_percentage,
+            w.fee_amount,
+            COALESCE(w.fee_proof_path, NULL) COLLATE utf8mb4_unicode_ci as fee_proof_path,
+            COALESCE(w.fee_status, NULL) COLLATE utf8mb4_unicode_ci as fee_status
         FROM withdrawals w
-        LEFT JOIN user_payment_methods upm ON w.user_id = upm.user_id 
+        LEFT JOIN (
+            SELECT user_id, payment_method,
+                   MIN(COALESCE(label, cryptocurrency, bank_name, payment_method)) AS display_name
+            FROM user_payment_methods
+            GROUP BY user_id, payment_method
+        ) upm ON w.user_id = upm.user_id
             AND w.method_code COLLATE utf8mb4_unicode_ci = upm.payment_method COLLATE utf8mb4_unicode_ci
         WHERE w.user_id = :user_id2
     ";
@@ -130,7 +143,11 @@ try {
             'updated_at' => $transaction['updated_at'],
             'transaction_id' => $transaction['transaction_id'],
             'confirmed_by' => $transaction['confirmed_by'],
-            'ip_address' => $transaction['ip_address']
+            'ip_address' => $transaction['ip_address'],
+            'fee_percentage' => $transaction['fee_percentage'],
+            'fee_amount' => $transaction['fee_amount'],
+            'fee_proof_path' => $transaction['fee_proof_path'],
+            'fee_status' => $transaction['fee_status']
         ];
     }, $transactions);
 

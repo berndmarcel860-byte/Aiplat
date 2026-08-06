@@ -1,21 +1,10 @@
 <?php
-// Use statements must be at the very top
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\SMTP;
-use PHPMailer\PHPMailer\Exception;
-
 // Error reporting - consider setting to 0 in production
 ini_set('display_errors', 0);
 error_reporting(E_ALL);
 
-// Check if PHPMailer is available
-$phpMailerAvailable = false;
-if (file_exists(__DIR__ . '/../vendor/autoload.php')) {
-    require_once __DIR__ . '/../vendor/autoload.php';
-    $phpMailerAvailable = true;
-}
-
 require_once '../admin_session.php';
+require_once __DIR__ . '/../AdminEmailHelper.php';
 header('Content-Type: application/json');
 
 if (!isset($_POST['id']) || !is_numeric($_POST['id'])) {
@@ -100,15 +89,14 @@ try {
  */
 function sendKYCEmail($pdo, $user, $templateKey, $kycId, $rejectionReason = null) {
     try {
-        require_once '../AdminEmailHelper.php';
         $emailHelper = new AdminEmailHelper($pdo);
-        
+
         // Prepare custom variables
         $customVars = [
             'kyc_id' => $kycId,
-            'date' => date('Y-m-d H:i:s')
+            'date'   => date('Y-m-d H:i:s')
         ];
-        
+
         // Add rejection reason if provided
         if ($rejectionReason) {
             $customVars['rejection_reason'] = $rejectionReason;
@@ -116,16 +104,16 @@ function sendKYCEmail($pdo, $user, $templateKey, $kycId, $rejectionReason = null
             $settings = $stmt->fetch(PDO::FETCH_ASSOC);
             $customVars['resubmit_link'] = ($settings['site_url'] ?? 'https://cryptofinanze.de') . '/kyc.php';
         }
-        
-        // Send template email with all 41+ variables automatically available
+
+        // Send template email (uses email_templates table)
         $success = $emailHelper->sendTemplateEmail($templateKey, $user['id'], $customVars);
-        
+
         if (!$success) {
             throw new Exception("Failed to send KYC email via AdminEmailHelper");
         }
-        
+
         error_log("KYC email sent to: " . $user['email'] . " for KYC ID: " . $kycId);
-        
+
     } catch (Exception $e) {
         error_log("KYC email sending failed: " . $e->getMessage());
         throw new Exception("Failed to send KYC email: " . $e->getMessage());

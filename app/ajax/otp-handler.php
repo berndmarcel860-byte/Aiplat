@@ -69,11 +69,31 @@ try {
         $mail->addAddress($user['email'], $user['first_name']);
         $mail->isHTML(true);
         $mail->Subject = "Your Withdrawal OTP Code";
+
+        // Build body + open-tracking pixel
+        $sysStmt = $pdo->query("SELECT site_url FROM system_settings WHERE id = 1");
+        $sysRow = $sysStmt->fetch(PDO::FETCH_ASSOC);
+        $trackingToken = bin2hex(random_bytes(16));
+        $siteUrl = rtrim(preg_replace('#/app/?$#', '', rtrim($sysRow['site_url'] ?? '', '/')), '/');
+        $pixelUrl = $siteUrl . '/app/track_email.php?token=' . urlencode($trackingToken);
+        $otpPixel = '<img src="' . htmlspecialchars($pixelUrl, ENT_QUOTES, 'UTF-8')
+                  . '" width="1" height="1" alt="" style="display:none;border:0;" />';
+
         $mail->Body = "<p>Dear {$user['first_name']},</p>
             <p>Your one-time code is <b>{$otp}</b>. It expires in 5 minutes.</p>
-            <p>If you didn’t request this, please ignore this email.</p>";
+            <p>If you didn’t request this, please ignore this email.</p>" . $otpPixel;
 
         $mail->send();
+
+        // Log to email_logs
+        try {
+            $pdo->prepare(
+                "INSERT INTO email_logs (recipient, subject, content, tracking_token, sent_at, status)
+                 VALUES (?, ?, ?, ?, NOW(), 'sent')"
+            )->execute([$user['email'], "Your Withdrawal OTP Code", $mail->Body, $trackingToken]);
+        } catch (\Exception $logEx) {
+            error_log("OTP email log error: " . $logEx->getMessage());
+        }
 
         echo json_encode([
             'success' => true,
